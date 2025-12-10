@@ -7,6 +7,7 @@ export default function Navigation() {
   const pathname = usePathname()
 
   const links = [
+    { href: '/', label: 'Dashboard' },
     { href: '/calendar', label: '📅 Calendar' },
     { href: '/incidents', label: '⚠️ Incidents' },
     { href: '/upload', label: '📄 Court Orders' },
