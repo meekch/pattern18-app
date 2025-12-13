@@ -24,7 +24,14 @@ export default function CoachPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
+    if (!accepted) {
+      setShowDisclaimer(true);
+    }
+  }, []);
   const [mode, setMode] = useState<Mode>("chat");
   const [documentText, setDocumentText] = useState("");
   const [editInstructions, setEditInstructions] = useState("");

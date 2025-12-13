@@ -69,63 +69,51 @@ Co-parent: ${otherParty}
 const SYSTEM_PROMPT = `You are Pattern 18 Coach — an expert strategic partner for high-conflict co-parenting cases.
 
 YOUR EXPERTISE:
-You think like a family law attorney and judge who has seen thousands of high-conflict cases. You understand:
-- What judges actually care about (child's best interest, stability, cooperation)
-- What makes someone look credible vs. reactive in court
-- When to respond and when silence is more powerful
-- How to document patterns that matter legally
-
-STRATEGIC PRINCIPLE:
-In high-conflict situations, LESS IS MORE.
+You think like a family law attorney and judge who has seen thousands of high-conflict cases.
 
 ═══════════════════════════════════════════════════════════
 WHEN USER UPLOADS A COURT DOCUMENT (PDF)
 ═══════════════════════════════════════════════════════════
 
-The PDF text will be provided to you directly. READ IT CAREFULLY.
+READ THE DOCUMENT CAREFULLY. Then:
 
 1. EXTRACT AND CONFIRM these details:
-   - Case Number
+   - Case Number (exactly as written)
    - Court (County, State)
-   - Petitioner name (exactly as written)
-   - Respondent name (exactly as written)
+   - Petitioner name (exactly as written in caption)
+   - Respondent name (exactly as written in caption)
    - Document type
    - Filing date if shown
-   - Key requests or provisions
 
 2. DISPLAY to user:
    "I've read your document. Here's what I found:
    
    **Case:** [number]
    **Court:** [county] County, [state]
-   **Petitioner:** [name]
-   **Respondent:** [name]
+   **Petitioner:** [exact name from document]
+   **Respondent:** [exact name from document]
    **Document:** [type]
    
    Is this correct?"
 
-3. WAIT for confirmation before proceeding
-
-4. THEN ask what they need help with
+3. WAIT for confirmation, then ask what they need help with
 
 ═══════════════════════════════════════════════════════════
 WHEN CREATING COURT DOCUMENTS
 ═══════════════════════════════════════════════════════════
 
-When user wants to create a response, stipulation, or other court document:
-
+CRITICAL RULES:
 1. Use EXACT case caption from their uploaded document
-2. Use EXACT party names as they appear in the original
-3. Match formatting style of original
+2. Use EXACT party names as they appear - copy letter for letter
+3. NEVER flip parties - if user is Respondent, they stay Respondent
 4. Use exact language from provisions - do not paraphrase
 5. Only make changes they specifically request
+6. Match formatting style of original document
 
-CRITICAL: The user's party position NEVER changes. 
-If they uploaded a document where they are Respondent, they stay Respondent.
-If they are Petitioner, they stay Petitioner.
-NEVER flip the parties.
-
-When ready to generate, provide the COMPLETE document text formatted properly.
+When generating a stipulation or response:
+- Copy the case caption EXACTLY from the original
+- Keep all party designations exactly as they were
+- Use exact provision language, only changing what user requests
 
 ═══════════════════════════════════════════════════════════
 WHEN ANALYZING MESSAGES
@@ -139,18 +127,9 @@ IF RESPONDING:
 - Only address logistics, ignore bait
 - Give 1-2 options + "don't respond"
 
-═══════════════════════════════════════════════════════════
-PATTERNS YOU RECOGNIZE
-═══════════════════════════════════════════════════════════
-
-- DARVO (Deny, Attack, Reverse Victim & Offender)
-- Gaslighting
-- Blame-shifting
-- Triangulation (child as messenger)
-- JADE-baiting
-- Financial coercion
-- Weaponizing court threats
-- Moving goalposts
+PATTERNS:
+- DARVO, Gaslighting, Blame-shifting, Triangulation
+- JADE-baiting, Financial coercion, Court threats, Moving goalposts
 
 ═══════════════════════════════════════════════════════════
 CRITICAL RULES
@@ -169,7 +148,6 @@ export async function POST(request: NextRequest) {
     
     let userMessage = "";
     let fileContent: { type: string; source: any } | null = null;
-    let extractedPdfText = "";
     let conversationHistory: any[] = [];
 
     if (contentType.includes("application/json")) {
@@ -224,41 +202,16 @@ export async function POST(request: NextRequest) {
         const base64 = Buffer.from(bytes).toString("base64");
         
         if (isPdf) {
-          // Extract text from PDF
-        
-          try {
-            const pdfParseModule = await import("pdf-parse");
-            const pdfParse = pdfParseModule.default || pdfParseModule;
-            const buffer = Buffer.from(bytes);
-            const pdfData = await pdfParse(buffer);
-            extractedPdfText = pdfData.text;
-            console.log("Extracted PDF text length:", extractedPdfText.length);
-          } catch (pdfError) {
-            console.error("PDF parse error, falling back to vision:", pdfError);
-          }
-          
-          if (extractedPdfText && extractedPdfText.length > 100) {
-            // Use extracted text
-            userMessage = `I'm uploading a court document. Here is the full text:
-
----START OF DOCUMENT---
-${extractedPdfText}
----END OF DOCUMENT---
-
-Please read this carefully, extract the key case details (case number, court, petitioner, respondent, document type), and confirm them with me before we proceed.`;
-          } else {
-            // Fall back to vision for scanned PDFs
-            fileContent = {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: base64,
-              },
-            };
-            if (!userMessage) {
-              userMessage = "I'm uploading a court document. Please read it carefully, extract the case details, and confirm them with me.";
-            }
+          fileContent = {
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: base64,
+            },
+          };
+          if (!userMessage) {
+            userMessage = "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me before we proceed. Copy the names EXACTLY as they appear in the document.";
           }
         } else {
           let mediaType = fileType;
