@@ -10,12 +10,14 @@ interface Message {
   timestamp: Date;
 }
 
+type Mode = "chat" | "document";
+
 export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "I'm here. Paste a message, tell me what's happening, or upload a screenshot. I'll help you see it clearly and respond from a place of calm.",
+      content: "I'm here. Share a message, upload a screenshot, or drop in a court document. I'll give you a quick read and ask what you need.\n\nNeed to edit a document with exact language? Click 'Document Editor' above.",
       timestamp: new Date(),
     },
   ]);
@@ -23,6 +25,9 @@ export default function CoachPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [mode, setMode] = useState<Mode>("chat");
+  const [documentText, setDocumentText] = useState("");
+  const [editInstructions, setEditInstructions] = useState("");
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,6 +56,8 @@ export default function CoachPage() {
 
     const userMessageId = Date.now().toString();
     let imageDataUrl: string | undefined;
+    
+    const isPdf = imageFile && (imageFile.type === "application/pdf" || imageFile.name.toLowerCase().endsWith(".pdf"));
 
     if (imageFile) {
       imageDataUrl = await new Promise<string>((resolve) => {
@@ -60,11 +67,13 @@ export default function CoachPage() {
       });
     }
 
+    const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
+
     const userMessage: Message = {
       id: userMessageId,
       role: "user",
-      content: text || "Analyze this image",
-      image: imageDataUrl,
+      content: displayText,
+      image: imageDataUrl && !isPdf ? imageDataUrl : undefined,
       timestamp: new Date(),
     };
 
@@ -88,7 +97,7 @@ export default function CoachPage() {
 
       if (imageFile) {
         const formData = new FormData();
-        formData.append("message", text || "Analyze this image and identify any manipulation patterns.");
+        formData.append("message", text || "");
         formData.append("file", imageFile);
         formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
           role: m.role,
@@ -163,6 +172,34 @@ export default function CoachPage() {
     }
   };
 
+  const sendDocumentEdit = async () => {
+    if (!documentText.trim() || !editInstructions.trim()) return;
+    if (isLoading) return;
+
+    const combinedMessage = `DOCUMENT EDITING MODE - EXACT ACCURACY REQUIRED
+
+Here is the EXACT text of my document:
+---BEGIN DOCUMENT---
+${documentText}
+---END DOCUMENT---
+
+CHANGES REQUESTED:
+${editInstructions}
+
+INSTRUCTIONS:
+1. Make ONLY the changes I specified above
+2. Keep ALL other text EXACTLY the same - word for word, punctuation for punctuation
+3. Return the COMPLETE edited document
+4. Do NOT add, remove, or change anything I didn't ask for
+5. Do NOT paraphrase or "improve" any language
+6. After the document, briefly list what you changed`;
+
+    setMode("chat");
+    await sendMessage(combinedMessage);
+    setDocumentText("");
+    setEditInstructions("");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
@@ -202,9 +239,7 @@ export default function CoachPage() {
   };
 
   const copyToClipboard = (text: string) => {
-    const match = text.match(/"([^"]+)"/);
-    const textToCopy = match ? match[1] : text;
-    navigator.clipboard.writeText(textToCopy);
+    navigator.clipboard.writeText(text);
   };
 
   const formatMessage = (content: string) => {
@@ -217,6 +252,7 @@ export default function CoachPage() {
       .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
       .replace(/⭐\s*Recommended/g, '<span class="recommended-badge">⭐ Recommended</span>')
       .replace(/^---$/gm, '<hr>')
+      .replace(/---BEGIN DOCUMENT---|---END DOCUMENT---/g, '<hr class="doc-divider">')
       .replace(/\n/g, '<br>');
     
     return html;
@@ -224,7 +260,6 @@ export default function CoachPage() {
 
   return (
     <div className="coach-container">
-      {/* Disclaimer Modal */}
       {showDisclaimer && (
         <div className="disclaimer-overlay">
           <div className="disclaimer-modal">
@@ -241,17 +276,13 @@ export default function CoachPage() {
               </ul>
               <p className="disclaimer-note">By continuing, you acknowledge that you understand this tool provides documentation support only, not legal advice.</p>
             </div>
-            <button 
-              className="disclaimer-btn"
-              onClick={() => setShowDisclaimer(false)}
-            >
+            <button className="disclaimer-btn" onClick={() => setShowDisclaimer(false)}>
               I Understand — Continue
             </button>
           </div>
         </div>
       )}
 
-      {/* Header */}
       <header className="header">
         <div className="header-content">
           <div className="logo">
@@ -259,574 +290,211 @@ export default function CoachPage() {
             <span className="logo-text">Pattern 18</span>
           </div>
           <div className="header-actions">
-            <button className="header-btn" onClick={() => setShowDisclaimer(true)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
+            <button className={`header-btn ${mode === "chat" ? "active" : ""}`} onClick={() => setMode("chat")}>
+              💬 Chat
             </button>
-            <button className="header-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span className="btn-text">Timeline</span>
+            <button className={`header-btn ${mode === "document" ? "active" : ""}`} onClick={() => setMode("document")}>
+              📝 Document Editor
             </button>
+            <button className="header-btn info-btn" onClick={() => setShowDisclaimer(true)}>ⓘ</button>
           </div>
         </div>
       </header>
 
-      {/* Chat Area */}
-      <div
-        ref={chatRef}
-        className={`chat-area ${dragOver ? "drag-over" : ""}`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-      >
-        {dragOver && (
-          <div className="drop-overlay">
-            <div className="drop-text">Drop to analyze</div>
-          </div>
-        )}
-        
-        <div className="chat-inner">
-          {/* Persistent disclaimer banner */}
-          <div className="disclaimer-banner">
-            <span>📋 Documentation support only — not legal advice. <button onClick={() => setShowDisclaimer(true)}>Learn more</button></span>
-          </div>
-
-          {messages.map((msg) => (
-            <div key={msg.id} className={`message ${msg.role}`}>
-              {msg.image && (
-                <div className="message-image">
-                  <img src={msg.image} alt="Uploaded" />
-                </div>
-              )}
-              <div 
-                className="message-content"
-                dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+      {mode === "document" ? (
+        <div className="document-editor">
+          <div className="editor-container">
+            <div className="editor-instructions">
+              <h2>📝 Document Editor</h2>
+              <p>For exact, word-for-word document editing. Paste your text below and specify exactly what to change.</p>
+            </div>
+            <div className="editor-section">
+              <label>1. Paste your document text here:</label>
+              <textarea
+                value={documentText}
+                onChange={(e) => setDocumentText(e.target.value)}
+                placeholder="Copy and paste the exact text from your document here..."
+                className="document-input"
+                rows={12}
               />
-              {msg.role === "assistant" && msg.content && !isLoading && (
-                <div className="message-actions">
-                  <button onClick={() => copyToClipboard(msg.content)}>
-                    📋 Copy
-                  </button>
-                  <button>💾 Save</button>
+            </div>
+            <div className="editor-section">
+              <label>2. What changes do you need?</label>
+              <textarea
+                value={editInstructions}
+                onChange={(e) => setEditInstructions(e.target.value)}
+                placeholder="Be specific, e.g.:
+- Change 'Father gets Thanksgiving 2025' to 'Father gets Thanksgiving 2026'
+- Remove the paragraph about summer vacation
+- Add after Section 3: 'Neither parent shall...'"
+                className="instructions-input"
+                rows={5}
+              />
+            </div>
+            <button
+              onClick={sendDocumentEdit}
+              disabled={!documentText.trim() || !editInstructions.trim() || isLoading}
+              className="edit-btn"
+            >
+              {isLoading ? "Processing..." : "Apply Changes"}
+            </button>
+            <div className="editor-note">
+              <strong>Tip:</strong> The more specific you are about what to change, the more accurate the result.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            ref={chatRef}
+            className={`chat-area ${dragOver ? "drag-over" : ""}`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            {dragOver && (
+              <div className="drop-overlay">
+                <div className="drop-text">Drop to upload</div>
+              </div>
+            )}
+            <div className="chat-inner">
+              <div className="disclaimer-banner">
+                <span>📋 Documentation support only — not legal advice. <button onClick={() => setShowDisclaimer(true)}>Learn more</button></span>
+              </div>
+              {messages.map((msg) => (
+                <div key={msg.id} className={`message ${msg.role}`}>
+                  {msg.image && (
+                    <div className="message-image">
+                      <img src={msg.image} alt="Uploaded" />
+                    </div>
+                  )}
+                  <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+                  {msg.role === "assistant" && msg.content && !isLoading && (
+                    <div className="message-actions">
+                      <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.content === "" && (
+                <div className="typing-indicator">
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
                 </div>
               )}
             </div>
-          ))}
-          
-          {isLoading && messages[messages.length - 1]?.content === "" && (
-            <div className="typing-indicator">
-              <div className="typing-dot" />
-              <div className="typing-dot" />
-              <div className="typing-dot" />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="input-area">
-        <div className="input-container">
-          <div className="input-hint">
-            Paste a message, describe what's happening, or drop an image
           </div>
-          <form onSubmit={handleSubmit} className="input-wrapper">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileSelect}
-              className="file-input"
-            />
-            <button
-              type="button"
-              className="attach-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-              </svg>
-            </button>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="What's going on?"
-              rows={1}
-              className="input-field"
-            />
-            <button
-              type="submit"
-              disabled={(!input.trim() && !isLoading) || isLoading}
-              className={`send-btn ${input.trim() ? "active" : ""}`}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
-            </button>
-          </form>
-        </div>
-      </div>
+
+          <div className="input-area">
+            <div className="input-container">
+              <div className="input-hint">Paste a message, describe what's happening, or drop a file</div>
+              <form onSubmit={handleSubmit} className="input-wrapper">
+                <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="file-input" />
+                <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="What's going on?"
+                  rows={1}
+                  className="input-field"
+                />
+                <button type="submit" disabled={(!input.trim() && !isLoading) || isLoading} className={`send-btn ${input.trim() ? "active" : ""}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
 
       <style jsx>{`
-        .coach-container {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          height: 100dvh;
-          background: #f8faf9;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        /* Disclaimer Modal */
-        .disclaimer-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.7);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-
-        .disclaimer-modal {
-          background: white;
-          border-radius: 16px;
-          max-width: 500px;
-          width: 100%;
-          padding: 32px;
-          text-align: center;
-        }
-
-        .disclaimer-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-        }
-
-        .disclaimer-modal h2 {
-          font-size: 22px;
-          margin-bottom: 20px;
-          color: #1a3a2f;
-        }
-
-        .disclaimer-content {
-          text-align: left;
-          font-size: 14px;
-          line-height: 1.6;
-          color: #444;
-        }
-
-        .disclaimer-content p {
-          margin-bottom: 12px;
-        }
-
-        .disclaimer-content ul {
-          margin: 16px 0;
-          padding-left: 20px;
-        }
-
-        .disclaimer-content li {
-          margin-bottom: 8px;
-        }
-
-        .disclaimer-note {
-          font-size: 13px;
-          color: #666;
-          font-style: italic;
-          margin-top: 16px;
-          padding-top: 16px;
-          border-top: 1px solid #eee;
-        }
-
-        .disclaimer-btn {
-          margin-top: 24px;
-          padding: 14px 32px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          width: 100%;
-        }
-
-        .disclaimer-btn:hover {
-          background: #0d1f18;
-        }
-
-        /* Disclaimer Banner */
-        .disclaimer-banner {
-          background: #fff9e6;
-          border: 1px solid #f0e6c0;
-          border-radius: 8px;
-          padding: 10px 16px;
-          margin-bottom: 20px;
-          font-size: 13px;
-          color: #8a7500;
-          text-align: center;
-        }
-
-        .disclaimer-banner button {
-          background: none;
-          border: none;
-          color: #6b5a00;
-          text-decoration: underline;
-          cursor: pointer;
-          font-size: 13px;
-        }
-
-        .header {
-          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
-          padding: 12px 16px;
-          padding-top: max(12px, env(safe-area-inset-top));
-          flex-shrink: 0;
-        }
-
-        .header-content {
-          max-width: 800px;
-          margin: 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: white;
-        }
-
-        .logo-icon {
-          width: 36px;
-          height: 36px;
-          background: #2dd4a8;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 14px;
-          color: #0d1f18;
-        }
-
-        .logo-text {
-          font-size: 18px;
-          font-weight: 600;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .header-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
-          background: rgba(255,255,255,0.1);
-          border: none;
-          border-radius: 8px;
-          color: white;
-          font-size: 13px;
-          cursor: pointer;
-        }
-
-        .header-btn:hover {
-          background: rgba(255,255,255,0.2);
-        }
-
-        .chat-area {
-          flex: 1;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          position: relative;
-        }
-
-        .chat-area.drag-over {
-          background: rgba(45, 212, 168, 0.1);
-        }
-
-        .drop-overlay {
-          position: absolute;
-          inset: 16px;
-          background: rgba(45, 212, 168, 0.2);
-          border: 3px dashed #2dd4a8;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10;
-        }
-
-        .drop-text {
-          font-size: 18px;
-          font-weight: 600;
-          color: #1a3a2f;
-        }
-
-        .chat-inner {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px 16px;
-        }
-
-        .message {
-          margin-bottom: 20px;
-          animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message.user {
-          margin-left: 15%;
-        }
-
-        .message.user .message-content {
-          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
-          color: white;
-          padding: 14px 18px;
-          border-radius: 18px;
-          border-bottom-right-radius: 4px;
-          white-space: pre-wrap;
-        }
-
-        .message.assistant .message-content {
-          background: white;
-          padding: 18px 22px;
-          border-radius: 18px;
-          border-bottom-left-radius: 4px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-          line-height: 1.6;
-        }
-
-        .message-image {
-          margin-bottom: 8px;
-          border-radius: 12px;
-          overflow: hidden;
-          max-width: 300px;
-          margin-left: auto;
-        }
-
-        .message-image img {
-          width: 100%;
-          display: block;
-        }
-
-        .message-content :global(strong) {
-          font-weight: 600;
-        }
-
-        .message-content :global(em) {
-          font-style: italic;
-          color: #666;
-        }
-
-        .message-content :global(ul) {
-          margin: 12px 0;
-          padding-left: 0;
-          list-style: none;
-        }
-
-        .message-content :global(li) {
-          padding: 4px 0 4px 20px;
-          position: relative;
-        }
-
-        .message-content :global(li::before) {
-          content: "→";
-          position: absolute;
-          left: 0;
-          color: #2dd4a8;
-        }
-
-        .message-content :global(hr) {
-          border: none;
-          border-top: 1px solid #eee;
-          margin: 16px 0;
-        }
-
-        .message-content :global(.pattern-alert) {
-          background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
-          border-left: 4px solid #e57373;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-bottom: 16px;
-        }
-
-        .message-content :global(.pattern-badge) {
-          font-weight: 600;
-          color: #c62828;
-        }
-
-        .message-content :global(.recommended-badge) {
-          display: inline-block;
-          background: #2dd4a8;
-          color: #0d1f18;
-          font-size: 11px;
-          padding: 2px 8px;
-          border-radius: 10px;
-          font-weight: 600;
-          margin-left: 8px;
-        }
-
-        .message-actions {
-          display: flex;
-          gap: 12px;
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid #f0f0f0;
-        }
-
-        .message-actions button {
-          background: none;
-          border: none;
-          font-size: 13px;
-          color: #666;
-          cursor: pointer;
-          padding: 4px 8px;
-          border-radius: 6px;
-          font-family: inherit;
-        }
-
-        .message-actions button:hover {
-          background: #f0f0f0;
-          color: #1a3a2f;
-        }
-
-        .typing-indicator {
-          display: flex;
-          gap: 5px;
-          padding: 20px;
-        }
-
-        .typing-dot {
-          width: 8px;
-          height: 8px;
-          background: #2dd4a8;
-          border-radius: 50%;
-          animation: bounce 1.2s infinite;
-        }
-
+        .coach-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f8faf9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .disclaimer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .disclaimer-modal { background: white; border-radius: 16px; max-width: 500px; width: 100%; padding: 32px; text-align: center; }
+        .disclaimer-icon { font-size: 48px; margin-bottom: 16px; }
+        .disclaimer-modal h2 { font-size: 22px; margin-bottom: 20px; color: #1a3a2f; }
+        .disclaimer-content { text-align: left; font-size: 14px; line-height: 1.6; color: #444; }
+        .disclaimer-content p { margin-bottom: 12px; }
+        .disclaimer-content ul { margin: 16px 0; padding-left: 20px; }
+        .disclaimer-content li { margin-bottom: 8px; }
+        .disclaimer-note { font-size: 13px; color: #666; font-style: italic; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
+        .disclaimer-btn { margin-top: 24px; padding: 14px 32px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
+        .disclaimer-banner { background: #fff9e6; border: 1px solid #f0e6c0; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #8a7500; text-align: center; }
+        .disclaimer-banner button { background: none; border: none; color: #6b5a00; text-decoration: underline; cursor: pointer; font-size: 13px; }
+        .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); flex-shrink: 0; }
+        .header-content { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .logo { display: flex; align-items: center; gap: 10px; color: white; }
+        .logo-icon { width: 36px; height: 36px; background: #2dd4a8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #0d1f18; }
+        .logo-text { font-size: 18px; font-weight: 600; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-btn { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { background: rgba(255,255,255,0.2); }
+        .header-btn.active { background: #2dd4a8; color: #0d1f18; }
+        .info-btn { padding: 8px 10px; }
+        .document-editor { flex: 1; overflow-y: auto; padding: 20px; }
+        .editor-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+        .editor-instructions { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .editor-instructions h2 { font-size: 20px; margin-bottom: 8px; color: #1a3a2f; }
+        .editor-instructions p { color: #666; font-size: 14px; }
+        .editor-section { margin-bottom: 20px; }
+        .editor-section label { display: block; font-weight: 600; margin-bottom: 8px; color: #1a3a2f; }
+        .document-input, .instructions-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.6; resize: vertical; }
+        .document-input:focus, .instructions-input:focus { outline: none; border-color: #2dd4a8; box-shadow: 0 0 0 3px rgba(45, 212, 168, 0.1); }
+        .document-input { min-height: 200px; }
+        .edit-btn { width: 100%; padding: 16px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+        .edit-btn:hover:not(:disabled) { background: #0d1f18; }
+        .edit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .editor-note { margin-top: 20px; padding: 14px; background: #f8f9fa; border-radius: 8px; font-size: 13px; color: #666; }
+        .chat-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+        .chat-area.drag-over { background: rgba(45, 212, 168, 0.1); }
+        .drop-overlay { position: absolute; inset: 16px; background: rgba(45, 212, 168, 0.2); border: 3px dashed #2dd4a8; border-radius: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .drop-text { font-size: 18px; font-weight: 600; color: #1a3a2f; }
+        .chat-inner { max-width: 800px; margin: 0 auto; padding: 20px 16px; }
+        .message { margin-bottom: 20px; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { margin-left: 15%; }
+        .message.user .message-content { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); color: white; padding: 14px 18px; border-radius: 18px; border-bottom-right-radius: 4px; white-space: pre-wrap; font-size: 14px; }
+        .message.assistant .message-content { background: white; padding: 18px 22px; border-radius: 18px; border-bottom-left-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); line-height: 1.6; }
+        .message-image { margin-bottom: 8px; border-radius: 12px; overflow: hidden; max-width: 300px; margin-left: auto; }
+        .message-image img { width: 100%; display: block; }
+        .message-content :global(strong) { font-weight: 600; }
+        .message-content :global(em) { font-style: italic; color: #666; }
+        .message-content :global(ul) { margin: 12px 0; padding-left: 0; list-style: none; }
+        .message-content :global(li) { padding: 4px 0 4px 20px; position: relative; }
+        .message-content :global(li::before) { content: "→"; position: absolute; left: 0; color: #2dd4a8; }
+        .message-content :global(hr) { border: none; border-top: 1px solid #eee; margin: 16px 0; }
+        .message-content :global(.doc-divider) { border-top: 2px solid #2dd4a8; margin: 20px 0; }
+        .message-content :global(.pattern-alert) { background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); border-left: 4px solid #e57373; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .message-content :global(.pattern-badge) { font-weight: 600; color: #c62828; }
+        .message-content :global(.recommended-badge) { display: inline-block; background: #2dd4a8; color: #0d1f18; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-left: 8px; }
+        .message-actions { display: flex; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .message-actions button { background: none; border: none; font-size: 13px; color: #666; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: inherit; }
+        .message-actions button:hover { background: #f0f0f0; color: #1a3a2f; }
+        .typing-indicator { display: flex; gap: 5px; padding: 20px; }
+        .typing-dot { width: 8px; height: 8px; background: #2dd4a8; border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes bounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-6px); }
-        }
-
-        .input-area {
-          background: white;
-          border-top: 1px solid #e8e8e8;
-          padding: 12px 16px;
-          padding-bottom: max(12px, env(safe-area-inset-bottom));
-          flex-shrink: 0;
-        }
-
-        .input-container {
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        .input-hint {
-          font-size: 12px;
-          color: #999;
-          text-align: center;
-          margin-bottom: 10px;
-        }
-
-        .input-wrapper {
-          display: flex;
-          align-items: flex-end;
-          gap: 10px;
-          background: #f5f5f5;
-          border-radius: 24px;
-          padding: 6px 6px 6px 16px;
-        }
-
-        .file-input {
-          display: none;
-        }
-
-        .attach-btn {
-          background: none;
-          border: none;
-          padding: 8px;
-          color: #666;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-
-        .attach-btn:hover {
-          color: #1a3a2f;
-        }
-
-        .input-field {
-          flex: 1;
-          border: none;
-          background: transparent;
-          font-size: 16px;
-          line-height: 1.5;
-          resize: none;
-          outline: none;
-          padding: 10px 0;
-          font-family: inherit;
-          min-height: 24px;
-          max-height: 150px;
-        }
-
-        .input-field::placeholder {
-          color: #999;
-        }
-
-        .send-btn {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          border: none;
-          background: #e0e0e0;
-          color: #999;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          transition: all 0.2s;
-        }
-
-        .send-btn.active {
-          background: #1a3a2f;
-          color: white;
-        }
-
-        .send-btn:disabled {
-          cursor: not-allowed;
-        }
-
-        @media (max-width: 600px) {
-          .message.user {
-            margin-left: 10%;
-          }
-          
-          .btn-text {
-            display: none;
-          }
-        }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        .input-area { background: white; border-top: 1px solid #e8e8e8; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; }
+        .input-container { max-width: 800px; margin: 0 auto; }
+        .input-hint { font-size: 12px; color: #999; text-align: center; margin-bottom: 10px; }
+        .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: #f5f5f5; border-radius: 24px; padding: 6px 6px 6px 16px; }
+        .file-input { display: none; }
+        .attach-btn { background: none; border: none; padding: 8px; color: #666; cursor: pointer; flex-shrink: 0; }
+        .attach-btn:hover { color: #1a3a2f; }
+        .input-field { flex: 1; border: none; background: transparent; font-size: 16px; line-height: 1.5; resize: none; outline: none; padding: 10px 0; font-family: inherit; min-height: 24px; max-height: 150px; }
+        .send-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #e0e0e0; color: #999; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+        .send-btn.active { background: #1a3a2f; color: white; }
+        @media (max-width: 600px) { .message.user { margin-left: 10%; } .header-btn { padding: 8px 10px; font-size: 12px; } }
       `}</style>
     </div>
   );
