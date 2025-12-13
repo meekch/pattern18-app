@@ -30,10 +30,6 @@ export default function CoachPage() {
       timestamp: new Date(),
     },
   ]);
-  const [storedPdf, setStoredPdf] = useState<{
-    base64: string;
-    name: string;
-  } | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -42,12 +38,12 @@ export default function CoachPage() {
   const [documentText, setDocumentText] = useState("");
   const [editInstructions, setEditInstructions] = useState("");
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
+  const [storedPdf, setStoredPdf] = useState<{ base64: string; name: string } | null>(null);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check disclaimer on mount
   useEffect(() => {
     const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
     if (!accepted) {
@@ -72,7 +68,6 @@ export default function CoachPage() {
     }
   }, [input]);
 
-  // Parse case context from Claude's response
   const parseCaseContext = (response: string): CaseContext | null => {
     try {
       const caseMatch = response.match(/\*\*Case:\*\*\s*([^\n]+)/);
@@ -87,7 +82,7 @@ export default function CoachPage() {
           court: courtMatch ? courtMatch[1].trim() : "",
           petitioner: petitionerMatch[1].trim(),
           respondent: respondentMatch[1].trim(),
-          userRole: "respondent", // Default, user can correct
+          userRole: "respondent",
           documentType: documentMatch ? documentMatch[1].trim() : "",
         };
       }
@@ -100,31 +95,30 @@ export default function CoachPage() {
   const sendMessage = async (text: string, imageFile?: File) => {
     if (!text.trim() && !imageFile) return;
     if (isLoading) return;
-  
+
     const userMessageId = Date.now().toString();
     let imageDataUrl: string | undefined;
     let newPdfBase64: string | undefined;
     
     const isPdf = imageFile && (imageFile.type === "application/pdf" || imageFile.name.toLowerCase().endsWith(".pdf"));
-  
+
     if (imageFile) {
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(imageFile);
       });
-  
+
       if (isPdf) {
-        // Store PDF for future messages
         newPdfBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
         setStoredPdf({ base64: newPdfBase64, name: imageFile.name });
       } else {
         imageDataUrl = base64;
       }
     }
-  
+
     const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
-  
+
     const userMessage: Message = {
       id: userMessageId,
       role: "user",
@@ -132,11 +126,11 @@ export default function CoachPage() {
       image: imageDataUrl,
       timestamp: new Date(),
     };
-  
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-  
+
     const assistantMessageId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
@@ -147,9 +141,8 @@ export default function CoachPage() {
         timestamp: new Date(),
       },
     ]);
-  
+
     try {
-      // Always use FormData so we can include PDF
       const formData = new FormData();
       formData.append("message", text || "");
       formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
@@ -160,141 +153,20 @@ export default function CoachPage() {
       if (caseContext) {
         formData.append("caseContext", JSON.stringify(caseContext));
       }
-  
-      // Include new file if uploaded
+
       if (imageFile) {
         formData.append("file", imageFile);
       }
       
-      // Include stored PDF for context (if not uploading a new one)
       const pdfToUse = newPdfBase64 || storedPdf?.base64;
       if (pdfToUse && !imageFile) {
         formData.append("storedPdf", pdfToUse);
       }
-  
+
       const response = await fetch("/api/coach", {
         method: "POST",
         body: formData,
       });
-  
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
-  
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-  
-      if (!reader) throw new Error("No reader available");
-  
-      let fullContent = "";
-  
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-  
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-  
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.text) {
-                fullContent += data.text;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMessageId
-                      ? { ...m, content: fullContent }
-                      : m
-                  )
-                );
-              }
-            } catch {}
-          }
-        }
-      }
-  
-      // Try to parse case context from response
-      if (!caseContext && fullContent.includes("**Case:**")) {
-        const parsed = parseCaseContext(fullContent);
-        if (parsed) {
-          setCaseContext(parsed);
-          console.log("Saved case context:", parsed);
-        }
-      }
-  
-    } catch (error) {
-      console.error("Error:", error);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessageId
-            ? { ...m, content: "Sorry, I encountered an error. Please try again." }
-            : m
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-    const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
-
-    const userMessage: Message = {
-      id: userMessageId,
-      role: "user",
-      content: displayText,
-      image: imageDataUrl,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    const assistantMessageId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: assistantMessageId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      },
-    ]);
-
-    try {
-      let response: Response;
-
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append("message", text || "");
-        formData.append("file", imageFile);
-        formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
-          role: m.role,
-          content: m.content,
-        }))));
-        if (caseContext) {
-          formData.append("caseContext", JSON.stringify(caseContext));
-        }
-
-        response = await fetch("/api/coach", {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        response = await fetch("/api/coach", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text,
-            caseContext: caseContext,
-            history: messages.slice(-10).map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
-        });
-      }
 
       if (!response.ok) {
         throw new Error("API request failed");
@@ -333,12 +205,10 @@ export default function CoachPage() {
         }
       }
 
-      // Try to parse case context from response
       if (!caseContext && fullContent.includes("**Case:**")) {
         const parsed = parseCaseContext(fullContent);
         if (parsed) {
           setCaseContext(parsed);
-          console.log("Saved case context:", parsed);
         }
       }
 
@@ -383,11 +253,10 @@ ${editInstructions}
 
 INSTRUCTIONS:
 1. Make ONLY the changes I specified above
-2. Keep ALL other text EXACTLY the same - word for word, punctuation for punctuation
+2. Keep ALL other text EXACTLY the same
 3. Return the COMPLETE edited document
 4. Do NOT add, remove, or change anything I didn't ask for
-5. Do NOT paraphrase or "improve" any language
-6. After the document, briefly list what you changed`;
+5. After the document, briefly list what you changed`;
 
     setMode("chat");
     await sendMessage(combinedMessage);
@@ -443,19 +312,14 @@ INSTRUCTIONS:
   };
 
   const formatMessage = (content: string) => {
-    let html = content
+    return content
       .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">⚠️ $1 detected</span></div>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
       .replace(/^• (.+)$/gm, '<li>$1</li>')
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-      .replace(/⭐\s*Recommended/g, '<span class="recommended-badge">⭐ Recommended</span>')
-      .replace(/^---$/gm, '<hr>')
-      .replace(/---BEGIN DOCUMENT---|---END DOCUMENT---/g, '<hr class="doc-divider">')
       .replace(/\n/g, '<br>');
-    
-    return html;
   };
 
   return (
@@ -507,24 +371,23 @@ INSTRUCTIONS:
         </div>
       </header>
 
-      {/* Case Context Banner */}
       {(caseContext || storedPdf) && (
-  <div className="context-banner">
-    <span>
-      {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</>}
-      {storedPdf && !caseContext && <>📄 Document loaded: {storedPdf.name}</>}
-      {storedPdf && caseContext && <> • 📄 PDF in context</>}
-    </span>
-    <button onClick={clearCaseContext}>✕ Clear</button>
-  </div>
-)}
+        <div className="context-banner">
+          <span>
+            {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</>}
+            {storedPdf && !caseContext && <>📄 Document loaded: {storedPdf.name}</>}
+            {storedPdf && caseContext && <> • 📄 PDF in context</>}
+          </span>
+          <button onClick={clearCaseContext}>✕ Clear</button>
+        </div>
+      )}
 
       {mode === "document" ? (
         <div className="document-editor">
           <div className="editor-container">
             <div className="editor-instructions">
               <h2>📝 Document Editor</h2>
-              <p>For accurate court document creation. Paste text from your PDF (open in browser, select text, copy) and specify what to change.</p>
+              <p>For precise court document creation. Paste text from your PDF and specify what to change.</p>
             </div>
             
             {caseContext && (
@@ -563,9 +426,6 @@ INSTRUCTIONS:
             >
               {isLoading ? "Processing..." : "Apply Changes"}
             </button>
-            <div className="editor-note">
-              <strong>Tip:</strong> The more specific you are about what to change, the more accurate the result.
-            </div>
           </div>
         </div>
       ) : (
@@ -613,7 +473,6 @@ INSTRUCTIONS:
 
           <div className="input-area">
             <div className="input-container">
-              <div className="input-hint">Paste a message, describe what's happening, or drop a file</div>
               <form onSubmit={handleSubmit} className="input-wrapper">
                 <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="file-input" />
                 <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()}>
@@ -676,13 +535,12 @@ INSTRUCTIONS:
         .editor-context { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #2e7d32; }
         .editor-section { margin-bottom: 20px; }
         .editor-section label { display: block; font-weight: 600; margin-bottom: 8px; color: #1a3a2f; }
-        .document-input, .instructions-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.6; resize: vertical; }
+        .document-input, .instructions-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.6; resize: vertical; box-sizing: border-box; }
         .document-input:focus, .instructions-input:focus { outline: none; border-color: #2dd4a8; box-shadow: 0 0 0 3px rgba(45, 212, 168, 0.1); }
         .document-input { min-height: 200px; }
         .edit-btn { width: 100%; padding: 16px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
         .edit-btn:hover:not(:disabled) { background: #0d1f18; }
         .edit-btn:disabled { background: #ccc; cursor: not-allowed; }
-        .editor-note { margin-top: 20px; padding: 14px; background: #f8f9fa; border-radius: 8px; font-size: 13px; color: #666; }
         .chat-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
         .chat-area.drag-over { background: rgba(45, 212, 168, 0.1); }
         .drop-overlay { position: absolute; inset: 16px; background: rgba(45, 212, 168, 0.2); border: 3px dashed #2dd4a8; border-radius: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
@@ -700,11 +558,8 @@ INSTRUCTIONS:
         .message-content :global(ul) { margin: 12px 0; padding-left: 0; list-style: none; }
         .message-content :global(li) { padding: 4px 0 4px 20px; position: relative; }
         .message-content :global(li::before) { content: "→"; position: absolute; left: 0; color: #2dd4a8; }
-        .message-content :global(hr) { border: none; border-top: 1px solid #eee; margin: 16px 0; }
-        .message-content :global(.doc-divider) { border-top: 2px solid #2dd4a8; margin: 20px 0; }
         .message-content :global(.pattern-alert) { background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); border-left: 4px solid #e57373; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
         .message-content :global(.pattern-badge) { font-weight: 600; color: #c62828; }
-        .message-content :global(.recommended-badge) { display: inline-block; background: #2dd4a8; color: #0d1f18; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-left: 8px; }
         .message-actions { display: flex; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
         .message-actions button { background: none; border: none; font-size: 13px; color: #666; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: inherit; }
         .message-actions button:hover { background: #f0f0f0; color: #1a3a2f; }
@@ -715,7 +570,6 @@ INSTRUCTIONS:
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
         .input-area { background: white; border-top: 1px solid #e8e8e8; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; }
         .input-container { max-width: 800px; margin: 0 auto; }
-        .input-hint { font-size: 12px; color: #999; text-align: center; margin-bottom: 10px; }
         .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: #f5f5f5; border-radius: 24px; padding: 6px 6px 6px 16px; }
         .file-input { display: none; }
         .attach-btn { background: none; border: none; padding: 8px; color: #666; cursor: pointer; flex-shrink: 0; }
