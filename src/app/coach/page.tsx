@@ -283,9 +283,12 @@ INSTRUCTIONS:
               </ul>
               <p className="disclaimer-note">By continuing, you acknowledge that you understand this tool provides documentation support only, not legal advice.</p>
             </div>
-            <button className="disclaimer-btn" onClick={() => setShowDisclaimer(false)}>
-              I Understand — Continue
-            </button>
+            <button className="disclaimer-btn" onClick={() => {
+  localStorage.setItem("pattern18-disclaimer-accepted", "true");
+  setShowDisclaimer(false);
+}}>
+  I Understand — Continue
+</button>
           </div>
         </div>
       )}
