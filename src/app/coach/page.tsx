@@ -10,6 +10,15 @@ interface Message {
   timestamp: Date;
 }
 
+interface CaseContext {
+  caseNumber: string;
+  court: string;
+  petitioner: string;
+  respondent: string;
+  userRole: string;
+  documentType: string;
+}
+
 type Mode = "chat" | "document";
 
 export default function CoachPage() {
@@ -17,7 +26,7 @@ export default function CoachPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: "I'm here. Share a message, upload a screenshot, or drop in a court document. I'll give you a quick read and ask what you need.\n\nNeed to edit a document with exact language? Click 'Document Editor' above.",
+      content: "I'm here to help.\n\n**For messages/screenshots:** Upload or paste — I'll help you respond or document patterns.\n\n**For court documents:** I can read PDFs and give you a summary, but for creating responses or stipulations with exact language, use **Document Editor** and paste the relevant text.\n\n⚠️ *AI can misread PDFs. Always verify details before filing.*",
       timestamp: new Date(),
     },
   ]);
@@ -25,20 +34,22 @@ export default function CoachPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [mode, setMode] = useState<Mode>("chat");
+  const [documentText, setDocumentText] = useState("");
+  const [editInstructions, setEditInstructions] = useState("");
+  const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
+  
+  const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check disclaimer on mount
   useEffect(() => {
     const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
     if (!accepted) {
       setShowDisclaimer(true);
     }
   }, []);
-  const [mode, setMode] = useState<Mode>("chat");
-  const [documentText, setDocumentText] = useState("");
-  const [editInstructions, setEditInstructions] = useState("");
-  
-  const chatRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
     if (chatRef.current) {
@@ -57,6 +68,31 @@ export default function CoachPage() {
     }
   }, [input]);
 
+  // Parse case context from Claude's response
+  const parseCaseContext = (response: string): CaseContext | null => {
+    try {
+      const caseMatch = response.match(/\*\*Case:\*\*\s*([^\n]+)/);
+      const courtMatch = response.match(/\*\*Court:\*\*\s*([^\n]+)/);
+      const petitionerMatch = response.match(/\*\*Petitioner:\*\*\s*([^\n]+)/);
+      const respondentMatch = response.match(/\*\*Respondent:\*\*\s*([^\n]+)/);
+      const documentMatch = response.match(/\*\*Document:\*\*\s*([^\n]+)/);
+
+      if (caseMatch && petitionerMatch && respondentMatch) {
+        return {
+          caseNumber: caseMatch[1].trim(),
+          court: courtMatch ? courtMatch[1].trim() : "",
+          petitioner: petitionerMatch[1].trim(),
+          respondent: respondentMatch[1].trim(),
+          userRole: "respondent", // Default, user can correct
+          documentType: documentMatch ? documentMatch[1].trim() : "",
+        };
+      }
+    } catch (e) {
+      console.error("Failed to parse case context:", e);
+    }
+    return null;
+  };
+
   const sendMessage = async (text: string, imageFile?: File) => {
     if (!text.trim() && !imageFile) return;
     if (isLoading) return;
@@ -66,7 +102,7 @@ export default function CoachPage() {
     
     const isPdf = imageFile && (imageFile.type === "application/pdf" || imageFile.name.toLowerCase().endsWith(".pdf"));
 
-    if (imageFile) {
+    if (imageFile && !isPdf) {
       imageDataUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -80,7 +116,7 @@ export default function CoachPage() {
       id: userMessageId,
       role: "user",
       content: displayText,
-      image: imageDataUrl && !isPdf ? imageDataUrl : undefined,
+      image: imageDataUrl,
       timestamp: new Date(),
     };
 
@@ -110,6 +146,9 @@ export default function CoachPage() {
           role: m.role,
           content: m.content,
         }))));
+        if (caseContext) {
+          formData.append("caseContext", JSON.stringify(caseContext));
+        }
 
         response = await fetch("/api/coach", {
           method: "POST",
@@ -121,6 +160,7 @@ export default function CoachPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text,
+            caseContext: caseContext,
             history: messages.slice(-10).map((m) => ({
               role: m.role,
               content: m.content,
@@ -165,6 +205,16 @@ export default function CoachPage() {
           }
         }
       }
+
+      // Try to parse case context from response
+      if (!caseContext && fullContent.includes("**Case:**")) {
+        const parsed = parseCaseContext(fullContent);
+        if (parsed) {
+          setCaseContext(parsed);
+          console.log("Saved case context:", parsed);
+        }
+      }
+
     } catch (error) {
       console.error("Error:", error);
       setMessages((prev) =>
@@ -183,7 +233,18 @@ export default function CoachPage() {
     if (!documentText.trim() || !editInstructions.trim()) return;
     if (isLoading) return;
 
-    const combinedMessage = `DOCUMENT EDITING MODE - EXACT ACCURACY REQUIRED
+    let contextHeader = "";
+    if (caseContext) {
+      contextHeader = `[CASE CONTEXT:
+Case: ${caseContext.caseNumber}
+Court: ${caseContext.court}
+Petitioner: ${caseContext.petitioner}
+Respondent: ${caseContext.respondent}]
+
+`;
+    }
+
+    const combinedMessage = `${contextHeader}DOCUMENT EDITING MODE - EXACT ACCURACY REQUIRED
 
 Here is the EXACT text of my document:
 ---BEGIN DOCUMENT---
@@ -249,6 +310,10 @@ INSTRUCTIONS:
     navigator.clipboard.writeText(text);
   };
 
+  const clearCaseContext = () => {
+    setCaseContext(null);
+  };
+
   const formatMessage = (content: string) => {
     let html = content
       .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">⚠️ $1 detected</span></div>')
@@ -283,12 +348,15 @@ INSTRUCTIONS:
               </ul>
               <p className="disclaimer-note">By continuing, you acknowledge that you understand this tool provides documentation support only, not legal advice.</p>
             </div>
-            <button className="disclaimer-btn" onClick={() => {
-  localStorage.setItem("pattern18-disclaimer-accepted", "true");
-  setShowDisclaimer(false);
-}}>
-  I Understand — Continue
-</button>
+            <button 
+              className="disclaimer-btn" 
+              onClick={() => {
+                localStorage.setItem("pattern18-disclaimer-accepted", "true");
+                setShowDisclaimer(false);
+              }}
+            >
+              I Understand — Continue
+            </button>
           </div>
         </div>
       )}
@@ -311,13 +379,28 @@ INSTRUCTIONS:
         </div>
       </header>
 
+      {/* Case Context Banner */}
+      {caseContext && (
+        <div className="context-banner">
+          <span>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</span>
+          <button onClick={clearCaseContext}>✕ Clear</button>
+        </div>
+      )}
+
       {mode === "document" ? (
         <div className="document-editor">
           <div className="editor-container">
             <div className="editor-instructions">
               <h2>📝 Document Editor</h2>
-              <p>For exact, word-for-word document editing. Paste your text below and specify exactly what to change.</p>
+              <p>For accurate court document creation. Paste text from your PDF (open in browser, select text, copy) and specify what to change.</p>
             </div>
+            
+            {caseContext && (
+              <div className="editor-context">
+                Using: <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} (Petitioner) v. {caseContext.respondent} (Respondent)
+              </div>
+            )}
+
             <div className="editor-section">
               <label>1. Paste your document text here:</label>
               <textarea
@@ -440,6 +523,9 @@ INSTRUCTIONS:
         .disclaimer-btn { margin-top: 24px; padding: 14px 32px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
         .disclaimer-banner { background: #fff9e6; border: 1px solid #f0e6c0; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #8a7500; text-align: center; }
         .disclaimer-banner button { background: none; border: none; color: #6b5a00; text-decoration: underline; cursor: pointer; font-size: 13px; }
+        .context-banner { background: #e8f5e9; border-bottom: 1px solid #c8e6c9; padding: 8px 16px; font-size: 13px; color: #2e7d32; display: flex; justify-content: space-between; align-items: center; }
+        .context-banner button { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; padding: 4px 8px; }
+        .context-banner button:hover { color: #c62828; }
         .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); flex-shrink: 0; }
         .header-content { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
         .logo { display: flex; align-items: center; gap: 10px; color: white; }
@@ -455,6 +541,7 @@ INSTRUCTIONS:
         .editor-instructions { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
         .editor-instructions h2 { font-size: 20px; margin-bottom: 8px; color: #1a3a2f; }
         .editor-instructions p { color: #666; font-size: 14px; }
+        .editor-context { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #2e7d32; }
         .editor-section { margin-bottom: 20px; }
         .editor-section label { display: block; font-weight: 600; margin-bottom: 8px; color: #1a3a2f; }
         .document-input, .instructions-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.6; resize: vertical; }
