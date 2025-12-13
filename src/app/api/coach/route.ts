@@ -221,15 +221,58 @@ export async function POST(request: NextRequest) {
       }
       
       // Handle file upload
-      const file = formData.get("file") as File | null;
-      if (file) {
-        const bytes = await file.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
-        imageData = {
-          type: "base64",
-          media_type: file.type || "image/jpeg",
-          data: base64,
-        };
+     // Handle file upload
+const file = formData.get("file") as File | null;
+if (file) {
+  // Validate file type
+  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  let mediaType = file.type;
+  
+  // Fix common mime type issues
+  if (mediaType === "image/jpg") mediaType = "image/jpeg";
+  if (!validTypes.includes(mediaType)) {
+    // Try to infer from filename
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
+    else if (ext === "png") mediaType = "image/png";
+    else if (ext === "gif") mediaType = "image/gif";
+    else if (ext === "webp") mediaType = "image/webp";
+    else {
+      return new Response(
+        JSON.stringify({ error: "Unsupported image type. Please use JPG, PNG, GIF, or WebP." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+  
+  // Check file size (max 5MB for Claude Vision)
+  if (file.size > 5 * 1024 * 1024) {
+    return new Response(
+      JSON.stringify({ error: "Image too large. Please use an image under 5MB." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  
+  const bytes = await file.arrayBuffer();
+  const base64 = Buffer.from(bytes).toString("base64");
+  
+  console.log("Processing image:", { 
+    name: file.name, 
+    type: mediaType, 
+    size: file.size,
+    base64Length: base64.length 
+  });
+  
+  imageData = {
+    type: "base64",
+    media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+    data: base64,
+  };
+  
+  if (!userMessage) {
+    userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
+  }
+}
         
         if (!userMessage) {
           userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
