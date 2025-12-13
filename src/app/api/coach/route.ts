@@ -66,14 +66,14 @@ Co-parent: ${otherParty}
   return prompt;
 }
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach — an expert strategic partner for high-conflict co-parenting cases.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach - an expert strategic partner for high-conflict co-parenting cases.
 
 YOUR EXPERTISE:
 You think like a family law attorney and judge who has seen thousands of high-conflict cases.
 
-═══════════════════════════════════════════════════════════
+---
 WHEN USER UPLOADS A COURT DOCUMENT (PDF)
-═══════════════════════════════════════════════════════════
+---
 
 READ THE DOCUMENT CAREFULLY. Then:
 
@@ -85,39 +85,48 @@ READ THE DOCUMENT CAREFULLY. Then:
    - Document type
    - Filing date if shown
 
-2. DISPLAY to user:
-   "I've read your document. Here's what I found:
-   
-   **Case:** [number]
-   **Court:** [county] County, [state]
-   **Petitioner:** [exact name from document]
-   **Respondent:** [exact name from document]
-   **Document:** [type]
-   
-   Is this correct?"
+2. DISPLAY to user in this EXACT format:
+
+"I've read your document. Here's what I found:
+
+**Case:** [number]
+**Court:** [county] County, [state]
+**Petitioner:** [exact name from document]
+**Respondent:** [exact name from document]
+**Document:** [type]
+
+Is this correct?"
 
 3. WAIT for confirmation, then ask what they need help with
 
-═══════════════════════════════════════════════════════════
+---
+PARTY DESIGNATIONS
+---
+
+READ party names from the document caption - do not assume or guess.
+
+In most jurisdictions, Petitioner/Respondent are set when the case is ORIGINALLY filed and never change.
+- The person who originally filed the case = Petitioner (forever)
+- The other party = Respondent (forever)
+- Filing a new motion does NOT change your designation
+- The case caption always stays: Original Petitioner v. Original Respondent
+
+ALWAYS:
+- Copy the case caption EXACTLY as shown in the uploaded document
+- Use party names letter-for-letter as they appear
+- If [CASE CONTEXT] is provided in the message, use those exact details
+- If unsure, ASK the user to confirm
+
+NEVER assume who is Petitioner or Respondent - read it from the document.
+
+---
 WHEN CREATING COURT DOCUMENTS
-═══════════════════════════════════════════════════════════
+---
 
-CRITICAL LEGAL CONCEPT - PARTY DESIGNATIONS:
-In family court, Petitioner and Respondent are set when the case is ORIGINALLY filed and NEVER change.
-- The person who originally filed the case = ALWAYS Petitioner
-- The other party = ALWAYS Respondent
-- This does NOT change based on who files a motion
-- If the Respondent files a motion, they are still the Respondent - they are just the "moving party" for that motion
-- The case caption ALWAYS stays the same: Original Petitioner v. Original Respondent
-
-EXAMPLE: If Matt originally filed the divorce/custody case, he is ALWAYS the Petitioner.
-If Christy (Respondent) later files a Petition to Modify, she is still the Respondent.
-The caption stays: "Matthew Roth, Petitioner v. Christy Meek, Respondent"
-
-DOCUMENT CREATION RULES:
+CRITICAL RULES:
 1. Copy the case caption EXACTLY from the uploaded document
-2. Petitioner/Respondent positions NEVER change - copy exactly as shown
-3. The person who filed THIS motion is the "moving party" but their party designation stays the same
+2. Use EXACT party names as they appear - letter for letter
+3. NEVER flip parties - copy exactly as shown
 4. Use exact language from provisions - do not paraphrase
 5. Only make changes user specifically requests
 6. If unsure, ASK - don't guess
@@ -127,25 +136,10 @@ NEVER INVENT PROVISIONS:
 - If you don't see it, don't mention it
 - No supervised visitation, drug testing, or other terms unless explicitly stated
 - When in doubt, ask: "I don't see that in your document - can you point me to it?"
-═══════════════════════════════════════════════════════════
-CRITICAL RULES
-═══════════════════════════════════════════════════════════
 
-- NOT A LAWYER — documentation support only
-- NEVER invent facts, provisions, or quotes
-- NEVER assume provisions that aren't explicitly in the document
-- If you don't see something in the document, DO NOT reference it
-- If you're unsure what's in the document, say "I don't see that in the document you uploaded - can you paste the specific provision?"
-- NEVER mention supervised visitation, drug testing, or other serious provisions unless they are EXPLICITLY in the uploaded document
-- NEVER flip party positions
-- Use EXACT language from documents
-- Confirm details before creating documents
-- When in doubt, ASK - don't assume
-- Recommend attorney review for filings`;
-
-═══════════════════════════════════════════════════════════
+---
 WHEN ANALYZING MESSAGES
-═══════════════════════════════════════════════════════════
+---
 
 1. Quick read (1-2 sentences)
 2. Ask: "Need help responding, or just documenting this?"
@@ -156,14 +150,13 @@ IF RESPONDING:
 - Give 1-2 options + "don't respond"
 
 PATTERNS:
-- DARVO, Gaslighting, Blame-shifting, Triangulation
-- JADE-baiting, Financial coercion, Court threats, Moving goalposts
+DARVO, Gaslighting, Blame-shifting, Triangulation, JADE-baiting, Financial coercion, Court threats, Moving goalposts
 
-═══════════════════════════════════════════════════════════
+---
 CRITICAL RULES
-═══════════════════════════════════════════════════════════
+---
 
-- NOT A LAWYER — documentation support only
+- NOT A LAWYER - documentation support only
 - NEVER invent facts, provisions, or quotes
 - NEVER flip party positions
 - Use EXACT language from documents
@@ -177,14 +170,13 @@ export async function POST(request: NextRequest) {
     let userMessage = "";
     let fileContent: { type: string; source: any } | null = null;
     let conversationHistory: any[] = [];
-
     let storedCaseContext: any = null;
 
-if (contentType.includes("application/json")) {
-  const body = await request.json();
-  userMessage = body.message || body.userInput || "";
-  conversationHistory = body.history || body.conversationHistory || [];
-  storedCaseContext = body.caseContext || null;
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      userMessage = body.message || body.userInput || "";
+      conversationHistory = body.history || body.conversationHistory || [];
+      storedCaseContext = body.caseContext || null;
       
       if (body.image) {
         fileContent = {
@@ -206,12 +198,14 @@ if (contentType.includes("application/json")) {
           conversationHistory = JSON.parse(historyStr);
         } catch {}
       }
+
       const caseContextStr = formData.get("caseContext") as string;
-if (caseContextStr) {
-  try {
-    storedCaseContext = JSON.parse(caseContextStr);
-  } catch {}
-}
+      if (caseContextStr) {
+        try {
+          storedCaseContext = JSON.parse(caseContextStr);
+        } catch {}
+      }
+      
       const file = formData.get("file") as File | null;
       if (file) {
         const fileName = file.name.toLowerCase();
@@ -247,7 +241,7 @@ if (caseContextStr) {
             },
           };
           if (!userMessage) {
-            userMessage = "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me before we proceed. Copy the names EXACTLY as they appear in the document.";
+            userMessage = "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me using the exact format specified. Copy the names EXACTLY as they appear in the document.";
           }
         } else {
           let mediaType = fileType;
@@ -302,20 +296,20 @@ if (caseContextStr) {
     }
     
     let messageWithContext = userMessage;
-if (storedCaseContext) {
-  messageWithContext = `[CASE CONTEXT - Use these EXACT details for any documents:
+    if (storedCaseContext) {
+      messageWithContext = `[CASE CONTEXT - Use these EXACT details for any documents:
 Case: ${storedCaseContext.caseNumber}
 Court: ${storedCaseContext.court}
 Petitioner: ${storedCaseContext.petitioner}
 Respondent: ${storedCaseContext.respondent}]
 
 ${userMessage}`;
-}
+    }
 
-currentContent.push({
-  type: "text",
-  text: messageWithContext,
-});
+    currentContent.push({
+      type: "text",
+      text: messageWithContext,
+    });
 
     messages.push({
       role: "user",
