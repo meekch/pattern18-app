@@ -71,7 +71,7 @@ export default function CoachPage() {
   const [regulateMode, setRegulateMode] = useState<"menu" | "breathe" | "ground" | "affirm">("menu");
   const [breathePhase, setBreathePhase] = useState<"inhale" | "hold" | "exhale" | "rest">("inhale");
   const [breatheCount, setBreatheCount] = useState(0);
-  const [currentAffirmation, setCurrentAffirmation] = useState(() => affirmations[Math.floor(Math.random() * affirmations.length)]);
+  const [currentAffirmation, setCurrentAffirmation] = useState(affirmations[0]);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -82,6 +82,10 @@ export default function CoachPage() {
     if (!accepted) {
       setShowDisclaimer(true);
     }
+  }, []);
+
+  useEffect(() => {
+    setCurrentAffirmation(affirmations[Math.floor(Math.random() * affirmations.length)]);
   }, []);
 
   const scrollToBottom = useCallback(() => {
