@@ -26,7 +26,7 @@ export default function CoachPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: "I'm here to help.\n\n**For messages/screenshots:** Upload or paste — I'll help you respond or document patterns.\n\n**For court documents:** I can read PDFs and give you a summary, but for creating responses or stipulations with exact language, use **Document Editor** and paste the relevant text.\n\n⚠️ *AI can misread PDFs. Always verify details before filing.*",
+      content: "Hey — I'm here to help you stay calm, strategic, and one step ahead.\n\nYou can:\n• **Drop a message or screenshot** — I'll spot the patterns and help you respond (or not respond)\n• **Upload a court document** — I'll break it down and help you plan your next move\n• **Use Document Editor** — for creating precise legal documents\n\nWhat's going on today?",
       timestamp: new Date(),
     },
   ]);
