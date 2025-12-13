@@ -30,6 +30,10 @@ export default function CoachPage() {
       timestamp: new Date(),
     },
   ]);
+  const [storedPdf, setStoredPdf] = useState<{
+    base64: string;
+    name: string;
+  } | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -96,19 +100,142 @@ export default function CoachPage() {
   const sendMessage = async (text: string, imageFile?: File) => {
     if (!text.trim() && !imageFile) return;
     if (isLoading) return;
-
+  
     const userMessageId = Date.now().toString();
     let imageDataUrl: string | undefined;
+    let newPdfBase64: string | undefined;
     
     const isPdf = imageFile && (imageFile.type === "application/pdf" || imageFile.name.toLowerCase().endsWith(".pdf"));
-
-    if (imageFile && !isPdf) {
-      imageDataUrl = await new Promise<string>((resolve) => {
+  
+    if (imageFile) {
+      const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(imageFile);
       });
+  
+      if (isPdf) {
+        // Store PDF for future messages
+        newPdfBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
+        setStoredPdf({ base64: newPdfBase64, name: imageFile.name });
+      } else {
+        imageDataUrl = base64;
+      }
     }
+  
+    const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
+  
+    const userMessage: Message = {
+      id: userMessageId,
+      role: "user",
+      content: displayText,
+      image: imageDataUrl,
+      timestamp: new Date(),
+    };
+  
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+  
+    const assistantMessageId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      },
+    ]);
+  
+    try {
+      // Always use FormData so we can include PDF
+      const formData = new FormData();
+      formData.append("message", text || "");
+      formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }))));
+      
+      if (caseContext) {
+        formData.append("caseContext", JSON.stringify(caseContext));
+      }
+  
+      // Include new file if uploaded
+      if (imageFile) {
+        formData.append("file", imageFile);
+      }
+      
+      // Include stored PDF for context (if not uploading a new one)
+      const pdfToUse = newPdfBase64 || storedPdf?.base64;
+      if (pdfToUse && !imageFile) {
+        formData.append("storedPdf", pdfToUse);
+      }
+  
+      const response = await fetch("/api/coach", {
+        method: "POST",
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        throw new Error("API request failed");
+      }
+  
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+  
+      if (!reader) throw new Error("No reader available");
+  
+      let fullContent = "";
+  
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+  
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+  
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.text) {
+                fullContent += data.text;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, content: fullContent }
+                      : m
+                  )
+                );
+              }
+            } catch {}
+          }
+        }
+      }
+  
+      // Try to parse case context from response
+      if (!caseContext && fullContent.includes("**Case:**")) {
+        const parsed = parseCaseContext(fullContent);
+        if (parsed) {
+          setCaseContext(parsed);
+          console.log("Saved case context:", parsed);
+        }
+      }
+  
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId
+            ? { ...m, content: "Sorry, I encountered an error. Please try again." }
+            : m
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
     const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
 
@@ -312,6 +439,7 @@ INSTRUCTIONS:
 
   const clearCaseContext = () => {
     setCaseContext(null);
+    setStoredPdf(null);
   };
 
   const formatMessage = (content: string) => {
@@ -380,12 +508,16 @@ INSTRUCTIONS:
       </header>
 
       {/* Case Context Banner */}
-      {caseContext && (
-        <div className="context-banner">
-          <span>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</span>
-          <button onClick={clearCaseContext}>✕ Clear</button>
-        </div>
-      )}
+      {(caseContext || storedPdf) && (
+  <div className="context-banner">
+    <span>
+      {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</>}
+      {storedPdf && !caseContext && <>📄 Document loaded: {storedPdf.name}</>}
+      {storedPdf && caseContext && <> • 📄 PDF in context</>}
+    </span>
+    <button onClick={clearCaseContext}>✕ Clear</button>
+  </div>
+)}
 
       {mode === "document" ? (
         <div className="document-editor">

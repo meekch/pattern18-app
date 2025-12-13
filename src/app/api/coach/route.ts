@@ -161,7 +161,10 @@ CRITICAL RULES
 - NEVER flip party positions
 - Use EXACT language from documents
 - Confirm details before creating documents
-- Recommend attorney review for filings`;
+- Recommend attorney review for filings
+- Be confident and direct - don't repeatedly disclaim or say you might make mistakes
+- If you're unsure about something specific, ask - don't add generic warnings
+- The legal disclaimer is already shown to users - you don't need to repeat it`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -205,7 +208,19 @@ export async function POST(request: NextRequest) {
           storedCaseContext = JSON.parse(caseContextStr);
         } catch {}
       }
-      
+      // Check for stored PDF from previous upload
+const storedPdfBase64 = formData.get("storedPdf") as string;
+if (storedPdfBase64 && !file) {
+  // Re-attach stored PDF to give Claude context
+  fileContent = {
+    type: "document",
+    source: {
+      type: "base64",
+      media_type: "application/pdf",
+      data: storedPdfBase64,
+    },
+  };
+}
       const file = formData.get("file") as File | null;
       if (file) {
         const fileName = file.name.toLowerCase();
