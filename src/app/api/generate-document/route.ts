@@ -1,7 +1,3 @@
-// src/app/api/generate-document/route.ts
-// Pattern 18 Court Document Generator API
-// NOT LEGAL ADVICE - Organizational tool only
-
 import { NextRequest, NextResponse } from "next/server";
 import {
   generateResponseToMotion,
@@ -61,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     const buffer = await documentToBuffer(document);
 
-    return new NextResponse(buffer, {
+return new NextResponse(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type":

@@ -1,4 +1,3 @@
-// src/components/Navigation.tsx
 "use client";
 
 import Link from "next/link";
@@ -11,8 +10,9 @@ const links = [
   { name: 'Communications', href: '/communications' },
   { name: 'Court Orders', href: '/upload' },
   { name: 'Court Docs', href: '/court-docs' },
-    { name: 'Case Setup', href: '/case-setup' }, 
+  { name: 'Case Setup', href: '/case-setup' },
   { name: 'Settings', href: '/settings' },
+  { href: "/resources", label: "Resources" },
 ];
 
 export default function Navigation() {

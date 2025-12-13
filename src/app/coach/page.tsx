@@ -1,0 +1,833 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  image?: string;
+  timestamp: Date;
+}
+
+export default function CoachPage() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content: "I'm here. Paste a message, tell me what's happening, or upload a screenshot. I'll help you see it clearly and respond from a place of calm.",
+      timestamp: new Date(),
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  
+  const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 150) + "px";
+    }
+  }, [input]);
+
+  const sendMessage = async (text: string, imageFile?: File) => {
+    if (!text.trim() && !imageFile) return;
+    if (isLoading) return;
+
+    const userMessageId = Date.now().toString();
+    let imageDataUrl: string | undefined;
+
+    if (imageFile) {
+      imageDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(imageFile);
+      });
+    }
+
+    const userMessage: Message = {
+      id: userMessageId,
+      role: "user",
+      content: text || "Analyze this image",
+      image: imageDataUrl,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    const assistantMessageId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      },
+    ]);
+
+    try {
+      let response: Response;
+
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("message", text || "Analyze this image and identify any manipulation patterns.");
+        formData.append("file", imageFile);
+        formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
+          role: m.role,
+          content: m.content,
+        }))));
+
+        response = await fetch("/api/coach", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        response = await fetch("/api/coach", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            history: messages.slice(-10).map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error("API request failed");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) throw new Error("No reader available");
+
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.text) {
+                fullContent += data.text;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, content: fullContent }
+                      : m
+                  )
+                );
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId
+            ? { ...m, content: "Sorry, I encountered an error. Please try again." }
+            : m
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      sendMessage(input || "", file);
+    }
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type.startsWith("image/") || file.type === "application/pdf")) {
+      sendMessage("", file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setDragOver(false);
+  };
+
+  const copyToClipboard = (text: string) => {
+    const match = text.match(/"([^"]+)"/);
+    const textToCopy = match ? match[1] : text;
+    navigator.clipboard.writeText(textToCopy);
+  };
+
+  const formatMessage = (content: string) => {
+    let html = content
+      .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">⚠️ $1 detected</span></div>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/^• (.+)$/gm, '<li>$1</li>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+      .replace(/⭐\s*Recommended/g, '<span class="recommended-badge">⭐ Recommended</span>')
+      .replace(/^---$/gm, '<hr>')
+      .replace(/\n/g, '<br>');
+    
+    return html;
+  };
+
+  return (
+    <div className="coach-container">
+      {/* Disclaimer Modal */}
+      {showDisclaimer && (
+        <div className="disclaimer-overlay">
+          <div className="disclaimer-modal">
+            <div className="disclaimer-icon">⚖️</div>
+            <h2>Important Notice</h2>
+            <div className="disclaimer-content">
+              <p><strong>Pattern 18 Coach is not a law firm and does not provide legal advice.</strong></p>
+              <p>This tool helps you organize documentation and recognize patterns in communication. It is not a substitute for professional legal counsel.</p>
+              <ul>
+                <li>Laws vary by state, country, and jurisdiction</li>
+                <li>Always consult with a licensed attorney in your area</li>
+                <li>Do not rely solely on this tool for legal decisions</li>
+                <li>Your attorney should review any documents before filing</li>
+              </ul>
+              <p className="disclaimer-note">By continuing, you acknowledge that you understand this tool provides documentation support only, not legal advice.</p>
+            </div>
+            <button 
+              className="disclaimer-btn"
+              onClick={() => setShowDisclaimer(false)}
+            >
+              I Understand — Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="header">
+        <div className="header-content">
+          <div className="logo">
+            <div className="logo-icon">18</div>
+            <span className="logo-text">Pattern 18</span>
+          </div>
+          <div className="header-actions">
+            <button className="header-btn" onClick={() => setShowDisclaimer(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </button>
+            <button className="header-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span className="btn-text">Timeline</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Chat Area */}
+      <div
+        ref={chatRef}
+        className={`chat-area ${dragOver ? "drag-over" : ""}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {dragOver && (
+          <div className="drop-overlay">
+            <div className="drop-text">Drop to analyze</div>
+          </div>
+        )}
+        
+        <div className="chat-inner">
+          {/* Persistent disclaimer banner */}
+          <div className="disclaimer-banner">
+            <span>📋 Documentation support only — not legal advice. <button onClick={() => setShowDisclaimer(true)}>Learn more</button></span>
+          </div>
+
+          {messages.map((msg) => (
+            <div key={msg.id} className={`message ${msg.role}`}>
+              {msg.image && (
+                <div className="message-image">
+                  <img src={msg.image} alt="Uploaded" />
+                </div>
+              )}
+              <div 
+                className="message-content"
+                dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+              />
+              {msg.role === "assistant" && msg.content && !isLoading && (
+                <div className="message-actions">
+                  <button onClick={() => copyToClipboard(msg.content)}>
+                    📋 Copy
+                  </button>
+                  <button>💾 Save</button>
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {isLoading && messages[messages.length - 1]?.content === "" && (
+            <div className="typing-indicator">
+              <div className="typing-dot" />
+              <div className="typing-dot" />
+              <div className="typing-dot" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="input-area">
+        <div className="input-container">
+          <div className="input-hint">
+            Paste a message, describe what's happening, or drop an image
+          </div>
+          <form onSubmit={handleSubmit} className="input-wrapper">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileSelect}
+              className="file-input"
+            />
+            <button
+              type="button"
+              className="attach-btn"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="What's going on?"
+              rows={1}
+              className="input-field"
+            />
+            <button
+              type="submit"
+              disabled={(!input.trim() && !isLoading) || isLoading}
+              className={`send-btn ${input.trim() ? "active" : ""}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .coach-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          height: 100dvh;
+          background: #f8faf9;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* Disclaimer Modal */
+        .disclaimer-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .disclaimer-modal {
+          background: white;
+          border-radius: 16px;
+          max-width: 500px;
+          width: 100%;
+          padding: 32px;
+          text-align: center;
+        }
+
+        .disclaimer-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+
+        .disclaimer-modal h2 {
+          font-size: 22px;
+          margin-bottom: 20px;
+          color: #1a3a2f;
+        }
+
+        .disclaimer-content {
+          text-align: left;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #444;
+        }
+
+        .disclaimer-content p {
+          margin-bottom: 12px;
+        }
+
+        .disclaimer-content ul {
+          margin: 16px 0;
+          padding-left: 20px;
+        }
+
+        .disclaimer-content li {
+          margin-bottom: 8px;
+        }
+
+        .disclaimer-note {
+          font-size: 13px;
+          color: #666;
+          font-style: italic;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #eee;
+        }
+
+        .disclaimer-btn {
+          margin-top: 24px;
+          padding: 14px 32px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          width: 100%;
+        }
+
+        .disclaimer-btn:hover {
+          background: #0d1f18;
+        }
+
+        /* Disclaimer Banner */
+        .disclaimer-banner {
+          background: #fff9e6;
+          border: 1px solid #f0e6c0;
+          border-radius: 8px;
+          padding: 10px 16px;
+          margin-bottom: 20px;
+          font-size: 13px;
+          color: #8a7500;
+          text-align: center;
+        }
+
+        .disclaimer-banner button {
+          background: none;
+          border: none;
+          color: #6b5a00;
+          text-decoration: underline;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .header {
+          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
+          padding: 12px 16px;
+          padding-top: max(12px, env(safe-area-inset-top));
+          flex-shrink: 0;
+        }
+
+        .header-content {
+          max-width: 800px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: white;
+        }
+
+        .logo-icon {
+          width: 36px;
+          height: 36px;
+          background: #2dd4a8;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 14px;
+          color: #0d1f18;
+        }
+
+        .logo-text {
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .header-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .header-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          background: rgba(255,255,255,0.1);
+          border: none;
+          border-radius: 8px;
+          color: white;
+          font-size: 13px;
+          cursor: pointer;
+        }
+
+        .header-btn:hover {
+          background: rgba(255,255,255,0.2);
+        }
+
+        .chat-area {
+          flex: 1;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          position: relative;
+        }
+
+        .chat-area.drag-over {
+          background: rgba(45, 212, 168, 0.1);
+        }
+
+        .drop-overlay {
+          position: absolute;
+          inset: 16px;
+          background: rgba(45, 212, 168, 0.2);
+          border: 3px dashed #2dd4a8;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+        }
+
+        .drop-text {
+          font-size: 18px;
+          font-weight: 600;
+          color: #1a3a2f;
+        }
+
+        .chat-inner {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px 16px;
+        }
+
+        .message {
+          margin-bottom: 20px;
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+          margin-left: 15%;
+        }
+
+        .message.user .message-content {
+          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
+          color: white;
+          padding: 14px 18px;
+          border-radius: 18px;
+          border-bottom-right-radius: 4px;
+          white-space: pre-wrap;
+        }
+
+        .message.assistant .message-content {
+          background: white;
+          padding: 18px 22px;
+          border-radius: 18px;
+          border-bottom-left-radius: 4px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+          line-height: 1.6;
+        }
+
+        .message-image {
+          margin-bottom: 8px;
+          border-radius: 12px;
+          overflow: hidden;
+          max-width: 300px;
+          margin-left: auto;
+        }
+
+        .message-image img {
+          width: 100%;
+          display: block;
+        }
+
+        .message-content :global(strong) {
+          font-weight: 600;
+        }
+
+        .message-content :global(em) {
+          font-style: italic;
+          color: #666;
+        }
+
+        .message-content :global(ul) {
+          margin: 12px 0;
+          padding-left: 0;
+          list-style: none;
+        }
+
+        .message-content :global(li) {
+          padding: 4px 0 4px 20px;
+          position: relative;
+        }
+
+        .message-content :global(li::before) {
+          content: "→";
+          position: absolute;
+          left: 0;
+          color: #2dd4a8;
+        }
+
+        .message-content :global(hr) {
+          border: none;
+          border-top: 1px solid #eee;
+          margin: 16px 0;
+        }
+
+        .message-content :global(.pattern-alert) {
+          background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+          border-left: 4px solid #e57373;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+        }
+
+        .message-content :global(.pattern-badge) {
+          font-weight: 600;
+          color: #c62828;
+        }
+
+        .message-content :global(.recommended-badge) {
+          display: inline-block;
+          background: #2dd4a8;
+          color: #0d1f18;
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-weight: 600;
+          margin-left: 8px;
+        }
+
+        .message-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #f0f0f0;
+        }
+
+        .message-actions button {
+          background: none;
+          border: none;
+          font-size: 13px;
+          color: #666;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-family: inherit;
+        }
+
+        .message-actions button:hover {
+          background: #f0f0f0;
+          color: #1a3a2f;
+        }
+
+        .typing-indicator {
+          display: flex;
+          gap: 5px;
+          padding: 20px;
+        }
+
+        .typing-dot {
+          width: 8px;
+          height: 8px;
+          background: #2dd4a8;
+          border-radius: 50%;
+          animation: bounce 1.2s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-6px); }
+        }
+
+        .input-area {
+          background: white;
+          border-top: 1px solid #e8e8e8;
+          padding: 12px 16px;
+          padding-bottom: max(12px, env(safe-area-inset-bottom));
+          flex-shrink: 0;
+        }
+
+        .input-container {
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        .input-hint {
+          font-size: 12px;
+          color: #999;
+          text-align: center;
+          margin-bottom: 10px;
+        }
+
+        .input-wrapper {
+          display: flex;
+          align-items: flex-end;
+          gap: 10px;
+          background: #f5f5f5;
+          border-radius: 24px;
+          padding: 6px 6px 6px 16px;
+        }
+
+        .file-input {
+          display: none;
+        }
+
+        .attach-btn {
+          background: none;
+          border: none;
+          padding: 8px;
+          color: #666;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        .attach-btn:hover {
+          color: #1a3a2f;
+        }
+
+        .input-field {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-size: 16px;
+          line-height: 1.5;
+          resize: none;
+          outline: none;
+          padding: 10px 0;
+          font-family: inherit;
+          min-height: 24px;
+          max-height: 150px;
+        }
+
+        .input-field::placeholder {
+          color: #999;
+        }
+
+        .send-btn {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          border: none;
+          background: #e0e0e0;
+          color: #999;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s;
+        }
+
+        .send-btn.active {
+          background: #1a3a2f;
+          color: white;
+        }
+
+        .send-btn:disabled {
+          cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+          .message.user {
+            margin-left: 10%;
+          }
+          
+          .btn-text {
+            display: none;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
