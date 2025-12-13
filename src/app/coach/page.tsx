@@ -724,14 +724,16 @@ INSTRUCTIONS:
           backdrop-filter: blur(8px);
         }
         .disclaimer-modal {
-          background: white;
-          border-radius: 24px;
-          max-width: 460px;
-          width: 100%;
-          padding: 40px;
-          text-align: center;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.4);
-        }
+  background: white;
+  border-radius: 24px;
+  max-width: 460px;
+  width: 100%;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  max-height: 90vh;
+  overflow-y: auto;
+}
         .disclaimer-icon { font-size: 56px; margin-bottom: 20px; }
         .disclaimer-modal h2 {
           font-size: 28px;
@@ -1451,6 +1453,9 @@ INSTRUCTIONS:
           .editor-container { padding: 24px; margin: 0 8px; }
           .breathe-orb-container { transform: scale(0.8); }
           .breathe-container { min-height: 360px; }
+          .disclaimer-modal { padding: 24px; margin: 10px; }
+.disclaimer-icon { font-size: 40px; margin-bottom: 16px; }
+.disclaimer-modal h2 { font-size: 22px; }
         }
       `}</style>
     </div>
