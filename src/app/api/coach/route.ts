@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 
 const client = new Anthropic();
 
-// Load user's case context from Supabase
 async function loadCaseContext(userId?: string) {
   try {
     const { data: caseData } = await supabase
@@ -192,16 +191,14 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") || "";
     
     let userMessage = "";
-    let imageData: { type: "base64"; media_type: string; data: string } | null = null;
+    let imageData: { type: "base64"; media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string } | null = null;
     let conversationHistory: any[] = [];
 
-    // Handle JSON or FormData
     if (contentType.includes("application/json")) {
       const body = await request.json();
       userMessage = body.message || body.userInput || "";
       conversationHistory = body.history || body.conversationHistory || [];
       
-      // Handle base64 image in JSON
       if (body.image) {
         imageData = {
           type: "base64",
@@ -220,59 +217,43 @@ export async function POST(request: NextRequest) {
         } catch {}
       }
       
-      // Handle file upload
-     // Handle file upload
-const file = formData.get("file") as File | null;
-if (file) {
-  // Validate file type
-  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  let mediaType = file.type;
-  
-  // Fix common mime type issues
-  if (mediaType === "image/jpg") mediaType = "image/jpeg";
-  if (!validTypes.includes(mediaType)) {
-    // Try to infer from filename
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
-    else if (ext === "png") mediaType = "image/png";
-    else if (ext === "gif") mediaType = "image/gif";
-    else if (ext === "webp") mediaType = "image/webp";
-    else {
-      return new Response(
-        JSON.stringify({ error: "Unsupported image type. Please use JPG, PNG, GIF, or WebP." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }
-  
-  // Check file size (max 5MB for Claude Vision)
-  if (file.size > 5 * 1024 * 1024) {
-    return new Response(
-      JSON.stringify({ error: "Image too large. Please use an image under 5MB." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
-  }
-  
-  const bytes = await file.arrayBuffer();
-  const base64 = Buffer.from(bytes).toString("base64");
-  
-  console.log("Processing image:", { 
-    name: file.name, 
-    type: mediaType, 
-    size: file.size,
-    base64Length: base64.length 
-  });
-  
-  imageData = {
-    type: "base64",
-    media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-    data: base64,
-  };
-  
-  if (!userMessage) {
-    userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
-  }
-}
+      const file = formData.get("file") as File | null;
+      if (file) {
+        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        let mediaType = file.type;
+        
+        if (mediaType === "image/jpg") mediaType = "image/jpeg";
+        if (!validTypes.includes(mediaType)) {
+          const ext = file.name.split('.').pop()?.toLowerCase();
+          if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
+          else if (ext === "png") mediaType = "image/png";
+          else if (ext === "gif") mediaType = "image/gif";
+          else if (ext === "webp") mediaType = "image/webp";
+          else {
+            return new Response(
+              JSON.stringify({ error: "Unsupported image type. Please use JPG, PNG, GIF, or WebP." }),
+              { status: 400, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+          return new Response(
+            JSON.stringify({ error: "Image too large. Please use an image under 5MB." }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const bytes = await file.arrayBuffer();
+        const base64 = Buffer.from(bytes).toString("base64");
+        
+        console.log("Processing image:", { name: file.name, type: mediaType, size: file.size });
+        
+        imageData = {
+          type: "base64",
+          media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+          data: base64,
+        };
         
         if (!userMessage) {
           userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
@@ -287,14 +268,11 @@ if (file) {
       );
     }
 
-    // Load case context
     const caseContext = await loadCaseContext();
     const contextPrompt = formatCaseContext(caseContext);
 
-    // Build messages array
     const messages: any[] = [];
 
-    // Add conversation history
     for (const msg of conversationHistory) {
       messages.push({
         role: msg.role as "user" | "assistant",
@@ -302,7 +280,6 @@ if (file) {
       });
     }
 
-    // Build current message content
     const currentContent: any[] = [];
     
     if (imageData) {
@@ -322,12 +299,10 @@ if (file) {
       content: currentContent,
     });
 
-    // Create streaming response
     const encoder = new TextEncoder();
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
-    // Start Claude streaming
     (async () => {
       try {
         const response = await client.messages.create({
