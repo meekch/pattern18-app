@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 
 const client = new Anthropic();
 
-async function loadCaseContext(userId?: string) {
+async function loadCaseContext() {
   try {
     const { data: caseData } = await supabase
       .from("user_cases")
@@ -170,9 +170,9 @@ CRITICAL RULES:
 - ALWAYS reference their specific order provisions when relevant
 - Keep responses SHORT — they're dealing with enough already
 - When they ask for a "final version to send" — give them ONLY the polished message
-- Save everything to their timeline automatically
 - You can analyze screenshots and images of text messages
 - When analyzing images, read ALL the text carefully and analyze patterns
+- When analyzing PDFs or documents, extract key provisions, deadlines, and concerning language
 
 YOU ARE NOT:
 - A therapist (though you're supportive)
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") || "";
     
     let userMessage = "";
-    let imageData: { type: "base64"; media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string } | null = null;
+    let fileContent: { type: string; source: any } | null = null;
     let conversationHistory: any[] = [];
 
     if (contentType.includes("application/json")) {
@@ -200,10 +200,13 @@ export async function POST(request: NextRequest) {
       conversationHistory = body.history || body.conversationHistory || [];
       
       if (body.image) {
-        imageData = {
-          type: "base64",
-          media_type: body.imageType || "image/jpeg",
-          data: body.image.replace(/^data:image\/\w+;base64,/, ""),
+        fileContent = {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: body.imageType || "image/jpeg",
+            data: body.image.replace(/^data:image\/\w+;base64,/, ""),
+          },
         };
       }
     } else if (contentType.includes("multipart/form-data")) {
@@ -219,20 +222,16 @@ export async function POST(request: NextRequest) {
       
       const file = formData.get("file") as File | null;
       if (file) {
-        const imageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-        const pdfTypes = ["application/pdf"];
-        let mediaType = file.type;
+        const fileName = file.name.toLowerCase();
+        const fileType = file.type;
         
-        // Fix common mime type issues
-        if (mediaType === "image/jpg") mediaType = "image/jpeg";
-        
-        const isImage = imageTypes.includes(mediaType) || 
-          ["jpg", "jpeg", "png", "gif", "webp"].includes(file.name.split('.').pop()?.toLowerCase() || "");
-        const isPdf = pdfTypes.includes(mediaType) || file.name.toLowerCase().endsWith(".pdf");
+        const isImage = fileType.startsWith("image/") || 
+          /\.(jpg|jpeg|png|gif|webp)$/.test(fileName);
+        const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
         
         if (!isImage && !isPdf) {
           return new Response(
-            JSON.stringify({ error: "Unsupported file type. Please use JPG, PNG, GIF, WebP, or PDF." }),
+            JSON.stringify({ error: "Please upload an image (JPG, PNG) or PDF file." }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -247,40 +246,50 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
         
-        console.log("Processing file:", { name: file.name, type: mediaType, size: file.size, isImage, isPdf });
+        console.log("Processing file:", { name: file.name, type: fileType, size: file.size });
         
-        if (isImage) {
-          // Determine correct media type for images
-          const ext = file.name.split('.').pop()?.toLowerCase();
-          if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
-          else if (ext === "png") mediaType = "image/png";
-          else if (ext === "gif") mediaType = "image/gif";
-          else if (ext === "webp") mediaType = "image/webp";
+        if (isPdf) {
+          fileContent = {
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: base64,
+            },
+          };
+          if (!userMessage) {
+            userMessage = "Analyze this document and extract key information relevant to my custody case. Identify provisions, deadlines, requests, and any concerning language.";
+          }
+        } else {
+          let mediaType = fileType;
+          if (mediaType === "image/jpg") mediaType = "image/jpeg";
+          if (!mediaType.startsWith("image/")) {
+            const ext = fileName.split('.').pop();
+            if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
+            else if (ext === "png") mediaType = "image/png";
+            else if (ext === "gif") mediaType = "image/gif";
+            else if (ext === "webp") mediaType = "image/webp";
+            else mediaType = "image/jpeg";
+          }
           
-          imageData = {
-            type: "base64",
-            media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-            data: base64,
+          fileContent = {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data: base64,
+            },
           };
-        } else if (isPdf) {
-          // For PDFs, we'll include it as a document
-          imageData = {
-            type: "base64",
-            media_type: "application/pdf" as any,
-            data: base64,
-          };
-        }
-        
-        if (!userMessage) {
-          userMessage = isImage 
-            ? "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case."
-            : "Analyze this document and extract key information relevant to my custody case. Identify any provisions, deadlines, or concerning language.";
+          if (!userMessage) {
+            userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
+          }
         }
       }
+    }
 
-    if (!userMessage && !imageData) {
+    if (!userMessage && !fileContent) {
       return new Response(
-        JSON.stringify({ error: "Message or image required" }),
+        JSON.stringify({ error: "Message or file required" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -299,22 +308,8 @@ export async function POST(request: NextRequest) {
 
     const currentContent: any[] = [];
     
-    if (imageData) {
-      if (imageData.media_type === "application/pdf") {
-        currentContent.push({
-          type: "document",
-          source: {
-            type: "base64",
-            media_type: "application/pdf",
-            data: imageData.data,
-          },
-        });
-      } else {
-        currentContent.push({
-          type: "image",
-          source: imageData,
-        });
-      }
+    if (fileContent) {
+      currentContent.push(fileContent);
     }
     
     currentContent.push({
