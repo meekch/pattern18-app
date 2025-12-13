@@ -219,27 +219,27 @@ export async function POST(request: NextRequest) {
       
       const file = formData.get("file") as File | null;
       if (file) {
-        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const imageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const pdfTypes = ["application/pdf"];
         let mediaType = file.type;
         
+        // Fix common mime type issues
         if (mediaType === "image/jpg") mediaType = "image/jpeg";
-        if (!validTypes.includes(mediaType)) {
-          const ext = file.name.split('.').pop()?.toLowerCase();
-          if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
-          else if (ext === "png") mediaType = "image/png";
-          else if (ext === "gif") mediaType = "image/gif";
-          else if (ext === "webp") mediaType = "image/webp";
-          else {
-            return new Response(
-              JSON.stringify({ error: "Unsupported image type. Please use JPG, PNG, GIF, or WebP." }),
-              { status: 400, headers: { "Content-Type": "application/json" } }
-            );
-          }
+        
+        const isImage = imageTypes.includes(mediaType) || 
+          ["jpg", "jpeg", "png", "gif", "webp"].includes(file.name.split('.').pop()?.toLowerCase() || "");
+        const isPdf = pdfTypes.includes(mediaType) || file.name.toLowerCase().endsWith(".pdf");
+        
+        if (!isImage && !isPdf) {
+          return new Response(
+            JSON.stringify({ error: "Unsupported file type. Please use JPG, PNG, GIF, WebP, or PDF." }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
         }
         
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > 10 * 1024 * 1024) {
           return new Response(
-            JSON.stringify({ error: "Image too large. Please use an image under 5MB." }),
+            JSON.stringify({ error: "File too large. Please use a file under 10MB." }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -247,19 +247,36 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
         
-        console.log("Processing image:", { name: file.name, type: mediaType, size: file.size });
+        console.log("Processing file:", { name: file.name, type: mediaType, size: file.size, isImage, isPdf });
         
-        imageData = {
-          type: "base64",
-          media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-          data: base64,
-        };
+        if (isImage) {
+          // Determine correct media type for images
+          const ext = file.name.split('.').pop()?.toLowerCase();
+          if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
+          else if (ext === "png") mediaType = "image/png";
+          else if (ext === "gif") mediaType = "image/gif";
+          else if (ext === "webp") mediaType = "image/webp";
+          
+          imageData = {
+            type: "base64",
+            media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: base64,
+          };
+        } else if (isPdf) {
+          // For PDFs, we'll include it as a document
+          imageData = {
+            type: "base64",
+            media_type: "application/pdf" as any,
+            data: base64,
+          };
+        }
         
         if (!userMessage) {
-          userMessage = "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case.";
+          userMessage = isImage 
+            ? "Analyze this image and identify any manipulation patterns, concerning behavior, or relevant details for my case."
+            : "Analyze this document and extract key information relevant to my custody case. Identify any provisions, deadlines, or concerning language.";
         }
       }
-    }
 
     if (!userMessage && !imageData) {
       return new Response(
@@ -283,10 +300,21 @@ export async function POST(request: NextRequest) {
     const currentContent: any[] = [];
     
     if (imageData) {
-      currentContent.push({
-        type: "image",
-        source: imageData,
-      });
+      if (imageData.media_type === "application/pdf") {
+        currentContent.push({
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: "application/pdf",
+            data: imageData.data,
+          },
+        });
+      } else {
+        currentContent.push({
+          type: "image",
+          source: imageData,
+        });
+      }
     }
     
     currentContent.push({
