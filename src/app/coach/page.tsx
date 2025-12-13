@@ -390,6 +390,15 @@ INSTRUCTIONS:
     return affirmations[Math.floor(Math.random() * affirmations.length)];
   };
 
+  const getPhaseInstruction = () => {
+    switch(breathePhase) {
+      case "inhale": return "Breathe in";
+      case "hold": return "Hold";
+      case "exhale": return "Release";
+      case "rest": return "Rest";
+    }
+  };
+
   return (
     <div className="coach-container">
       {/* Disclaimer Modal */}
@@ -467,16 +476,43 @@ INSTRUCTIONS:
 
             {regulateMode === "breathe" && (
               <div className="breathe-container">
-                <div className={`breathe-circle ${breathePhase}`}>
-                  <span className="breathe-text">
-                    {breathePhase === "inhale" && "Breathe in..."}
-                    {breathePhase === "hold" && "Hold..."}
-                    {breathePhase === "exhale" && "Breathe out..."}
-                    {breathePhase === "rest" && "Rest..."}
-                  </span>
+                {/* Particle effects */}
+                <div className="particles">
+                  {[...Array(12)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`particle particle-${i} ${breathePhase}`}
+                    />
+                  ))}
                 </div>
-                <p className="breathe-count">{breatheCount < 4 ? `${breatheCount + 1} of 4` : "Well done 💚"}</p>
-                <p className="breathe-hint">4 seconds each</p>
+                
+                {/* Main breathing orb with rings */}
+                <div className="breathe-orb-container">
+                  <div className={`breathe-ring ring-1 ${breathePhase}`} />
+                  <div className={`breathe-ring ring-2 ${breathePhase}`} />
+                  <div className={`breathe-ring ring-3 ${breathePhase}`} />
+                  <div className={`breathe-orb ${breathePhase}`}>
+                    <div className="breathe-glow" />
+                    <span className="breathe-text">{getPhaseInstruction()}</span>
+                  </div>
+                </div>
+                
+                {/* Progress indicator */}
+                <div className="breathe-progress">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div 
+                      key={i} 
+                      className={`progress-dot ${i < breatheCount ? 'complete' : ''} ${i === breatheCount ? 'active' : ''}`}
+                    >
+                      {i < breatheCount && <span>✓</span>}
+                    </div>
+                  ))}
+                </div>
+                
+                <p className="breathe-cycle">
+                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete 💚"}
+                </p>
+                
                 <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
               </div>
             )}
@@ -764,23 +800,19 @@ INSTRUCTIONS:
         .regulate-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(13, 31, 24, 0.95);
+          background: linear-gradient(180deg, #0d1f18 0%, #152e24 50%, #0d1f18 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
           padding: 20px;
-          backdrop-filter: blur(10px);
         }
         .regulate-modal {
-          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 100%);
-          border-radius: 28px;
           max-width: 420px;
           width: 100%;
           padding: 40px;
           text-align: center;
           color: white;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.5);
         }
         .regulate-header { margin-bottom: 32px; }
         .regulate-icon { font-size: 56px; display: block; margin-bottom: 20px; }
@@ -844,41 +876,184 @@ INSTRUCTIONS:
           font-style: italic;
         }
 
-        /* Breathe */
-        .breathe-container { padding: 20px 0; }
-        .breathe-circle {
-          width: 200px;
-          height: 200px;
+        /* Premium Breathing Experience */
+        .breathe-container {
+          position: relative;
+          padding: 20px 0;
+          min-height: 420px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Floating Particles */
+        .particles {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          overflow: hidden;
+        }
+        .particle {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          background: radial-gradient(circle, rgba(45, 212, 168, 0.8) 0%, rgba(45, 212, 168, 0) 70%);
           border-radius: 50%;
-          background: rgba(45, 212, 168, 0.15);
+          top: 50%;
+          left: 50%;
+          opacity: 0;
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .particle.inhale, .particle.hold { opacity: 0.8; }
+        .particle.exhale, .particle.rest { opacity: 0; }
+        
+        .particle-0.inhale, .particle-0.hold { transform: translate(-50%, -50%) translateX(0px) translateY(-160px); }
+        .particle-1.inhale, .particle-1.hold { transform: translate(-50%, -50%) translateX(80px) translateY(-138px); }
+        .particle-2.inhale, .particle-2.hold { transform: translate(-50%, -50%) translateX(138px) translateY(-80px); }
+        .particle-3.inhale, .particle-3.hold { transform: translate(-50%, -50%) translateX(160px) translateY(0px); }
+        .particle-4.inhale, .particle-4.hold { transform: translate(-50%, -50%) translateX(138px) translateY(80px); }
+        .particle-5.inhale, .particle-5.hold { transform: translate(-50%, -50%) translateX(80px) translateY(138px); }
+        .particle-6.inhale, .particle-6.hold { transform: translate(-50%, -50%) translateX(0px) translateY(160px); }
+        .particle-7.inhale, .particle-7.hold { transform: translate(-50%, -50%) translateX(-80px) translateY(138px); }
+        .particle-8.inhale, .particle-8.hold { transform: translate(-50%, -50%) translateX(-138px) translateY(80px); }
+        .particle-9.inhale, .particle-9.hold { transform: translate(-50%, -50%) translateX(-160px) translateY(0px); }
+        .particle-10.inhale, .particle-10.hold { transform: translate(-50%, -50%) translateX(-138px) translateY(-80px); }
+        .particle-11.inhale, .particle-11.hold { transform: translate(-50%, -50%) translateX(-80px) translateY(-138px); }
+        
+        .particle.exhale, .particle.rest { transform: translate(-50%, -50%) translateX(0) translateY(0); }
+        
+        /* Breathing Orb with Rings */
+        .breathe-orb-container {
+          position: relative;
+          width: 220px;
+          height: 220px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 32px;
-          transition: all 4s ease-in-out;
-          box-shadow: 0 0 60px rgba(45, 212, 168, 0.15);
         }
-        .breathe-circle.inhale {
-          transform: scale(1.4);
-          background: rgba(45, 212, 168, 0.35);
-          box-shadow: 0 0 100px rgba(45, 212, 168, 0.4);
+        
+        .breathe-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid rgba(45, 212, 168, 0.2);
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
         }
-        .breathe-circle.hold {
-          transform: scale(1.4);
-          background: rgba(45, 212, 168, 0.35);
-          box-shadow: 0 0 100px rgba(45, 212, 168, 0.4);
+        
+        .ring-1 { width: 220px; height: 220px; }
+        .ring-2 { width: 180px; height: 180px; }
+        .ring-3 { width: 140px; height: 140px; }
+        
+        .ring-1.inhale, .ring-1.hold { 
+          width: 320px; height: 320px; 
+          border-color: rgba(45, 212, 168, 0.15);
+          box-shadow: 0 0 40px rgba(45, 212, 168, 0.1);
         }
-        .breathe-circle.exhale {
-          transform: scale(1);
-          background: rgba(45, 212, 168, 0.15);
+        .ring-2.inhale, .ring-2.hold { 
+          width: 270px; height: 270px; 
+          border-color: rgba(45, 212, 168, 0.25);
+          box-shadow: 0 0 30px rgba(45, 212, 168, 0.15);
         }
-        .breathe-circle.rest {
-          transform: scale(1);
-          background: rgba(45, 212, 168, 0.15);
+        .ring-3.inhale, .ring-3.hold { 
+          width: 220px; height: 220px; 
+          border-color: rgba(45, 212, 168, 0.35);
+          box-shadow: 0 0 20px rgba(45, 212, 168, 0.2);
         }
-        .breathe-text { font-size: 20px; font-weight: 500; color: white; }
-        .breathe-count { color: rgba(255,255,255,0.8); font-size: 18px; margin-bottom: 8px; }
-        .breathe-hint { color: rgba(255,255,255,0.4); font-size: 14px; }
+        
+        .breathe-orb {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.4) 0%, rgba(32, 176, 144, 0.2) 50%, rgba(13, 31, 24, 0.3) 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 2;
+          box-shadow: 
+            0 0 60px rgba(45, 212, 168, 0.2),
+            inset 0 0 30px rgba(45, 212, 168, 0.1);
+        }
+        
+        .breathe-orb.inhale, .breathe-orb.hold {
+          width: 160px;
+          height: 160px;
+          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.6) 0%, rgba(32, 176, 144, 0.4) 50%, rgba(13, 31, 24, 0.2) 100%);
+          box-shadow: 
+            0 0 80px rgba(45, 212, 168, 0.4),
+            0 0 120px rgba(45, 212, 168, 0.2),
+            inset 0 0 40px rgba(45, 212, 168, 0.2);
+        }
+        
+        .breathe-glow {
+          position: absolute;
+          inset: -30px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(45, 212, 168, 0.15) 0%, transparent 70%);
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+        }
+        
+        .breathe-orb.inhale .breathe-glow,
+        .breathe-orb.hold .breathe-glow {
+          inset: -60px;
+          background: radial-gradient(circle, rgba(45, 212, 168, 0.25) 0%, transparent 70%);
+        }
+        
+        .breathe-text {
+          font-size: 18px;
+          font-weight: 600;
+          color: white;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          z-index: 3;
+          letter-spacing: 0.5px;
+        }
+        
+        /* Progress Dots */
+        .breathe-progress {
+          display: flex;
+          gap: 14px;
+          margin-top: 40px;
+          margin-bottom: 12px;
+        }
+        
+        .progress-dot {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.1);
+          border: 2px solid rgba(255,255,255,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+          transition: all 0.4s ease;
+        }
+        
+        .progress-dot.active {
+          background: rgba(45, 212, 168, 0.2);
+          border-color: #2dd4a8;
+          transform: scale(1.3);
+          box-shadow: 0 0 20px rgba(45, 212, 168, 0.4);
+        }
+        
+        .progress-dot.complete {
+          background: #2dd4a8;
+          border-color: #2dd4a8;
+          color: #0d1f18;
+          font-weight: bold;
+        }
+        
+        .breathe-cycle {
+          color: rgba(255,255,255,0.6);
+          font-size: 15px;
+          margin-top: 8px;
+        }
 
         /* Ground */
         .ground-container { text-align: left; padding: 10px 0; }
@@ -1274,6 +1449,8 @@ INSTRUCTIONS:
           .chat-inner { padding: 24px 16px; }
           .message.user { margin-left: 8%; }
           .editor-container { padding: 24px; margin: 0 8px; }
+          .breathe-orb-container { transform: scale(0.8); }
+          .breathe-container { min-height: 360px; }
         }
       `}</style>
     </div>
