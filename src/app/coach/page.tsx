@@ -21,6 +21,32 @@ interface CaseContext {
 
 type Mode = "chat" | "document";
 
+const affirmations = [
+  { text: "Their chaos is not your emergency.", subtext: "You are allowed to pause." },
+  { text: "You are not crazy. This is real.", subtext: "Trust what you've lived." },
+  { text: "Silence is a complete response.", subtext: "You don't owe them an explanation." },
+  { text: "You're building something they can't take.", subtext: "Every document is proof. Every boundary is progress." },
+  { text: "Your peace is not up for negotiation.", subtext: "Protect it fiercely." },
+  { text: "The best response is often no response.", subtext: "Let them tell on themselves." },
+  { text: "You survived 100% of your worst days.", subtext: "You'll survive this one too." },
+  { text: "Healing yourself is the best thing you can do for your kids.", subtext: "They're watching. They're learning." },
+  { text: "You are not alone.", subtext: "Thousands of us are walking this same path." },
+  { text: "This chapter is hard, but it's not the whole story.", subtext: "Keep writing." },
+  { text: "You don't have to set yourself on fire to keep them warm.", subtext: "Your needs matter too." },
+  { text: "Document. Breathe. Protect. Repeat.", subtext: "You're doing it right." },
+  { text: "They want you reactive. Stay strategic.", subtext: "Your calm is your superpower." },
+  { text: "You're not co-parenting. You're parallel parenting.", subtext: "And that's okay." },
+  { text: "The truth doesn't need to be defended.", subtext: "It just needs to be documented." },
+];
+
+const groundingSteps = [
+  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "👁️" },
+  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "✋" },
+  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "👂" },
+  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "👃" },
+  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "👅" },
+];
+
 export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -39,6 +65,10 @@ export default function CoachPage() {
   const [editInstructions, setEditInstructions] = useState("");
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
   const [storedPdf, setStoredPdf] = useState<{ base64: string; name: string } | null>(null);
+  const [showRegulate, setShowRegulate] = useState(false);
+  const [regulateMode, setRegulateMode] = useState<"menu" | "breathe" | "ground" | "affirm">("menu");
+  const [breathePhase, setBreathePhase] = useState<"inhale" | "hold" | "exhale" | "rest">("inhale");
+  const [breatheCount, setBreatheCount] = useState(0);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +97,33 @@ export default function CoachPage() {
       inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 150) + "px";
     }
   }, [input]);
+
+  useEffect(() => {
+    if (showRegulate && regulateMode === "breathe") {
+      const phases: Array<"inhale" | "hold" | "exhale" | "rest"> = ["inhale", "hold", "exhale", "rest"];
+      let phaseIndex = 0;
+      let count = 0;
+      
+      setBreathePhase("inhale");
+      setBreatheCount(0);
+      
+      const interval = setInterval(() => {
+        phaseIndex = (phaseIndex + 1) % 4;
+        setBreathePhase(phases[phaseIndex]);
+        
+        if (phaseIndex === 0) {
+          count++;
+          setBreatheCount(count);
+          if (count >= 4) {
+            clearInterval(interval);
+            setTimeout(() => setRegulateMode("menu"), 2000);
+          }
+        }
+      }, 4000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [showRegulate, regulateMode]);
 
   const parseCaseContext = (response: string): CaseContext | null => {
     try {
@@ -322,8 +379,15 @@ INSTRUCTIONS:
       .replace(/\n/g, '<br>');
   };
 
+  const getRandomAffirmation = () => {
+    return affirmations[Math.floor(Math.random() * affirmations.length)];
+  };
+
+  const [currentAffirmation, setCurrentAffirmation] = useState(getRandomAffirmation());
+
   return (
     <div className="coach-container">
+      {/* Disclaimer Modal */}
       {showDisclaimer && (
         <div className="disclaimer-overlay">
           <div className="disclaimer-modal">
@@ -353,6 +417,99 @@ INSTRUCTIONS:
         </div>
       )}
 
+      {/* Regulate Modal */}
+      {showRegulate && (
+        <div className="regulate-overlay">
+          <div className="regulate-modal">
+            {regulateMode === "menu" && (
+              <>
+                <div className="regulate-header">
+                  <span className="regulate-icon">💚</span>
+                  <h2>Take a moment</h2>
+                  <p>You're safe here. Whatever just happened can wait.</p>
+                </div>
+                <div className="regulate-options">
+                  <button onClick={() => { setBreatheCount(0); setBreathePhase("inhale"); setRegulateMode("breathe"); }}>
+                    <span className="option-icon">🫁</span>
+                    <span className="option-text">
+                      <strong>Breathe</strong>
+                      <small>Box breathing to calm your nervous system</small>
+                    </span>
+                  </button>
+                  <button onClick={() => setRegulateMode("ground")}>
+                    <span className="option-icon">🌳</span>
+                    <span className="option-text">
+                      <strong>Ground</strong>
+                      <small>5-4-3-2-1 sensory grounding</small>
+                    </span>
+                  </button>
+                  <button onClick={() => { setCurrentAffirmation(getRandomAffirmation()); setRegulateMode("affirm"); }}>
+                    <span className="option-icon">💪</span>
+                    <span className="option-text">
+                      <strong>Remember</strong>
+                      <small>A reminder from someone who's been there</small>
+                    </span>
+                  </button>
+                </div>
+                <button className="regulate-close" onClick={() => setShowRegulate(false)}>
+                  I'm ready to continue
+                </button>
+                <p className="regulate-footer">You're not alone. The more you heal, the better parent you become.</p>
+              </>
+            )}
+
+            {regulateMode === "breathe" && (
+              <div className="breathe-container">
+                <div className={`breathe-circle ${breathePhase}`}>
+                  <span className="breathe-text">
+                    {breathePhase === "inhale" && "Breathe in..."}
+                    {breathePhase === "hold" && "Hold..."}
+                    {breathePhase === "exhale" && "Breathe out..."}
+                    {breathePhase === "rest" && "Rest..."}
+                  </span>
+                </div>
+                <p className="breathe-count">{breatheCount < 4 ? `${breatheCount + 1} of 4 cycles` : "Well done 💚"}</p>
+                <p className="breathe-hint">4 seconds each: in, hold, out, rest</p>
+                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
+              </div>
+            )}
+
+            {regulateMode === "ground" && (
+              <div className="ground-container">
+                <h2>5-4-3-2-1 Grounding</h2>
+                <p className="ground-intro">Bring yourself back to the present moment.</p>
+                <div className="ground-steps">
+                  {groundingSteps.map((step, i) => (
+                    <div key={i} className="ground-step">
+                      <span className="ground-icon">{step.icon}</span>
+                      <div>
+                        <strong>{step.sense}</strong>
+                        <p>{step.instruction}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>← Back</button>
+              </div>
+            )}
+
+            {regulateMode === "affirm" && (
+              <div className="affirm-container">
+                <div className="affirm-quote">
+                  <p className="affirm-text">"{currentAffirmation.text}"</p>
+                  <p className="affirm-subtext">{currentAffirmation.subtext}</p>
+                </div>
+                <p className="affirm-signature">— From someone who's been there</p>
+                <div className="affirm-actions">
+                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another ✨</button>
+                  <button onClick={() => setRegulateMode("menu")}>← Back</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="header">
         <div className="header-content">
           <div className="logo">
@@ -365,6 +522,9 @@ INSTRUCTIONS:
             </button>
             <button className={`header-btn ${mode === "document" ? "active" : ""}`} onClick={() => setMode("document")}>
               📝 Document Editor
+            </button>
+            <button className="header-btn regulate-btn" onClick={() => { setShowRegulate(true); setRegulateMode("menu"); }}>
+              🫁 Regulate
             </button>
             <button className="header-btn info-btn" onClick={() => setShowDisclaimer(true)}>ⓘ</button>
           </div>
@@ -502,6 +662,7 @@ INSTRUCTIONS:
 
       <style jsx>{`
         .coach-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f8faf9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
         .disclaimer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .disclaimer-modal { background: white; border-radius: 16px; max-width: 500px; width: 100%; padding: 32px; text-align: center; }
         .disclaimer-icon { font-size: 48px; margin-bottom: 16px; }
@@ -514,9 +675,60 @@ INSTRUCTIONS:
         .disclaimer-btn { margin-top: 24px; padding: 14px 32px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
         .disclaimer-banner { background: #fff9e6; border: 1px solid #f0e6c0; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #8a7500; text-align: center; }
         .disclaimer-banner button { background: none; border: none; color: #6b5a00; text-decoration: underline; cursor: pointer; font-size: 13px; }
+        
+        .regulate-overlay { position: fixed; inset: 0; background: rgba(13, 31, 24, 0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .regulate-modal { background: #1a3a2f; border-radius: 24px; max-width: 440px; width: 100%; padding: 32px; text-align: center; color: white; }
+        .regulate-header { margin-bottom: 28px; }
+        .regulate-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+        .regulate-header h2 { font-size: 24px; margin-bottom: 8px; font-weight: 600; }
+        .regulate-header p { color: rgba(255,255,255,0.7); font-size: 15px; }
+        .regulate-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .regulate-options button { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; text-align: left; cursor: pointer; transition: all 0.2s; }
+        .regulate-options button:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+        .option-icon { font-size: 28px; }
+        .option-text { display: flex; flex-direction: column; gap: 2px; }
+        .option-text strong { font-size: 16px; }
+        .option-text small { font-size: 13px; color: rgba(255,255,255,0.6); }
+        .regulate-close { padding: 14px 28px; background: #2dd4a8; color: #0d1f18; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+        .regulate-skip { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; margin-top: 20px; }
+        .regulate-skip:hover { color: white; }
+        .regulate-footer { margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.5); font-style: italic; }
+        .regulate-btn { background: rgba(45, 212, 168, 0.2) !important; }
+        .regulate-btn:hover { background: rgba(45, 212, 168, 0.3) !important; }
+
+        .breathe-container { padding: 20px 0; }
+        .breathe-circle { width: 200px; height: 200px; border-radius: 50%; background: rgba(45, 212, 168, 0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; transition: all 4s ease-in-out; }
+        .breathe-circle.inhale { transform: scale(1.3); background: rgba(45, 212, 168, 0.4); }
+        .breathe-circle.hold { transform: scale(1.3); background: rgba(45, 212, 168, 0.4); }
+        .breathe-circle.exhale { transform: scale(1); background: rgba(45, 212, 168, 0.2); }
+        .breathe-circle.rest { transform: scale(1); background: rgba(45, 212, 168, 0.2); }
+        .breathe-text { font-size: 18px; font-weight: 500; color: white; }
+        .breathe-count { color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 4px; }
+        .breathe-hint { color: rgba(255,255,255,0.5); font-size: 13px; }
+
+        .ground-container { text-align: left; }
+        .ground-container h2 { text-align: center; margin-bottom: 8px; font-size: 22px; }
+        .ground-intro { text-align: center; color: rgba(255,255,255,0.7); margin-bottom: 24px; font-size: 14px; }
+        .ground-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .ground-step { display: flex; align-items: flex-start; gap: 16px; padding: 12px 16px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .ground-icon { font-size: 24px; }
+        .ground-step strong { font-size: 12px; color: #2dd4a8; letter-spacing: 1px; }
+        .ground-step p { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 2px; }
+
+        .affirm-container { padding: 20px 0; }
+        .affirm-quote { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 32px 24px; margin-bottom: 16px; }
+        .affirm-text { font-size: 22px; font-weight: 600; line-height: 1.4; margin-bottom: 12px; color: #2dd4a8; }
+        .affirm-subtext { font-size: 15px; color: rgba(255,255,255,0.7); }
+        .affirm-signature { font-size: 14px; color: rgba(255,255,255,0.5); font-style: italic; margin-bottom: 24px; }
+        .affirm-actions { display: flex; gap: 12px; }
+        .affirm-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; cursor: pointer; border: none; }
+        .affirm-actions button:first-child { background: #2dd4a8; color: #0d1f18; font-weight: 600; }
+        .affirm-actions button:last-child { background: rgba(255,255,255,0.1); color: white; }
+
         .context-banner { background: #e8f5e9; border-bottom: 1px solid #c8e6c9; padding: 8px 16px; font-size: 13px; color: #2e7d32; display: flex; justify-content: space-between; align-items: center; }
         .context-banner button { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; padding: 4px 8px; }
         .context-banner button:hover { color: #c62828; }
+        
         .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); flex-shrink: 0; }
         .header-content { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
         .logo { display: flex; align-items: center; gap: 10px; color: white; }
@@ -527,6 +739,7 @@ INSTRUCTIONS:
         .header-btn:hover { background: rgba(255,255,255,0.2); }
         .header-btn.active { background: #2dd4a8; color: #0d1f18; }
         .info-btn { padding: 8px 10px; }
+        
         .document-editor { flex: 1; overflow-y: auto; padding: 20px; }
         .editor-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
         .editor-instructions { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
@@ -541,6 +754,7 @@ INSTRUCTIONS:
         .edit-btn { width: 100%; padding: 16px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
         .edit-btn:hover:not(:disabled) { background: #0d1f18; }
         .edit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
         .chat-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
         .chat-area.drag-over { background: rgba(45, 212, 168, 0.1); }
         .drop-overlay { position: absolute; inset: 16px; background: rgba(45, 212, 168, 0.2); border: 3px dashed #2dd4a8; border-radius: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
@@ -568,6 +782,7 @@ INSTRUCTIONS:
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        
         .input-area { background: white; border-top: 1px solid #e8e8e8; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; }
         .input-container { max-width: 800px; margin: 0 auto; }
         .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: #f5f5f5; border-radius: 24px; padding: 6px 6px 6px 16px; }
@@ -577,7 +792,13 @@ INSTRUCTIONS:
         .input-field { flex: 1; border: none; background: transparent; font-size: 16px; line-height: 1.5; resize: none; outline: none; padding: 10px 0; font-family: inherit; min-height: 24px; max-height: 150px; }
         .send-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #e0e0e0; color: #999; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
         .send-btn.active { background: #1a3a2f; color: white; }
-        @media (max-width: 600px) { .message.user { margin-left: 10%; } .header-btn { padding: 8px 10px; font-size: 12px; } }
+        
+        @media (max-width: 600px) { 
+          .message.user { margin-left: 10%; } 
+          .header-btn { padding: 8px 10px; font-size: 12px; }
+          .header-actions { gap: 4px; }
+          .regulate-btn span { display: none; }
+        }
       `}</style>
     </div>
   );
