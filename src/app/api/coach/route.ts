@@ -301,10 +301,21 @@ if (caseContextStr) {
       currentContent.push(fileContent);
     }
     
-    currentContent.push({
-      type: "text",
-      text: userMessage,
-    });
+    let messageWithContext = userMessage;
+if (storedCaseContext) {
+  messageWithContext = `[CASE CONTEXT - Use these EXACT details for any documents:
+Case: ${storedCaseContext.caseNumber}
+Court: ${storedCaseContext.court}
+Petitioner: ${storedCaseContext.petitioner}
+Respondent: ${storedCaseContext.respondent}]
+
+${userMessage}`;
+}
+
+currentContent.push({
+  type: "text",
+  text: messageWithContext,
+});
 
     messages.push({
       role: "user",
