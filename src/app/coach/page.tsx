@@ -37,6 +37,8 @@ const affirmations = [
   { text: "They want you reactive. Stay strategic.", subtext: "Your calm is your superpower." },
   { text: "You're not co-parenting. You're parallel parenting.", subtext: "And that's okay." },
   { text: "The truth doesn't need to be defended.", subtext: "It just needs to be documented." },
+  { text: "Don't react. Respond.", subtext: "You have the power to choose." },
+  { text: "Be present. Be prepared. Be empowered.", subtext: "You've got this." },
 ];
 
 const groundingSteps = [
@@ -52,7 +54,7 @@ export default function CoachPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hey — I'm here to help you stay calm, strategic, and one step ahead.\n\nYou can:\n• **Drop a message or screenshot** — I'll spot the patterns and help you respond (or not respond)\n• **Upload a court document** — I'll break it down and help you plan your next move\n• **Use Document Editor** — for creating precise legal documents\n\nWhat's going on today?",
+      content: "Hey, I'm glad you're here. 💚\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe — I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
       timestamp: new Date(),
     },
   ]);
@@ -69,6 +71,7 @@ export default function CoachPage() {
   const [regulateMode, setRegulateMode] = useState<"menu" | "breathe" | "ground" | "affirm">("menu");
   const [breathePhase, setBreathePhase] = useState<"inhale" | "hold" | "exhale" | "rest">("inhale");
   const [breatheCount, setBreatheCount] = useState(0);
+  const [currentAffirmation, setCurrentAffirmation] = useState(() => affirmations[Math.floor(Math.random() * affirmations.length)]);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -383,26 +386,26 @@ INSTRUCTIONS:
     return affirmations[Math.floor(Math.random() * affirmations.length)];
   };
 
-  const [currentAffirmation, setCurrentAffirmation] = useState(getRandomAffirmation());
-
   return (
     <div className="coach-container">
       {/* Disclaimer Modal */}
       {showDisclaimer && (
         <div className="disclaimer-overlay">
           <div className="disclaimer-modal">
-            <div className="disclaimer-icon">⚖️</div>
-            <h2>Important Notice</h2>
+            <div className="disclaimer-icon">💚</div>
+            <h2>Welcome to Pattern 18</h2>
+            <p className="disclaimer-tagline">Be prepared. Be empowered. Take back control.</p>
             <div className="disclaimer-content">
-              <p><strong>Pattern 18 Coach is not a law firm and does not provide legal advice.</strong></p>
-              <p>This tool helps you organize documentation and recognize patterns in communication. It is not a substitute for professional legal counsel.</p>
+              <p>I'm your 24/7 strategic partner for navigating high-conflict co-parenting.</p>
+              <p>I'll help you:</p>
               <ul>
-                <li>Laws vary by state, country, and jurisdiction</li>
-                <li>Always consult with a licensed attorney in your area</li>
-                <li>Do not rely solely on this tool for legal decisions</li>
-                <li>Your attorney should review any documents before filing</li>
+                <li>Recognize manipulation patterns</li>
+                <li>Respond strategically (or know when silence wins)</li>
+                <li>Document incidents for court</li>
+                <li>Create legal documents</li>
+                <li>Stay calm and regulated when it gets hard</li>
               </ul>
-              <p className="disclaimer-note">By continuing, you acknowledge that you understand this tool provides documentation support only, not legal advice.</p>
+              <p className="disclaimer-note">I'm not a lawyer — always have an attorney review documents before filing.</p>
             </div>
             <button 
               className="disclaimer-btn" 
@@ -411,7 +414,7 @@ INSTRUCTIONS:
                 setShowDisclaimer(false);
               }}
             >
-              I Understand — Continue
+              Let's do this 💚
             </button>
           </div>
         </div>
@@ -452,7 +455,7 @@ INSTRUCTIONS:
                   </button>
                 </div>
                 <button className="regulate-close" onClick={() => setShowRegulate(false)}>
-                  I'm ready to continue
+                  I'm ready
                 </button>
                 <p className="regulate-footer">You're not alone. The more you heal, the better parent you become.</p>
               </>
@@ -468,22 +471,22 @@ INSTRUCTIONS:
                     {breathePhase === "rest" && "Rest..."}
                   </span>
                 </div>
-                <p className="breathe-count">{breatheCount < 4 ? `${breatheCount + 1} of 4 cycles` : "Well done 💚"}</p>
-                <p className="breathe-hint">4 seconds each: in, hold, out, rest</p>
+                <p className="breathe-count">{breatheCount < 4 ? `${breatheCount + 1} of 4` : "Well done 💚"}</p>
+                <p className="breathe-hint">4 seconds each</p>
                 <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
               </div>
             )}
 
             {regulateMode === "ground" && (
               <div className="ground-container">
-                <h2>5-4-3-2-1 Grounding</h2>
-                <p className="ground-intro">Bring yourself back to the present moment.</p>
+                <h2>Ground Yourself</h2>
+                <p className="ground-intro">Come back to the present moment.</p>
                 <div className="ground-steps">
                   {groundingSteps.map((step, i) => (
                     <div key={i} className="ground-step">
                       <span className="ground-icon">{step.icon}</span>
                       <div>
-                        <strong>{step.sense}</strong>
+                        <strong>{5 - i} — {step.sense}</strong>
                         <p>{step.instruction}</p>
                       </div>
                     </div>
@@ -514,19 +517,24 @@ INSTRUCTIONS:
         <div className="header-content">
           <div className="logo">
             <div className="logo-icon">18</div>
-            <span className="logo-text">Pattern 18</span>
+            <div className="logo-text-group">
+              <span className="logo-text">Pattern 18</span>
+              <span className="logo-tagline">Your 24/7 Strategic Partner</span>
+            </div>
           </div>
           <div className="header-actions">
             <button className={`header-btn ${mode === "chat" ? "active" : ""}`} onClick={() => setMode("chat")}>
-              💬 Chat
+              <span className="btn-icon">💬</span>
+              <span className="btn-text">Chat</span>
             </button>
             <button className={`header-btn ${mode === "document" ? "active" : ""}`} onClick={() => setMode("document")}>
-              📝 Document Editor
+              <span className="btn-icon">📝</span>
+              <span className="btn-text">Documents</span>
             </button>
-            <button className="header-btn regulate-btn" onClick={() => { setShowRegulate(true); setRegulateMode("menu"); }}>
-              🫁 Regulate
+            <button className="header-btn breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode("menu"); }}>
+              <span className="btn-icon">🫁</span>
+              <span className="btn-text">Breathe</span>
             </button>
-            <button className="header-btn info-btn" onClick={() => setShowDisclaimer(true)}>ⓘ</button>
           </div>
         </div>
       </header>
@@ -535,48 +543,43 @@ INSTRUCTIONS:
         <div className="context-banner">
           <span>
             {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</>}
-            {storedPdf && !caseContext && <>📄 Document loaded: {storedPdf.name}</>}
-            {storedPdf && caseContext && <> • 📄 PDF in context</>}
+            {storedPdf && !caseContext && <>📄 {storedPdf.name}</>}
+            {storedPdf && caseContext && <> • PDF loaded</>}
           </span>
-          <button onClick={clearCaseContext}>✕ Clear</button>
+          <button onClick={clearCaseContext}>✕</button>
         </div>
       )}
 
       {mode === "document" ? (
         <div className="document-editor">
           <div className="editor-container">
-            <div className="editor-instructions">
+            <div className="editor-header">
               <h2>📝 Document Editor</h2>
-              <p>For precise court document creation. Paste text from your PDF and specify what to change.</p>
+              <p>Create precise court documents. Paste text and tell me what to change.</p>
             </div>
             
             {caseContext && (
               <div className="editor-context">
-                Using: <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} (Petitioner) v. {caseContext.respondent} (Respondent)
+                <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}
               </div>
             )}
 
             <div className="editor-section">
-              <label>1. Paste your document text here:</label>
+              <label>Your document text</label>
               <textarea
                 value={documentText}
                 onChange={(e) => setDocumentText(e.target.value)}
-                placeholder="Copy and paste the exact text from your document here..."
+                placeholder="Paste the text from your court document..."
                 className="document-input"
-                rows={12}
               />
             </div>
             <div className="editor-section">
-              <label>2. What changes do you need?</label>
+              <label>What changes do you need?</label>
               <textarea
                 value={editInstructions}
                 onChange={(e) => setEditInstructions(e.target.value)}
-                placeholder="Be specific, e.g.:
-- Change 'Father gets Thanksgiving 2025' to 'Father gets Thanksgiving 2026'
-- Remove the paragraph about summer vacation
-- Add after Section 3: 'Neither parent shall...'"
+                placeholder="Be specific about what to change, add, or remove..."
                 className="instructions-input"
-                rows={5}
               />
             </div>
             <button
@@ -584,7 +587,7 @@ INSTRUCTIONS:
               disabled={!documentText.trim() || !editInstructions.trim() || isLoading}
               className="edit-btn"
             >
-              {isLoading ? "Processing..." : "Apply Changes"}
+              {isLoading ? "Creating..." : "Create Document"}
             </button>
           </div>
         </div>
@@ -603,9 +606,6 @@ INSTRUCTIONS:
               </div>
             )}
             <div className="chat-inner">
-              <div className="disclaimer-banner">
-                <span>📋 Documentation support only — not legal advice. <button onClick={() => setShowDisclaimer(true)}>Learn more</button></span>
-              </div>
               {messages.map((msg) => (
                 <div key={msg.id} className={`message ${msg.role}`}>
                   {msg.image && (
@@ -614,7 +614,7 @@ INSTRUCTIONS:
                     </div>
                   )}
                   <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-                  {msg.role === "assistant" && msg.content && !isLoading && (
+                  {msg.role === "assistant" && msg.content && !isLoading && msg.id !== "welcome" && (
                     <div className="message-actions">
                       <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
                     </div>
@@ -635,8 +635,8 @@ INSTRUCTIONS:
             <div className="input-container">
               <form onSubmit={handleSubmit} className="input-wrapper">
                 <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="file-input" />
-                <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} title="Upload screenshot or PDF">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
                   </svg>
                 </button>
@@ -645,7 +645,7 @@ INSTRUCTIONS:
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="What's going on?"
+                  placeholder="What's happening?"
                   rows={1}
                   className="input-field"
                 />
@@ -661,143 +661,615 @@ INSTRUCTIONS:
       )}
 
       <style jsx>{`
-        .coach-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f8faf9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .coach-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          height: 100dvh;
+          background: #f5f7f6;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          overflow: hidden;
+        }
         
-        .disclaimer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .disclaimer-modal { background: white; border-radius: 16px; max-width: 500px; width: 100%; padding: 32px; text-align: center; }
-        .disclaimer-icon { font-size: 48px; margin-bottom: 16px; }
-        .disclaimer-modal h2 { font-size: 22px; margin-bottom: 20px; color: #1a3a2f; }
-        .disclaimer-content { text-align: left; font-size: 14px; line-height: 1.6; color: #444; }
+        /* Disclaimer */
+        .disclaimer-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(13, 31, 24, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+          backdrop-filter: blur(8px);
+        }
+        .disclaimer-modal {
+          background: white;
+          border-radius: 24px;
+          max-width: 460px;
+          width: 100%;
+          padding: 40px;
+          text-align: center;
+          box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+        }
+        .disclaimer-icon { font-size: 56px; margin-bottom: 20px; }
+        .disclaimer-modal h2 {
+          font-size: 28px;
+          margin-bottom: 8px;
+          color: #1a3a2f;
+          font-weight: 700;
+        }
+        .disclaimer-tagline {
+          font-size: 16px;
+          color: #2dd4a8;
+          font-weight: 600;
+          margin-bottom: 24px;
+        }
+        .disclaimer-content {
+          text-align: left;
+          font-size: 15px;
+          line-height: 1.7;
+          color: #444;
+        }
         .disclaimer-content p { margin-bottom: 12px; }
-        .disclaimer-content ul { margin: 16px 0; padding-left: 20px; }
-        .disclaimer-content li { margin-bottom: 8px; }
-        .disclaimer-note { font-size: 13px; color: #666; font-style: italic; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
-        .disclaimer-btn { margin-top: 24px; padding: 14px 32px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
-        .disclaimer-banner { background: #fff9e6; border: 1px solid #f0e6c0; border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; color: #8a7500; text-align: center; }
-        .disclaimer-banner button { background: none; border: none; color: #6b5a00; text-decoration: underline; cursor: pointer; font-size: 13px; }
+        .disclaimer-content ul {
+          margin: 16px 0;
+          padding-left: 0;
+          list-style: none;
+        }
+        .disclaimer-content li {
+          padding: 10px 0 10px 32px;
+          position: relative;
+          border-bottom: 1px solid #f0f0f0;
+        }
+        .disclaimer-content li:last-child { border-bottom: none; }
+        .disclaimer-content li::before {
+          content: "✓";
+          position: absolute;
+          left: 0;
+          color: #2dd4a8;
+          font-weight: bold;
+          font-size: 18px;
+        }
+        .disclaimer-note {
+          font-size: 13px;
+          color: #888;
+          margin-top: 20px;
+          padding-top: 16px;
+          border-top: 1px solid #eee;
+        }
+        .disclaimer-btn {
+          margin-top: 28px;
+          padding: 18px 40px;
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          border: none;
+          border-radius: 14px;
+          font-size: 18px;
+          font-weight: 600;
+          cursor: pointer;
+          width: 100%;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .disclaimer-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(26, 58, 47, 0.35);
+        }
         
-        .regulate-overlay { position: fixed; inset: 0; background: rgba(13, 31, 24, 0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .regulate-modal { background: #1a3a2f; border-radius: 24px; max-width: 440px; width: 100%; padding: 32px; text-align: center; color: white; }
-        .regulate-header { margin-bottom: 28px; }
-        .regulate-icon { font-size: 48px; display: block; margin-bottom: 16px; }
-        .regulate-header h2 { font-size: 24px; margin-bottom: 8px; font-weight: 600; }
-        .regulate-header p { color: rgba(255,255,255,0.7); font-size: 15px; }
-        .regulate-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .regulate-options button { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; text-align: left; cursor: pointer; transition: all 0.2s; }
-        .regulate-options button:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
-        .option-icon { font-size: 28px; }
-        .option-text { display: flex; flex-direction: column; gap: 2px; }
-        .option-text strong { font-size: 16px; }
-        .option-text small { font-size: 13px; color: rgba(255,255,255,0.6); }
-        .regulate-close { padding: 14px 28px; background: #2dd4a8; color: #0d1f18; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
-        .regulate-skip { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; margin-top: 20px; }
+        /* Regulate Modal */
+        .regulate-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(13, 31, 24, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+          backdrop-filter: blur(10px);
+        }
+        .regulate-modal {
+          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 100%);
+          border-radius: 28px;
+          max-width: 420px;
+          width: 100%;
+          padding: 40px;
+          text-align: center;
+          color: white;
+          box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+        }
+        .regulate-header { margin-bottom: 32px; }
+        .regulate-icon { font-size: 56px; display: block; margin-bottom: 20px; }
+        .regulate-header h2 { font-size: 28px; margin-bottom: 12px; font-weight: 700; }
+        .regulate-header p { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.5; }
+        .regulate-options {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          margin-bottom: 28px;
+        }
+        .regulate-options button {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 20px 24px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 16px;
+          color: white;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .regulate-options button:hover {
+          background: rgba(255,255,255,0.12);
+          transform: translateY(-2px);
+          border-color: rgba(45, 212, 168, 0.3);
+        }
+        .option-icon { font-size: 36px; }
+        .option-text { display: flex; flex-direction: column; gap: 4px; }
+        .option-text strong { font-size: 18px; font-weight: 600; }
+        .option-text small { font-size: 14px; color: rgba(255,255,255,0.6); }
+        .regulate-close {
+          padding: 18px 32px;
+          background: #2dd4a8;
+          color: #0d1f18;
+          border: none;
+          border-radius: 14px;
+          font-size: 17px;
+          font-weight: 600;
+          cursor: pointer;
+          width: 100%;
+          transition: transform 0.2s;
+        }
+        .regulate-close:hover { transform: translateY(-2px); }
+        .regulate-skip {
+          background: none;
+          border: none;
+          color: rgba(255,255,255,0.5);
+          font-size: 15px;
+          cursor: pointer;
+          margin-top: 24px;
+          transition: color 0.2s;
+        }
         .regulate-skip:hover { color: white; }
-        .regulate-footer { margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.5); font-style: italic; }
-        .regulate-btn { background: rgba(45, 212, 168, 0.2) !important; }
-        .regulate-btn:hover { background: rgba(45, 212, 168, 0.3) !important; }
+        .regulate-footer {
+          margin-top: 28px;
+          font-size: 14px;
+          color: rgba(255,255,255,0.4);
+          font-style: italic;
+        }
 
+        /* Breathe */
         .breathe-container { padding: 20px 0; }
-        .breathe-circle { width: 200px; height: 200px; border-radius: 50%; background: rgba(45, 212, 168, 0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; transition: all 4s ease-in-out; }
-        .breathe-circle.inhale { transform: scale(1.3); background: rgba(45, 212, 168, 0.4); }
-        .breathe-circle.hold { transform: scale(1.3); background: rgba(45, 212, 168, 0.4); }
-        .breathe-circle.exhale { transform: scale(1); background: rgba(45, 212, 168, 0.2); }
-        .breathe-circle.rest { transform: scale(1); background: rgba(45, 212, 168, 0.2); }
-        .breathe-text { font-size: 18px; font-weight: 500; color: white; }
-        .breathe-count { color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 4px; }
-        .breathe-hint { color: rgba(255,255,255,0.5); font-size: 13px; }
+        .breathe-circle {
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background: rgba(45, 212, 168, 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 32px;
+          transition: all 4s ease-in-out;
+          box-shadow: 0 0 60px rgba(45, 212, 168, 0.15);
+        }
+        .breathe-circle.inhale {
+          transform: scale(1.4);
+          background: rgba(45, 212, 168, 0.35);
+          box-shadow: 0 0 100px rgba(45, 212, 168, 0.4);
+        }
+        .breathe-circle.hold {
+          transform: scale(1.4);
+          background: rgba(45, 212, 168, 0.35);
+          box-shadow: 0 0 100px rgba(45, 212, 168, 0.4);
+        }
+        .breathe-circle.exhale {
+          transform: scale(1);
+          background: rgba(45, 212, 168, 0.15);
+        }
+        .breathe-circle.rest {
+          transform: scale(1);
+          background: rgba(45, 212, 168, 0.15);
+        }
+        .breathe-text { font-size: 20px; font-weight: 500; color: white; }
+        .breathe-count { color: rgba(255,255,255,0.8); font-size: 18px; margin-bottom: 8px; }
+        .breathe-hint { color: rgba(255,255,255,0.4); font-size: 14px; }
 
-        .ground-container { text-align: left; }
-        .ground-container h2 { text-align: center; margin-bottom: 8px; font-size: 22px; }
-        .ground-intro { text-align: center; color: rgba(255,255,255,0.7); margin-bottom: 24px; font-size: 14px; }
-        .ground-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .ground-step { display: flex; align-items: flex-start; gap: 16px; padding: 12px 16px; background: rgba(255,255,255,0.05); border-radius: 12px; }
-        .ground-icon { font-size: 24px; }
-        .ground-step strong { font-size: 12px; color: #2dd4a8; letter-spacing: 1px; }
-        .ground-step p { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 2px; }
+        /* Ground */
+        .ground-container { text-align: left; padding: 10px 0; }
+        .ground-container h2 { text-align: center; margin-bottom: 8px; font-size: 26px; }
+        .ground-intro { text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 28px; font-size: 15px; }
+        .ground-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+        .ground-step {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 14px 18px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 14px;
+        }
+        .ground-icon { font-size: 28px; }
+        .ground-step strong { font-size: 14px; color: #2dd4a8; }
+        .ground-step p { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 2px; }
 
+        /* Affirm */
         .affirm-container { padding: 20px 0; }
-        .affirm-quote { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 32px 24px; margin-bottom: 16px; }
-        .affirm-text { font-size: 22px; font-weight: 600; line-height: 1.4; margin-bottom: 12px; color: #2dd4a8; }
-        .affirm-subtext { font-size: 15px; color: rgba(255,255,255,0.7); }
-        .affirm-signature { font-size: 14px; color: rgba(255,255,255,0.5); font-style: italic; margin-bottom: 24px; }
-        .affirm-actions { display: flex; gap: 12px; }
-        .affirm-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; cursor: pointer; border: none; }
-        .affirm-actions button:first-child { background: #2dd4a8; color: #0d1f18; font-weight: 600; }
+        .affirm-quote {
+          background: rgba(255,255,255,0.05);
+          border-radius: 20px;
+          padding: 40px 28px;
+          margin-bottom: 24px;
+        }
+        .affirm-text {
+          font-size: 26px;
+          font-weight: 600;
+          line-height: 1.4;
+          margin-bottom: 16px;
+          color: #2dd4a8;
+        }
+        .affirm-subtext { font-size: 17px; color: rgba(255,255,255,0.7); }
+        .affirm-signature {
+          font-size: 14px;
+          color: rgba(255,255,255,0.4);
+          font-style: italic;
+          margin-bottom: 28px;
+        }
+        .affirm-actions { display: flex; gap: 14px; }
+        .affirm-actions button {
+          flex: 1;
+          padding: 16px;
+          border-radius: 12px;
+          font-size: 16px;
+          cursor: pointer;
+          border: none;
+          font-weight: 600;
+          transition: transform 0.2s;
+        }
+        .affirm-actions button:hover { transform: translateY(-2px); }
+        .affirm-actions button:first-child { background: #2dd4a8; color: #0d1f18; }
         .affirm-actions button:last-child { background: rgba(255,255,255,0.1); color: white; }
 
-        .context-banner { background: #e8f5e9; border-bottom: 1px solid #c8e6c9; padding: 8px 16px; font-size: 13px; color: #2e7d32; display: flex; justify-content: space-between; align-items: center; }
-        .context-banner button { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; padding: 4px 8px; }
+        /* Header */
+        .header {
+          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
+          padding: 16px 24px;
+          flex-shrink: 0;
+        }
+        .header-content {
+          max-width: 900px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .logo { display: flex; align-items: center; gap: 14px; }
+        .logo-icon {
+          width: 46px;
+          height: 46px;
+          background: linear-gradient(135deg, #2dd4a8 0%, #20b090 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 18px;
+          color: #0d1f18;
+          box-shadow: 0 4px 16px rgba(45, 212, 168, 0.3);
+        }
+        .logo-text-group { display: flex; flex-direction: column; }
+        .logo-text { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+        .logo-tagline { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+        .header-actions { display: flex; gap: 10px; }
+        .header-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 18px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 12px;
+          color: white;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .header-btn:hover {
+          background: rgba(255,255,255,0.12);
+          transform: translateY(-1px);
+        }
+        .header-btn.active {
+          background: #2dd4a8;
+          color: #0d1f18;
+          border-color: #2dd4a8;
+          font-weight: 600;
+        }
+        .breathe-btn {
+          background: rgba(45, 212, 168, 0.12) !important;
+          border-color: rgba(45, 212, 168, 0.2) !important;
+        }
+        .breathe-btn:hover { background: rgba(45, 212, 168, 0.2) !important; }
+        .btn-icon { font-size: 18px; }
+
+        /* Context Banner */
+        .context-banner {
+          background: #e8f5e9;
+          padding: 12px 24px;
+          font-size: 14px;
+          color: #2e7d32;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #c8e6c9;
+        }
+        .context-banner button {
+          background: none;
+          border: none;
+          color: #999;
+          cursor: pointer;
+          font-size: 18px;
+          padding: 4px 8px;
+          line-height: 1;
+        }
         .context-banner button:hover { color: #c62828; }
         
-        .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); flex-shrink: 0; }
-        .header-content { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-        .logo { display: flex; align-items: center; gap: 10px; color: white; }
-        .logo-icon { width: 36px; height: 36px; background: #2dd4a8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #0d1f18; }
-        .logo-text { font-size: 18px; font-weight: 600; }
-        .header-actions { display: flex; gap: 8px; }
-        .header-btn { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-        .header-btn:hover { background: rgba(255,255,255,0.2); }
-        .header-btn.active { background: #2dd4a8; color: #0d1f18; }
-        .info-btn { padding: 8px 10px; }
-        
-        .document-editor { flex: 1; overflow-y: auto; padding: 20px; }
-        .editor-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
-        .editor-instructions { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-        .editor-instructions h2 { font-size: 20px; margin-bottom: 8px; color: #1a3a2f; }
-        .editor-instructions p { color: #666; font-size: 14px; }
-        .editor-context { background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #2e7d32; }
-        .editor-section { margin-bottom: 20px; }
-        .editor-section label { display: block; font-weight: 600; margin-bottom: 8px; color: #1a3a2f; }
-        .document-input, .instructions-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.6; resize: vertical; box-sizing: border-box; }
-        .document-input:focus, .instructions-input:focus { outline: none; border-color: #2dd4a8; box-shadow: 0 0 0 3px rgba(45, 212, 168, 0.1); }
+        /* Document Editor */
+        .document-editor { flex: 1; overflow-y: auto; padding: 24px; }
+        .editor-container {
+          max-width: 760px;
+          margin: 0 auto;
+          background: white;
+          border-radius: 24px;
+          padding: 36px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+        }
+        .editor-header { margin-bottom: 28px; }
+        .editor-header h2 { font-size: 26px; margin-bottom: 10px; color: #1a3a2f; font-weight: 700; }
+        .editor-header p { color: #666; font-size: 15px; }
+        .editor-context {
+          background: #e8f5e9;
+          padding: 14px 20px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          font-size: 14px;
+          color: #2e7d32;
+        }
+        .editor-section { margin-bottom: 24px; }
+        .editor-section label {
+          display: block;
+          font-weight: 600;
+          margin-bottom: 10px;
+          color: #1a3a2f;
+          font-size: 15px;
+        }
+        .document-input, .instructions-input {
+          width: 100%;
+          padding: 18px;
+          border: 2px solid #e8e8e8;
+          border-radius: 14px;
+          font-size: 15px;
+          font-family: inherit;
+          line-height: 1.7;
+          resize: vertical;
+          box-sizing: border-box;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .document-input:focus, .instructions-input:focus {
+          outline: none;
+          border-color: #2dd4a8;
+          box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1);
+        }
         .document-input { min-height: 200px; }
-        .edit-btn { width: 100%; padding: 16px; background: #1a3a2f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-        .edit-btn:hover:not(:disabled) { background: #0d1f18; }
+        .instructions-input { min-height: 100px; }
+        .edit-btn {
+          width: 100%;
+          padding: 18px;
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          border: none;
+          border-radius: 14px;
+          font-size: 17px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .edit-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 28px rgba(26, 58, 47, 0.25);
+        }
         .edit-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        .chat-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
-        .chat-area.drag-over { background: rgba(45, 212, 168, 0.1); }
-        .drop-overlay { position: absolute; inset: 16px; background: rgba(45, 212, 168, 0.2); border: 3px dashed #2dd4a8; border-radius: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        .drop-text { font-size: 18px; font-weight: 600; color: #1a3a2f; }
-        .chat-inner { max-width: 800px; margin: 0 auto; padding: 20px 16px; }
-        .message { margin-bottom: 20px; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .message.user { margin-left: 15%; }
-        .message.user .message-content { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); color: white; padding: 14px 18px; border-radius: 18px; border-bottom-right-radius: 4px; white-space: pre-wrap; font-size: 14px; }
-        .message.assistant .message-content { background: white; padding: 18px 22px; border-radius: 18px; border-bottom-left-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); line-height: 1.6; }
-        .message-image { margin-bottom: 8px; border-radius: 12px; overflow: hidden; max-width: 300px; margin-left: auto; }
+        /* Chat */
+        .chat-area {
+          flex: 1;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          position: relative;
+        }
+        .chat-area.drag-over { background: rgba(45, 212, 168, 0.08); }
+        .drop-overlay {
+          position: absolute;
+          inset: 24px;
+          background: rgba(45, 212, 168, 0.12);
+          border: 3px dashed #2dd4a8;
+          border-radius: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+        }
+        .drop-text { font-size: 20px; font-weight: 600; color: #1a3a2f; }
+        .chat-inner { max-width: 760px; margin: 0 auto; padding: 32px 24px; }
+        .message { margin-bottom: 28px; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .message.user { margin-left: 12%; }
+        .message.user .message-content {
+          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
+          color: white;
+          padding: 18px 24px;
+          border-radius: 24px;
+          border-bottom-right-radius: 8px;
+          white-space: pre-wrap;
+          font-size: 15px;
+          line-height: 1.6;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .message.assistant .message-content {
+          background: white;
+          padding: 24px 28px;
+          border-radius: 24px;
+          border-bottom-left-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          line-height: 1.7;
+          font-size: 15px;
+        }
+        .message-image {
+          margin-bottom: 12px;
+          border-radius: 16px;
+          overflow: hidden;
+          max-width: 280px;
+          margin-left: auto;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
         .message-image img { width: 100%; display: block; }
-        .message-content :global(strong) { font-weight: 600; }
+        .message-content :global(strong) { font-weight: 600; color: #1a3a2f; }
         .message-content :global(em) { font-style: italic; color: #666; }
-        .message-content :global(ul) { margin: 12px 0; padding-left: 0; list-style: none; }
-        .message-content :global(li) { padding: 4px 0 4px 20px; position: relative; }
-        .message-content :global(li::before) { content: "→"; position: absolute; left: 0; color: #2dd4a8; }
-        .message-content :global(.pattern-alert) { background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); border-left: 4px solid #e57373; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .message-content :global(ul) { margin: 16px 0; padding-left: 0; list-style: none; }
+        .message-content :global(li) { padding: 8px 0 8px 28px; position: relative; }
+        .message-content :global(li::before) {
+          content: "→";
+          position: absolute;
+          left: 0;
+          color: #2dd4a8;
+          font-weight: bold;
+        }
+        .message-content :global(.pattern-alert) {
+          background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+          border-left: 4px solid #e57373;
+          padding: 16px 20px;
+          border-radius: 12px;
+          margin: 16px 0;
+        }
         .message-content :global(.pattern-badge) { font-weight: 600; color: #c62828; }
-        .message-actions { display: flex; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
-        .message-actions button { background: none; border: none; font-size: 13px; color: #666; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: inherit; }
-        .message-actions button:hover { background: #f0f0f0; color: #1a3a2f; }
-        .typing-indicator { display: flex; gap: 5px; padding: 20px; }
-        .typing-dot { width: 8px; height: 8px; background: #2dd4a8; border-radius: 50%; animation: bounce 1.2s infinite; }
+        .message-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid #f0f0f0;
+        }
+        .message-actions button {
+          background: #f5f5f5;
+          border: none;
+          font-size: 14px;
+          color: #666;
+          cursor: pointer;
+          padding: 8px 14px;
+          border-radius: 10px;
+          font-family: inherit;
+          transition: all 0.2s;
+        }
+        .message-actions button:hover { background: #e8e8e8; color: #1a3a2f; }
+        .typing-indicator { display: flex; gap: 8px; padding: 28px; }
+        .typing-dot {
+          width: 12px;
+          height: 12px;
+          background: #2dd4a8;
+          border-radius: 50%;
+          animation: bounce 1.2s infinite;
+        }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        @keyframes bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-10px); }
+        }
         
-        .input-area { background: white; border-top: 1px solid #e8e8e8; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; }
-        .input-container { max-width: 800px; margin: 0 auto; }
-        .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: #f5f5f5; border-radius: 24px; padding: 6px 6px 6px 16px; }
+        /* Input */
+        .input-area {
+          background: white;
+          border-top: 1px solid #e8e8e8;
+          padding: 20px 24px;
+          padding-bottom: max(20px, env(safe-area-inset-bottom));
+          flex-shrink: 0;
+        }
+        .input-container { max-width: 760px; margin: 0 auto; }
+        .input-wrapper {
+          display: flex;
+          align-items: flex-end;
+          gap: 12px;
+          background: #f5f5f5;
+          border-radius: 28px;
+          padding: 10px 10px 10px 22px;
+          border: 2px solid transparent;
+          transition: all 0.2s;
+        }
+        .input-wrapper:focus-within {
+          border-color: #2dd4a8;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1);
+        }
         .file-input { display: none; }
-        .attach-btn { background: none; border: none; padding: 8px; color: #666; cursor: pointer; flex-shrink: 0; }
-        .attach-btn:hover { color: #1a3a2f; }
-        .input-field { flex: 1; border: none; background: transparent; font-size: 16px; line-height: 1.5; resize: none; outline: none; padding: 10px 0; font-family: inherit; min-height: 24px; max-height: 150px; }
-        .send-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #e0e0e0; color: #999; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
-        .send-btn.active { background: #1a3a2f; color: white; }
+        .attach-btn {
+          background: none;
+          border: none;
+          padding: 10px;
+          color: #888;
+          cursor: pointer;
+          flex-shrink: 0;
+          border-radius: 50%;
+          transition: all 0.2s;
+        }
+        .attach-btn:hover { color: #1a3a2f; background: rgba(0,0,0,0.05); }
+        .input-field {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-size: 16px;
+          line-height: 1.5;
+          resize: none;
+          outline: none;
+          padding: 12px 0;
+          font-family: inherit;
+          min-height: 24px;
+          max-height: 150px;
+        }
+        .send-btn {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          border: none;
+          background: #e0e0e0;
+          color: #999;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s;
+        }
+        .send-btn.active {
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          box-shadow: 0 4px 16px rgba(26, 58, 47, 0.3);
+        }
+        .send-btn.active:hover { transform: scale(1.05); }
         
-        @media (max-width: 600px) { 
-          .message.user { margin-left: 10%; } 
-          .header-btn { padding: 8px 10px; font-size: 12px; }
-          .header-actions { gap: 4px; }
-          .regulate-btn span { display: none; }
+        @media (max-width: 640px) {
+          .header { padding: 14px 16px; }
+          .header-content { flex-wrap: wrap; gap: 12px; }
+          .logo-tagline { display: none; }
+          .logo-text { font-size: 19px; }
+          .header-btn { padding: 10px 14px; }
+          .btn-text { display: none; }
+          .btn-icon { font-size: 20px; }
+          .chat-inner { padding: 24px 16px; }
+          .message.user { margin-left: 8%; }
+          .editor-container { padding: 24px; margin: 0 8px; }
         }
       `}</style>
     </div>
