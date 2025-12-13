@@ -225,8 +225,10 @@ export async function POST(request: NextRequest) {
         
         if (isPdf) {
           // Extract text from PDF
+        
           try {
-            const pdfParse = (await import("pdf-parse")).default;
+            const pdfParseModule = await import("pdf-parse");
+            const pdfParse = pdfParseModule.default || pdfParseModule;
             const buffer = Buffer.from(bytes);
             const pdfData = await pdfParse(buffer);
             extractedPdfText = pdfData.text;
