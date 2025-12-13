@@ -720,20 +720,22 @@ INSTRUCTIONS:
           align-items: center;
           justify-content: center;
           z-index: 1000;
-          padding: 20px;
+          padding: 16px;
           backdrop-filter: blur(8px);
+          overflow-y: auto;
         }
         .disclaimer-modal {
-  background: white;
-  border-radius: 24px;
-  max-width: 460px;
-  width: 100%;
-  padding: 40px;
-  text-align: center;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
-  max-height: 90vh;
-  overflow-y: auto;
-}
+          background: white;
+          border-radius: 24px;
+          max-width: 460px;
+          width: 100%;
+          padding: 40px;
+          text-align: center;
+          box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+          max-height: 90vh;
+          overflow-y: auto;
+          margin: auto;
+        }
         .disclaimer-icon { font-size: 56px; margin-bottom: 20px; }
         .disclaimer-modal h2 {
           font-size: 28px;
@@ -808,6 +810,7 @@ INSTRUCTIONS:
           justify-content: center;
           z-index: 1000;
           padding: 20px;
+          overflow-y: auto;
         }
         .regulate-modal {
           max-width: 420px;
@@ -1453,9 +1456,18 @@ INSTRUCTIONS:
           .editor-container { padding: 24px; margin: 0 8px; }
           .breathe-orb-container { transform: scale(0.8); }
           .breathe-container { min-height: 360px; }
-          .disclaimer-modal { padding: 24px; margin: 10px; }
-.disclaimer-icon { font-size: 40px; margin-bottom: 16px; }
-.disclaimer-modal h2 { font-size: 22px; }
+          .disclaimer-modal { 
+            padding: 24px; 
+            margin: 10px;
+            border-radius: 20px;
+          }
+          .disclaimer-icon { font-size: 40px; margin-bottom: 16px; }
+          .disclaimer-modal h2 { font-size: 22px; }
+          .disclaimer-tagline { font-size: 14px; margin-bottom: 16px; }
+          .disclaimer-content { font-size: 14px; }
+          .disclaimer-content li { padding: 8px 0 8px 28px; }
+          .disclaimer-btn { padding: 16px 32px; font-size: 16px; margin-top: 20px; }
+          .disclaimer-note { font-size: 12px; margin-top: 16px; padding-top: 12px; }
         }
       `}</style>
     </div>
