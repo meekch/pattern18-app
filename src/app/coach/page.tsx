@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import PromptGallery from "@/components/PromptGallery";
 
 interface Message {
   id: string;
@@ -74,6 +75,7 @@ export default function CoachPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showPromptGallery, setShowPromptGallery] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
@@ -284,6 +286,13 @@ export default function CoachPage() {
       console.error("Failed to parse case context:", e);
     }
     return null;
+  };
+
+  const handlePromptSelect = (prompt: string) => {
+    setInput(prompt);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const sendMessage = async (text: string, imageFile?: File) => {
@@ -580,6 +589,14 @@ INSTRUCTIONS:
 
   return (
     <div className="coach-container">
+      {/* Prompt Gallery */}
+      {showPromptGallery && (
+        <PromptGallery 
+          onSelectPrompt={handlePromptSelect}
+          onClose={() => setShowPromptGallery(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
         <div className="sidebar-header">
@@ -892,6 +909,13 @@ INSTRUCTIONS:
                 <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} title="Upload screenshot or PDF">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+                <button type="button" className="prompt-gallery-btn" onClick={() => setShowPromptGallery(true)} title="Browse prompts">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
                 </button>
                 <textarea
@@ -1677,10 +1701,10 @@ INSTRUCTIONS:
         .input-wrapper {
           display: flex;
           align-items: flex-end;
-          gap: 12px;
+          gap: 8px;
           background: #f5f5f5;
           border-radius: 28px;
-          padding: 10px 10px 10px 22px;
+          padding: 10px 10px 10px 18px;
           border: 2px solid transparent;
           transition: all 0.2s;
         }
@@ -1690,7 +1714,7 @@ INSTRUCTIONS:
           box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1);
         }
         .file-input { display: none; }
-        .attach-btn {
+        .attach-btn, .prompt-gallery-btn {
           background: none;
           border: none;
           padding: 10px;
@@ -1700,7 +1724,17 @@ INSTRUCTIONS:
           border-radius: 50%;
           transition: all 0.2s;
         }
-        .attach-btn:hover { color: #1a3a2f; background: rgba(0,0,0,0.05); }
+        .attach-btn:hover, .prompt-gallery-btn:hover { 
+          color: #1a3a2f; 
+          background: rgba(0,0,0,0.05); 
+        }
+        .prompt-gallery-btn {
+          color: #2dd4a8;
+        }
+        .prompt-gallery-btn:hover {
+          color: #1a3a2f;
+          background: rgba(45, 212, 168, 0.1);
+        }
         .input-field {
           flex: 1;
           border: none;
