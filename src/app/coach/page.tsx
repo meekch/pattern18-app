@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 interface Message {
   id: string;
@@ -50,6 +52,10 @@ const groundingSteps = [
 ];
 
 export default function CoachPage() {
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -76,6 +82,31 @@ export default function CoachPage() {
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auth check
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setUser(user);
+      setAuthLoading(false);
+    };
+    
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session?.user) {
+        router.push("/login");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
@@ -375,6 +406,11 @@ INSTRUCTIONS:
     setStoredPdf(null);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   const formatMessage = (content: string) => {
     return content
       .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">⚠️ $1 detected</span></div>')
@@ -398,6 +434,24 @@ INSTRUCTIONS:
       case "rest": return "Rest";
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f7f6',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <div style={{ fontSize: '48px' }}>💚</div>
+        <p style={{ color: '#666' }}>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="coach-container">
@@ -574,6 +628,10 @@ INSTRUCTIONS:
             <button className="header-btn breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode("menu"); }}>
               <span className="btn-icon">🫁</span>
               <span className="btn-text">Breathe</span>
+            </button>
+            <button className="header-btn" onClick={handleLogout} title="Sign out">
+              <span className="btn-icon">👋</span>
+              <span className="btn-text">Logout</span>
             </button>
           </div>
         </div>
