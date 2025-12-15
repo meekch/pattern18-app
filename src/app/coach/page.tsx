@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import PromptGallery from "@/components/PromptGallery";
+import FeedbackModal from "@/components/FeedbackModal";
 
 interface Message {
   id: string;
@@ -92,7 +93,9 @@ export default function CoachPage() {
   const [breathePhase, setBreathePhase] = useState<"inhale" | "hold" | "exhale" | "rest">("inhale");
   const [breatheCount, setBreatheCount] = useState(0);
   const [currentAffirmation, setCurrentAffirmation] = useState(affirmations[0]);
-  
+  const [showFeedback, setShowFeedback] = useState(false);
+const [ratedMessages, setRatedMessages] = useState<Set<string>>(new Set());
+
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +165,18 @@ export default function CoachPage() {
       setCurrentConversationId(conversationId);
     }
     setShowSidebar(false);
+  };
+  const rateMessage = async (messageId: string, messageContent: string, helpful: boolean) => {
+    if (!user || ratedMessages.has(messageId)) return;
+    
+    await supabase.from('feedback').insert({
+      user_id: user.id,
+      type: helpful ? 'message_helpful' : 'message_not_helpful',
+      message_content: messageContent.slice(0, 500),
+      conversation_id: currentConversationId,
+    });
+    
+    setRatedMessages(prev => new Set(prev).add(messageId));
   };
 
   const startNewConversation = () => {
@@ -596,6 +611,13 @@ INSTRUCTIONS:
           onClose={() => setShowPromptGallery(false)}
         />
       )}
+{showFeedback && user && (
+  <FeedbackModal
+    userId={user.id}
+    conversationId={currentConversationId}
+    onClose={() => setShowFeedback(false)}
+  />
+)}
 
       {/* Sidebar */}
       <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
@@ -806,6 +828,10 @@ INSTRUCTIONS:
               <span className="btn-icon">👋</span>
               <span className="btn-text">Logout</span>
             </button>
+            <button className="header-btn" onClick={() => setShowFeedback(true)}>
+  <span className="btn-icon">💬</span>
+  <span className="btn-text">Feedback</span>
+</button>
           </div>
         </div>
       </header>
@@ -886,10 +912,18 @@ INSTRUCTIONS:
                   )}
                   <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                   {msg.role === "assistant" && msg.content && !isLoading && msg.id !== "welcome" && (
-                    <div className="message-actions">
-                      <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
-                    </div>
-                  )}
+  <div className="message-actions">
+    <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+    {!ratedMessages.has(msg.id) ? (
+      <>
+        <button onClick={() => rateMessage(msg.id, msg.content, true)} className="rate-btn helpful">👍 Helpful</button>
+        <button onClick={() => rateMessage(msg.id, msg.content, false)} className="rate-btn">👎</button>
+      </>
+    ) : (
+      <span className="rated-thanks">Thanks!</span>
+    )}
+  </div>
+)}
                 </div>
               ))}
               {isLoading && messages[messages.length - 1]?.content === "" && (
