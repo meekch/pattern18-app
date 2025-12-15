@@ -12,6 +12,13 @@ interface Message {
   timestamp: Date;
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface CaseContext {
   caseNumber: string;
   court: string;
@@ -51,19 +58,24 @@ const groundingSteps = [
   { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "👅" },
 ];
 
+const welcomeMessage: Message = {
+  id: "welcome",
+  role: "assistant",
+  content: "Hey, I'm glad you're here. 💚\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe — I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
+  timestamp: new Date(),
+};
+
 export default function CoachPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "Hey, I'm glad you're here. 💚\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe — I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
-      timestamp: new Date(),
-    },
-  ]);
+  // Conversation state
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -107,6 +119,93 @@ export default function CoachPage() {
 
     return () => subscription.unsubscribe();
   }, [router]);
+
+  // Load conversations
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    }
+  }, [user]);
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+
+    if (data && !error) {
+      setConversations(data);
+    }
+  };
+
+  const loadConversation = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (data && !error) {
+      const loadedMessages: Message[] = data.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+      }));
+      
+      setMessages(loadedMessages.length > 0 ? loadedMessages : [welcomeMessage]);
+      setCurrentConversationId(conversationId);
+    }
+    setShowSidebar(false);
+  };
+
+  const startNewConversation = () => {
+    setCurrentConversationId(null);
+    setMessages([welcomeMessage]);
+    setShowSidebar(false);
+  };
+
+  const createConversation = async (firstMessage: string): Promise<string | null> => {
+    if (!user) return null;
+
+    const title = firstMessage.slice(0, 50) + (firstMessage.length > 50 ? '...' : '');
+    
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        user_id: user.id,
+        title: title,
+      })
+      .select()
+      .single();
+
+    if (data && !error) {
+      setConversations(prev => [data, ...prev]);
+      setCurrentConversationId(data.id);
+      return data.id;
+    }
+    return null;
+  };
+
+  const saveMessage = async (conversationId: string, role: "user" | "assistant", content: string) => {
+    if (!user) return;
+
+    await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      user_id: user.id,
+      role: role,
+      content: content,
+    });
+
+    // Update conversation's updated_at
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+  };
 
   useEffect(() => {
     const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
@@ -226,6 +325,15 @@ export default function CoachPage() {
     setInput("");
     setIsLoading(true);
 
+    // Create conversation if needed and save user message
+    let convId = currentConversationId;
+    if (!convId) {
+      convId = await createConversation(displayText);
+    }
+    if (convId) {
+      await saveMessage(convId, "user", displayText);
+    }
+
     const assistantMessageId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
@@ -298,6 +406,11 @@ export default function CoachPage() {
             } catch {}
           }
         }
+      }
+
+      // Save assistant message
+      if (convId && fullContent) {
+        await saveMessage(convId, "assistant", fullContent);
       }
 
       if (!caseContext && fullContent.includes("**Case:**")) {
@@ -435,6 +548,18 @@ INSTRUCTIONS:
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString();
+  };
+
   // Show loading while checking auth
   if (authLoading) {
     return (
@@ -455,6 +580,35 @@ INSTRUCTIONS:
 
   return (
     <div className="coach-container">
+      {/* Sidebar */}
+      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <h3>Conversations</h3>
+          <button onClick={() => setShowSidebar(false)} className="close-sidebar">✕</button>
+        </div>
+        <button onClick={startNewConversation} className="new-chat-btn">
+          + New Chat
+        </button>
+        <div className="conversation-list">
+          {conversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => loadConversation(conv.id)}
+              className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
+            >
+              <span className="conv-title">{conv.title || "New conversation"}</span>
+              <span className="conv-date">{formatDate(conv.updated_at)}</span>
+            </div>
+          ))}
+          {conversations.length === 0 && (
+            <p className="no-convos">No conversations yet</p>
+          )}
+        </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
+
       {/* Disclaimer Modal */}
       {showDisclaimer && (
         <div className="disclaimer-overlay">
@@ -530,7 +684,6 @@ INSTRUCTIONS:
 
             {regulateMode === "breathe" && (
               <div className="breathe-container">
-                {/* Particle effects */}
                 <div className="particles">
                   {[...Array(12)].map((_, i) => (
                     <div 
@@ -540,7 +693,6 @@ INSTRUCTIONS:
                   ))}
                 </div>
                 
-                {/* Main breathing orb with rings */}
                 <div className="breathe-orb-container">
                   <div className={`breathe-ring ring-1 ${breathePhase}`} />
                   <div className={`breathe-ring ring-2 ${breathePhase}`} />
@@ -551,7 +703,6 @@ INSTRUCTIONS:
                   </div>
                 </div>
                 
-                {/* Progress indicator */}
                 <div className="breathe-progress">
                   {[0, 1, 2, 3].map((i) => (
                     <div 
@@ -609,11 +760,16 @@ INSTRUCTIONS:
 
       <header className="header">
         <div className="header-content">
-          <div className="logo">
-            <div className="logo-icon">18</div>
-            <div className="logo-text-group">
-              <span className="logo-text">Pattern 18</span>
-              <span className="logo-tagline">Your 24/7 Strategic Partner</span>
+          <div className="logo-section">
+            <button onClick={() => setShowSidebar(true)} className="menu-btn">
+              ☰
+            </button>
+            <div className="logo">
+              <div className="logo-icon">18</div>
+              <div className="logo-text-group">
+                <span className="logo-text">Pattern 18</span>
+                <span className="logo-tagline">Your 24/7 Strategic Partner</span>
+              </div>
             </div>
           </div>
           <div className="header-actions">
@@ -767,6 +923,123 @@ INSTRUCTIONS:
           background: #f5f7f6;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 280px;
+          background: white;
+          box-shadow: 2px 0 24px rgba(0,0,0,0.1);
+          z-index: 100;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+          display: flex;
+          flex-direction: column;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .sidebar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #eee;
+        }
+        .sidebar-header h3 {
+          margin: 0;
+          font-size: 18px;
+          color: #1a3a2f;
+        }
+        .close-sidebar {
+          background: none;
+          border: none;
+          font-size: 20px;
+          cursor: pointer;
+          color: #666;
+        }
+        .new-chat-btn {
+          margin: 16px;
+          padding: 14px;
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .new-chat-btn:hover {
+          transform: translateY(-1px);
+        }
+        .conversation-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px;
+        }
+        .conversation-item {
+          padding: 14px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          margin-bottom: 4px;
+          transition: background 0.2s;
+        }
+        .conversation-item:hover {
+          background: #f5f5f5;
+        }
+        .conversation-item.active {
+          background: #e8f5e9;
+        }
+        .conv-title {
+          display: block;
+          font-size: 14px;
+          color: #333;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .conv-date {
+          display: block;
+          font-size: 12px;
+          color: #999;
+          margin-top: 4px;
+        }
+        .no-convos {
+          text-align: center;
+          color: #999;
+          padding: 20px;
+          font-size: 14px;
+        }
+        .sidebar-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.3);
+          z-index: 99;
+        }
+
+        /* Menu button */
+        .menu-btn {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          padding: 8px;
+          margin-right: 8px;
+          color: white;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+        }
+        .menu-btn:hover {
+          opacity: 1;
+        }
+        .logo-section {
+          display: flex;
+          align-items: center;
         }
         
         /* Disclaimer */
@@ -939,7 +1212,7 @@ INSTRUCTIONS:
           font-style: italic;
         }
 
-        /* Premium Breathing Experience */
+        /* Breathing */
         .breathe-container {
           position: relative;
           padding: 20px 0;
@@ -949,8 +1222,6 @@ INSTRUCTIONS:
           align-items: center;
           justify-content: center;
         }
-        
-        /* Floating Particles */
         .particles {
           position: absolute;
           inset: 0;
@@ -968,10 +1239,8 @@ INSTRUCTIONS:
           opacity: 0;
           transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
         .particle.inhale, .particle.hold { opacity: 0.8; }
         .particle.exhale, .particle.rest { opacity: 0; }
-        
         .particle-0.inhale, .particle-0.hold { transform: translate(-50%, -50%) translateX(0px) translateY(-160px); }
         .particle-1.inhale, .particle-1.hold { transform: translate(-50%, -50%) translateX(80px) translateY(-138px); }
         .particle-2.inhale, .particle-2.hold { transform: translate(-50%, -50%) translateX(138px) translateY(-80px); }
@@ -984,10 +1253,7 @@ INSTRUCTIONS:
         .particle-9.inhale, .particle-9.hold { transform: translate(-50%, -50%) translateX(-160px) translateY(0px); }
         .particle-10.inhale, .particle-10.hold { transform: translate(-50%, -50%) translateX(-138px) translateY(-80px); }
         .particle-11.inhale, .particle-11.hold { transform: translate(-50%, -50%) translateX(-80px) translateY(-138px); }
-        
         .particle.exhale, .particle.rest { transform: translate(-50%, -50%) translateX(0) translateY(0); }
-        
-        /* Breathing Orb with Rings */
         .breathe-orb-container {
           position: relative;
           width: 220px;
@@ -996,7 +1262,6 @@ INSTRUCTIONS:
           align-items: center;
           justify-content: center;
         }
-        
         .breathe-ring {
           position: absolute;
           border-radius: 50%;
@@ -1006,27 +1271,12 @@ INSTRUCTIONS:
           left: 50%;
           transform: translate(-50%, -50%);
         }
-        
         .ring-1 { width: 220px; height: 220px; }
         .ring-2 { width: 180px; height: 180px; }
         .ring-3 { width: 140px; height: 140px; }
-        
-        .ring-1.inhale, .ring-1.hold { 
-          width: 320px; height: 320px; 
-          border-color: rgba(45, 212, 168, 0.15);
-          box-shadow: 0 0 40px rgba(45, 212, 168, 0.1);
-        }
-        .ring-2.inhale, .ring-2.hold { 
-          width: 270px; height: 270px; 
-          border-color: rgba(45, 212, 168, 0.25);
-          box-shadow: 0 0 30px rgba(45, 212, 168, 0.15);
-        }
-        .ring-3.inhale, .ring-3.hold { 
-          width: 220px; height: 220px; 
-          border-color: rgba(45, 212, 168, 0.35);
-          box-shadow: 0 0 20px rgba(45, 212, 168, 0.2);
-        }
-        
+        .ring-1.inhale, .ring-1.hold { width: 320px; height: 320px; border-color: rgba(45, 212, 168, 0.15); box-shadow: 0 0 40px rgba(45, 212, 168, 0.1); }
+        .ring-2.inhale, .ring-2.hold { width: 270px; height: 270px; border-color: rgba(45, 212, 168, 0.25); box-shadow: 0 0 30px rgba(45, 212, 168, 0.15); }
+        .ring-3.inhale, .ring-3.hold { width: 220px; height: 220px; border-color: rgba(45, 212, 168, 0.35); box-shadow: 0 0 20px rgba(45, 212, 168, 0.2); }
         .breathe-orb {
           position: relative;
           width: 120px;
@@ -1038,21 +1288,14 @@ INSTRUCTIONS:
           justify-content: center;
           transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 2;
-          box-shadow: 
-            0 0 60px rgba(45, 212, 168, 0.2),
-            inset 0 0 30px rgba(45, 212, 168, 0.1);
+          box-shadow: 0 0 60px rgba(45, 212, 168, 0.2), inset 0 0 30px rgba(45, 212, 168, 0.1);
         }
-        
         .breathe-orb.inhale, .breathe-orb.hold {
           width: 160px;
           height: 160px;
           background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.6) 0%, rgba(32, 176, 144, 0.4) 50%, rgba(13, 31, 24, 0.2) 100%);
-          box-shadow: 
-            0 0 80px rgba(45, 212, 168, 0.4),
-            0 0 120px rgba(45, 212, 168, 0.2),
-            inset 0 0 40px rgba(45, 212, 168, 0.2);
+          box-shadow: 0 0 80px rgba(45, 212, 168, 0.4), 0 0 120px rgba(45, 212, 168, 0.2), inset 0 0 40px rgba(45, 212, 168, 0.2);
         }
-        
         .breathe-glow {
           position: absolute;
           inset: -30px;
@@ -1061,13 +1304,10 @@ INSTRUCTIONS:
           transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
         }
-        
-        .breathe-orb.inhale .breathe-glow,
-        .breathe-orb.hold .breathe-glow {
+        .breathe-orb.inhale .breathe-glow, .breathe-orb.hold .breathe-glow {
           inset: -60px;
           background: radial-gradient(circle, rgba(45, 212, 168, 0.25) 0%, transparent 70%);
         }
-        
         .breathe-text {
           font-size: 18px;
           font-weight: 600;
@@ -1076,15 +1316,12 @@ INSTRUCTIONS:
           z-index: 3;
           letter-spacing: 0.5px;
         }
-        
-        /* Progress Dots */
         .breathe-progress {
           display: flex;
           gap: 14px;
           margin-top: 40px;
           margin-bottom: 12px;
         }
-        
         .progress-dot {
           width: 14px;
           height: 14px;
@@ -1097,21 +1334,18 @@ INSTRUCTIONS:
           font-size: 9px;
           transition: all 0.4s ease;
         }
-        
         .progress-dot.active {
           background: rgba(45, 212, 168, 0.2);
           border-color: #2dd4a8;
           transform: scale(1.3);
           box-shadow: 0 0 20px rgba(45, 212, 168, 0.4);
         }
-        
         .progress-dot.complete {
           background: #2dd4a8;
           border-color: #2dd4a8;
           color: #0d1f18;
           font-weight: bold;
         }
-        
         .breathe-cycle {
           color: rgba(255,255,255,0.6);
           font-size: 15px;
@@ -1514,11 +1748,7 @@ INSTRUCTIONS:
           .editor-container { padding: 24px; margin: 0 8px; }
           .breathe-orb-container { transform: scale(0.8); }
           .breathe-container { min-height: 360px; }
-          .disclaimer-modal { 
-            padding: 24px; 
-            margin: 10px;
-            border-radius: 20px;
-          }
+          .disclaimer-modal { padding: 24px; margin: 10px; border-radius: 20px; }
           .disclaimer-icon { font-size: 40px; margin-bottom: 16px; }
           .disclaimer-modal h2 { font-size: 22px; }
           .disclaimer-tagline { font-size: 14px; margin-bottom: 16px; }
