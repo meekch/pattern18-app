@@ -35,37 +35,37 @@ export async function POST(request: Request) {
     if (email) {
       try {
         // Check if user already exists
-        const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-        const userExists = existingUser.users.find(u => u.email === email)
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+        const userExists = existingUsers.users.find(u => u.email === email)
 
         if (!userExists) {
-          // Create new user
-          const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-            email: email,
-            email_confirm: true,
+          // Create new user and send invite email
+          const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+            redirectTo: 'https://coach.pattern18.com/auth/callback',
           })
 
           if (createError) {
             console.error('Error creating user:', createError)
           } else {
-            console.log('Created user:', newUser.user?.id)
+            console.log('Created and invited user:', newUser.user?.id)
+          }
+        } else {
+          // User exists, send magic link
+          const { error: otpError } = await supabaseAdmin.auth.signInWithOtp({
+            email: email,
+            options: {
+              emailRedirectTo: 'https://coach.pattern18.com/auth/callback',
+            },
+          })
+
+          if (otpError) {
+            console.error('Error sending magic link:', otpError)
+          } else {
+            console.log('Magic link sent to:', email)
           }
         }
 
-        // Send magic link
-        const { error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: email,
-          options: {
-            redirectTo: 'https://coach.pattern18.com/coach',
-          },
-        })
-
-        if (magicLinkError) {
-          console.error('Error sending magic link:', magicLinkError)
-        }
-
-        // Store customer info for later
+        // Store subscription info
         const { error: dbError } = await supabaseAdmin
           .from('user_subscriptions')
           .upsert({
