@@ -1,10 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function UploadPage() {
+  const [user, setUser] = useState<any>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const router = useRouter()
+
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [parsing, setParsing] = useState(false)
@@ -12,7 +17,6 @@ export default function UploadPage() {
   const [parsedData, setParsedData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Form state for manual entry / confirmation
   const [formData, setFormData] = useState({
     case_number: '',
     court_name: '',
@@ -40,6 +44,31 @@ export default function UploadPage() {
     { value: 'custom', label: 'Custom Schedule' },
   ]
 
+  // Auth check
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      setUser(user)
+      setAuthLoading(false)
+    }
+    
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session?.user) {
+        router.push('/login')
+      } else {
+        setUser(session.user)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
@@ -48,25 +77,23 @@ export default function UploadPage() {
   }
 
   const handleUpload = async () => {
-    if (!file) return
+    if (!file || !user) return
 
     setUploading(true)
     setError(null)
 
     try {
-      // Upload to Supabase Storage
-      const fileName = `${Date.now()}-${file.name}`
+      const fileName = `${user.id}/${Date.now()}-${file.name}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('court-documents')
         .upload(fileName, file)
 
       if (uploadError) throw uploadError
 
-      // Save document record
       const { error: dbError } = await supabase
         .from('user_case_documents')
         .insert({
-          user_id: 'test-user',
+          user_id: user.id,
           file_name: file.name,
           file_path: uploadData.path,
           file_type: file.type,
@@ -78,15 +105,12 @@ export default function UploadPage() {
 
       if (dbError) throw dbError
 
-      // Move to parsing step
       setStep('parsing')
       setParsing(true)
 
-      // Simulate AI parsing (we'll add real AI later)
       setTimeout(() => {
         setParsing(false)
         setStep('review')
-        // Pre-fill with detected values (simulated for now)
         setParsedData({
           confidence: 'medium',
           detected_pattern: '5-2-2-5',
@@ -109,15 +133,16 @@ export default function UploadPage() {
   }
 
   const handleSave = async () => {
+    if (!user) return
+    
     setUploading(true)
     setError(null)
 
     try {
-      // 1. Create court order
       const { data: orderData, error: orderError } = await supabase
         .from('court_orders')
         .insert({
-          user_id: 'test-user',
+          user_id: user.id,
           case_number: formData.case_number,
           court_name: formData.court_name,
           judge_name: formData.judge_name,
@@ -131,11 +156,10 @@ export default function UploadPage() {
 
       if (orderError) throw orderError
 
-      // 2. Create parenting schedule
       const { error: scheduleError } = await supabase
         .from('parenting_schedules')
         .insert({
-          user_id: 'test-user',
+          user_id: user.id,
           court_order_id: orderData.id,
           pattern_type: formData.pattern_type,
           rotation_start_date: formData.rotation_start_date,
@@ -152,11 +176,10 @@ export default function UploadPage() {
 
       if (scheduleError) throw scheduleError
 
-      // 3. Create exchange rule
       const { error: exchangeError } = await supabase
         .from('exchange_rules')
         .insert({
-          user_id: 'test-user',
+          user_id: user.id,
           court_order_id: orderData.id,
           rule_type: 'default',
           exchange_time: formData.exchange_time,
@@ -165,10 +188,8 @@ export default function UploadPage() {
 
       if (exchangeError) throw exchangeError
 
-      // 4. Generate calendar events for next 90 days
       await generateCalendarEvents(orderData.id, formData)
 
-      // Success - redirect to calendar
       window.location.href = '/calendar'
 
     } catch (err: any) {
@@ -178,29 +199,29 @@ export default function UploadPage() {
   }
 
   const generateCalendarEvents = async (orderId: string, schedule: typeof formData) => {
+    if (!user) return
+    
     const events = []
     const startDate = new Date(schedule.effective_date || new Date())
     const endDate = new Date(startDate)
     endDate.setDate(endDate.getDate() + 90)
 
     let currentDate = new Date(startDate)
-    let weekNumber = 0 // For alternating calculations
+    let weekNumber = 0
 
     while (currentDate <= endDate) {
-      const dayOfWeek = currentDate.getDay() // 0 = Sunday
+      const dayOfWeek = currentDate.getDay()
       const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
       const dayKey = dayMap[dayOfWeek] + '_parent' as keyof typeof schedule
       let parent = schedule[dayKey] as string
 
-      // Handle alternating days
       if (parent === 'alternating') {
         parent = weekNumber % 2 === 0 ? schedule.rotation_start_parent : 
                  (schedule.rotation_start_parent === 'mother' ? 'father' : 'mother')
       }
 
-      // Create event
       events.push({
-        user_id: 'test-user',
+        user_id: user.id,
         event_date: currentDate.toISOString().split('T')[0],
         event_type: parent === 'mother' ? 'mom_time' : 'dad_time',
         title: parent === 'mother' ? "Mom's Day" : "Dad's Day",
@@ -209,12 +230,10 @@ export default function UploadPage() {
         ai_generated: true
       })
 
-      // Move to next day
       currentDate.setDate(currentDate.getDate() + 1)
-      if (dayOfWeek === 6) weekNumber++ // Increment week on Saturday
+      if (dayOfWeek === 6) weekNumber++
     }
 
-    // Batch insert
     const { error } = await supabase
       .from('calendar_events')
       .insert(events)
@@ -222,11 +241,24 @@ export default function UploadPage() {
     if (error) throw error
   }
 
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f7f6'
+      }}>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         
-        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link href="/calendar" className="text-blue-600 hover:underline">
             ← Back to Calendar
@@ -236,7 +268,6 @@ export default function UploadPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">Set Up Court Order Schedule</h1>
 
-          {/* Progress Steps */}
           <div className="flex mb-8">
             <div className={`flex-1 text-center pb-2 border-b-2 ${step === 'upload' ? 'border-blue-500 text-blue-600' : 'border-gray-200'}`}>
               1. Upload
@@ -255,7 +286,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* STEP 1: Upload */}
           {step === 'upload' && (
             <div className="space-y-4">
               <p className="text-gray-600">
@@ -300,7 +330,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* STEP 2: Parsing */}
           {step === 'parsing' && (
             <div className="text-center py-12">
               <div className="animate-spin text-4xl mb-4">⚙️</div>
@@ -309,7 +338,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* STEP 3: Review & Confirm */}
           {step === 'review' && (
             <div className="space-y-6">
               {parsedData?.message && (
@@ -322,7 +350,6 @@ export default function UploadPage() {
                 </div>
               )}
 
-              {/* Court Info */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Court Order Info</h3>
                 
@@ -373,7 +400,6 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* Schedule Pattern */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Parenting Schedule</h3>
 
@@ -413,7 +439,6 @@ export default function UploadPage() {
                   </div>
                 </div>
 
-                {/* Weekly Schedule */}
                 <div className="bg-gray-50 p-4 rounded">
                   <label className="block text-sm font-medium mb-2">Weekly Schedule</label>
                   <div className="grid grid-cols-7 gap-1 text-center text-sm">
@@ -440,7 +465,6 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* Exchange Details */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Exchange Details</h3>
                 
@@ -467,7 +491,6 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* Save Button */}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setStep('upload')}
