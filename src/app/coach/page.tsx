@@ -603,14 +603,15 @@ INSTRUCTIONS:
         background: '#f5f7f6',
         flexDirection: 'column',
         gap: '16px'
-        if (subscriptionStatus && subscriptionStatus !== 'active') {
-  return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
-}
+        
       }}>
         <div style={{ fontSize: '48px' }}>💚</div>
         <p style={{ color: '#666' }}>Loading...</p>
       </div>
     );
+  }
+  if (subscriptionStatus && subscriptionStatus !== 'active') {
+    return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
   }
 
   return (
