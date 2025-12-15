@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import PromptGallery from "@/components/PromptGallery";
 import FeedbackModal from "@/components/FeedbackModal";
+import SubscriptionGate from "@/components/SubscriptionGate";
 
 interface Message {
   id: string;
@@ -77,7 +78,7 @@ export default function CoachPage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPromptGallery, setShowPromptGallery] = useState(false);
-
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +110,13 @@ const [ratedMessages, setRatedMessages] = useState<Set<string>>(new Set());
         return;
       }
       setUser(user);
+      const { data: sub } = await supabase
+  .from('user_subscriptions')
+  .select('status')
+  .eq('email', user.email?.toLowerCase())
+  .single();
+
+setSubscriptionStatus(sub?.status || 'none');
       setAuthLoading(false);
     };
     
@@ -595,6 +603,9 @@ INSTRUCTIONS:
         background: '#f5f7f6',
         flexDirection: 'column',
         gap: '16px'
+        if (subscriptionStatus && subscriptionStatus !== 'active') {
+  return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
+}
       }}>
         <div style={{ fontSize: '48px' }}>💚</div>
         <p style={{ color: '#666' }}>Loading...</p>
