@@ -603,16 +603,20 @@ INSTRUCTIONS:
         background: '#f5f7f6',
         flexDirection: 'column',
         gap: '16px'
-        
       }}>
         <div style={{ fontSize: '48px' }}>💚</div>
         <p style={{ color: '#666' }}>Loading...</p>
       </div>
     );
   }
+  
   if (subscriptionStatus && subscriptionStatus !== 'active') {
     return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
   }
+  
+  return (
+    <div className="coach-container">
+  
 
   return (
     <div className="coach-container">
