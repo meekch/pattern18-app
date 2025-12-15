@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-11-17.clover',
-  })
+  apiVersion: '2025-11-17.clover',
+})
 
 export async function POST(request: Request) {
   try {
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       subscription_data: {
         trial_period_days: 7,
       },
+      allow_promotion_codes: true,
       success_url: `${request.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.headers.get('origin')}/login`,
       metadata: {
