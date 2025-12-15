@@ -946,12 +946,12 @@ INSTRUCTIONS:
                   </svg>
                 </button>
                 <button type="button" className="prompt-gallery-btn" onClick={() => setShowPromptGallery(true)} title="Browse prompts">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                </button>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 18h6"/>
+    <path d="M10 22h4"/>
+    <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z"/>
+  </svg>
+</button>
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -981,6 +981,10 @@ INSTRUCTIONS:
           background: #f5f7f6;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           overflow: hidden;
+          .rate-btn { transition: all 0.2s !important; }
+.rate-btn.helpful:hover { background: #e8f5e9 !important; color: #2e7d32 !important; }
+.rate-btn:hover { background: #ffebee !important; color: #c62828 !important; }
+.rated-thanks { font-size: 13px; color: #2dd4a8; font-style: italic; padding: 8px; }
         }
 
         /* Sidebar */
