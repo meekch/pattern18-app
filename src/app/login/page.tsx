@@ -1,7 +1,8 @@
-'use client'
+"use client";
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+// ... rest of file
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
