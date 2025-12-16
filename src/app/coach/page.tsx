@@ -1845,7 +1845,7 @@ INSTRUCTIONS:
           .disclaimer-btn { padding: 16px 32px; font-size: 16px; margin-top: 20px; }
           .disclaimer-note { font-size: 12px; margin-top: 16px; padding-top: 12px; }
         }
-      `}</style>
+    `}</style>
     </div>
   );
 }
