@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import PromptGallery from "@/components/PromptGallery";
 import FeedbackModal from "@/components/FeedbackModal";
 import SubscriptionGate from "@/components/SubscriptionGate";
+import SafetyResources, { detectCrisis } from "@/components/SafetyResources";
 
 interface Message {
   id: string;
@@ -81,6 +82,8 @@ export default function CoachPage() {
   const [showPromptGallery, setShowPromptGallery] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [ratedMessages, setRatedMessages] = useState<Set<string>>(new Set());
+  const [showSafetyResources, setShowSafetyResources] = useState(false);
+const [safetyTriggered, setSafetyTriggered] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
@@ -323,7 +326,11 @@ export default function CoachPage() {
   };
 
   const sendMessage = async (text: string, imageFile?: File) => {
-    if (!text.trim() && !imageFile) return;
+    // Check for crisis keywords
+if (detectCrisis(input)) {
+  setSafetyTriggered(true);
+  setShowSafetyResources(true);
+}
     if (isLoading) return;
 
     const userMessageId = Date.now().toString();
@@ -628,7 +635,11 @@ INSTRUCTIONS:
           onClose={() => setShowPromptGallery(false)}
         />
       )}
-
+<SafetyResources 
+  isOpen={showSafetyResources} 
+  onClose={() => setShowSafetyResources(false)}
+  triggered={safetyTriggered}
+/>
       {/* Feedback Modal */}
       {showFeedback && user && (
         <FeedbackModal
@@ -636,6 +647,7 @@ INSTRUCTIONS:
           conversationId={currentConversationId}
           onClose={() => setShowFeedback(false)}
         />
+        
       )}
 
       {/* Sidebar */}
@@ -847,6 +859,13 @@ INSTRUCTIONS:
               <span className="btn-icon">💬</span>
               <span className="btn-text">Feedback</span>
             </button>
+            <button 
+  onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); }}
+  title="Safety Resources"
+  className="header-btn"
+>
+  <span className="btn-icon">🤍</span>
+</button>
             <button className="header-btn" onClick={handleLogout} title="Sign out">
               <span className="btn-icon">👋</span>
               <span className="btn-text">Logout</span>
