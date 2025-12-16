@@ -1,38 +1,38 @@
-import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-11-17.clover',
-})
+export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: "2025-11-17.clover",
+  });
 
-export async function POST(request: Request) {
   try {
-    const { email } = await request.json()
+    const { email } = await req.json();
 
     const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "subscription",
+      allow_promotion_codes: true,
       customer_email: email,
-      payment_method_types: ['card'],
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
-      mode: 'subscription',
       subscription_data: {
         trial_period_days: 7,
       },
-      allow_promotion_codes: true,
-      success_url: `${request.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin')}/login`,
-      metadata: {
-        source: 'pattern18_direct',
-      },
-    })
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/login`,
+    });
 
-    return NextResponse.json({ url: session.url })
-  } catch (error: any) {
-    console.error('Stripe checkout error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ url: session.url });
+  } catch (error) {
+    console.error("Checkout error:", error);
+    return NextResponse.json(
+      { error: "Failed to create checkout session" },
+      { status: 500 }
+    );
   }
 }
