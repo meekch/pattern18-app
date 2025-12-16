@@ -860,6 +860,13 @@ INSTRUCTIONS:
               <span className="btn-text">Feedback</span>
             </button>
             <button 
+  onClick={() => router.push("/resources/faq")}
+  title="FAQ"
+  className="header-btn"
+>
+  <span className="btn-icon">❓</span>
+</button>
+            <button 
   onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); }}
   title="Safety Resources"
   className="header-btn"
