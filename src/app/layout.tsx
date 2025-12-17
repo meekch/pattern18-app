@@ -4,6 +4,10 @@ export const metadata: Metadata = {
   title: "Pattern 18 Coach",
   description: "Your 24/7 strategic partner for high-conflict co-parenting. Be prepared. Be empowered. Take back control.",
   manifest: "/manifest.json",
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -19,7 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#1a3a2f',
+  themeColor: '#2dd4a8',
 };
 
 export default function RootLayout({
@@ -29,11 +33,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      </head>
       <body style={{ margin: 0, height: "100vh", overflow: "hidden" }}>
         {children}
         <script
