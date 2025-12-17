@@ -1,38 +1,43 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const token_hash = requestUrl.searchParams.get('token_hash')
   const type = requestUrl.searchParams.get('type')
 
-  const cookieStore = await cookies()
-  
+  const response = NextResponse.redirect(new URL('/coach', requestUrl.origin))
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
+            // Safari-friendly cookie options
+            response.cookies.set(name, value, {
+              ...options,
+              sameSite: 'lax',
+              secure: true,
+              httpOnly: true,
+              path: '/',
+            })
           })
         },
       },
     }
   )
 
-  // Handle code exchange (OAuth, etc.)
   if (code) {
     await supabase.auth.exchangeCodeForSession(code)
   }
-  
-  // Handle token_hash (magic link, email verification)
+
   if (token_hash && type) {
     await supabase.auth.verifyOtp({
       token_hash,
@@ -40,6 +45,5 @@ export async function GET(request: Request) {
     })
   }
 
-  // Redirect to coach after login
-  return NextResponse.redirect(new URL('/coach', requestUrl.origin))
+  return response
 }
