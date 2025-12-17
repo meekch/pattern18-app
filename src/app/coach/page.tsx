@@ -108,9 +108,12 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
   // Auth check
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-const user = session?.user;
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('Session check:', session, error);
+      const user = session?.user;
+      
       if (!user) {
+        console.log('No user found, redirecting to login');
         router.push("/login");
         return;
       }
