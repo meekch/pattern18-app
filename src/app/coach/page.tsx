@@ -864,7 +864,7 @@ INSTRUCTIONS:
               <span className="btn-text">Feedback</span>
             </button>
             <button 
-  onClick={() => router.push("/resources/faq")}
+  onClick={() => router.push("/faq")}
   title="FAQ"
   className="header-btn"
 >
