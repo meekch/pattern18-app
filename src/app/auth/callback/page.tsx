@@ -11,9 +11,11 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       try {
-        // Get the hash fragment or query params
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const queryParams = new URLSearchParams(window.location.search);
+        
+        // Check where to redirect after auth
+        const next = queryParams.get("next") || "/coach";
         
         // Check for error
         const error = hashParams.get("error") || queryParams.get("error");
@@ -23,7 +25,31 @@ export default function AuthCallback() {
           return;
         }
 
-        // Try to get session (handles the token exchange automatically)
+        // Check for recovery type (password reset)
+        const type = hashParams.get("type") || queryParams.get("type");
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        // Handle password recovery
+        if (type === "recovery" && accessToken) {
+          setStatus("Verifying reset link...");
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          });
+          
+          if (sessionError) {
+            setStatus("Invalid reset link");
+            setTimeout(() => router.push("/login"), 2000);
+            return;
+          }
+          
+          setStatus("Redirecting to reset password...");
+          router.push("/auth/reset-password");
+          return;
+        }
+
+        // Try to get existing session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -35,19 +61,22 @@ export default function AuthCallback() {
 
         if (session) {
           setStatus("Success! Redirecting...");
-          router.push("/coach");
+          router.push(next);
           return;
         }
 
-        // If no session yet, listen for auth state change
+        // Listen for auth state change
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === "SIGNED_IN" && session) {
+          if (event === "PASSWORD_RECOVERY") {
+            setStatus("Redirecting to reset password...");
+            router.push("/auth/reset-password");
+          } else if (event === "SIGNED_IN" && session) {
             setStatus("Success! Redirecting...");
-            router.push("/coach");
+            router.push(next);
           }
         });
 
-        // Also try exchanging code if present
+        // Try exchanging code if present
         const code = queryParams.get("code");
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -58,7 +87,7 @@ export default function AuthCallback() {
 
         // Timeout fallback
         setTimeout(() => {
-          setStatus("Taking too long, redirecting to login...");
+          setStatus("Taking too long, redirecting...");
           router.push("/login");
         }, 10000);
 
