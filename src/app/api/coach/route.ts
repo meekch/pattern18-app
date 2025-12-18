@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
           };
           if (!userMessage) {
             userMessage =
-              "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me using the exact format specified. Copy the names EXACTLY as they appear in the document.";
+              "I'm uploading a document. Please identify what type of document this is (court order, message export, motion, etc.). If it contains messages or communications, analyze them for manipulation patterns and document as evidence. If it's a court document, extract the case details.";
           }
         } else {
           let mediaType = fileType;
