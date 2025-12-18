@@ -8,6 +8,8 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   })
+// DEBUG: Uncomment to test if middleware runs
+console.log('MIDDLEWARE:', request.nextUrl.pathname)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,9 +45,11 @@ export async function middleware(request: NextRequest) {
   const protectedRoutes = ['/coach', '/evidence', '/documents', '/breathe']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
-  // If accessing protected route without auth, redirect to login
-  if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+ // If accessing protected route without auth, redirect to login
+ if (isProtectedRoute && !user) {
+    console.log('NO USER, REDIRECTING')
+    const loginUrl = new URL('/login', request.url)
+    return NextResponse.redirect(loginUrl)
   }
 
   // If on coach.pattern18.com and hitting root, redirect appropriately
