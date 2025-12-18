@@ -30,6 +30,10 @@ const faqs: FAQItem[] = [
     answer: "Yes. You can copy any conversation or document from the chat to share with your attorney. You can also save incidents to your Evidence Dashboard and export them. Many users find it helpful to share incident documentation and communication summaries with their legal team."
   },
   {
+    question: "Can my attorney use this?",
+    answer: "Pattern 18 Pro is in beta for family law attorneys. If your lawyer works with high-conflict custody cases, they can request early access at pro@pattern18.com.\n\nEarly adopters can become Pattern 18 Certified — listed in our directory as attorneys who understand coercive control and evidence-based documentation."
+  },
+  {
     question: "Is my information private and secure?",
     answer: "Absolutely. Your privacy is our top priority. All conversations are encrypted and stored securely. We never share your information with third parties. Your co-parent cannot access your account or see what you've discussed. You can delete your data at any time. We understand the sensitivity of custody situations and have built Pattern 18 with your safety in mind."
   },
