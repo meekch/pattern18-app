@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export default function AuthCallback() {
   const router = useRouter();
-  const [status, setStatus] = useState("Completing sign in...");
+  const [status, setStatus] = useState("Processing...");
 
   useEffect(() => {
     const handleAuth = async () => {
@@ -14,87 +14,107 @@ export default function AuthCallback() {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const queryParams = new URLSearchParams(window.location.search);
         
-        // Check where to redirect after auth
-        const next = queryParams.get("next") || "/coach";
-        
         // Check for error
         const error = hashParams.get("error") || queryParams.get("error");
         if (error) {
-          setStatus("Sign in error: " + error);
+          setStatus("Error: " + error);
           setTimeout(() => router.push("/login"), 2000);
           return;
         }
 
-        // Check for recovery type (password reset)
+        // Check for recovery type FIRST (password reset)
         const type = hashParams.get("type") || queryParams.get("type");
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        // Handle password recovery
-        if (type === "recovery" && accessToken) {
-          setStatus("Verifying reset link...");
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || "",
-          });
+        
+        if (type === "recovery") {
+          setStatus("Password reset verified. Redirecting...");
           
-          if (sessionError) {
-            setStatus("Invalid reset link");
-            setTimeout(() => router.push("/login"), 2000);
-            return;
+          // Handle tokens if present
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          
+          if (accessToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            });
           }
           
-          setStatus("Redirecting to reset password...");
+          // Always go to reset password page for recovery type
           router.push("/auth/reset-password");
           return;
         }
 
-        // Try to get existing session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          setStatus("Session error, redirecting...");
-          setTimeout(() => router.push("/login"), 2000);
-          return;
-        }
-
-        if (session) {
-          setStatus("Success! Redirecting...");
-          router.push(next);
-          return;
-        }
-
-        // Listen for auth state change
+        // Set up auth state listener BEFORE exchanging code
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth event:", event);
+          
           if (event === "PASSWORD_RECOVERY") {
             setStatus("Redirecting to reset password...");
             router.push("/auth/reset-password");
           } else if (event === "SIGNED_IN" && session) {
             setStatus("Success! Redirecting...");
-            router.push(next);
+            router.push("/coach");
           }
         });
 
         // Try exchanging code if present
         const code = queryParams.get("code");
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          setStatus("Verifying...");
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
           if (exchangeError) {
             console.error("Exchange error:", exchangeError);
+            setStatus("Verification failed. Redirecting to login...");
+            setTimeout(() => router.push("/login"), 2000);
+            return;
           }
+          
+          // Check if this was a recovery/reset
+          // The session user might have recovery info
+          if (data.session) {
+            // Give the auth state listener a moment to fire
+            setTimeout(() => {
+              // If we're still here, redirect to coach
+              router.push("/coach");
+            }, 1000);
+          }
+          return;
+        }
+
+        // Handle tokens in hash (some flows put them there)
+        const accessToken = hashParams.get("access_token");
+        if (accessToken) {
+          const refreshToken = hashParams.get("refresh_token");
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          });
+          
+          // Give listener time to fire
+          setTimeout(() => {
+            router.push("/coach");
+          }, 1000);
+          return;
+        }
+
+        // Check for existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.push("/coach");
+          return;
         }
 
         // Timeout fallback
         setTimeout(() => {
-          setStatus("Taking too long, redirecting...");
+          setStatus("Taking too long. Redirecting to login...");
           router.push("/login");
         }, 10000);
 
         return () => subscription.unsubscribe();
       } catch (err) {
         console.error("Auth callback error:", err);
-        setStatus("Error, redirecting to login...");
+        setStatus("Error. Redirecting to login...");
         setTimeout(() => router.push("/login"), 2000);
       }
     };
