@@ -654,12 +654,52 @@ INSTRUCTIONS:
         
       )}
 
-      {/* Sidebar */}
-      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
+{showSidebar && (
+        <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
+      )}
+      <div className={`sidebar ${showSidebar ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h3>Conversations</h3>
+          <h3>Menu</h3>
           <button onClick={() => setShowSidebar(false)} className="close-sidebar">✕</button>
         </div>
+        
+        <div className="sidebar-menu">
+          <button onClick={() => { startNewConversation(); setMode("chat"); }} className="menu-item">
+            <span>💬</span> New Chat
+          </button>
+          <button onClick={() => { setMode("document"); setShowSidebar(false); }} className="menu-item">
+            <span>📝</span> Documents
+          </button>
+          <button onClick={() => router.push("/evidence")} className="menu-item">
+            <span>📊</span> Evidence Dashboard
+          </button>
+          <button onClick={() => { setShowRegulate(true); setRegulateMode("menu"); setShowSidebar(false); }} className="menu-item breathe-item">
+            <span>🫁</span> Breathe & Ground
+          </button>
+          
+          <div className="menu-divider" />
+          
+          <button onClick={() => router.push("/faq")} className="menu-item">
+            <span>❓</span> FAQ
+          </button>
+          <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="menu-item safety-item">
+            <span>🤍</span> Safety Resources
+          </button>
+          <button onClick={() => setShowFeedback(true)} className="menu-item">
+            <span>💬</span> Send Feedback
+          </button>
+          
+          <div className="menu-divider" />
+          
+          <button onClick={() => window.open('https://billing.stripe.com/p/login/test_xxx', '_blank')} className="menu-item">
+            <span>💳</span> Manage Subscription
+          </button>
+          <button onClick={handleLogout} className="menu-item logout-item">
+            <span>🚪</span> Log Out
+          </button>
+        </div>
+        
+        <div className="sidebar-section-title">Recent Conversations</div>
         <button onClick={startNewConversation} className="new-chat-btn">
           + New Chat
         </button>
@@ -847,39 +887,12 @@ INSTRUCTIONS:
             </div>
           </div>
           <div className="header-actions">
-            <button className={`header-btn ${mode === "chat" ? "active" : ""}`} onClick={() => setMode("chat")}>
-              <span className="btn-icon">💬</span>
-              <span className="btn-text">Chat</span>
+            <button className="evidence-badge" onClick={() => router.push("/evidence")}>
+              <span className="badge-count">0</span>
+              <span className="badge-text">Evidence</span>
             </button>
-            <button className={`header-btn ${mode === "document" ? "active" : ""}`} onClick={() => setMode("document")}>
-              <span className="btn-icon">📝</span>
-              <span className="btn-text">Documents</span>
-            </button>
-            <button className="header-btn breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode("menu"); }}>
-              <span className="btn-icon">🫁</span>
-              <span className="btn-text">Breathe</span>
-            </button>
-            <button className="header-btn" onClick={() => setShowFeedback(true)}>
-              <span className="btn-icon">💬</span>
-              <span className="btn-text">Feedback</span>
-            </button>
-            <button 
-  onClick={() => router.push("/faq")}
-  title="FAQ"
-  className="header-btn"
->
-  <span className="btn-icon">❓</span>
-</button>
-            <button 
-  onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); }}
-  title="Safety Resources"
-  className="header-btn"
->
-  <span className="btn-icon">🤍</span>
-</button>
-            <button className="header-btn" onClick={handleLogout} title="Sign out">
-              <span className="btn-icon">👋</span>
-              <span className="btn-text">Logout</span>
+            <button className="header-btn settings-btn" onClick={() => setShowSidebar(true)}>
+              <span className="btn-icon">⚙️</span>
             </button>
           </div>
         </div>
@@ -1001,20 +1014,7 @@ INSTRUCTIONS:
                     <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z"/>
                   </svg>
                 </button>
-                <button type="button" className="paste-btn" onClick={async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    setInput(text);
-    inputRef.current?.focus();
-  } catch (err) {
-    console.log('Clipboard access denied');
-  }
-}} title="Paste from clipboard">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-  </svg>
-</button>
+                
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -1350,6 +1350,60 @@ INSTRUCTIONS:
         .logo-text { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
         .logo-tagline { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
         .header-actions { display: flex; gap: 10px; }
+        .evidence-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: linear-gradient(135deg, #d4a82d 0%, #b8922a 100%);
+          border: none;
+          border-radius: 20px;
+          color: #1a3a2f;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .evidence-badge:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(212, 168, 45, 0.4); }
+        .badge-count { font-size: 18px; font-weight: 700; }
+        .badge-text { font-size: 13px; }
+        .settings-btn { padding: 10px !important; }
+        
+        .sidebar-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 999;
+        }
+        .sidebar-menu { padding: 8px 12px; }
+        .menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 14px 16px;
+          background: none;
+          border: none;
+          border-radius: 10px;
+          font-size: 15px;
+          color: #333;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+        }
+        .menu-item:hover { background: #f0f0f0; }
+        .menu-item span { font-size: 18px; }
+        .breathe-item { color: #2dd4a8; }
+        .safety-item { color: #e57373; }
+        .logout-item { color: #999; }
+        .menu-divider { height: 1px; background: #eee; margin: 8px 16px; }
+        .sidebar-section-title {
+          padding: 16px 16px 8px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
         .header-btn {
           display: flex;
           align-items: center;
@@ -1524,7 +1578,7 @@ INSTRUCTIONS:
         }
         .input-wrapper:focus-within { border-color: #2dd4a8; background: white; box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1); }
         .file-input { display: none; }
-        .attach-btn, .prompt-gallery-btn {
+       .attach-btn, .prompt-gallery-btn {
           background: none;
           border: none;
           padding: 10px;
