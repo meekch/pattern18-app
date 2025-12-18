@@ -763,10 +763,7 @@ INSTRUCTIONS:
           )}
         </div>
       </div>
-
-      {/* Overlay for mobile */}
-      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
-
+      
       {/* Disclaimer Modal */}
       {showDisclaimer && (
         <div className="disclaimer-overlay">
@@ -1431,12 +1428,6 @@ INSTRUCTIONS:
         .badge-text { font-size: 13px; }
         .settings-btn { padding: 10px !important; }
         
-        .sidebar-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          z-index: 999;
-        }
         .sidebar-menu { padding: 8px 12px; }
         .menu-item {
           display: flex;
