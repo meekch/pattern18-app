@@ -1,21 +1,47 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || ''
   const pathname = request.nextUrl.pathname
 
-  // On coach subdomain, redirect root to login
-  if (host.startsWith('coach.') && pathname === '/') {
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll() {},
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // On coach subdomain root, redirect based on auth
+    if (host.startsWith('coach.') && pathname === '/') {
+      if (user) {
+        return NextResponse.redirect(new URL('/coach', request.url))
+      } else {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+    }
+
+    // Protected routes - need auth
+    if (pathname.startsWith('/coach') || pathname.startsWith('/evidence')) {
+      if (!user) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+    }
+
+    return NextResponse.next()
+  } catch (error) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  // Redirect /coach to /login (for now, always - we'll add auth back later)
-  if (pathname.startsWith('/coach')) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  return NextResponse.next()
 }
 
 export const config = {
