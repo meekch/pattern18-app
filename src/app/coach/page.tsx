@@ -77,7 +77,6 @@ export default function CoachPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const router = useRouter();
 
-  // Conversation state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -86,7 +85,7 @@ export default function CoachPage() {
   const [ratedMessages, setRatedMessages] = useState<Set<string>>(new Set());
   const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
   const [showSafetyResources, setShowSafetyResources] = useState(false);
-const [safetyTriggered, setSafetyTriggered] = useState(false);
+  const [safetyTriggered, setSafetyTriggered] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [input, setInput] = useState("");
@@ -103,26 +102,23 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
   const [breathePhase, setBreathePhase] = useState<"inhale" | "hold" | "exhale" | "rest">("inhale");
   const [breatheCount, setBreatheCount] = useState(0);
   const [currentAffirmation, setCurrentAffirmation] = useState(affirmations[0]);
+  const [evidenceCount, setEvidenceCount] = useState(0);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auth check
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('Session check:', session, error);
       const user = session?.user;
       
       if (!user) {
-        console.log('No user found, redirecting to login');
         router.push("/login");
         return;
       }
       setUser(user);
 
-      // Check subscription status
       const { data: sub } = await supabase
         .from('user_subscriptions')
         .select('status')
@@ -131,6 +127,13 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
 
       setSubscriptionStatus(sub?.status || 'none');
       setAuthLoading(false);
+      
+      // Load evidence count
+      const { count } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setEvidenceCount(count || 0);
     };
     
     checkUser();
@@ -146,7 +149,6 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
     return () => subscription.unsubscribe();
   }, [router]);
 
-  // Load conversations
   useEffect(() => {
     if (user) {
       loadConversations();
@@ -226,7 +228,6 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
       content: content,
     });
 
-    // Update conversation's updated_at
     await supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
@@ -245,6 +246,7 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
     
     setRatedMessages(prev => new Set(prev).add(messageId));
   };
+
   const saveToEvidence = async (msg: Message, userMsg?: Message) => {
     if (!user) return;
     setSavingEvidence(msg.id);
@@ -270,6 +272,7 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
             m.id === msg.id ? { ...m, savedToEvidence: true } : m
           )
         );
+        setEvidenceCount(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error saving to evidence:', error);
@@ -365,11 +368,10 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
   };
 
   const sendMessage = async (text: string, imageFile?: File) => {
-    // Check for crisis keywords
-if (detectCrisis(input)) {
-  setSafetyTriggered(true);
-  setShowSafetyResources(true);
-}
+    if (detectCrisis(input)) {
+      setSafetyTriggered(true);
+      setShowSafetyResources(true);
+    }
     if (isLoading) return;
 
     const userMessageId = Date.now().toString();
@@ -393,7 +395,7 @@ if (detectCrisis(input)) {
       }
     }
 
-    const displayText = text || (isPdf ? "📄 Court document uploaded" : "📷 Screenshot uploaded");
+    const displayText = text || (isPdf ? "📄 Document uploaded" : "📷 Screenshot uploaded");
 
     const userMessage: Message = {
       id: userMessageId,
@@ -407,7 +409,6 @@ if (detectCrisis(input)) {
     setInput("");
     setIsLoading(true);
 
-    // Create conversation if needed and save user message
     let convId = currentConversationId;
     if (!convId) {
       convId = await createConversation(displayText);
@@ -499,7 +500,6 @@ if (detectCrisis(input)) {
         }
       }
 
-      // Save assistant message
       if (convId && fullContent) {
         await saveMessage(convId, "assistant", fullContent);
       }
@@ -651,7 +651,6 @@ INSTRUCTIONS:
     return date.toLocaleDateString();
   };
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
       <div style={{
@@ -669,52 +668,56 @@ INSTRUCTIONS:
     );
   }
 
-  // Check subscription status
   if (subscriptionStatus && subscriptionStatus !== 'active') {
     return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
   }
 
   return (
     <div className="coach-container">
-      {/* Prompt Gallery */}
       {showPromptGallery && (
         <PromptGallery 
           onSelectPrompt={handlePromptSelect}
           onClose={() => setShowPromptGallery(false)}
         />
       )}
-<SafetyResources 
-  isOpen={showSafetyResources} 
-  onClose={() => setShowSafetyResources(false)}
-  triggered={safetyTriggered}
-/>
-      {/* Feedback Modal */}
+      
+      <SafetyResources 
+        isOpen={showSafetyResources} 
+        onClose={() => setShowSafetyResources(false)}
+        triggered={safetyTriggered}
+      />
+      
       {showFeedback && user && (
         <FeedbackModal
           userId={user.id}
           conversationId={currentConversationId}
           onClose={() => setShowFeedback(false)}
         />
-        
       )}
 
-{showSidebar && (
-        <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
+      {/* Sidebar Overlay */}
+      {showSidebar && (
+        <div 
+          className="sidebar-overlay" 
+          onClick={() => setShowSidebar(false)} 
+        />
       )}
-    <div className={`sidebar ${showSidebar ? "open" : ""}`} style={{display: showSidebar ? 'flex' : 'none'}}>
+      
+      {/* Sidebar */}
+      <div className={`sidebar ${showSidebar ? "open" : ""}`}>
         <div className="sidebar-header">
           <h3>Menu</h3>
           <button onClick={() => setShowSidebar(false)} className="close-sidebar">✕</button>
         </div>
         
         <div className="sidebar-menu">
-          <button onClick={() => { startNewConversation(); setMode("chat"); }} className="menu-item">
+          <button onClick={() => { startNewConversation(); setMode("chat"); setShowSidebar(false); }} className="menu-item">
             <span>💬</span> New Chat
           </button>
           <button onClick={() => { setMode("document"); setShowSidebar(false); }} className="menu-item">
             <span>📝</span> Documents
           </button>
-          <button onClick={() => router.push("/evidence")} className="menu-item">
+          <button onClick={() => { router.push("/evidence"); setShowSidebar(false); }} className="menu-item">
             <span>📊</span> Evidence Dashboard
           </button>
           <button onClick={() => { setShowRegulate(true); setRegulateMode("menu"); setShowSidebar(false); }} className="menu-item breathe-item">
@@ -723,28 +726,25 @@ INSTRUCTIONS:
           
           <div className="menu-divider" />
           
-          <button onClick={() => router.push("/faq")} className="menu-item">
+          <button onClick={() => { router.push("/faq"); setShowSidebar(false); }} className="menu-item">
             <span>❓</span> FAQ
           </button>
           <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="menu-item safety-item">
             <span>🤍</span> Safety Resources
           </button>
-          <button onClick={() => setShowFeedback(true)} className="menu-item">
+          <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="menu-item">
             <span>💬</span> Send Feedback
           </button>
           
           <div className="menu-divider" />
           
-          <button onClick={() => window.open('https://billing.stripe.com/p/login/test_xxx', '_blank')} className="menu-item">
-            <span>💳</span> Manage Subscription
-          </button>
           <button onClick={handleLogout} className="menu-item logout-item">
             <span>🚪</span> Log Out
           </button>
         </div>
         
         <div className="sidebar-section-title">Recent Conversations</div>
-        <button onClick={startNewConversation} className="new-chat-btn">
+        <button onClick={() => { startNewConversation(); setShowSidebar(false); }} className="new-chat-btn">
           + New Chat
         </button>
         <div className="conversation-list">
@@ -929,11 +929,8 @@ INSTRUCTIONS:
           </div>
           <div className="header-actions">
             <button className="evidence-badge" onClick={() => router.push("/evidence")}>
-              <span className="badge-count">0</span>
+              <span className="badge-count">{evidenceCount}</span>
               <span className="badge-text">Evidence</span>
-            </button>
-            <button className="header-btn settings-btn" onClick={() => setShowSidebar(true)}>
-              <span className="btn-icon">⚙️</span>
             </button>
           </div>
         </div>
@@ -1106,6 +1103,13 @@ INSTRUCTIONS:
           overflow: hidden;
         }
 
+        .sidebar-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 1000;
+        }
+
         .sidebar {
           position: fixed;
           left: 0;
@@ -1113,8 +1117,8 @@ INSTRUCTIONS:
           bottom: 0;
           width: 280px;
           background: white;
-          box-shadow: 2px 0 24px rgba(0,0,0,0.1);
-          z-index: 1001
+          box-shadow: 2px 0 24px rgba(0,0,0,0.15);
+          z-index: 1001;
           transform: translateX(-100%);
           transition: transform 0.3s ease;
           display: flex;
@@ -1129,9 +1133,42 @@ INSTRUCTIONS:
           border-bottom: 1px solid #eee;
         }
         .sidebar-header h3 { margin: 0; font-size: 18px; color: #1a3a2f; }
-        .close-sidebar { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+        .close-sidebar { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 4px 8px; }
+        .close-sidebar:hover { color: #333; }
+        
+        .sidebar-menu { padding: 8px 12px; }
+        .menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 14px 16px;
+          background: none;
+          border: none;
+          border-radius: 10px;
+          font-size: 15px;
+          color: #333;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+        }
+        .menu-item:hover { background: #f0f0f0; }
+        .menu-item span { font-size: 18px; }
+        .breathe-item { color: #2dd4a8; }
+        .safety-item { color: #e57373; }
+        .logout-item { color: #999; }
+        .menu-divider { height: 1px; background: #eee; margin: 8px 16px; }
+        .sidebar-section-title {
+          padding: 16px 16px 8px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
         .new-chat-btn {
-          margin: 16px;
+          margin: 0 16px 16px;
           padding: 14px;
           background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
           color: white;
@@ -1143,7 +1180,7 @@ INSTRUCTIONS:
           transition: transform 0.2s;
         }
         .new-chat-btn:hover { transform: translateY(-1px); }
-        .conversation-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .conversation-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
         .conversation-item {
           padding: 14px 16px;
           border-radius: 10px;
@@ -1163,7 +1200,6 @@ INSTRUCTIONS:
         }
         .conv-date { display: block; font-size: 12px; color: #999; margin-top: 4px; }
         .no-convos { text-align: center; color: #999; padding: 20px; font-size: 14px; }
-        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
 
         .menu-btn {
           background: none;
@@ -1186,7 +1222,7 @@ INSTRUCTIONS:
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 2000;
           padding: 16px;
           backdrop-filter: blur(8px);
           overflow-y: auto;
@@ -1235,7 +1271,7 @@ INSTRUCTIONS:
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 2000;
           padding: 20px;
           overflow-y: auto;
         }
@@ -1426,31 +1462,8 @@ INSTRUCTIONS:
         .evidence-badge:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(212, 168, 45, 0.4); }
         .badge-count { font-size: 18px; font-weight: 700; }
         .badge-text { font-size: 13px; }
-        .settings-btn { padding: 10px !important; }
-        
-        .sidebar-menu { padding: 8px 12px; }
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 14px 16px;
-          background: none;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          color: #333;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: left;
-        }
-        .menu-item:hover { background: #f0f0f0; }
-        .menu-item span { font-size: 18px; }
-        .breathe-item { color: #2dd4a8; }
-        .safety-item { color: #e57373; }
-        .logout-item { color: #999; }
-        .menu-divider { height: 1px; background: #eee; margin: 8px 16px; }
-       .patterns-detected {
+
+        .patterns-detected {
           background: linear-gradient(135deg, rgba(45, 212, 168, 0.1) 0%, rgba(26, 58, 47, 0.1) 100%);
           border: 1px solid rgba(45, 212, 168, 0.3);
           border-radius: 12px;
@@ -1501,33 +1514,6 @@ INSTRUCTIONS:
           font-weight: 600;
           font-size: 13px;
         }
-        .sidebar-section-title {
-          padding: 16px 16px 8px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #999;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .header-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 18px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 12px;
-          color: white;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .header-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
-        .header-btn.active { background: #2dd4a8; color: #0d1f18; border-color: #2dd4a8; font-weight: 600; }
-        .breathe-btn { background: rgba(45, 212, 168, 0.12) !important; border-color: rgba(45, 212, 168, 0.2) !important; }
-        .breathe-btn:hover { background: rgba(45, 212, 168, 0.2) !important; }
-        .btn-icon { font-size: 18px; }
 
         .context-banner {
           background: #e8f5e9;
@@ -1653,10 +1639,6 @@ INSTRUCTIONS:
           transition: all 0.2s;
         }
         .message-actions button:hover { background: #e8e8e8; color: #1a3a2f; }
-        .rate-btn { transition: all 0.2s !important; }
-        .rate-btn.helpful:hover { background: #e8f5e9 !important; color: #2e7d32 !important; }
-        .rate-btn:hover { background: #ffebee !important; color: #c62828 !important; }
-        .rated-thanks { font-size: 13px; color: #2dd4a8; font-style: italic; padding: 8px; }
         .typing-indicator { display: flex; gap: 8px; padding: 28px; }
         .typing-dot { width: 12px; height: 12px; background: #2dd4a8; border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -1683,7 +1665,7 @@ INSTRUCTIONS:
         }
         .input-wrapper:focus-within { border-color: #2dd4a8; background: white; box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1); }
         .file-input { display: none; }
-       .attach-btn, .prompt-gallery-btn {
+        .attach-btn, .prompt-gallery-btn {
           background: none;
           border: none;
           padding: 10px;
@@ -1731,9 +1713,6 @@ INSTRUCTIONS:
           .header-content { flex-wrap: wrap; gap: 12px; }
           .logo-tagline { display: none; }
           .logo-text { font-size: 19px; }
-          .header-btn { padding: 10px 14px; }
-          .btn-text { display: none; }
-          .btn-icon { font-size: 20px; }
           .chat-inner { padding: 24px 16px; }
           .message.user { margin-left: 8%; }
           .editor-container { padding: 24px; margin: 0 8px; }
