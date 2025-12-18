@@ -1117,7 +1117,7 @@ INSTRUCTIONS:
           width: 280px;
           background: white;
           box-shadow: 2px 0 24px rgba(0,0,0,0.1);
-          z-index: 100;
+          z-index: 1001
           transform: translateX(-100%);
           transition: transform 0.3s ease;
           display: flex;
