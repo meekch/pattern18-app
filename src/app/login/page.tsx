@@ -12,9 +12,8 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
-  const [authMethod, setAuthMethod] = useState<'password' | 'magic'>('password')
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -33,7 +32,7 @@ export default function LoginPage() {
     }
   }
 
-  const handlePasswordSignup = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -42,9 +41,6 @@ export default function LoginPage() {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
     })
 
     if (authError) {
@@ -75,35 +71,24 @@ export default function LoginPage() {
     }
   }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Enter your email first')
+      return
+    }
     setLoading(true)
     setError(null)
-    setMessage(null)
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     })
-
+    
     if (error) {
       setError(error.message)
     } else {
-      setMessage('Check your email for the magic link!')
+      setMessage('Check your email for password reset link')
     }
     setLoading(false)
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    if (mode === 'signup') {
-      handlePasswordSignup(e)
-    } else if (authMethod === 'magic') {
-      handleMagicLink(e)
-    } else {
-      handlePasswordLogin(e)
-    }
   }
 
   return (
@@ -144,7 +129,7 @@ export default function LoginPage() {
         }}>
           <button
             type="button"
-            onClick={() => setMode('login')}
+            onClick={() => { setMode('login'); setError(null); setMessage(null); }}
             style={{
               flex: 1,
               padding: '12px',
@@ -161,7 +146,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => setMode('signup')}
+            onClick={() => { setMode('signup'); setError(null); setMessage(null); }}
             style={{
               flex: 1,
               padding: '12px',
@@ -178,7 +163,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
           <input
             type="email"
             value={email}
@@ -197,27 +182,24 @@ export default function LoginPage() {
             }}
           />
           
-          {/* Password field - show for login (password mode) and signup */}
-          {(mode === 'signup' || (mode === 'login' && authMethod === 'password')) && (
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required={mode === 'signup' || authMethod === 'password'}
-              minLength={6}
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                fontSize: '16px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '12px',
-                marginBottom: '16px',
-                boxSizing: 'border-box',
-                outline: 'none'
-              }}
-            />
-          )}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            minLength={6}
+            style={{
+              width: '100%',
+              padding: '16px 20px',
+              fontSize: '16px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '12px',
+              marginBottom: '16px',
+              boxSizing: 'border-box',
+              outline: 'none'
+            }}
+          />
 
           <button
             type="submit"
@@ -238,57 +220,22 @@ export default function LoginPage() {
               ? 'Loading...'
               : mode === 'signup'
                 ? 'Start 7-Day Free Trial'
-                : authMethod === 'password'
-                  ? 'Sign In'
-                  : 'Send Magic Link'}
+                : 'Sign In'}
           </button>
         </form>
 
-        {/* Toggle between password and magic link for login */}
+        {/* Forgot password */}
         {mode === 'login' && (
           <button
             type="button"
-            onClick={() => setAuthMethod(authMethod === 'password' ? 'magic' : 'password')}
+            onClick={handleForgotPassword}
+            disabled={loading}
             style={{
               background: 'none',
               border: 'none',
               color: '#2dd4a8',
               cursor: 'pointer',
               marginTop: '16px',
-              fontSize: '14px',
-              textDecoration: 'underline'
-            }}
-          >
-            {authMethod === 'password' ? 'Use magic link instead' : 'Use password instead'}
-          </button>
-        )}
-
-        {/* Forgot password */}
-        {mode === 'login' && authMethod === 'password' && (
-          <button
-            type="button"
-            onClick={async () => {
-              if (!email) {
-                setError('Enter your email first')
-                return
-              }
-              setLoading(true)
-              const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/auth/reset-password`,
-              })
-              if (error) {
-                setError(error.message)
-              } else {
-                setMessage('Check your email for password reset link')
-              }
-              setLoading(false)
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#999',
-              cursor: 'pointer',
-              marginTop: '8px',
               fontSize: '14px'
             }}
           >
@@ -322,10 +269,8 @@ export default function LoginPage() {
 
         <p style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
           {mode === 'login'
-            ? authMethod === 'password' 
-              ? "Enter your email and password to sign in."
-              : "We'll email you a magic link for password-free sign in."
-            : "You'll be taken to secure checkout. No charge for 7 days."}
+            ? "Enter your email and password to sign in."
+            : "Create your account, then complete checkout. No charge for 7 days."}
         </p>
       </div>
     </div>

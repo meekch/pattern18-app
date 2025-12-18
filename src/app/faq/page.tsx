@@ -10,10 +10,6 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "What is a magic link? Is it safe?",
-    answer: "A magic link is a secure, one-time login link sent to your email. It's actually safer than passwords because there's nothing to hack, guess, or steal. Each link expires after use and can only be used once. Major companies like Slack and Notion use this same method. Simply click the link in your email and you're logged in — no password to remember or reset."
-  },
-  {
     question: "What can Pattern 18 Coach do for me?",
     answer: "Pattern 18 Coach helps you navigate high-conflict co-parenting by: analyzing messages from your co-parent to identify manipulation patterns, helping you draft calm and court-appropriate responses, documenting incidents for your records, creating communication logs and summaries for your attorney, providing emotional support and validation 24/7, and helping you understand the 18 behavioral patterns commonly seen in high-conflict custody situations."
   },
@@ -46,6 +42,10 @@ const faqs: FAQItem[] = [
     answer: "You can cancel anytime from your account settings. Click the menu icon, then 'Manage Subscription' to access the customer portal. Your access continues until the end of your billing period. No questions asked, no hoops to jump through. We hope Pattern 18 helps you, but we understand circumstances change."
   },
   {
+    question: "I forgot my password. How do I reset it?",
+    answer: "On the login page, click 'Forgot password?' and enter your email. You'll receive an email with a link to reset your password. If you don't see the email, check your spam folder."
+  },
+  {
     question: "I'm in crisis or feeling unsafe. What should I do?",
     answer: "If you're in immediate danger, call 911. For support, click the 🤍 heart icon in the app header to access safety resources including the National Domestic Violence Hotline (1-800-799-7233), Crisis Text Line (text HELLO to 741741), and online chat support. You are not alone, and what's happening is not your fault."
   },
@@ -55,7 +55,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I use this on my phone?",
-    answer: "Yes! Pattern 18 Coach works on any device with a web browser — phone, tablet, or computer. There's no app to download. Just go to coach.pattern18.com and log in. The interface is optimized for mobile so you can get support whenever you need it."
+    answer: "Yes! Pattern 18 Coach works on any device with a web browser — phone, tablet, or computer. For the best mobile experience, add it to your home screen: in Safari tap Share then 'Add to Home Screen', or in Chrome tap the menu then 'Add to Home Screen'. It works just like a native app."
   }
 ];
 
