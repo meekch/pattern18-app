@@ -14,6 +14,8 @@ interface Message {
   content: string;
   image?: string;
   timestamp: Date;
+  patterns?: string[];
+  savedToEvidence?: boolean;
 }
 
 interface Conversation {
@@ -82,6 +84,7 @@ export default function CoachPage() {
   const [showPromptGallery, setShowPromptGallery] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [ratedMessages, setRatedMessages] = useState<Set<string>>(new Set());
+  const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
   const [showSafetyResources, setShowSafetyResources] = useState(false);
 const [safetyTriggered, setSafetyTriggered] = useState(false);
 
@@ -241,6 +244,38 @@ const [safetyTriggered, setSafetyTriggered] = useState(false);
     });
     
     setRatedMessages(prev => new Set(prev).add(messageId));
+  };
+  const saveToEvidence = async (msg: Message, userMsg?: Message) => {
+    if (!user) return;
+    setSavingEvidence(msg.id);
+    
+    try {
+      const response = await fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          conversationId: currentConversationId,
+          coparentMessage: userMsg?.content || null,
+          coachResponse: msg.content,
+          patterns: msg.patterns || [],
+          incidentType: 'message',
+          severity: 'medium',
+        }),
+      });
+      
+      if (response.ok) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.id ? { ...m, savedToEvidence: true } : m
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error saving to evidence:', error);
+    } finally {
+      setSavingEvidence(null);
+    }
   };
 
   useEffect(() => {
@@ -446,6 +481,15 @@ if (detectCrisis(input)) {
                   prev.map((m) =>
                     m.id === assistantMessageId
                       ? { ...m, content: fullContent }
+                      : m
+                  )
+                );
+              }
+              if (data.done && data.patterns) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, patterns: data.patterns }
                       : m
                   )
                 );
@@ -974,17 +1018,36 @@ INSTRUCTIONS:
                   )}
                   <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                   {msg.role === "assistant" && msg.content && !isLoading && msg.id !== "welcome" && (
-                    <div className="message-actions">
-                      <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
-                      {!ratedMessages.has(msg.id) ? (
-                        <>
-                          <button onClick={() => rateMessage(msg.id, msg.content, true)} className="rate-btn helpful">👍 Helpful</button>
-                          <button onClick={() => rateMessage(msg.id, msg.content, false)} className="rate-btn">👎</button>
-                        </>
-                      ) : (
-                        <span className="rated-thanks">Thanks!</span>
+                    <>
+                      {msg.patterns && msg.patterns.length > 0 && (
+                        <div className="patterns-detected">
+                          <span className="patterns-label">🎯 Patterns identified:</span>
+                          <div className="pattern-tags">
+                            {msg.patterns.map((pattern, i) => (
+                              <span key={i} className="pattern-tag">{pattern}</span>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                    </div>
+                      <div className="message-actions">
+                        <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+                        {msg.savedToEvidence ? (
+                          <span className="saved-badge">✓ Saved</span>
+                        ) : (
+                          <button 
+                            onClick={() => {
+                              const msgIndex = messages.findIndex(m => m.id === msg.id);
+                              const userMsg = msgIndex > 0 ? messages[msgIndex - 1] : undefined;
+                              saveToEvidence(msg, userMsg);
+                            }}
+                            disabled={savingEvidence === msg.id}
+                            className="save-evidence-btn"
+                          >
+                            {savingEvidence === msg.id ? '💾 Saving...' : '💾 Save to Evidence'}
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               ))}
@@ -1396,6 +1459,57 @@ INSTRUCTIONS:
         .safety-item { color: #e57373; }
         .logout-item { color: #999; }
         .menu-divider { height: 1px; background: #eee; margin: 8px 16px; }
+       .patterns-detected {
+          background: linear-gradient(135deg, rgba(45, 212, 168, 0.1) 0%, rgba(26, 58, 47, 0.1) 100%);
+          border: 1px solid rgba(45, 212, 168, 0.3);
+          border-radius: 12px;
+          padding: 12px 16px;
+          margin-top: 12px;
+          margin-bottom: 8px;
+        }
+        .patterns-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1a3a2f;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .pattern-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .pattern-tag {
+          background: #1a3a2f;
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .save-evidence-btn {
+          background: linear-gradient(135deg, #2dd4a8 0%, #1a9a7a 100%);
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .save-evidence-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(45, 212, 168, 0.4);
+        }
+        .save-evidence-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        .saved-badge {
+          color: #2dd4a8;
+          font-weight: 600;
+          font-size: 13px;
+        }
         .sidebar-section-title {
           padding: 16px 16px 8px;
           font-size: 12px;
