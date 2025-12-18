@@ -1,14 +1,8 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 const client = new Anthropic();
-
-// Create admin client for saving evidence
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const SYSTEM_PROMPT = `You are Pattern 18 Coach — a strategic partner for survivors of high-conflict custody situations and narcissistic abuse.
 
@@ -404,7 +398,6 @@ function extractPatterns(response: string): string[] {
 
   for (const pattern of patternKeywords) {
     if (lowerResponse.includes(pattern)) {
-      // Normalize pattern names
       let normalized = pattern
         .split(/[-\s]/)
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

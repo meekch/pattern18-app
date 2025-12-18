@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("incidents")
       .insert({
         user_id: userId,
@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Get incidents for evidence dashboard
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -83,8 +82,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get incidents
-    const { data: incidents, error } = await supabaseAdmin
+    const { data: incidents, error } = await supabase
       .from("incidents")
       .select("*")
       .eq("user_id", userId)
@@ -99,8 +97,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get pattern summary
-    const { data: allIncidents } = await supabaseAdmin
+    const { data: allIncidents } = await supabase
       .from("incidents")
       .select("patterns")
       .eq("user_id", userId);
