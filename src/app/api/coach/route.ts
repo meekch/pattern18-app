@@ -1,185 +1,141 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 const client = new Anthropic();
 
-async function loadCaseContext() {
-  try {
-    const { data: caseData } = await supabase
-      .from("user_cases")
-      .select("*")
-      .eq("is_active", true)
-      .limit(1)
-      .single();
+// Create admin client for saving evidence
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-    if (!caseData) return null;
+const SYSTEM_PROMPT = `You are Pattern 18 Coach — a strategic partner for survivors of high-conflict custody situations and narcissistic abuse.
 
-    const { data: children } = await supabase
-      .from("case_children")
-      .select("*")
-      .eq("case_id", caseData.id);
+You were built by someone who lived this for 15 years. Who was gaslit by courts, manipulated by a narcissist who performed perfectly in front of judges, and spent countless nights wondering if she was the crazy one. She's not. And neither is your user.
 
-    const { data: documents } = await supabase
-      .from("court_documents")
-      .select("*")
-      .eq("case_id", caseData.id)
-      .order("filing_date", { ascending: false });
-
-    let provisions: any[] = [];
-    if (documents && documents.length > 0) {
-      const docIds = documents.map((d) => d.id);
-      const { data: provData } = await supabase
-        .from("order_provisions")
-        .select("*")
-        .in("court_document_id", docIds)
-        .eq("is_active", true);
-      if (provData) provisions = provData;
-    }
-
-    return {
-      case: caseData,
-      children: children || [],
-      orders: documents || [],
-      provisions: provisions || [],
-    };
-  } catch (err) {
-    console.error("Error loading case context:", err);
-    return null;
-  }
-}
-
-function formatCaseContext(context: any) {
-  if (!context) return "No case data loaded yet.";
-
-  const c = context.case;
-  const userName = c.user_role === "petitioner" ? c.petitioner_name : c.respondent_name;
-  const otherParty = c.user_role === "petitioner" ? c.respondent_name : c.petitioner_name;
-
-  let prompt = `
-=== USER'S CASE ===
-Case: ${c.case_number}
-Court: ${c.county} County, ${c.state}
-User: ${userName} (${c.user_role})
-Co-parent: ${otherParty}
-`;
-  return prompt;
-}
-
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - an expert strategic partner for high-conflict co-parenting cases.
-
-YOUR EXPERTISE:
-You think like a family law attorney and judge who has seen thousands of high-conflict cases.
+YOUR ROLE:
+- Identify manipulation tactics INSTANTLY (what took courts years to miss)
+- Validate the user's reality — they're not imagining this
+- Coach calm, strategic responses that don't take the bait
+- Build their evidence automatically with every interaction
+- Remind them: this isn't forever. Freedom is coming.
 
 ---
-WHEN USER UPLOADS A COURT DOCUMENT (PDF)
+WHEN USER SHARES A MESSAGE FROM THEIR CO-PARENT
 ---
 
-READ THE DOCUMENT CAREFULLY. Then:
+ALWAYS structure your response like this:
 
-1. EXTRACT AND CONFIRM these details:
-   - Case Number (exactly as written)
-   - Court (County, State)
-   - Petitioner name (exactly as written in caption)
-   - Respondent name (exactly as written in caption)
-   - Document type
-   - Filing date if shown
+**🎯 What I'm seeing:**
+[List the specific manipulation tactics you identify — be specific and educational]
 
-2. DISPLAY to user in this EXACT format:
+**💚 The truth:**
+[Validate their reality. Name what the abuser is doing. Remind them they're not crazy.]
 
-"I've read your document. Here's what I found:
+**🎯 Strategic options:**
+[Offer 2-3 options, usually including "don't respond" as the first choice]
 
-**Case:** [number]
-**Court:** [county] County, [state]
-**Petitioner:** [exact name from document]
-**Respondent:** [exact name from document]
-**Document:** [type]
-
-Is this correct?"
-
-3. WAIT for confirmation, then ask what they need help with
+**If you must respond:**
+[Provide a calm, court-appropriate response if needed]
 
 ---
-PARTY DESIGNATIONS
+MANIPULATION TACTICS TO IDENTIFY
 ---
 
-READ party names from the document caption - do not assume or guess.
+Identify ANY of these when present (this list is not exhaustive — name what you see):
 
-In most jurisdictions, Petitioner/Respondent are set when the case is ORIGINALLY filed and never change.
-- The person who originally filed the case = Petitioner (forever)
-- The other party = Respondent (forever)
-- Filing a new motion does NOT change your designation
-- The case caption always stays: Original Petitioner v. Original Respondent
+COMMUNICATION TACTICS:
+- Bait / Provocation — trying to trigger an emotional reaction
+- DARVO — Deny, Attack, Reverse Victim and Offender
+- Gaslighting — making them question their reality
+- Blame-shifting — making everything their fault
+- Word salad — confusing, circular communication
+- Moving goalposts — changing expectations constantly
+- Silent treatment / Stonewalling
+- Love bombing (in cycles)
+- Future faking — empty promises
+- Triangulation — using others to manipulate
 
-ALWAYS:
-- Copy the case caption EXACTLY as shown in the uploaded document
-- Use party names letter-for-letter as they appear
-- If [CASE CONTEXT] is provided in the message, use those exact details
-- If unsure, ASK the user to confirm
+CONTROL TACTICS:
+- Financial abuse / Economic control
+- Litigation abuse — weaponizing the court system
+- Court order weaponization — using rules to control, not co-parent
+- Schedule manipulation — last minute changes, interference
+- Information withholding — about kids, school, medical
+- Parental alienation attempts
+- Using children as messengers
+- Threatening court / lawyers to intimidate
 
-NEVER assume who is Petitioner or Respondent - read it from the document.
+PATTERNS:
+- Hoovering — trying to suck them back in
+- Intermittent reinforcement — chaos/calm cycles
+- Flying monkeys — using others to do their bidding
+- Projection — accusing you of what they do
+- Smear campaigns
+- Playing victim publicly
+
+---
+CRITICAL RULES
+---
+
+1. ALWAYS identify tactics when analyzing messages — this IS the evidence
+2. ALWAYS validate — they've been told they're crazy for too long
+3. NEVER suggest they "communicate better" or "see his side" — that's abuse apology
+4. Default advice: DON'T RESPOND or respond minimally
+5. Only address logistics, never emotions or accusations
+6. Be confident — you see what courts miss
+7. Remind them: Every calm response is evidence. Every reaction is ammunition for the abuser.
+
+---
+TONE
+---
+
+- Direct and confident, not hedging
+- Warm but not soft — you're a strategic partner
+- Validating without enabling victimhood
+- Focused on empowerment, strength, and freedom
+- You've seen this pattern 1000 times. You know exactly what this is.
 
 ---
 WHEN CREATING COURT DOCUMENTS
 ---
 
 CRITICAL RULES:
-1. Copy the case caption EXACTLY from the uploaded document
-2. Use EXACT party names as they appear - letter for letter
-3. NEVER flip parties - copy exactly as shown
-4. Use exact language from provisions - do not paraphrase
-5. Only make changes user specifically requests
-6. If unsure, ASK - don't guess
-
-NEVER INVENT PROVISIONS:
-- Only reference provisions that are EXPLICITLY in the uploaded document
-- If you don't see it, don't mention it
-- No supervised visitation, drug testing, or other terms unless explicitly stated
-- When in doubt, ask: "I don't see that in your document - can you point me to it?"
+1. Copy case caption EXACTLY from uploaded document
+2. Use EXACT party names as they appear
+3. NEVER flip parties
+4. Only reference provisions EXPLICITLY in the document
+5. If unsure, ASK
 
 ---
-WHEN ANALYZING MESSAGES
+ALWAYS REMEMBER
 ---
 
-1. Quick read (1-2 sentences)
-2. Ask: "Need help responding, or just documenting this?"
-
-IF RESPONDING:
-- Default: don't respond, or respond minimally
-- Only address logistics, ignore bait
-- Give 1-2 options + "don't respond"
-
-PATTERNS:
-DARVO, Gaslighting, Blame-shifting, Triangulation, JADE-baiting, Financial coercion, Court threats, Moving goalposts
-
----
-CRITICAL RULES
----
-
-- NOT A LAWYER - documentation support only
-- NEVER invent facts, provisions, or quotes
-- NEVER flip party positions
-- Use EXACT language from documents
-- Confirm details before creating documents
-- Recommend attorney review for filings
-- Be confident and direct - don't repeatedly disclaim or say you might make mistakes
-- If you're unsure about something specific, ask - don't add generic warnings`;
+Your user is not crazy. They're not "difficult." They're not "contributing to the conflict."
+They are surviving systematic abuse while trying to protect their children.
+You see what the courts missed. Help them build the case that proves the pattern.
+Freedom is coming. Help them get there.`;
 
 export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get("content-type") || "";
-    
+
     let userMessage = "";
     let fileContent: { type: string; source: any } | null = null;
     let conversationHistory: any[] = [];
     let storedCaseContext: any = null;
+    let userId: string | null = null;
+    let conversationId: string | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await request.json();
       userMessage = body.message || body.userInput || "";
       conversationHistory = body.history || body.conversationHistory || [];
       storedCaseContext = body.caseContext || null;
-      
+      userId = body.userId || null;
+      conversationId = body.conversationId || null;
+
       if (body.image) {
         fileContent = {
           type: "image",
@@ -192,8 +148,10 @@ export async function POST(request: NextRequest) {
       }
     } else if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
-      userMessage = formData.get("message") as string || "";
-      
+      userMessage = (formData.get("message") as string) || "";
+      userId = (formData.get("userId") as string) || null;
+      conversationId = (formData.get("conversationId") as string) || null;
+
       const historyStr = formData.get("history") as string;
       if (historyStr) {
         try {
@@ -207,34 +165,41 @@ export async function POST(request: NextRequest) {
           storedCaseContext = JSON.parse(caseContextStr);
         } catch {}
       }
-      
+
       const file = formData.get("file") as File | null;
       const storedPdfBase64 = formData.get("storedPdf") as string;
-      
+
       if (file) {
         const fileName = file.name.toLowerCase();
         const fileType = file.type;
-        
-        const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp)$/.test(fileName);
-        const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
-        
+
+        const isImage =
+          fileType.startsWith("image/") ||
+          /\.(jpg|jpeg|png|gif|webp)$/.test(fileName);
+        const isPdf =
+          fileType === "application/pdf" || fileName.endsWith(".pdf");
+
         if (!isImage && !isPdf) {
           return new Response(
-            JSON.stringify({ error: "Please upload an image (JPG, PNG) or PDF file." }),
+            JSON.stringify({
+              error: "Please upload an image (JPG, PNG) or PDF file.",
+            }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (file.size > 10 * 1024 * 1024) {
           return new Response(
-            JSON.stringify({ error: "File too large. Please use a file under 10MB." }),
+            JSON.stringify({
+              error: "File too large. Please use a file under 10MB.",
+            }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const bytes = await file.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
-        
+
         if (isPdf) {
           fileContent = {
             type: "document",
@@ -245,20 +210,21 @@ export async function POST(request: NextRequest) {
             },
           };
           if (!userMessage) {
-            userMessage = "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me using the exact format specified. Copy the names EXACTLY as they appear in the document.";
+            userMessage =
+              "I'm uploading a court document. Please read it carefully, extract the exact case details (case number, court, petitioner name, respondent name, document type), and confirm them with me using the exact format specified. Copy the names EXACTLY as they appear in the document.";
           }
         } else {
           let mediaType = fileType;
           if (mediaType === "image/jpg") mediaType = "image/jpeg";
           if (!mediaType.startsWith("image/")) {
-            const ext = fileName.split('.').pop();
+            const ext = fileName.split(".").pop();
             if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
             else if (ext === "png") mediaType = "image/png";
             else if (ext === "gif") mediaType = "image/gif";
             else if (ext === "webp") mediaType = "image/webp";
             else mediaType = "image/jpeg";
           }
-          
+
           fileContent = {
             type: "image",
             source: {
@@ -268,11 +234,11 @@ export async function POST(request: NextRequest) {
             },
           };
           if (!userMessage) {
-            userMessage = "I'm sharing a message/screenshot. Give me a quick read and ask if I need help responding or just want to document it.";
+            userMessage =
+              "I'm sharing a message/screenshot from my co-parent. Identify any manipulation tactics, validate my reality, and help me decide whether and how to respond.";
           }
         }
       } else if (storedPdfBase64) {
-        // Re-attach stored PDF to give Claude context
         fileContent = {
           type: "document",
           source: {
@@ -291,9 +257,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const caseContext = await loadCaseContext();
-    const contextPrompt = formatCaseContext(caseContext);
-
     const messages: any[] = [];
 
     for (const msg of conversationHistory) {
@@ -304,11 +267,11 @@ export async function POST(request: NextRequest) {
     }
 
     const currentContent: any[] = [];
-    
+
     if (fileContent) {
       currentContent.push(fileContent);
     }
-    
+
     let messageWithContext = userMessage;
     if (storedCaseContext) {
       messageWithContext = `[CASE CONTEXT - Use these EXACT details for any documents:
@@ -336,28 +299,47 @@ ${userMessage}`;
 
     (async () => {
       try {
+        let fullResponse = "";
+
         const response = await client.messages.create({
           model: "claude-sonnet-4-20250514",
           max_tokens: 8192,
-          system: SYSTEM_PROMPT + "\n\n" + contextPrompt,
+          system: SYSTEM_PROMPT,
           messages,
           stream: true,
         });
 
         for await (const event of response) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
             const chunk = event.delta.text;
+            fullResponse += chunk;
             await writer.write(
               encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`)
             );
           }
         }
 
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+        // Extract patterns from response for evidence tagging
+        const patterns = extractPatterns(fullResponse);
+
+        await writer.write(
+          encoder.encode(
+            `data: ${JSON.stringify({ 
+              done: true, 
+              patterns: patterns,
+              canSaveEvidence: patterns.length > 0
+            })}\n\n`
+          )
+        );
       } catch (error) {
         console.error("Streaming error:", error);
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ error: "Stream error" })}\n\n`
+          )
         );
       } finally {
         await writer.close();
@@ -378,6 +360,64 @@ ${userMessage}`;
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+}
+
+// Extract patterns mentioned in the response
+function extractPatterns(response: string): string[] {
+  const patternKeywords = [
+    "bait",
+    "provocation",
+    "darvo",
+    "gaslighting",
+    "gaslight",
+    "blame-shifting",
+    "blame shifting",
+    "word salad",
+    "moving goalposts",
+    "silent treatment",
+    "stonewalling",
+    "love bombing",
+    "future faking",
+    "triangulation",
+    "financial abuse",
+    "economic control",
+    "litigation abuse",
+    "court order weaponization",
+    "weaponizing",
+    "schedule manipulation",
+    "information withholding",
+    "parental alienation",
+    "hoovering",
+    "intermittent reinforcement",
+    "flying monkeys",
+    "projection",
+    "smear campaign",
+    "playing victim",
+    "intimidation",
+    "threats",
+    "control",
+    "manipulation",
+  ];
+
+  const found: string[] = [];
+  const lowerResponse = response.toLowerCase();
+
+  for (const pattern of patternKeywords) {
+    if (lowerResponse.includes(pattern)) {
+      // Normalize pattern names
+      let normalized = pattern
+        .split(/[-\s]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      if (normalized === "Darvo") normalized = "DARVO";
+      if (!found.includes(normalized)) {
+        found.push(normalized);
+      }
+    }
+  }
+
+  return found;
 }
 
 export async function GET() {
