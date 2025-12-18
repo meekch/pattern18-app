@@ -701,7 +701,7 @@ INSTRUCTIONS:
 {showSidebar && (
         <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
       )}
-    <div className={`sidebar ${showSidebar ? "open" : ""}`}>
+    <div className={`sidebar ${showSidebar ? "open" : ""}`} style={{display: showSidebar ? 'flex' : 'none'}}>
         <div className="sidebar-header">
           <h3>Menu</h3>
           <button onClick={() => setShowSidebar(false)} className="close-sidebar">✕</button>
