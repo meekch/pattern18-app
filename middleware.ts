@@ -3,50 +3,40 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
+  
+  // Skip if not a protected route
+  if (!pathname.startsWith('/coach') && !pathname.startsWith('/evidence')) {
+    return NextResponse.next()
+  }
 
-  // Protected routes - redirect to login if no user
-  if (pathname.startsWith('/coach') || pathname.startsWith('/evidence') || pathname.startsWith('/documents') || pathname.startsWith('/breathe')) {
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll() {},
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-  }
 
-  return response
+    return NextResponse.next()
+  } catch (error) {
+    // If auth check fails, redirect to login
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 }
 
 export const config = {
-  matcher: ['/coach/:path*', '/evidence/:path*', '/documents/:path*', '/breathe/:path*']
+  matcher: ['/coach/:path*', '/evidence/:path*']
 }
