@@ -2,16 +2,80 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-// ... rest of file
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [authMethod, setAuthMethod] = useState<'password' | 'magic'>('password')
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else if (data.session) {
+      router.push('/coach')
+    }
+  }
+
+  const handlePasswordSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    // First create the auth user with password
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    if (authError) {
+      setError(authError.message)
+      setLoading(false)
+      return
+    }
+
+    // Then redirect to Stripe checkout
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error || 'Something went wrong')
+        setLoading(false)
+      }
+    } catch (err) {
+      setError('Failed to start checkout')
+      setLoading(false)
+    }
+  }
+
+  const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -32,29 +96,13 @@ export default function LoginPage() {
     setLoading(false)
   }
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await response.json()
-
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setError(data.error || 'Something went wrong')
-        setLoading(false)
-      }
-    } catch (err) {
-      setError('Failed to start checkout')
-      setLoading(false)
+  const handleSubmit = (e: React.FormEvent) => {
+    if (mode === 'signup') {
+      handlePasswordSignup(e)
+    } else if (authMethod === 'magic') {
+      handleMagicLink(e)
+    } else {
+      handlePasswordLogin(e)
     }
   }
 
@@ -81,11 +129,12 @@ export default function LoginPage() {
           {mode === 'login' ? 'Welcome Back' : 'Start Your Free Trial'}
         </h1>
         <p style={{ color: '#666', marginBottom: '32px' }}>
-          {mode === 'login' 
-            ? 'Enter your email to sign in' 
+          {mode === 'login'
+            ? 'Sign in to access your coach'
             : '7 days free, then $89/month. Cancel anytime.'}
         </p>
 
+        {/* Login/Signup Toggle */}
         <div style={{
           display: 'flex',
           background: '#f5f5f5',
@@ -94,6 +143,7 @@ export default function LoginPage() {
           marginBottom: '24px'
         }}>
           <button
+            type="button"
             onClick={() => setMode('login')}
             style={{
               flex: 1,
@@ -110,6 +160,7 @@ export default function LoginPage() {
             Log In
           </button>
           <button
+            type="button"
             onClick={() => setMode('signup')}
             style={{
               flex: 1,
@@ -127,7 +178,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
+        <form onSubmit={handleSubmit}>
           <input
             type="email"
             value={email}
@@ -145,6 +196,29 @@ export default function LoginPage() {
               outline: 'none'
             }}
           />
+          
+          {/* Password field - show for login (password mode) and signup */}
+          {(mode === 'signup' || (mode === 'login' && authMethod === 'password')) && (
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required={mode === 'signup' || authMethod === 'password'}
+              minLength={6}
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                fontSize: '16px',
+                border: '2px solid #e0e0e0',
+                borderRadius: '12px',
+                marginBottom: '16px',
+                boxSizing: 'border-box',
+                outline: 'none'
+              }}
+            />
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -160,13 +234,67 @@ export default function LoginPage() {
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading 
-              ? 'Loading...' 
-              : mode === 'login' 
-                ? 'Send Magic Link' 
-                : 'Start 7-Day Free Trial'}
+            {loading
+              ? 'Loading...'
+              : mode === 'signup'
+                ? 'Start 7-Day Free Trial'
+                : authMethod === 'password'
+                  ? 'Sign In'
+                  : 'Send Magic Link'}
           </button>
         </form>
+
+        {/* Toggle between password and magic link for login */}
+        {mode === 'login' && (
+          <button
+            type="button"
+            onClick={() => setAuthMethod(authMethod === 'password' ? 'magic' : 'password')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#2dd4a8',
+              cursor: 'pointer',
+              marginTop: '16px',
+              fontSize: '14px',
+              textDecoration: 'underline'
+            }}
+          >
+            {authMethod === 'password' ? 'Use magic link instead' : 'Use password instead'}
+          </button>
+        )}
+
+        {/* Forgot password */}
+        {mode === 'login' && authMethod === 'password' && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (!email) {
+                setError('Enter your email first')
+                return
+              }
+              setLoading(true)
+              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/auth/reset-password`,
+              })
+              if (error) {
+                setError(error.message)
+              } else {
+                setMessage('Check your email for password reset link')
+              }
+              setLoading(false)
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#999',
+              cursor: 'pointer',
+              marginTop: '8px',
+              fontSize: '14px'
+            }}
+          >
+            Forgot password?
+          </button>
+        )}
 
         {message && (
           <p style={{
@@ -193,8 +321,10 @@ export default function LoginPage() {
         )}
 
         <p style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
-          {mode === 'login' 
-            ? "We'll email you a magic link for password-free sign in."
+          {mode === 'login'
+            ? authMethod === 'password' 
+              ? "Enter your email and password to sign in."
+              : "We'll email you a magic link for password-free sign in."
             : "You'll be taken to secure checkout. No charge for 7 days."}
         </p>
       </div>
