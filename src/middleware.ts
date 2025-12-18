@@ -34,14 +34,27 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if it exists
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const host = request.headers.get('host') || ''
+  const pathname = request.nextUrl.pathname
 
-  // If on coach.pattern18.com and hitting root, redirect to /coach
-  if (host.startsWith('coach.') && request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/coach', request.url))
+  // Protected routes that require authentication
+  const protectedRoutes = ['/coach', '/evidence', '/documents', '/breathe']
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+
+  // If accessing protected route without auth, redirect to login
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // If on coach.pattern18.com and hitting root, redirect appropriately
+  if (host.startsWith('coach.') && pathname === '/') {
+    if (user) {
+      return NextResponse.redirect(new URL('/coach', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   return response
