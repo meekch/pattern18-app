@@ -182,6 +182,7 @@ export default function EvidenceDashboard() {
       <style jsx>{`
         .evidence-page {
           min-height: 100vh;
+          overflow-y: auto;
           background: #f8faf9;
         }
         .header {
