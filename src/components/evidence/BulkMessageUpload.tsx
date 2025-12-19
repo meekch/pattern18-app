@@ -346,88 +346,72 @@ function UploadSection({
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
+  const handleClick = () => {
+    const input = document.getElementById('bulk-file-input') as HTMLInputElement;
+    if (input) input.click();
+  };
+
   return (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">
-        Upload Messages for Analysis
-      </h2>
-      <p className="text-gray-600 mb-6">
-        Import your iMazing export to detect patterns and build court-ready documentation
-      </p>
-
-      <div
-        onDrop={onDrop}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        className={`
-          border-2 border-dashed rounded-xl p-12 transition-all
-          ${isDragging 
-            ? 'border-green-500 bg-green-50' 
-            : 'border-gray-300 hover:border-green-400 hover:bg-gray-50'
-          }
-          ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
-        `}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
-              />
-            </svg>
-          </div>
+    <div>
+      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+          Import Messages
+        </h2>
+        <p className="text-gray-600 text-sm mb-4">
+          Upload your iMazing export to detect patterns automatically
+        </p>
+        
+        {/* Upload Area - Entire area is clickable */}
+        <div
+          onClick={handleClick}
+          onDrop={onDrop}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          className={`
+            border-2 border-dashed rounded-lg p-8 cursor-pointer transition-all text-center
+            ${isDragging
+              ? 'border-green-500 bg-green-50'
+              : 'border-gray-200 hover:border-green-400 hover:bg-green-50'
+            }
+            ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
+          `}
+        >
+          <input
+            id="bulk-file-input"
+            type="file"
+            className="hidden"
+            accept=".csv,.pdf,.png,.jpg,.jpeg"
+            onChange={onFileInput}
+            disabled={isProcessing}
+          />
           
-          <div>
-            <p className="text-lg font-medium text-gray-700">
-              Drop your file here, or{' '}
-              <label className="text-green-600 hover:text-green-700 cursor-pointer underline">
-                browse
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept=".csv,.pdf,.png,.jpg,.jpeg"
-                  onChange={onFileInput}
-                  disabled={isProcessing}
-                />
-              </label>
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Supports: iMazing CSV, iMazing PDF, Screenshots
-            </p>
-          </div>
+          <div className="text-3xl mb-3">📄</div>
+          <p className="font-medium text-gray-700 mb-1">
+            {isProcessing ? 'Processing...' : 'Click to upload or drag & drop'}
+          </p>
+          <p className="text-sm text-gray-500">
+            CSV or PDF from iMazing
+          </p>
+        </div>
+
+        {/* Quick tips */}
+        <div className="mt-4 flex gap-6 text-sm text-gray-500 justify-center">
+          <span className="flex items-center gap-1">
+            <span className="text-green-500">✓</span> PDF best for court
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="text-green-500">✓</span> CSV best for analysis
+          </span>
         </div>
       </div>
 
-      {/* Format recommendations */}
-      <div className="mt-8 grid grid-cols-3 gap-4 text-left">
-        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-green-600">★★★</span>
-            <span className="font-medium">PDF</span>
-          </div>
-          <p className="text-sm text-gray-600">
-            Preferred for court. Preserves formatting, hard to alter.
-          </p>
-        </div>
-        <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-600">★★★</span>
-            <span className="font-medium">CSV</span>
-          </div>
-          <p className="text-sm text-gray-600">
-            Includes metadata. Good for analysis, can export to PDF.
-          </p>
-        </div>
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-gray-400">★</span>
-            <span className="font-medium">Screenshots</span>
-          </div>
-          <p className="text-sm text-gray-600">
-            Quick but weak evidence. Easy to dispute in court.
-          </p>
-        </div>
-      </div>
+      {/* Help link */}
+      <p className="text-center text-sm text-gray-500">
+        Need help exporting?{' '}
+        <a href="/faq" className="text-green-600 hover:underline">
+          View iMazing guide
+        </a>
+      </p>
     </div>
   );
 }
