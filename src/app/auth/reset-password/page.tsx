@@ -118,9 +118,9 @@ export default function ResetPasswordPage() {
       setError(error.message)
       setUpdating(false)
     } else {
-      setMessage("Password updated! Redirecting to login...")
+      setMessage("Password updated! Redirecting...")
       setTimeout(() => {
-        router.push('/login')
+        router.push('/coach')
       }, 2000)
     }
   }
