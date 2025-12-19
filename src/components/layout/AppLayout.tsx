@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Sidebar from "./Sidebar";
-import QuickLogModal from "./QuickLogModal";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -13,15 +12,13 @@ interface AppLayoutProps {
 interface UserStats {
   totalIncidents: number;
   criticalCount: number;
-  pendingDeadlines: number;
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [stats, setStats] = useState<UserStats>({ totalIncidents: 0, criticalCount: 0, pendingDeadlines: 0 });
+  const [stats, setStats] = useState<UserStats>({ totalIncidents: 0, criticalCount: 0 });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -44,19 +41,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         setStats({
           totalIncidents: data.total || data.incidents.length,
           criticalCount: data.incidents.filter((i: any) => i.severity === 'critical').length,
-          pendingDeadlines: 0 // TODO: Calculate from opposing_filings
         });
       }
     } catch (e) {
       console.error(e);
-    }
-  };
-
-  const handleQuickLogSave = async () => {
-    setQuickLogOpen(false);
-    // Refresh stats
-    if (user) {
-      loadStats(user.id);
     }
   };
 
@@ -65,7 +53,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
-        onQuickLog={() => setQuickLogOpen(true)}
       />
       
       <div className="main-wrapper">
@@ -89,12 +76,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="top-bar-actions">
-            <button 
-              className="quick-log-btn-mobile"
-              onClick={() => setQuickLogOpen(true)}
-            >
-              🆘
-            </button>
             <button className="user-btn">
               {user?.email?.charAt(0).toUpperCase() || '?'}
             </button>
@@ -106,14 +87,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {children}
         </main>
       </div>
-
-      {/* Quick Log Modal */}
-      <QuickLogModal 
-        isOpen={quickLogOpen}
-        onClose={() => setQuickLogOpen(false)}
-        onSave={handleQuickLogSave}
-        userId={user?.id}
-      />
 
       <style jsx>{`
         .app-layout {
@@ -188,19 +161,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           display: flex;
           align-items: center;
           gap: 12px;
-        }
-        .quick-log-btn-mobile {
-          display: none;
-          background: #e74c3c;
-          border: none;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          font-size: 18px;
-          cursor: pointer;
-        }
-        @media (max-width: 768px) {
-          .quick-log-btn-mobile { display: flex; align-items: center; justify-content: center; }
         }
         .user-btn {
           width: 36px;

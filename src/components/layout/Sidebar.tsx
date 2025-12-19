@@ -44,12 +44,10 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Sidebar({ 
   isOpen, 
-  onClose,
-  onQuickLog 
+  onClose 
 }: { 
   isOpen: boolean; 
   onClose: () => void;
-  onQuickLog: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -94,12 +92,6 @@ export default function Sidebar({
           </div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
-
-        {/* Quick Action */}
-        <button className="quick-log-btn" onClick={onQuickLog}>
-          <span className="pulse"></span>
-          🆘 Log Incident Now
-        </button>
 
         {/* Navigation */}
         <nav className="nav">
@@ -235,48 +227,10 @@ export default function Sidebar({
             .close-btn { display: block; }
           }
 
-          .quick-log-btn {
-            margin: 16px;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
-          }
-          .quick-log-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-          }
-          .pulse {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.3);
-            border-radius: 10px;
-            transform: translate(-50%, -50%) scale(0);
-            animation: pulse 2s infinite;
-          }
-          @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-          }
-
           .nav {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 16px 8px;
           }
           .nav-section {
             margin-bottom: 4px;
