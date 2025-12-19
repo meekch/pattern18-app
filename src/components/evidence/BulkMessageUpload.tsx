@@ -628,12 +628,12 @@ function ResultsSection({
           </div>
           
           {showIncidents && (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {incidents.incidents.map((incident) => (
-                <IncidentCard key={incident.id} incident={incident} />
-              ))}
-            </div>
-          )}
+  <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2">
+    {incidents.incidents.map((incident) => (
+      <IncidentCard key={incident.id} incident={incident} />
+    ))}
+  </div>
+)}
         </div>
       )}
 
@@ -727,52 +727,89 @@ function ResultsSection({
   );
 }
 
-function IncidentCard({ incident }: { incident: Incident }) {
+function IncidentCard({ 
+  incident, 
+  isSelected, 
+  onToggle 
+}: { 
+  incident: Incident;
+  isSelected?: boolean;
+  onToggle?: () => void;
+}) {
   const categoryName = CATEGORY_DISPLAY_NAMES[incident.category] || incident.category;
   
+  // Format date nicely
+  const dateStr = incident.startTime.toLocaleDateString('en-US', { 
+    weekday: 'short',
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  // Get first message preview
+  const preview = incident.messages[0]?.text?.slice(0, 120) || '';
+  
   return (
-    <div className={`p-4 border rounded-lg ${
-      incident.maxSeverity === 'critical' ? 'border-red-200 bg-red-50' :
-      incident.maxSeverity === 'high' ? 'border-orange-200 bg-orange-50' :
-      'border-gray-200 bg-white'
-    }`}>
-      <div className="flex justify-between items-start">
-        <div>
-          <h4 className="font-medium text-gray-800">{incident.title}</h4>
-          <p className="text-sm text-gray-500">
-            {incident.startTime.toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric',
-              year: 'numeric'
-            })}
-            {incident.durationMinutes > 0 && ` • ${incident.durationMinutes} min`}
-            {` • ${incident.messageCount} messages`}
-          </p>
-        </div>
-        <div className="text-right">
-          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-            incident.evidenceStrength === 'strong' ? 'bg-green-100 text-green-700' :
-            incident.evidenceStrength === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
-            'bg-gray-100 text-gray-600'
-          }`}>
-            {incident.evidenceStrength}
-          </span>
-        </div>
-      </div>
-      
-      {incident.uniquePatterns.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {incident.uniquePatterns.slice(0, 4).map((pattern, i) => (
-            <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-              {pattern}
-            </span>
-          ))}
-          {incident.uniquePatterns.length > 4 && (
-            <span className="text-xs text-gray-400">
-              +{incident.uniquePatterns.length - 4} more
-            </span>
+    <div 
+      className={`border rounded-lg p-4 transition-all ${
+        incident.maxSeverity === 'critical' ? 'border-red-300 bg-red-50' :
+        incident.maxSeverity === 'high' ? 'border-orange-300 bg-orange-50' :
+        'border-gray-200 bg-white'
+      } ${isSelected ? 'ring-2 ring-green-500' : ''} ${onToggle ? 'cursor-pointer hover:shadow-md' : ''}`}
+      onClick={onToggle}
+    >
+      {/* Header row */}
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-2">
+          {onToggle && (
+            <span className="text-lg">{isSelected ? '☑️' : '⬜'}</span>
           )}
+          <span className="text-sm text-gray-500">{dateStr}</span>
         </div>
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+          incident.evidenceStrength === 'strong' ? 'bg-green-100 text-green-700' :
+          incident.evidenceStrength === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-gray-100 text-gray-600'
+        }`}>
+          {incident.evidenceStrength === 'strong' ? '🟢 Strong' :
+           incident.evidenceStrength === 'moderate' ? '🟡 Moderate' : '⚪ Weak'}
+        </span>
+      </div>
+
+      {/* Title */}
+      <h4 className="font-semibold text-gray-800 mb-1">{incident.title}</h4>
+      
+      {/* Meta info */}
+      <p className="text-xs text-gray-500 mb-2">
+        {incident.messageCount} messages
+        {incident.durationMinutes > 0 && ` • ${incident.durationMinutes} min`}
+        {` • ${categoryName}`}
+      </p>
+
+      {/* Pattern tags */}
+      <div className="flex flex-wrap gap-1 mb-3">
+        {incident.uniquePatterns.slice(0, 5).map((pattern, i) => (
+          <span 
+            key={i} 
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              incident.maxSeverity === 'critical' ? 'bg-red-200 text-red-800' :
+              incident.maxSeverity === 'high' ? 'bg-orange-200 text-orange-800' :
+              'bg-green-100 text-green-800'
+            }`}
+          >
+            {pattern}
+          </span>
+        ))}
+        {incident.uniquePatterns.length > 5 && (
+          <span className="text-xs text-gray-400">+{incident.uniquePatterns.length - 5} more</span>
+        )}
+      </div>
+
+      {/* Message preview */}
+      {preview && (
+        <p className="text-sm text-gray-600 italic border-l-2 border-gray-300 pl-3">
+          "{preview}{preview.length >= 120 ? '...' : ''}"
+        </p>
       )}
     </div>
   );
