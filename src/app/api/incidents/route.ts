@@ -3,13 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
     const {
       userId,
       conversationId,
@@ -23,10 +22,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "User ID required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User ID required" }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -48,23 +44,13 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Error saving incident:", error);
-      return NextResponse.json(
-        { error: "Failed to save incident" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to save incident" }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      incident: data,
-      message: "Saved to your evidence" 
-    });
+    return NextResponse.json({ success: true, incident: data });
   } catch (error) {
     console.error("Save incident error:", error);
-    return NextResponse.json(
-      { error: "Failed to save incident" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to save incident" }, { status: 500 });
   }
 }
 
@@ -72,55 +58,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "User ID required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User ID required" }, { status: 400 });
     }
 
     const { data: incidents, error } = await supabase
       .from("incidents")
       .select("*")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching incidents:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch incidents" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch incidents" }, { status: 500 });
     }
 
-    const { data: allIncidents } = await supabase
-      .from("incidents")
-      .select("patterns")
-      .eq("user_id", userId);
-
     const patternCounts: Record<string, number> = {};
-    if (allIncidents) {
-      for (const incident of allIncidents) {
-        for (const pattern of incident.patterns || []) {
-          patternCounts[pattern] = (patternCounts[pattern] || 0) + 1;
-        }
+    for (const incident of incidents || []) {
+      for (const pattern of incident.patterns || []) {
+        patternCounts[pattern] = (patternCounts[pattern] || 0) + 1;
       }
     }
 
     return NextResponse.json({
       incidents,
       patternSummary: patternCounts,
-      total: allIncidents?.length || 0,
+      total: incidents?.length || 0,
     });
   } catch (error) {
     console.error("Get incidents error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch incidents" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch incidents" }, { status: 500 });
   }
 }
