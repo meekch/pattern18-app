@@ -5,7 +5,9 @@
  * Handles file upload, parsing, pattern detection, and court coaching
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 // Update these import paths if your project structure differs
 import { 
   parseCSV, 
@@ -55,6 +57,10 @@ interface UploadState {
 // ============================================
 
 export default function BulkMessageUpload() {
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [state, setState] = useState<UploadState>({
     step: 'upload',
     file: null,
@@ -66,6 +72,70 @@ export default function BulkMessageUpload() {
     error: null,
     isProcessing: false
   });
+
+  // Get user ID on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
+
+  // Save incidents to database
+  const handleSaveToEvidence = async () => {
+    if (!userId) {
+      setSaveError('Please log in to save evidence');
+      return;
+    }
+
+    if (!state.incidentResult?.incidents.length) {
+      setSaveError('No incidents to save');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      // Prepare incidents for API - convert Date objects to ISO strings
+      const incidentsToSave = state.incidentResult.incidents.map(incident => ({
+        ...incident,
+        startTime: incident.startTime.toISOString(),
+        endTime: incident.endTime.toISOString(),
+        messages: incident.messages.map(msg => ({
+          ...msg,
+          timestamp: msg.timestamp.toISOString(),
+          editedAt: msg.editedAt?.toISOString() || null
+        }))
+      }));
+
+      const response = await fetch('/api/incidents/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          incidents: incidentsToSave
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save incidents');
+      }
+
+      // Success - redirect to evidence dashboard
+      router.push('/evidence?saved=' + result.saved);
+    } catch (err) {
+      console.error('Save error:', err);
+      setSaveError(err instanceof Error ? err.message : 'Failed to save incidents');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // File drop handler
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -252,6 +322,9 @@ export default function BulkMessageUpload() {
           parseResult={state.parseResult!}
           onDownloadExhibit={handleDownloadExhibit}
           onReset={handleReset}
+          onSaveToEvidence={handleSaveToEvidence}
+          saving={saving}
+          saveError={saveError}
         />
       )}
     </div>
@@ -453,16 +526,23 @@ function ResultsSection({
   incidents,
   parseResult,
   onDownloadExhibit,
-  onReset
+  onReset,
+  onSaveToEvidence,
+  saving,
+  saveError
 }: {
   analysis: BulkAnalysisResult;
   incidents: IncidentDetectionResult | null;
   parseResult: ParseResult;
   onDownloadExhibit: (options?: Partial<ExhibitOptions>) => void;
   onReset: () => void;
+  onSaveToEvidence: () => void;
+  saving: boolean;
+  saveError: string | null;
 }) {
   const s = analysis.summary;
   const [showIncidents, setShowIncidents] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   return (
     <div>
@@ -482,6 +562,50 @@ function ResultsSection({
           ← Analyze New File
         </button>
       </div>
+
+      {/* Save Error */}
+      {saveError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {saveError}
+        </div>
+      )}
+
+      {/* Save Success */}
+      {saved && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+          ✓ Incidents saved to your Evidence Dashboard!
+        </div>
+      )}
+
+      {/* SAVE TO EVIDENCE - Primary Action */}
+      {incidents && incidents.incidents.length > 0 && !saved && (
+        <div className="mb-8 p-6 bg-green-50 border-2 border-green-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-green-800">
+                {incidents.incidents.length} incidents ready to save
+              </h3>
+              <p className="text-sm text-green-600">
+                Save to your Evidence Dashboard to access anytime and generate court exhibits.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                onSaveToEvidence();
+                setSaved(true);
+              }}
+              disabled={saving}
+              className={`px-6 py-3 rounded-lg font-semibold text-white ${
+                saving 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {saving ? 'Saving...' : '✓ Save to Evidence Dashboard'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
