@@ -41,7 +41,7 @@ export default function RespondToFilingPage() {
         <p className="subtitle">Upload their motion and build your response with evidence.</p>
 
         <div className="progress">
-          <div className={`step ${step >= 1 ? "active" : ""}`}>1. Upload</div>
+          <div className={`step ${step >= 1 ? "active" : ""}`}>1. Paste Filing</div>
           <div className={`step ${step >= 2 ? "active" : ""}`}>2. Review Claims</div>
           <div className={`step ${step >= 3 ? "active" : ""}`}>3. Respond</div>
           <div className={`step ${step >= 4 ? "active" : ""}`}>4. Generate</div>
@@ -49,7 +49,7 @@ export default function RespondToFilingPage() {
 
         {step === 1 && (
           <div className="card">
-            <h2>Upload Their Filing</h2>
+            <h2>Paste Their Filing</h2>
             <textarea
               value={filingText}
               onChange={e => setFilingText(e.target.value)}
@@ -57,7 +57,7 @@ export default function RespondToFilingPage() {
               rows={8}
             />
             <button onClick={extractClaims} disabled={!filingText.trim() || extracting} className="primary-btn">
-              {extracting ? "Extracting..." : "Extract Claims"}
+              {extracting ? "Extracting..." : "Find Their Allegations"}
             </button>
           </div>
         )}
