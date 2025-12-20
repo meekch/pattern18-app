@@ -592,8 +592,8 @@ export default function CoachPage() {
         />
       )}
 
-      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
-      {showSafetyResources && <SafetyResources onClose={() => setShowSafetyResources(false)} />}
+      {showFeedback && <FeedbackModal userId={user?.id || ""} conversationId={currentConversationId} onClose={() => setShowFeedback(false)} />}
+      {showSafetyResources && <SafetyResources isOpen={showSafetyResources} onClose={() => setShowSafetyResources(false)} />}
 
       {showRegulate && (
         <div className="regulate-overlay">
