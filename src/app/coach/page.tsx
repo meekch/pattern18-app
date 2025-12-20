@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
@@ -57,18 +57,18 @@ const affirmations = [
 ];
 
 const groundingSteps = [
-  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "👁" },
-  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "✋" },
-  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "👂" },
-  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "👃" },
-  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "👅" },
+  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "ðŸ‘" },
+  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "âœ‹" },
+  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "ðŸ‘‚" },
+  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "ðŸ‘ƒ" },
+  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "ðŸ‘…" },
 ];
 
 const quickPrompts = [
-  { icon: "📱", label: "Analyze a message", prompt: "I just received this message and need help understanding what's really going on..." },
-  { icon: "📝", label: "Draft a response", prompt: "I need to respond to this message. Help me craft something strategic..." },
-  { icon: "⚖️", label: "Court document help", prompt: "I need help with a court document..." },
-  { icon: "🎯", label: "Identify patterns", prompt: "Can you help me identify manipulation patterns in this situation..." },
+  { icon: "ðŸ“±", label: "Analyze a message", prompt: "I just received this message and need help understanding what's really going on..." },
+  { icon: "ðŸ“", label: "Draft a response", prompt: "I need to respond to this message. Help me craft something strategic..." },
+  { icon: "âš–ï¸", label: "Court document help", prompt: "I need help with a court document..." },
+  { icon: "ðŸŽ¯", label: "Identify patterns", prompt: "Can you help me identify manipulation patterns in this situation..." },
 ];
 
 export default function CoachPage() {
@@ -535,32 +535,32 @@ export default function CoachPage() {
       <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h3>Pattern 18</h3>
-          <button onClick={() => setShowSidebar(false)} className="close-sidebar">×</button>
+          <button onClick={() => setShowSidebar(false)} className="close-sidebar">Ã—</button>
         </div>
         
         <div className="sidebar-menu">
           <button className="menu-item" onClick={() => router.push("/dashboard")}>
-            <span>📊</span> Dashboard
+            <span>ðŸ“Š</span> Dashboard
           </button>
           <button className="menu-item" onClick={() => router.push("/log")}>
-            <span>📝</span> Log Incident
+            <span>ðŸ“</span> Log Incident
           </button>
           <button className="menu-item" onClick={() => router.push("/evidence")}>
-            <span>📁</span> Evidence Library
+            <span>ðŸ“</span> Evidence Library
           </button>
           <button className="menu-item" onClick={() => router.push("/documents")}>
-            <span>📄</span> Documents
+            <span>ðŸ“„</span> Documents
           </button>
           <div className="menu-divider" />
           <button className="menu-item breathe-item" onClick={() => { setShowRegulate(true); setShowSidebar(false); }}>
-            <span>🧘</span> Take a Breath
+            <span>ðŸ§˜</span> Take a Breath
           </button>
           <button className="menu-item" onClick={() => router.push("/case-setup")}>
-            <span>⚙️</span> Case Setup
+            <span>âš™ï¸</span> Case Setup
           </button>
           <div className="menu-divider" />
           <button className="menu-item logout-item" onClick={handleLogout}>
-            <span>👋</span> Sign Out
+            <span>ðŸ‘‹</span> Sign Out
           </button>
         </div>
 
@@ -587,7 +587,7 @@ export default function CoachPage() {
 
       {showPromptGallery && (
         <PromptGallery
-          onSelect={(prompt) => { setInput(prompt); setShowPromptGallery(false); setShowWelcome(false); }}
+          onSelectPrompt={(prompt) => { setInput(prompt); setShowPromptGallery(false); setShowWelcome(false); }}
           onClose={() => setShowPromptGallery(false)}
         />
       )}
@@ -601,27 +601,27 @@ export default function CoachPage() {
             {regulateMode === "menu" && (
               <>
                 <div className="regulate-header">
-                  <span className="regulate-icon">💚</span>
+                  <span className="regulate-icon">ðŸ’š</span>
                   <h2>Take a moment</h2>
                   <p>You're safe here. Whatever just happened can wait.</p>
                 </div>
                 <div className="regulate-options">
                   <button onClick={() => { setBreatheCount(0); setBreathePhase("inhale"); setRegulateMode("breathe"); }}>
-                    <span className="option-icon">🫁</span>
+                    <span className="option-icon">ðŸ«</span>
                     <span className="option-text">
                       <strong>Breathe</strong>
                       <small>Box breathing to calm your nervous system</small>
                     </span>
                   </button>
                   <button onClick={() => setRegulateMode("ground")}>
-                    <span className="option-icon">🌳</span>
+                    <span className="option-icon">ðŸŒ³</span>
                     <span className="option-text">
                       <strong>Ground</strong>
                       <small>5-4-3-2-1 sensory grounding</small>
                     </span>
                   </button>
                   <button onClick={() => { setCurrentAffirmation(getRandomAffirmation()); setRegulateMode("affirm"); }}>
-                    <span className="option-icon">💪</span>
+                    <span className="option-icon">ðŸ’ª</span>
                     <span className="option-text">
                       <strong>Remember</strong>
                       <small>A reminder from someone who's been there</small>
@@ -652,16 +652,16 @@ export default function CoachPage() {
                       key={i}
                       className={`progress-dot ${i < breatheCount ? 'complete' : ''} ${i === breatheCount ? 'active' : ''}`}
                     >
-                      {i < breatheCount && <span>✓</span>}
+                      {i < breatheCount && <span>âœ“</span>}
                     </div>
                   ))}
                 </div>
 
                 <p className="breathe-cycle">
-                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete 💚"}
+                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete ðŸ’š"}
                 </p>
 
-                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
+                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>â† Back</button>
               </div>
             )}
 
@@ -680,7 +680,7 @@ export default function CoachPage() {
                     </div>
                   ))}
                 </div>
-                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>← Back</button>
+                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>â† Back</button>
               </div>
             )}
 
@@ -692,8 +692,8 @@ export default function CoachPage() {
                 </div>
                 <p className="affirm-signature">- From someone who's been there</p>
                 <div className="affirm-actions">
-                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another ✨</button>
-                  <button onClick={() => setRegulateMode("menu")}>← Back</button>
+                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another âœ¨</button>
+                  <button onClick={() => setRegulateMode("menu")}>â† Back</button>
                 </div>
               </div>
             )}
@@ -705,7 +705,7 @@ export default function CoachPage() {
         <div className="header-content">
           <div className="logo-section">
             <button onClick={() => setShowSidebar(true)} className="menu-btn">
-              ☰
+              â˜°
             </button>
             <div className="logo">
               <div className="logo-icon">18</div>
@@ -727,11 +727,11 @@ export default function CoachPage() {
       {(caseContext || storedPdf) && (
         <div className="context-banner">
           <span>
-            {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> - {caseContext.petitioner} v. {caseContext.respondent}</>}
-            {storedPdf && !caseContext && <>📄 {storedPdf.name}</>}
-            {storedPdf && caseContext && <> • PDF loaded</>}
+            {caseContext && <>ðŸ“‹ <strong>{caseContext.caseNumber}</strong> - {caseContext.petitioner} v. {caseContext.respondent}</>}
+            {storedPdf && !caseContext && <>ðŸ“„ {storedPdf.name}</>}
+            {storedPdf && caseContext && <> â€¢ PDF loaded</>}
           </span>
-          <button onClick={clearCaseContext}>×</button>
+          <button onClick={clearCaseContext}>Ã—</button>
         </div>
       )}
 
@@ -751,7 +751,7 @@ export default function CoachPage() {
           {showWelcome && messages.length === 0 && (
             <div className="welcome-section">
               <div className="welcome-card">
-                <div className="welcome-icon">💚</div>
+                <div className="welcome-icon">ðŸ’š</div>
                 <h1>Hey, I'm glad you're here.</h1>
                 <p className="welcome-subtitle">
                   I'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, 
@@ -782,7 +782,7 @@ export default function CoachPage() {
 
               <div className="breathe-cta">
                 <button onClick={() => setShowRegulate(true)}>
-                  <span>🧘</span> Need to breathe first?
+                  <span>ðŸ§˜</span> Need to breathe first?
                 </button>
               </div>
             </div>
@@ -800,7 +800,7 @@ export default function CoachPage() {
                 <>
                   {msg.patterns && msg.patterns.length > 0 && (
                     <div className="patterns-detected">
-                      <span className="patterns-label">🎯 Patterns identified:</span>
+                      <span className="patterns-label">ðŸŽ¯ Patterns identified:</span>
                       <div className="pattern-tags">
                         {msg.patterns.map((pattern, i) => (
                           <span key={i} className="pattern-tag">{pattern}</span>
@@ -809,9 +809,9 @@ export default function CoachPage() {
                     </div>
                   )}
                   <div className="message-actions">
-                    <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+                    <button onClick={() => copyToClipboard(msg.content)}>ðŸ“‹ Copy</button>
                     {msg.savedToEvidence ? (
-                      <span className="saved-badge">✓ Saved</span>
+                      <span className="saved-badge">âœ“ Saved</span>
                     ) : (
                       <button
                         onClick={() => {
@@ -822,7 +822,7 @@ export default function CoachPage() {
                         disabled={savingEvidence === msg.id}
                         className="save-evidence-btn"
                       >
-                        {savingEvidence === msg.id ? '💾 Saving...' : '💾 Save to Evidence'}
+                        {savingEvidence === msg.id ? 'ðŸ’¾ Saving...' : 'ðŸ’¾ Save to Evidence'}
                       </button>
                     )}
                   </div>
