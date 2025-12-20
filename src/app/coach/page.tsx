@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
@@ -57,19 +57,19 @@ const affirmations = [
 ];
 
 const groundingSteps = [
-  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "ðŸ‘ï¸" },
-  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "âœ‹" },
-  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "ðŸ‘‚" },
-  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "ðŸ‘ƒ" },
-  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "ðŸ‘…" },
+  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "👁" },
+  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "✋" },
+  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "👂" },
+  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "👃" },
+  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "👅" },
 ];
 
-const welcomeMessage: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "Hey, I'm glad you're here. ðŸ’š\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe â€” I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
-  timestamp: new Date(),
-};
+const quickPrompts = [
+  { icon: "📱", label: "Analyze a message", prompt: "I just received this message and need help understanding what's really going on..." },
+  { icon: "📝", label: "Draft a response", prompt: "I need to respond to this message. Help me craft something strategic..." },
+  { icon: "⚖️", label: "Court document help", prompt: "I need help with a court document..." },
+  { icon: "🎯", label: "Identify patterns", prompt: "Can you help me identify manipulation patterns in this situation..." },
+];
 
 export default function CoachPage() {
   const [user, setUser] = useState<any>(null);
@@ -87,7 +87,7 @@ export default function CoachPage() {
   const [showSafetyResources, setShowSafetyResources] = useState(false);
   const [safetyTriggered, setSafetyTriggered] = useState(false);
 
-  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -103,7 +103,8 @@ export default function CoachPage() {
   const [breatheCount, setBreatheCount] = useState(0);
   const [currentAffirmation, setCurrentAffirmation] = useState(affirmations[0]);
   const [evidenceCount, setEvidenceCount] = useState(0);
-  
+  const [showWelcome, setShowWelcome] = useState(true);
+
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,7 +113,7 @@ export default function CoachPage() {
     const checkUser = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       const user = session?.user;
-      
+
       if (!user) {
         router.push("/login");
         return;
@@ -127,8 +128,7 @@ export default function CoachPage() {
 
       setSubscriptionStatus(sub?.status || 'none');
       setAuthLoading(false);
-      
-      // Load evidence count
+
       const { count } = await supabase
         .from('incidents')
         .select('*', { count: 'exact', head: true })
@@ -155,9 +155,38 @@ export default function CoachPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (showRegulate && regulateMode === "breathe") {
+      const phases = ["inhale", "hold", "exhale", "rest"] as const;
+      let currentPhaseIndex = 0;
+      
+      const interval = setInterval(() => {
+        currentPhaseIndex = (currentPhaseIndex + 1) % 4;
+        setBreathePhase(phases[currentPhaseIndex]);
+        
+        if (currentPhaseIndex === 0) {
+          setBreatheCount(prev => {
+            if (prev >= 3) {
+              return 4;
+            }
+            return prev + 1;
+          });
+        }
+      }, 4000);
+
+      return () => clearInterval(interval);
+    }
+  }, [showRegulate, regulateMode]);
+
   const loadConversations = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -183,16 +212,18 @@ export default function CoachPage() {
         content: msg.content,
         timestamp: new Date(msg.created_at),
       }));
-      
-      setMessages(loadedMessages.length > 0 ? loadedMessages : [welcomeMessage]);
+
+      setMessages(loadedMessages);
       setCurrentConversationId(conversationId);
+      setShowWelcome(false);
     }
     setShowSidebar(false);
   };
 
   const startNewConversation = () => {
     setCurrentConversationId(null);
-    setMessages([welcomeMessage]);
+    setMessages([]);
+    setShowWelcome(true);
     setShowSidebar(false);
   };
 
@@ -212,20 +243,16 @@ export default function CoachPage() {
 
     if (data && !error) {
       setConversations(prev => [data, ...prev]);
-      setCurrentConversationId(data.id);
       return data.id;
     }
     return null;
   };
 
-  const saveMessage = async (conversationId: string, role: "user" | "assistant", content: string) => {
-    if (!user) return;
-
+  const saveMessage = async (conversationId: string, role: string, content: string) => {
     await supabase.from('messages').insert({
       conversation_id: conversationId,
-      user_id: user.id,
-      role: role,
-      content: content,
+      role,
+      content,
     });
 
     await supabase
@@ -234,361 +261,177 @@ export default function CoachPage() {
       .eq('id', conversationId);
   };
 
-  const rateMessage = async (messageId: string, messageContent: string, helpful: boolean) => {
-    if (!user || ratedMessages.has(messageId)) return;
-    
-    await supabase.from('feedback').insert({
-      user_id: user.id,
-      type: helpful ? 'message_helpful' : 'message_not_helpful',
-      message_content: messageContent.slice(0, 500),
-      conversation_id: currentConversationId,
-    });
-    
-    setRatedMessages(prev => new Set(prev).add(messageId));
+  const getRandomAffirmation = () => {
+    return affirmations[Math.floor(Math.random() * affirmations.length)];
   };
 
-  const saveToEvidence = async (msg: Message, userMsg?: Message) => {
-    if (!user) return;
-    setSavingEvidence(msg.id);
-    
-    try {
-      const response = await fetch('/api/incidents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          conversationId: currentConversationId,
-          coparentMessage: userMsg?.content || null,
-          coachResponse: msg.content,
-          patterns: msg.patterns || [],
-          incidentType: 'message',
-          severity: 'medium',
-        }),
-      });
-      
-      if (response.ok) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msg.id ? { ...m, savedToEvidence: true } : m
-          )
-        );
-        setEvidenceCount(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error('Error saving to evidence:', error);
-    } finally {
-      setSavingEvidence(null);
+  const getPhaseInstruction = () => {
+    switch (breathePhase) {
+      case "inhale": return "Breathe in";
+      case "hold": return "Hold";
+      case "exhale": return "Breathe out";
+      case "rest": return "Rest";
     }
   };
 
-  useEffect(() => {
-    const accepted = localStorage.getItem("pattern18-disclaimer-accepted");
-    if (!accepted) {
-      setShowDisclaimer(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    setCurrentAffirmation(affirmations[Math.floor(Math.random() * affirmations.length)]);
-  }, []);
-
-  const scrollToBottom = useCallback(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 150) + "px";
-    }
-  }, [input]);
-
-  useEffect(() => {
-    if (showRegulate && regulateMode === "breathe") {
-      const phases: Array<"inhale" | "hold" | "exhale" | "rest"> = ["inhale", "hold", "exhale", "rest"];
-      let phaseIndex = 0;
-      let count = 0;
-      
-      setBreathePhase("inhale");
-      setBreatheCount(0);
-      
-      const interval = setInterval(() => {
-        phaseIndex = (phaseIndex + 1) % 4;
-        setBreathePhase(phases[phaseIndex]);
-        
-        if (phaseIndex === 0) {
-          count++;
-          setBreatheCount(count);
-          if (count >= 4) {
-            clearInterval(interval);
-            setTimeout(() => setRegulateMode("menu"), 2000);
-          }
-        }
-      }, 4000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [showRegulate, regulateMode]);
-
-  const parseCaseContext = (response: string): CaseContext | null => {
-    try {
-      const caseMatch = response.match(/\*\*Case:\*\*\s*([^\n]+)/);
-      const courtMatch = response.match(/\*\*Court:\*\*\s*([^\n]+)/);
-      const petitionerMatch = response.match(/\*\*Petitioner:\*\*\s*([^\n]+)/);
-      const respondentMatch = response.match(/\*\*Respondent:\*\*\s*([^\n]+)/);
-      const documentMatch = response.match(/\*\*Document:\*\*\s*([^\n]+)/);
-
-      if (caseMatch && petitionerMatch && respondentMatch) {
-        return {
-          caseNumber: caseMatch[1].trim(),
-          court: courtMatch ? courtMatch[1].trim() : "",
-          petitioner: petitionerMatch[1].trim(),
-          respondent: respondentMatch[1].trim(),
-          userRole: "respondent",
-          documentType: documentMatch ? documentMatch[1].trim() : "",
-        };
-      }
-    } catch (e) {
-      console.error("Failed to parse case context:", e);
-    }
-    return null;
-  };
-
-  const handlePromptSelect = (prompt: string) => {
+  const handleQuickPrompt = (prompt: string) => {
     setInput(prompt);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    setShowWelcome(false);
+    inputRef.current?.focus();
   };
 
-  const sendMessage = async (text: string, imageFile?: File) => {
-    if (detectCrisis(input)) {
-      setSafetyTriggered(true);
-      setShowSafetyResources(true);
-    }
-    if (isLoading) return;
-
-    const userMessageId = Date.now().toString();
-    let imageDataUrl: string | undefined;
-    let newPdfBase64: string | undefined;
-    
-    const isPdf = imageFile && (imageFile.type === "application/pdf" || imageFile.name.toLowerCase().endsWith(".pdf"));
-
-    if (imageFile) {
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(imageFile);
-      });
-
-      if (isPdf) {
-        newPdfBase64 = base64.replace(/^data:application\/pdf;base64,/, "");
-        setStoredPdf({ base64: newPdfBase64, name: imageFile.name });
-      } else {
-        imageDataUrl = base64;
-      }
-    }
-
-    const displayText = text || (isPdf ? "ðŸ“„ Document uploaded" : "ðŸ“· Screenshot uploaded");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
-      id: userMessageId,
+      id: Date.now().toString(),
       role: "user",
-      content: displayText,
-      image: imageDataUrl,
+      content: input.trim(),
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setShowWelcome(false);
+
+    if (detectCrisis(userMessage.content) && !safetyTriggered) {
+      setSafetyTriggered(true);
+      setShowSafetyResources(true);
+    }
 
     let convId = currentConversationId;
     if (!convId) {
-      convId = await createConversation(displayText);
-    }
-    if (convId) {
-      await saveMessage(convId, "user", displayText);
+      convId = await createConversation(userMessage.content);
+      setCurrentConversationId(convId);
     }
 
-    const assistantMessageId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: assistantMessageId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      },
-    ]);
+    if (convId) {
+      await saveMessage(convId, 'user', userMessage.content);
+    }
+
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      const formData = new FormData();
-      formData.append("message", text || "");
-      formData.append("history", JSON.stringify(messages.slice(-10).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }))));
-      
-      if (caseContext) {
-        formData.append("caseContext", JSON.stringify(caseContext));
-      }
-
-      if (imageFile) {
-        formData.append("file", imageFile);
-      }
-      
-      const pdfToUse = newPdfBase64 || storedPdf?.base64;
-      if (pdfToUse && !imageFile) {
-        formData.append("storedPdf", pdfToUse);
-      }
-
       const response = await fetch("/api/coach", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          caseContext,
+          pdfContent: storedPdf?.base64,
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
+      if (!response.ok) throw new Error("Failed to get response");
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-
-      if (!reader) throw new Error("No reader available");
-
       let fullContent = "";
 
-      while (true) {
+      while (reader) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        const lines = chunk.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            
             try {
-              const data = JSON.parse(line.slice(6));
-              if (data.text) {
-                fullContent += data.text;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMessageId
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                fullContent += parsed.content;
+                setMessages(prev => 
+                  prev.map(m => 
+                    m.id === assistantMessage.id 
                       ? { ...m, content: fullContent }
                       : m
                   )
                 );
               }
-              if (data.done && data.patterns) {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMessageId
-                      ? { ...m, patterns: data.patterns }
+              if (parsed.patterns) {
+                setMessages(prev =>
+                  prev.map(m =>
+                    m.id === assistantMessage.id
+                      ? { ...m, patterns: parsed.patterns }
                       : m
                   )
                 );
               }
-            } catch {}
+            } catch (e) {}
           }
         }
       }
 
       if (convId && fullContent) {
-        await saveMessage(convId, "assistant", fullContent);
-      }
-
-      if (!caseContext && fullContent.includes("**Case:**")) {
-        const parsed = parseCaseContext(fullContent);
-        if (parsed) {
-          setCaseContext(parsed);
-        }
+        await saveMessage(convId, 'assistant', fullContent);
       }
 
     } catch (error) {
       console.error("Error:", error);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessageId
-            ? { ...m, content: "Sorry, I encountered an error. Please try again." }
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMessage.id
+            ? { ...m, content: "I apologize, but I encountered an error. Please try again." }
             : m
         )
       );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const sendDocumentEdit = async () => {
-    if (!documentText.trim() || !editInstructions.trim()) return;
-    if (isLoading) return;
-
-    let contextHeader = "";
-    if (caseContext) {
-      contextHeader = `[CASE CONTEXT:
-Case: ${caseContext.caseNumber}
-Court: ${caseContext.court}
-Petitioner: ${caseContext.petitioner}
-Respondent: ${caseContext.respondent}]
-
-`;
     }
 
-    const combinedMessage = `${contextHeader}DOCUMENT EDITING MODE - EXACT ACCURACY REQUIRED
-
-Here is the EXACT text of my document:
----BEGIN DOCUMENT---
-${documentText}
----END DOCUMENT---
-
-CHANGES REQUESTED:
-${editInstructions}
-
-INSTRUCTIONS:
-1. Make ONLY the changes I specified above
-2. Keep ALL other text EXACTLY the same
-3. Return the COMPLETE edited document
-4. Do NOT add, remove, or change anything I didn't ask for
-5. After the document, briefly list what you changed`;
-
-    setMode("chat");
-    await sendMessage(combinedMessage);
-    setDocumentText("");
-    setEditInstructions("");
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
+    setIsLoading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(input);
+      handleSubmit(e);
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      sendMessage(input || "", file);
+    if (!file) return;
+
+    if (file.type === "application/pdf") {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setStoredPdf({ base64, name: file.name });
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const imageData = reader.result as string;
+        setInput(prev => prev + (prev ? '\n' : '') + '[Image attached]');
+      };
+      reader.readAsDataURL(file);
     }
-    e.target.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && (file.type.startsWith("image/") || file.type === "application/pdf")) {
-      sendMessage("", file);
+    if (file && fileInputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInputRef.current.files = dt.files;
+      handleFileSelect({ target: { files: dt.files } } as any);
     }
   };
 
@@ -605,6 +448,33 @@ INSTRUCTIONS:
     navigator.clipboard.writeText(text);
   };
 
+  const saveToEvidence = async (msg: Message, userMsg?: Message) => {
+    if (!user) return;
+    setSavingEvidence(msg.id);
+
+    try {
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        message_text: userMsg?.content || '',
+        ai_analysis: msg.content,
+        patterns_detected: msg.patterns || [],
+        severity: msg.patterns?.length ? 'medium' : 'low',
+        incident_date: new Date().toISOString(),
+      });
+
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === msg.id ? { ...m, savedToEvidence: true } : m
+        )
+      );
+      setEvidenceCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Error saving evidence:', error);
+    }
+
+    setSavingEvidence(null);
+  };
+
   const clearCaseContext = () => {
     setCaseContext(null);
     setStoredPdf(null);
@@ -617,53 +487,39 @@ INSTRUCTIONS:
 
   const formatMessage = (content: string) => {
     return content
-      .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">âš ï¸ $1 detected</span></div>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/^â€¢ (.+)$/gm, '<li>$1</li>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-      .replace(/\n/g, '<br>');
-  };
-
-  const getRandomAffirmation = () => {
-    return affirmations[Math.floor(Math.random() * affirmations.length)];
-  };
-
-  const getPhaseInstruction = () => {
-    switch(breathePhase) {
-      case "inhale": return "Breathe in";
-      case "hold": return "Hold";
-      case "exhale": return "Release";
-      case "rest": return "Rest";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString();
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br />');
   };
 
   if (authLoading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f5f7f6',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
-        <div style={{ fontSize: '48px' }}>ðŸ’š</div>
-        <p style={{ color: '#666' }}>Loading...</p>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+        <style jsx>{`
+          .loading-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #f5f7f6 0%, #e8f5e9 100%);
+            gap: 16px;
+          }
+          .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #2dd4a8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          p { color: #666; font-size: 16px; }
+        `}</style>
       </div>
     );
   }
@@ -674,156 +530,98 @@ INSTRUCTIONS:
 
   return (
     <div className="coach-container">
-      {showPromptGallery && (
-        <PromptGallery 
-          onSelectPrompt={handlePromptSelect}
-          onClose={() => setShowPromptGallery(false)}
-        />
-      )}
+      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
       
-      <SafetyResources 
-        isOpen={showSafetyResources} 
-        onClose={() => setShowSafetyResources(false)}
-        triggered={safetyTriggered}
-      />
-      
-      {showFeedback && user && (
-        <FeedbackModal
-          userId={user.id}
-          conversationId={currentConversationId}
-          onClose={() => setShowFeedback(false)}
-        />
-      )}
-
-      {/* Sidebar Overlay */}
-      {showSidebar && (
-        <div 
-          className="sidebar-overlay" 
-          onClick={() => setShowSidebar(false)} 
-        />
-      )}
-      
-      {/* Sidebar */}
-      <div className={`sidebar ${showSidebar ? "open" : ""}`}>
+      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h3>Menu</h3>
-          <button onClick={() => setShowSidebar(false)} className="close-sidebar">âœ•</button>
+          <h3>Pattern 18</h3>
+          <button onClick={() => setShowSidebar(false)} className="close-sidebar">×</button>
         </div>
         
         <div className="sidebar-menu">
-          <button onClick={() => { startNewConversation(); setMode("chat"); setShowSidebar(false); }} className="menu-item">
-            <span>ðŸ’¬</span> New Chat
+          <button className="menu-item" onClick={() => router.push("/dashboard")}>
+            <span>📊</span> Dashboard
           </button>
-          <button onClick={() => { setMode("document"); setShowSidebar(false); }} className="menu-item">
-            <span>ðŸ“</span> Documents
+          <button className="menu-item" onClick={() => router.push("/log")}>
+            <span>📝</span> Log Incident
           </button>
-          <button onClick={() => { router.push("/evidence"); setShowSidebar(false); }} className="menu-item">
-            <span>ðŸ“Š</span> Evidence Dashboard
+          <button className="menu-item" onClick={() => router.push("/evidence")}>
+            <span>📁</span> Evidence Library
           </button>
-          <button onClick={() => { setShowRegulate(true); setRegulateMode("menu"); setShowSidebar(false); }} className="menu-item breathe-item">
-            <span>ðŸ«</span> Breathe & Ground
+          <button className="menu-item" onClick={() => router.push("/documents")}>
+            <span>📄</span> Documents
           </button>
-          
           <div className="menu-divider" />
-          
-          <button onClick={() => { router.push("/faq"); setShowSidebar(false); }} className="menu-item">
-            <span>â“</span> FAQ
+          <button className="menu-item breathe-item" onClick={() => { setShowRegulate(true); setShowSidebar(false); }}>
+            <span>🧘</span> Take a Breath
           </button>
-          <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="menu-item safety-item">
-            <span>ðŸ¤</span> Safety Resources
+          <button className="menu-item" onClick={() => router.push("/case-setup")}>
+            <span>⚙️</span> Case Setup
           </button>
-          <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="menu-item">
-            <span>ðŸ’¬</span> Send Feedback
-          </button>
-          
           <div className="menu-divider" />
-          
-          <button onClick={handleLogout} className="menu-item logout-item">
-            <span>ðŸšª</span> Log Out
+          <button className="menu-item logout-item" onClick={handleLogout}>
+            <span>👋</span> Sign Out
           </button>
         </div>
+
+        <div className="sidebar-section-title">Recent Chats</div>
+        <button className="new-chat-btn" onClick={startNewConversation}>+ New Conversation</button>
         
-        <div className="sidebar-section-title">Recent Conversations</div>
-        <button onClick={() => { startNewConversation(); setShowSidebar(false); }} className="new-chat-btn">
-          + New Chat
-        </button>
         <div className="conversation-list">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              onClick={() => loadConversation(conv.id)}
-              className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-            >
-              <span className="conv-title">{conv.title || "New conversation"}</span>
-              <span className="conv-date">{formatDate(conv.updated_at)}</span>
-            </div>
-          ))}
-          {conversations.length === 0 && (
+          {conversations.length === 0 ? (
             <p className="no-convos">No conversations yet</p>
+          ) : (
+            conversations.slice(0, 10).map(conv => (
+              <div
+                key={conv.id}
+                className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
+                onClick={() => loadConversation(conv.id)}
+              >
+                <span className="conv-title">{conv.title}</span>
+                <span className="conv-date">{new Date(conv.updated_at).toLocaleDateString()}</span>
+              </div>
+            ))
           )}
         </div>
       </div>
-      
-      {/* Disclaimer Modal */}
-      {showDisclaimer && (
-        <div className="disclaimer-overlay">
-          <div className="disclaimer-modal">
-            <div className="disclaimer-icon">ðŸ’š</div>
-            <h2>Welcome to Pattern 18</h2>
-            <p className="disclaimer-tagline">Be prepared. Be empowered. Take back control.</p>
-            <div className="disclaimer-content">
-              <p>I'm your 24/7 strategic partner for navigating high-conflict co-parenting.</p>
-              <p>I'll help you:</p>
-              <ul>
-                <li>Recognize manipulation patterns</li>
-                <li>Respond strategically (or know when silence wins)</li>
-                <li>Document incidents for court</li>
-                <li>Create legal documents</li>
-                <li>Stay calm and regulated when it gets hard</li>
-              </ul>
-              <p className="disclaimer-note">I'm not a lawyer â€” always have an attorney review documents before filing.</p>
-            </div>
-            <button 
-              className="disclaimer-btn" 
-              onClick={() => {
-                localStorage.setItem("pattern18-disclaimer-accepted", "true");
-                setShowDisclaimer(false);
-              }}
-            >
-              Let's do this ðŸ’š
-            </button>
-          </div>
-        </div>
+
+      {showPromptGallery && (
+        <PromptGallery
+          onSelect={(prompt) => { setInput(prompt); setShowPromptGallery(false); setShowWelcome(false); }}
+          onClose={() => setShowPromptGallery(false)}
+        />
       )}
 
-      {/* Regulate Modal */}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+      {showSafetyResources && <SafetyResources onClose={() => setShowSafetyResources(false)} />}
+
       {showRegulate && (
         <div className="regulate-overlay">
           <div className="regulate-modal">
             {regulateMode === "menu" && (
               <>
                 <div className="regulate-header">
-                  <span className="regulate-icon">ðŸ’š</span>
+                  <span className="regulate-icon">💚</span>
                   <h2>Take a moment</h2>
                   <p>You're safe here. Whatever just happened can wait.</p>
                 </div>
                 <div className="regulate-options">
                   <button onClick={() => { setBreatheCount(0); setBreathePhase("inhale"); setRegulateMode("breathe"); }}>
-                    <span className="option-icon">ðŸ«</span>
+                    <span className="option-icon">🫁</span>
                     <span className="option-text">
                       <strong>Breathe</strong>
                       <small>Box breathing to calm your nervous system</small>
                     </span>
                   </button>
                   <button onClick={() => setRegulateMode("ground")}>
-                    <span className="option-icon">ðŸŒ³</span>
+                    <span className="option-icon">🌳</span>
                     <span className="option-text">
                       <strong>Ground</strong>
                       <small>5-4-3-2-1 sensory grounding</small>
                     </span>
                   </button>
                   <button onClick={() => { setCurrentAffirmation(getRandomAffirmation()); setRegulateMode("affirm"); }}>
-                    <span className="option-icon">ðŸ’ª</span>
+                    <span className="option-icon">💪</span>
                     <span className="option-text">
                       <strong>Remember</strong>
                       <small>A reminder from someone who's been there</small>
@@ -839,41 +637,31 @@ INSTRUCTIONS:
 
             {regulateMode === "breathe" && (
               <div className="breathe-container">
-                <div className="particles">
-                  {[...Array(12)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`particle particle-${i} ${breathePhase}`}
-                    />
-                  ))}
-                </div>
-                
                 <div className="breathe-orb-container">
                   <div className={`breathe-ring ring-1 ${breathePhase}`} />
                   <div className={`breathe-ring ring-2 ${breathePhase}`} />
                   <div className={`breathe-ring ring-3 ${breathePhase}`} />
                   <div className={`breathe-orb ${breathePhase}`}>
-                    <div className="breathe-glow" />
                     <span className="breathe-text">{getPhaseInstruction()}</span>
                   </div>
                 </div>
-                
+
                 <div className="breathe-progress">
                   {[0, 1, 2, 3].map((i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className={`progress-dot ${i < breatheCount ? 'complete' : ''} ${i === breatheCount ? 'active' : ''}`}
                     >
-                      {i < breatheCount && <span>âœ“</span>}
+                      {i < breatheCount && <span>✓</span>}
                     </div>
                   ))}
                 </div>
-                
+
                 <p className="breathe-cycle">
-                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete ðŸ’š"}
+                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete 💚"}
                 </p>
-                
-                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>â† Back</button>
+
+                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
               </div>
             )}
 
@@ -886,13 +674,13 @@ INSTRUCTIONS:
                     <div key={i} className="ground-step">
                       <span className="ground-icon">{step.icon}</span>
                       <div>
-                        <strong>{5 - i} â€” {step.sense}</strong>
+                        <strong>{5 - i} - {step.sense}</strong>
                         <p>{step.instruction}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>â† Back</button>
+                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>← Back</button>
               </div>
             )}
 
@@ -902,10 +690,10 @@ INSTRUCTIONS:
                   <p className="affirm-text">"{currentAffirmation.text}"</p>
                   <p className="affirm-subtext">{currentAffirmation.subtext}</p>
                 </div>
-                <p className="affirm-signature">â€” From someone who's been there</p>
+                <p className="affirm-signature">- From someone who's been there</p>
                 <div className="affirm-actions">
-                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another âœ¨</button>
-                  <button onClick={() => setRegulateMode("menu")}>â† Back</button>
+                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another ✨</button>
+                  <button onClick={() => setRegulateMode("menu")}>← Back</button>
                 </div>
               </div>
             )}
@@ -917,7 +705,7 @@ INSTRUCTIONS:
         <div className="header-content">
           <div className="logo-section">
             <button onClick={() => setShowSidebar(true)} className="menu-btn">
-              â˜°
+              ☰
             </button>
             <div className="logo">
               <div className="logo-icon">18</div>
@@ -939,158 +727,153 @@ INSTRUCTIONS:
       {(caseContext || storedPdf) && (
         <div className="context-banner">
           <span>
-            {caseContext && <>ðŸ“‹ <strong>{caseContext.caseNumber}</strong> â€” {caseContext.petitioner} v. {caseContext.respondent}</>}
-            {storedPdf && !caseContext && <>ðŸ“„ {storedPdf.name}</>}
-            {storedPdf && caseContext && <> â€¢ PDF loaded</>}
+            {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> - {caseContext.petitioner} v. {caseContext.respondent}</>}
+            {storedPdf && !caseContext && <>📄 {storedPdf.name}</>}
+            {storedPdf && caseContext && <> • PDF loaded</>}
           </span>
-          <button onClick={clearCaseContext}>âœ•</button>
+          <button onClick={clearCaseContext}>×</button>
         </div>
       )}
 
-      {mode === "document" ? (
-        <div className="document-editor">
-          <div className="editor-container">
-            <div className="editor-header">
-              <h2>ðŸ“ Document Editor</h2>
-              <p>Create precise court documents. Paste text and tell me what to change.</p>
-            </div>
-            
-            {caseContext && (
-              <div className="editor-context">
-                <strong>{caseContext.caseNumber}</strong> â€” {caseContext.petitioner} v. {caseContext.respondent}
-              </div>
-            )}
-
-            <div className="editor-section">
-              <label>Your document text</label>
-              <textarea
-                value={documentText}
-                onChange={(e) => setDocumentText(e.target.value)}
-                placeholder="Paste the text from your court document..."
-                className="document-input"
-              />
-            </div>
-            <div className="editor-section">
-              <label>What changes do you need?</label>
-              <textarea
-                value={editInstructions}
-                onChange={(e) => setEditInstructions(e.target.value)}
-                placeholder="Be specific about what to change, add, or remove..."
-                className="instructions-input"
-              />
-            </div>
-            <button
-              onClick={sendDocumentEdit}
-              disabled={!documentText.trim() || !editInstructions.trim() || isLoading}
-              className="edit-btn"
-            >
-              {isLoading ? "Creating..." : "Create Document"}
-            </button>
+      <div
+        ref={chatRef}
+        className={`chat-area ${dragOver ? "drag-over" : ""}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {dragOver && (
+          <div className="drop-overlay">
+            <div className="drop-text">Drop to upload</div>
           </div>
-        </div>
-      ) : (
-        <>
-          <div
-            ref={chatRef}
-            className={`chat-area ${dragOver ? "drag-over" : ""}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            {dragOver && (
-              <div className="drop-overlay">
-                <div className="drop-text">Drop to upload</div>
-              </div>
-            )}
-            <div className="chat-inner">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`message ${msg.role}`}>
-                  {msg.image && (
-                    <div className="message-image">
-                      <img src={msg.image} alt="Uploaded" />
-                    </div>
-                  )}
-                  <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-                  {msg.role === "assistant" && msg.content && !isLoading && msg.id !== "welcome" && (
-                    <>
-                      {msg.patterns && msg.patterns.length > 0 && (
-                        <div className="patterns-detected">
-                          <span className="patterns-label">ðŸŽ¯ Patterns identified:</span>
-                          <div className="pattern-tags">
-                            {msg.patterns.map((pattern, i) => (
-                              <span key={i} className="pattern-tag">{pattern}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="message-actions">
-                        <button onClick={() => copyToClipboard(msg.content)}>ðŸ“‹ Copy</button>
-                        {msg.savedToEvidence ? (
-                          <span className="saved-badge">âœ“ Saved</span>
-                        ) : (
-                          <button 
-                            onClick={() => {
-                              const msgIndex = messages.findIndex(m => m.id === msg.id);
-                              const userMsg = msgIndex > 0 ? messages[msgIndex - 1] : undefined;
-                              saveToEvidence(msg, userMsg);
-                            }}
-                            disabled={savingEvidence === msg.id}
-                            className="save-evidence-btn"
-                          >
-                            {savingEvidence === msg.id ? 'ðŸ’¾ Saving...' : 'ðŸ’¾ Save to Evidence'}
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
+        )}
+        <div className="chat-inner">
+          {showWelcome && messages.length === 0 && (
+            <div className="welcome-section">
+              <div className="welcome-card">
+                <div className="welcome-icon">💚</div>
+                <h1>Hey, I'm glad you're here.</h1>
+                <p className="welcome-subtitle">
+                  I'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, 
+                  need help with a court document, or simply need a moment to breathe - I've got you.
+                </p>
+                <div className="welcome-mantra">
+                  <span>Be present.</span>
+                  <span>Don't react.</span>
+                  <span>Take back control.</span>
                 </div>
-              ))}
-              {isLoading && messages[messages.length - 1]?.content === "" && (
-                <div className="typing-indicator">
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
+              </div>
+
+              <div className="quick-actions">
+                <p className="quick-actions-label">What can I help with?</p>
+                <div className="quick-actions-grid">
+                  {quickPrompts.map((item, i) => (
+                    <button
+                      key={i}
+                      className="quick-action-btn"
+                      onClick={() => handleQuickPrompt(item.prompt)}
+                    >
+                      <span className="quick-action-icon">{item.icon}</span>
+                      <span className="quick-action-label">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="breathe-cta">
+                <button onClick={() => setShowRegulate(true)}>
+                  <span>🧘</span> Need to breathe first?
+                </button>
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg) => (
+            <div key={msg.id} className={`message ${msg.role}`}>
+              {msg.image && (
+                <div className="message-image">
+                  <img src={msg.image} alt="Uploaded" />
                 </div>
               )}
+              <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+              {msg.role === "assistant" && msg.content && !isLoading && (
+                <>
+                  {msg.patterns && msg.patterns.length > 0 && (
+                    <div className="patterns-detected">
+                      <span className="patterns-label">🎯 Patterns identified:</span>
+                      <div className="pattern-tags">
+                        {msg.patterns.map((pattern, i) => (
+                          <span key={i} className="pattern-tag">{pattern}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="message-actions">
+                    <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+                    {msg.savedToEvidence ? (
+                      <span className="saved-badge">✓ Saved</span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const msgIndex = messages.findIndex(m => m.id === msg.id);
+                          const userMsg = msgIndex > 0 ? messages[msgIndex - 1] : undefined;
+                          saveToEvidence(msg, userMsg);
+                        }}
+                        disabled={savingEvidence === msg.id}
+                        className="save-evidence-btn"
+                      >
+                        {savingEvidence === msg.id ? '💾 Saving...' : '💾 Save to Evidence'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          ))}
+          {isLoading && messages[messages.length - 1]?.content === "" && (
+            <div className="typing-indicator">
+              <div className="typing-dot" />
+              <div className="typing-dot" />
+              <div className="typing-dot" />
+            </div>
+          )}
+        </div>
+      </div>
 
-          <div className="input-area">
-            <div className="input-container">
-              <form onSubmit={handleSubmit} className="input-wrapper">
-                <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="file-input" />
-                <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} title="Upload screenshot or PDF">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-                  </svg>
-                </button>
-                <button type="button" className="prompt-gallery-btn" onClick={() => setShowPromptGallery(true)} title="Browse prompts">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 18h6"/>
-                    <path d="M10 22h4"/>
-                    <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z"/>
-                  </svg>
-                </button>
-                
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="What's happening?"
-                  rows={1}
-                  className="input-field"
-                />
-                <button type="submit" disabled={(!input.trim() && !isLoading) || isLoading} className={`send-btn ${input.trim() ? "active" : ""}`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                  </svg>
-                </button>
-              </form>
-            </div>
-          </div>
-        </>
-      )}
+      <div className="input-area">
+        <div className="input-container">
+          <form onSubmit={handleSubmit} className="input-wrapper">
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="file-input" />
+            <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} title="Upload screenshot or PDF">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <button type="button" className="prompt-gallery-btn" onClick={() => setShowPromptGallery(true)} title="Browse prompts">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18h6"/>
+                <path d="M10 22h4"/>
+                <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z"/>
+              </svg>
+            </button>
+
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="What's happening?"
+              rows={1}
+              className="input-field"
+            />
+            <button type="submit" disabled={(!input.trim() && !isLoading) || isLoading} className={`send-btn ${input.trim() ? "active" : ""}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
 
       <style jsx>{`
         .coach-container {
@@ -1134,8 +917,7 @@ INSTRUCTIONS:
         }
         .sidebar-header h3 { margin: 0; font-size: 18px; color: #1a3a2f; }
         .close-sidebar { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 4px 8px; }
-        .close-sidebar:hover { color: #333; }
-        
+
         .sidebar-menu { padding: 8px 12px; }
         .menu-item {
           display: flex;
@@ -1153,9 +935,7 @@ INSTRUCTIONS:
           text-align: left;
         }
         .menu-item:hover { background: #f0f0f0; }
-        .menu-item span { font-size: 18px; }
         .breathe-item { color: #2dd4a8; }
-        .safety-item { color: #e57373; }
         .logout-item { color: #999; }
         .menu-divider { height: 1px; background: #eee; margin: 8px 16px; }
         .sidebar-section-title {
@@ -1164,9 +944,8 @@ INSTRUCTIONS:
           font-weight: 600;
           color: #999;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
         }
-        
+
         .new-chat-btn {
           margin: 0 16px 16px;
           padding: 14px;
@@ -1177,30 +956,23 @@ INSTRUCTIONS:
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
-          transition: transform 0.2s;
         }
-        .new-chat-btn:hover { transform: translateY(-1px); }
         .conversation-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
         .conversation-item {
           padding: 14px 16px;
           border-radius: 10px;
           cursor: pointer;
           margin-bottom: 4px;
-          transition: background 0.2s;
         }
         .conversation-item:hover { background: #f5f5f5; }
         .conversation-item.active { background: #e8f5e9; }
-        .conv-title {
-          display: block;
-          font-size: 14px;
-          color: #333;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .conv-title { display: block; font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .conv-date { display: block; font-size: 12px; color: #999; margin-top: 4px; }
         .no-convos { text-align: center; color: #999; padding: 20px; font-size: 14px; }
 
+        .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 16px 24px; flex-shrink: 0; }
+        .header-content { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .logo-section { display: flex; align-items: center; }
         .menu-btn {
           background: none;
           border: none;
@@ -1210,224 +982,7 @@ INSTRUCTIONS:
           margin-right: 8px;
           color: white;
           opacity: 0.8;
-          transition: opacity 0.2s;
         }
-        .menu-btn:hover { opacity: 1; }
-        .logo-section { display: flex; align-items: center; }
-        
-        .disclaimer-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(13, 31, 24, 0.9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-          padding: 16px;
-          backdrop-filter: blur(8px);
-          overflow-y: auto;
-        }
-        .disclaimer-modal {
-          background: white;
-          border-radius: 24px;
-          max-width: 460px;
-          width: 100%;
-          padding: 40px;
-          text-align: center;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.4);
-          max-height: 90vh;
-          overflow-y: auto;
-          margin: auto;
-        }
-        .disclaimer-icon { font-size: 56px; margin-bottom: 20px; }
-        .disclaimer-modal h2 { font-size: 28px; margin-bottom: 8px; color: #1a3a2f; font-weight: 700; }
-        .disclaimer-tagline { font-size: 16px; color: #2dd4a8; font-weight: 600; margin-bottom: 24px; }
-        .disclaimer-content { text-align: left; font-size: 15px; line-height: 1.7; color: #444; }
-        .disclaimer-content p { margin-bottom: 12px; }
-        .disclaimer-content ul { margin: 16px 0; padding-left: 0; list-style: none; }
-        .disclaimer-content li { padding: 10px 0 10px 32px; position: relative; border-bottom: 1px solid #f0f0f0; }
-        .disclaimer-content li:last-child { border-bottom: none; }
-        .disclaimer-content li::before { content: "âœ“"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; font-size: 18px; }
-        .disclaimer-note { font-size: 13px; color: #888; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
-        .disclaimer-btn {
-          margin-top: 28px;
-          padding: 18px 40px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          color: white;
-          border: none;
-          border-radius: 14px;
-          font-size: 18px;
-          font-weight: 600;
-          cursor: pointer;
-          width: 100%;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .disclaimer-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(26, 58, 47, 0.35); }
-        
-        .regulate-overlay {
-          position: fixed;
-          inset: 0;
-          background: linear-gradient(180deg, #0d1f18 0%, #152e24 50%, #0d1f18 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-          padding: 20px;
-          overflow-y: auto;
-        }
-        .regulate-modal { max-width: 420px; width: 100%; padding: 40px; text-align: center; color: white; }
-        .regulate-header { margin-bottom: 32px; }
-        .regulate-icon { font-size: 56px; display: block; margin-bottom: 20px; }
-        .regulate-header h2 { font-size: 28px; margin-bottom: 12px; font-weight: 700; }
-        .regulate-header p { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.5; }
-        .regulate-options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
-        .regulate-options button {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          padding: 20px 24px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 16px;
-          color: white;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .regulate-options button:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); border-color: rgba(45, 212, 168, 0.3); }
-        .option-icon { font-size: 36px; }
-        .option-text { display: flex; flex-direction: column; gap: 4px; }
-        .option-text strong { font-size: 18px; font-weight: 600; }
-        .option-text small { font-size: 14px; color: rgba(255,255,255,0.6); }
-        .regulate-close {
-          padding: 18px 32px;
-          background: #2dd4a8;
-          color: #0d1f18;
-          border: none;
-          border-radius: 14px;
-          font-size: 17px;
-          font-weight: 600;
-          cursor: pointer;
-          width: 100%;
-          transition: transform 0.2s;
-        }
-        .regulate-close:hover { transform: translateY(-2px); }
-        .regulate-skip { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 15px; cursor: pointer; margin-top: 24px; transition: color 0.2s; }
-        .regulate-skip:hover { color: white; }
-        .regulate-footer { margin-top: 28px; font-size: 14px; color: rgba(255,255,255,0.4); font-style: italic; }
-
-        .breathe-container { position: relative; padding: 20px 0; min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-        .particle {
-          position: absolute;
-          width: 6px;
-          height: 6px;
-          background: radial-gradient(circle, rgba(45, 212, 168, 0.8) 0%, rgba(45, 212, 168, 0) 70%);
-          border-radius: 50%;
-          top: 50%;
-          left: 50%;
-          opacity: 0;
-          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .particle.inhale, .particle.hold { opacity: 0.8; }
-        .particle.exhale, .particle.rest { opacity: 0; }
-        .particle-0.inhale, .particle-0.hold { transform: translate(-50%, -50%) translateX(0px) translateY(-160px); }
-        .particle-1.inhale, .particle-1.hold { transform: translate(-50%, -50%) translateX(80px) translateY(-138px); }
-        .particle-2.inhale, .particle-2.hold { transform: translate(-50%, -50%) translateX(138px) translateY(-80px); }
-        .particle-3.inhale, .particle-3.hold { transform: translate(-50%, -50%) translateX(160px) translateY(0px); }
-        .particle-4.inhale, .particle-4.hold { transform: translate(-50%, -50%) translateX(138px) translateY(80px); }
-        .particle-5.inhale, .particle-5.hold { transform: translate(-50%, -50%) translateX(80px) translateY(138px); }
-        .particle-6.inhale, .particle-6.hold { transform: translate(-50%, -50%) translateX(0px) translateY(160px); }
-        .particle-7.inhale, .particle-7.hold { transform: translate(-50%, -50%) translateX(-80px) translateY(138px); }
-        .particle-8.inhale, .particle-8.hold { transform: translate(-50%, -50%) translateX(-138px) translateY(80px); }
-        .particle-9.inhale, .particle-9.hold { transform: translate(-50%, -50%) translateX(-160px) translateY(0px); }
-        .particle-10.inhale, .particle-10.hold { transform: translate(-50%, -50%) translateX(-138px) translateY(-80px); }
-        .particle-11.inhale, .particle-11.hold { transform: translate(-50%, -50%) translateX(-80px) translateY(-138px); }
-        .particle.exhale, .particle.rest { transform: translate(-50%, -50%) translateX(0) translateY(0); }
-        .breathe-orb-container { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-        .breathe-ring {
-          position: absolute;
-          border-radius: 50%;
-          border: 1px solid rgba(45, 212, 168, 0.2);
-          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
-        .ring-1 { width: 220px; height: 220px; }
-        .ring-2 { width: 180px; height: 180px; }
-        .ring-3 { width: 140px; height: 140px; }
-        .ring-1.inhale, .ring-1.hold { width: 320px; height: 320px; border-color: rgba(45, 212, 168, 0.15); box-shadow: 0 0 40px rgba(45, 212, 168, 0.1); }
-        .ring-2.inhale, .ring-2.hold { width: 270px; height: 270px; border-color: rgba(45, 212, 168, 0.25); box-shadow: 0 0 30px rgba(45, 212, 168, 0.15); }
-        .ring-3.inhale, .ring-3.hold { width: 220px; height: 220px; border-color: rgba(45, 212, 168, 0.35); box-shadow: 0 0 20px rgba(45, 212, 168, 0.2); }
-        .breathe-orb {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.4) 0%, rgba(32, 176, 144, 0.2) 50%, rgba(13, 31, 24, 0.3) 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
-          z-index: 2;
-          box-shadow: 0 0 60px rgba(45, 212, 168, 0.2), inset 0 0 30px rgba(45, 212, 168, 0.1);
-        }
-        .breathe-orb.inhale, .breathe-orb.hold {
-          width: 160px;
-          height: 160px;
-          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.6) 0%, rgba(32, 176, 144, 0.4) 50%, rgba(13, 31, 24, 0.2) 100%);
-          box-shadow: 0 0 80px rgba(45, 212, 168, 0.4), 0 0 120px rgba(45, 212, 168, 0.2), inset 0 0 40px rgba(45, 212, 168, 0.2);
-        }
-        .breathe-glow {
-          position: absolute;
-          inset: -30px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(45, 212, 168, 0.15) 0%, transparent 70%);
-          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: none;
-        }
-        .breathe-orb.inhale .breathe-glow, .breathe-orb.hold .breathe-glow { inset: -60px; background: radial-gradient(circle, rgba(45, 212, 168, 0.25) 0%, transparent 70%); }
-        .breathe-text { font-size: 18px; font-weight: 600; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 3; letter-spacing: 0.5px; }
-        .breathe-progress { display: flex; gap: 14px; margin-top: 40px; margin-bottom: 12px; }
-        .progress-dot {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.1);
-          border: 2px solid rgba(255,255,255,0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 9px;
-          transition: all 0.4s ease;
-        }
-        .progress-dot.active { background: rgba(45, 212, 168, 0.2); border-color: #2dd4a8; transform: scale(1.3); box-shadow: 0 0 20px rgba(45, 212, 168, 0.4); }
-        .progress-dot.complete { background: #2dd4a8; border-color: #2dd4a8; color: #0d1f18; font-weight: bold; }
-        .breathe-cycle { color: rgba(255,255,255,0.6); font-size: 15px; margin-top: 8px; }
-
-        .ground-container { text-align: left; padding: 10px 0; }
-        .ground-container h2 { text-align: center; margin-bottom: 8px; font-size: 26px; }
-        .ground-intro { text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 28px; font-size: 15px; }
-        .ground-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-        .ground-step { display: flex; align-items: center; gap: 16px; padding: 14px 18px; background: rgba(255,255,255,0.05); border-radius: 14px; }
-        .ground-icon { font-size: 28px; }
-        .ground-step strong { font-size: 14px; color: #2dd4a8; }
-        .ground-step p { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 2px; }
-
-        .affirm-container { padding: 20px 0; }
-        .affirm-quote { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 40px 28px; margin-bottom: 24px; }
-        .affirm-text { font-size: 26px; font-weight: 600; line-height: 1.4; margin-bottom: 16px; color: #2dd4a8; }
-        .affirm-subtext { font-size: 17px; color: rgba(255,255,255,0.7); }
-        .affirm-signature { font-size: 14px; color: rgba(255,255,255,0.4); font-style: italic; margin-bottom: 28px; }
-        .affirm-actions { display: flex; gap: 14px; }
-        .affirm-actions button { flex: 1; padding: 16px; border-radius: 12px; font-size: 16px; cursor: pointer; border: none; font-weight: 600; transition: transform 0.2s; }
-        .affirm-actions button:hover { transform: translateY(-2px); }
-        .affirm-actions button:first-child { background: #2dd4a8; color: #0d1f18; }
-        .affirm-actions button:last-child { background: rgba(255,255,255,0.1); color: white; }
-
-        .header { background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%); padding: 16px 24px; flex-shrink: 0; }
-        .header-content { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
         .logo { display: flex; align-items: center; gap: 14px; }
         .logo-icon {
           width: 46px;
@@ -1443,7 +998,7 @@ INSTRUCTIONS:
           box-shadow: 0 4px 16px rgba(45, 212, 168, 0.3);
         }
         .logo-text-group { display: flex; flex-direction: column; }
-        .logo-text { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+        .logo-text { font-size: 22px; font-weight: 700; color: white; }
         .logo-tagline { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
         .header-actions { display: flex; gap: 10px; }
         .evidence-badge {
@@ -1457,63 +1012,9 @@ INSTRUCTIONS:
           color: #1a3a2f;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
         }
-        .evidence-badge:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(212, 168, 45, 0.4); }
         .badge-count { font-size: 18px; font-weight: 700; }
         .badge-text { font-size: 13px; }
-
-        .patterns-detected {
-          background: linear-gradient(135deg, rgba(45, 212, 168, 0.1) 0%, rgba(26, 58, 47, 0.1) 100%);
-          border: 1px solid rgba(45, 212, 168, 0.3);
-          border-radius: 12px;
-          padding: 12px 16px;
-          margin-top: 12px;
-          margin-bottom: 8px;
-        }
-        .patterns-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #1a3a2f;
-          display: block;
-          margin-bottom: 8px;
-        }
-        .pattern-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .pattern-tag {
-          background: #1a3a2f;
-          color: white;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 500;
-        }
-        .save-evidence-btn {
-          background: linear-gradient(135deg, #2dd4a8 0%, #1a9a7a 100%);
-          color: white;
-          border: none;
-          padding: 6px 12px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-        .save-evidence-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(45, 212, 168, 0.4);
-        }
-        .save-evidence-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-        .saved-badge {
-          color: #2dd4a8;
-          font-weight: 600;
-          font-size: 13px;
-        }
 
         .context-banner {
           background: #e8f5e9;
@@ -1523,56 +1024,9 @@ INSTRUCTIONS:
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-bottom: 1px solid #c8e6c9;
         }
-        .context-banner button { background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 4px 8px; line-height: 1; }
-        .context-banner button:hover { color: #c62828; }
-        
-        .document-editor { flex: 1; overflow-y: auto; padding: 24px; }
-        .editor-container {
-          max-width: 760px;
-          margin: 0 auto;
-          background: white;
-          border-radius: 24px;
-          padding: 36px;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.05);
-        }
-        .editor-header { margin-bottom: 28px; }
-        .editor-header h2 { font-size: 26px; margin-bottom: 10px; color: #1a3a2f; font-weight: 700; }
-        .editor-header p { color: #666; font-size: 15px; }
-        .editor-context { background: #e8f5e9; padding: 14px 20px; border-radius: 12px; margin-bottom: 24px; font-size: 14px; color: #2e7d32; }
-        .editor-section { margin-bottom: 24px; }
-        .editor-section label { display: block; font-weight: 600; margin-bottom: 10px; color: #1a3a2f; font-size: 15px; }
-        .document-input, .instructions-input {
-          width: 100%;
-          padding: 18px;
-          border: 2px solid #e8e8e8;
-          border-radius: 14px;
-          font-size: 15px;
-          font-family: inherit;
-          line-height: 1.7;
-          resize: vertical;
-          box-sizing: border-box;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .document-input:focus, .instructions-input:focus { outline: none; border-color: #2dd4a8; box-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1); }
-        .document-input { min-height: 200px; }
-        .instructions-input { min-height: 100px; }
-        .edit-btn {
-          width: 100%;
-          padding: 18px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          color: white;
-          border: none;
-          border-radius: 14px;
-          font-size: 17px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .edit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26, 58, 47, 0.25); }
-        .edit-btn:disabled { background: #ccc; cursor: not-allowed; }
-        
+        .context-banner button { background: none; border: none; color: #999; cursor: pointer; font-size: 18px; }
+
         .chat-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
         .chat-area.drag-over { background: rgba(45, 212, 168, 0.08); }
         .drop-overlay {
@@ -1588,8 +1042,112 @@ INSTRUCTIONS:
         }
         .drop-text { font-size: 20px; font-weight: 600; color: #1a3a2f; }
         .chat-inner { max-width: 760px; margin: 0 auto; padding: 32px 24px; }
+
+        .welcome-section { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .welcome-card {
+          background: white;
+          border-radius: 24px;
+          padding: 40px;
+          text-align: center;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+          margin-bottom: 24px;
+        }
+        .welcome-icon { font-size: 56px; margin-bottom: 20px; }
+        .welcome-card h1 {
+          font-size: 28px;
+          color: #1a3a2f;
+          margin: 0 0 16px;
+          font-weight: 700;
+        }
+        .welcome-subtitle {
+          font-size: 16px;
+          color: #666;
+          line-height: 1.7;
+          margin: 0 0 24px;
+          max-width: 500px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .welcome-mantra {
+          display: flex;
+          justify-content: center;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+        .welcome-mantra span {
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          padding: 10px 20px;
+          border-radius: 30px;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .quick-actions {
+          background: white;
+          border-radius: 20px;
+          padding: 28px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+          margin-bottom: 20px;
+        }
+        .quick-actions-label {
+          font-size: 14px;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0 0 16px;
+          text-align: center;
+        }
+        .quick-actions-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        .quick-action-btn {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 20px;
+          background: #f8f9fa;
+          border: 2px solid transparent;
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+        }
+        .quick-action-btn:hover {
+          background: #f0f9f6;
+          border-color: #2dd4a8;
+          transform: translateY(-2px);
+        }
+        .quick-action-icon { font-size: 24px; }
+        .quick-action-label { font-size: 14px; font-weight: 600; color: #1a3a2f; }
+
+        .breathe-cta {
+          text-align: center;
+        }
+        .breathe-cta button {
+          background: none;
+          border: 2px solid #2dd4a8;
+          color: #2dd4a8;
+          padding: 12px 24px;
+          border-radius: 30px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
+        }
+        .breathe-cta button:hover {
+          background: #2dd4a8;
+          color: #1a3a2f;
+        }
+
         .message { margin-bottom: 28px; animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { margin-left: 12%; }
         .message.user .message-content {
           background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
@@ -1611,21 +1169,20 @@ INSTRUCTIONS:
           line-height: 1.7;
           font-size: 15px;
         }
-        .message-image { margin-bottom: 12px; border-radius: 16px; overflow: hidden; max-width: 280px; margin-left: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .message-image { margin-bottom: 12px; border-radius: 16px; overflow: hidden; max-width: 280px; margin-left: auto; }
         .message-image img { width: 100%; display: block; }
-        .message-content :global(strong) { font-weight: 600; color: #1a3a2f; }
-        .message-content :global(em) { font-style: italic; color: #666; }
-        .message-content :global(ul) { margin: 16px 0; padding-left: 0; list-style: none; }
-        .message-content :global(li) { padding: 8px 0 8px 28px; position: relative; }
-        .message-content :global(li::before) { content: "â†’"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; }
-        .message-content :global(.pattern-alert) {
-          background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
-          border-left: 4px solid #e57373;
-          padding: 16px 20px;
+
+        .patterns-detected {
+          background: linear-gradient(135deg, rgba(45, 212, 168, 0.1) 0%, rgba(26, 58, 47, 0.1) 100%);
+          border: 1px solid rgba(45, 212, 168, 0.3);
           border-radius: 12px;
-          margin: 16px 0;
+          padding: 12px 16px;
+          margin-top: 12px;
         }
-        .message-content :global(.pattern-badge) { font-weight: 600; color: #c62828; }
+        .patterns-label { font-size: 13px; font-weight: 600; color: #1a3a2f; display: block; margin-bottom: 8px; }
+        .pattern-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pattern-tag { background: #1a3a2f; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        
         .message-actions { display: flex; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
         .message-actions button {
           background: #f5f5f5;
@@ -1635,16 +1192,20 @@ INSTRUCTIONS:
           cursor: pointer;
           padding: 8px 14px;
           border-radius: 10px;
-          font-family: inherit;
-          transition: all 0.2s;
         }
         .message-actions button:hover { background: #e8e8e8; color: #1a3a2f; }
+        .save-evidence-btn {
+          background: linear-gradient(135deg, #2dd4a8 0%, #1a9a7a 100%) !important;
+          color: white !important;
+        }
+        .saved-badge { color: #2dd4a8; font-weight: 600; font-size: 13px; }
+
         .typing-indicator { display: flex; gap: 8px; padding: 28px; }
         .typing-dot { width: 12px; height: 12px; background: #2dd4a8; border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
-        
+
         .input-area {
           background: white;
           border-top: 1px solid #e8e8e8;
@@ -1673,11 +1234,9 @@ INSTRUCTIONS:
           cursor: pointer;
           flex-shrink: 0;
           border-radius: 50%;
-          transition: all 0.2s;
         }
         .attach-btn:hover, .prompt-gallery-btn:hover { color: #1a3a2f; background: rgba(0,0,0,0.05); }
         .prompt-gallery-btn { color: #2dd4a8; }
-        .prompt-gallery-btn:hover { color: #1a3a2f; background: rgba(45, 212, 168, 0.1); }
         .input-field {
           flex: 1;
           border: none;
@@ -1706,26 +1265,138 @@ INSTRUCTIONS:
           transition: all 0.2s;
         }
         .send-btn.active { background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%); color: white; box-shadow: 0 4px 16px rgba(26, 58, 47, 0.3); }
-        .send-btn.active:hover { transform: scale(1.05); }
-        
+
+        .regulate-overlay {
+          position: fixed;
+          inset: 0;
+          background: linear-gradient(180deg, #0d1f18 0%, #152e24 50%, #0d1f18 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2000;
+          padding: 20px;
+        }
+        .regulate-modal { max-width: 420px; width: 100%; padding: 40px; text-align: center; color: white; }
+        .regulate-header { margin-bottom: 32px; }
+        .regulate-icon { font-size: 56px; display: block; margin-bottom: 20px; }
+        .regulate-header h2 { font-size: 28px; margin-bottom: 12px; font-weight: 700; }
+        .regulate-header p { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.5; }
+        .regulate-options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
+        .regulate-options button {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 20px 24px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 16px;
+          color: white;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .regulate-options button:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .option-icon { font-size: 36px; }
+        .option-text { display: flex; flex-direction: column; gap: 4px; }
+        .option-text strong { font-size: 18px; font-weight: 600; }
+        .option-text small { font-size: 14px; color: rgba(255,255,255,0.6); }
+        .regulate-close {
+          padding: 18px 32px;
+          background: #2dd4a8;
+          color: #0d1f18;
+          border: none;
+          border-radius: 14px;
+          font-size: 17px;
+          font-weight: 600;
+          cursor: pointer;
+          width: 100%;
+        }
+        .regulate-skip { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 15px; cursor: pointer; margin-top: 24px; }
+        .regulate-footer { margin-top: 28px; font-size: 14px; color: rgba(255,255,255,0.4); font-style: italic; }
+
+        .breathe-container { padding: 20px 0; min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .breathe-orb-container { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
+        .breathe-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid rgba(45, 212, 168, 0.2);
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .ring-1 { width: 220px; height: 220px; }
+        .ring-2 { width: 180px; height: 180px; }
+        .ring-3 { width: 140px; height: 140px; }
+        .ring-1.inhale, .ring-1.hold { width: 320px; height: 320px; border-color: rgba(45, 212, 168, 0.15); }
+        .ring-2.inhale, .ring-2.hold { width: 270px; height: 270px; border-color: rgba(45, 212, 168, 0.25); }
+        .ring-3.inhale, .ring-3.hold { width: 220px; height: 220px; border-color: rgba(45, 212, 168, 0.35); }
+        .breathe-orb {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.4) 0%, rgba(32, 176, 144, 0.2) 50%, rgba(13, 31, 24, 0.3) 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 2;
+          box-shadow: 0 0 60px rgba(45, 212, 168, 0.2);
+        }
+        .breathe-orb.inhale, .breathe-orb.hold {
+          width: 160px;
+          height: 160px;
+          background: radial-gradient(circle at 30% 30%, rgba(45, 212, 168, 0.6) 0%, rgba(32, 176, 144, 0.4) 50%, rgba(13, 31, 24, 0.2) 100%);
+          box-shadow: 0 0 80px rgba(45, 212, 168, 0.4);
+        }
+        .breathe-text { font-size: 18px; font-weight: 600; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .breathe-progress { display: flex; gap: 14px; margin-top: 40px; margin-bottom: 12px; }
+        .progress-dot {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.1);
+          border: 2px solid rgba(255,255,255,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+        }
+        .progress-dot.active { background: rgba(45, 212, 168, 0.2); border-color: #2dd4a8; transform: scale(1.3); }
+        .progress-dot.complete { background: #2dd4a8; border-color: #2dd4a8; color: #0d1f18; }
+        .breathe-cycle { color: rgba(255,255,255,0.6); font-size: 15px; margin-top: 8px; }
+
+        .ground-container { text-align: left; padding: 10px 0; }
+        .ground-container h2 { text-align: center; margin-bottom: 8px; font-size: 26px; }
+        .ground-intro { text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 28px; font-size: 15px; }
+        .ground-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+        .ground-step { display: flex; align-items: center; gap: 16px; padding: 14px 18px; background: rgba(255,255,255,0.05); border-radius: 14px; }
+        .ground-icon { font-size: 28px; }
+        .ground-step strong { font-size: 14px; color: #2dd4a8; }
+        .ground-step p { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+
+        .affirm-container { padding: 20px 0; }
+        .affirm-quote { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 40px 28px; margin-bottom: 24px; }
+        .affirm-text { font-size: 26px; font-weight: 600; line-height: 1.4; margin-bottom: 16px; color: #2dd4a8; }
+        .affirm-subtext { font-size: 17px; color: rgba(255,255,255,0.7); }
+        .affirm-signature { font-size: 14px; color: rgba(255,255,255,0.4); font-style: italic; margin-bottom: 28px; }
+        .affirm-actions { display: flex; gap: 14px; }
+        .affirm-actions button { flex: 1; padding: 16px; border-radius: 12px; font-size: 16px; cursor: pointer; border: none; font-weight: 600; }
+        .affirm-actions button:first-child { background: #2dd4a8; color: #0d1f18; }
+        .affirm-actions button:last-child { background: rgba(255,255,255,0.1); color: white; }
+
         @media (max-width: 640px) {
           .header { padding: 14px 16px; }
-          .header-content { flex-wrap: wrap; gap: 12px; }
           .logo-tagline { display: none; }
           .logo-text { font-size: 19px; }
           .chat-inner { padding: 24px 16px; }
           .message.user { margin-left: 8%; }
-          .editor-container { padding: 24px; margin: 0 8px; }
-          .breathe-orb-container { transform: scale(0.8); }
-          .breathe-container { min-height: 360px; }
-          .disclaimer-modal { padding: 24px; margin: 10px; border-radius: 20px; }
-          .disclaimer-icon { font-size: 40px; margin-bottom: 16px; }
-          .disclaimer-modal h2 { font-size: 22px; }
-          .disclaimer-tagline { font-size: 14px; margin-bottom: 16px; }
-          .disclaimer-content { font-size: 14px; }
-          .disclaimer-content li { padding: 8px 0 8px 28px; }
-          .disclaimer-btn { padding: 16px 32px; font-size: 16px; margin-top: 20px; }
-          .disclaimer-note { font-size: 12px; margin-top: 16px; padding-top: 12px; }
+          .welcome-card { padding: 28px 20px; }
+          .welcome-card h1 { font-size: 24px; }
+          .welcome-mantra { gap: 12px; }
+          .welcome-mantra span { padding: 8px 16px; font-size: 12px; }
+          .quick-actions-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
