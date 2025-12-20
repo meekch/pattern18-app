@@ -3,692 +3,318 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import AppLayout from "@/components/layout/AppLayout";
 
-interface CaseData {
+interface CaseInfo {
+  id: string;
+  user_role: "petitioner" | "respondent";
   case_number: string;
   court_name: string;
-  court_county: string;
-  court_state: string;
+  county: string;
+  state: string;
   judge_name: string;
-  user_role: "petitioner" | "respondent" | "";
+  filing_date: string;
   user_legal_name: string;
   coparent_legal_name: string;
   children_names: string[];
-  original_filing_date: string;
 }
+
+const US_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
 
 export default function CaseSetupPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [existingCase, setExistingCase] = useState<any>(null);
-  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [existingCase, setExistingCase] = useState<CaseInfo | null>(null);
   
-  const [caseData, setCaseData] = useState<CaseData>({
+  const [formData, setFormData] = useState({
+    user_role: "" as "" | "petitioner" | "respondent",
     case_number: "",
     court_name: "",
-    court_county: "",
-    court_state: "Arizona",
+    county: "",
+    state: "",
     judge_name: "",
-    user_role: "",
+    filing_date: "",
     user_legal_name: "",
     coparent_legal_name: "",
-    children_names: [""],
-    original_filing_date: "",
+    children_names: [""]
   });
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
         return;
       }
-      setUser(session.user);
-      
-      // Check for existing case
-      const { data: existingCaseData } = await supabase
+      setUserId(session.user.id);
+
+      const { data: caseData } = await supabase
         .from("user_cases")
         .select("*")
         .eq("user_id", session.user.id)
         .single();
-      
-      if (existingCaseData) {
-        setExistingCase(existingCaseData);
-        setCaseData({
-          case_number: existingCaseData.case_number || "",
-          court_name: existingCaseData.court_name || "",
-          court_county: existingCaseData.court_county || "",
-          court_state: existingCaseData.court_state || "Arizona",
-          judge_name: existingCaseData.judge_name || "",
-          user_role: existingCaseData.user_role || "",
-          user_legal_name: existingCaseData.user_legal_name || "",
-          coparent_legal_name: existingCaseData.coparent_legal_name || "",
-          children_names: existingCaseData.children_names || [""],
-          original_filing_date: existingCaseData.original_filing_date || "",
+
+      if (caseData) {
+        setExistingCase(caseData);
+        setFormData({
+          user_role: caseData.user_role || "",
+          case_number: caseData.case_number || "",
+          court_name: caseData.court_name || "",
+          county: caseData.county || "",
+          state: caseData.state || "",
+          judge_name: caseData.judge_name || "",
+          filing_date: caseData.filing_date || "",
+          user_legal_name: caseData.user_legal_name || "",
+          coparent_legal_name: caseData.coparent_legal_name || "",
+          children_names: caseData.children_names?.length ? caseData.children_names : [""]
         });
+        setMode("view");
+      } else {
+        setMode("edit");
       }
-      
       setLoading(false);
     };
-    checkAuth();
+    load();
   }, [router]);
 
   const handleSave = async () => {
-    if (!user || !caseData.user_role) return;
-    
+    if (!userId) return;
     setSaving(true);
-    
-    try {
-      const saveData = {
-        user_id: user.id,
-        case_number: caseData.case_number || null,
-        court_name: caseData.court_name || null,
-        court_county: caseData.court_county || null,
-        court_state: caseData.court_state,
-        judge_name: caseData.judge_name || null,
-        user_role: caseData.user_role,
-        user_legal_name: caseData.user_legal_name || null,
-        coparent_legal_name: caseData.coparent_legal_name || null,
-        children_names: caseData.children_names.filter(n => n.trim()),
-        original_filing_date: caseData.original_filing_date || null,
-        updated_at: new Date().toISOString(),
-      };
 
-      if (existingCase) {
-        const { error } = await supabase
-          .from("user_cases")
-          .update(saveData)
-          .eq("id", existingCase.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("user_cases")
-          .insert(saveData);
-        if (error) throw error;
+    const caseData = {
+      user_id: userId,
+      user_role: formData.user_role,
+      case_number: formData.case_number,
+      court_name: formData.court_name,
+      county: formData.county,
+      state: formData.state,
+      judge_name: formData.judge_name,
+      filing_date: formData.filing_date || null,
+      user_legal_name: formData.user_legal_name,
+      coparent_legal_name: formData.coparent_legal_name,
+      children_names: formData.children_names.filter(n => n.trim())
+    };
+
+    if (existingCase) {
+      const { error } = await supabase
+        .from("user_cases")
+        .update(caseData)
+        .eq("id", existingCase.id);
+      
+      if (!error) {
+        setExistingCase({ ...existingCase, ...caseData } as CaseInfo);
+        setMode("view");
       }
-
-      router.push("/evidence");
-    } catch (error) {
-      console.error("Error saving case:", error);
-      alert("Failed to save. Please try again.");
-    } finally {
-      setSaving(false);
+    } else {
+      const { data, error } = await supabase
+        .from("user_cases")
+        .insert(caseData)
+        .select()
+        .single();
+      
+      if (!error && data) {
+        setExistingCase(data);
+        setMode("view");
+      }
     }
+    setSaving(false);
   };
 
-  const addChild = () => {
-    setCaseData(prev => ({
-      ...prev,
-      children_names: [...prev.children_names, ""]
-    }));
-  };
+  const addChild = () => setFormData(prev => ({ ...prev, children_names: [...prev.children_names, ""] }));
+  const removeChild = (index: number) => setFormData(prev => ({ ...prev, children_names: prev.children_names.filter((_, i) => i !== index) }));
+  const updateChild = (index: number, value: string) => setFormData(prev => ({ ...prev, children_names: prev.children_names.map((n, i) => i === index ? value : n) }));
 
-  const updateChildName = (index: number, name: string) => {
-    setCaseData(prev => ({
-      ...prev,
-      children_names: prev.children_names.map((n, i) => i === index ? name : n)
-    }));
-  };
+  if (loading) return <AppLayout><div style={{textAlign:"center",padding:"80px"}}>Loading...</div></AppLayout>;
 
-  const removeChild = (index: number) => {
-    if (caseData.children_names.length > 1) {
-      setCaseData(prev => ({
-        ...prev,
-        children_names: prev.children_names.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  if (loading) {
+  // VIEW MODE
+  if (mode === "view" && existingCase) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-        <p>Loading...</p>
+      <AppLayout>
+        <div className="case-page">
+          <div className="page-header">
+            <h1>Case Information</h1>
+            <button className="edit-btn" onClick={() => setMode("edit")}>Edit</button>
+          </div>
+
+          <div className="info-card">
+            <div className="info-section">
+              <h3>Your Role</h3>
+              <div className="role-badge">{existingCase.user_role === "petitioner" ? "Petitioner" : "Respondent"}</div>
+              <p className="role-note">{existingCase.user_role === "petitioner" ? "You filed the original petition" : "The other party filed the original petition"}</p>
+            </div>
+
+            <div className="info-section">
+              <h3>Case Details</h3>
+              <div className="info-grid">
+                <div className="info-item"><label>Case Number</label><span>{existingCase.case_number || "—"}</span></div>
+                <div className="info-item"><label>Court</label><span>{existingCase.court_name || "—"}</span></div>
+                <div className="info-item"><label>County</label><span>{existingCase.county || "—"}</span></div>
+                <div className="info-item"><label>State</label><span>{existingCase.state || "—"}</span></div>
+                <div className="info-item"><label>Judge</label><span>{existingCase.judge_name || "—"}</span></div>
+                <div className="info-item"><label>Filing Date</label><span>{existingCase.filing_date ? new Date(existingCase.filing_date).toLocaleDateString() : "—"}</span></div>
+              </div>
+            </div>
+
+            <div className="info-section">
+              <h3>Parties</h3>
+              <div className="parties-display">
+                <div className="party">
+                  <label>Petitioner</label>
+                  <span className={existingCase.user_role === "petitioner" ? "you" : ""}>
+                    {existingCase.user_role === "petitioner" ? existingCase.user_legal_name : existingCase.coparent_legal_name}
+                    {existingCase.user_role === "petitioner" && <em> (You)</em>}
+                  </span>
+                </div>
+                <div className="vs">vs.</div>
+                <div className="party">
+                  <label>Respondent</label>
+                  <span className={existingCase.user_role === "respondent" ? "you" : ""}>
+                    {existingCase.user_role === "respondent" ? existingCase.user_legal_name : existingCase.coparent_legal_name}
+                    {existingCase.user_role === "respondent" && <em> (You)</em>}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="info-section">
+              <h3>Children</h3>
+              <div className="children-list">
+                {existingCase.children_names?.length > 0 
+                  ? existingCase.children_names.map((name, i) => <span key={i} className="child-name">{name}</span>)
+                  : <span className="none">No children listed</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <style jsx>{`
-          .loading-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%);
-            color: white;
-          }
-          .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top-color: #2dd4a8;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
+          .case-page { max-width: 700px; margin: 0 auto; }
+          .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+          .page-header h1 { margin: 0; font-size: 28px; color: #1a3a2f; }
+          .edit-btn { background: #f0f9f6; border: 1px solid #2dd4a8; color: #1a3a2f; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+          .info-card { background: white; border-radius: 16px; padding: 24px; }
+          .info-section { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; }
+          .info-section:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+          .info-section h3 { margin: 0 0 12px; font-size: 14px; color: #666; font-weight: 500; }
+          .role-badge { display: inline-block; background: #1a3a2f; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600; margin-bottom: 8px; }
+          .role-note { margin: 0; font-size: 13px; color: #888; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .info-item label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
+          .info-item span { font-size: 15px; color: #333; }
+          .parties-display { display: flex; align-items: center; gap: 20px; }
+          .party { flex: 1; text-align: center; padding: 16px; background: #f8f9fa; border-radius: 10px; }
+          .party label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
+          .party span { font-size: 15px; color: #333; }
+          .party span.you { color: #1a3a2f; font-weight: 600; }
+          .party em { color: #2dd4a8; font-style: normal; font-size: 12px; }
+          .vs { color: #999; font-size: 14px; }
+          .children-list { display: flex; flex-wrap: wrap; gap: 8px; }
+          .child-name { background: #f0f9f6; padding: 6px 14px; border-radius: 15px; font-size: 14px; }
+          .none { color: #999; font-style: italic; }
         `}</style>
-      </div>
+      </AppLayout>
     );
   }
 
+  // EDIT MODE
   return (
-    <div className="setup-page">
-      <header className="header">
-        <button onClick={() => router.push("/coach")} className="back-btn">
-          ← Back
-        </button>
-        <h1>⚖️ Case Setup</h1>
-        <div style={{ width: 80 }} />
-      </header>
-
-      <main className="main">
-        {/* Progress */}
-        <div className="progress">
-          <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>1. Your Role</div>
-          <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>2. Case Info</div>
-          <div className={`progress-step ${step >= 3 ? 'active' : ''}`}>3. Parties</div>
+    <AppLayout>
+      <div className="case-page">
+        <div className="page-header">
+          <h1>{existingCase ? "Edit" : "Set Up"} Case Information</h1>
+          {existingCase && <button className="cancel-btn" onClick={() => setMode("view")}>Cancel</button>}
         </div>
 
-        {/* Step 1: Role Selection */}
-        {step === 1 && (
-          <div className="card">
-            <h2>What is your role in this case?</h2>
-            <p className="subtitle">
-              This is determined by who filed the <strong>original</strong> petition. 
-              This role never changes, even if you file motions later.
-            </p>
-
+        <div className="form-card">
+          <div className="form-section">
+            <h3>Your Role in This Case</h3>
+            <p className="section-desc">This is determined by who filed the original petition and never changes.</p>
             <div className="role-options">
-              <button
-                className={`role-btn ${caseData.user_role === 'petitioner' ? 'selected' : ''}`}
-                onClick={() => setCaseData(prev => ({ ...prev, user_role: 'petitioner' }))}
-              >
-                <div className="role-icon">📋</div>
-                <div className="role-title">I am the PETITIONER</div>
-                <div className="role-desc">I filed the original case</div>
+              <button type="button" className={`role-option ${formData.user_role === "petitioner" ? "selected" : ""}`} onClick={() => setFormData(prev => ({ ...prev, user_role: "petitioner" }))}>
+                <strong>I am the PETITIONER</strong><span>I filed the original petition</span>
               </button>
-
-              <button
-                className={`role-btn ${caseData.user_role === 'respondent' ? 'selected' : ''}`}
-                onClick={() => setCaseData(prev => ({ ...prev, user_role: 'respondent' }))}
-              >
-                <div className="role-icon">📩</div>
-                <div className="role-title">I am the RESPONDENT</div>
-                <div className="role-desc">The case was filed against me</div>
-              </button>
-            </div>
-
-            <div className="info-box">
-              <strong>Why does this matter?</strong>
-              <p>
-                All court documents must use the correct party designations. 
-                If you're the Respondent, any motion you file is titled 
-                "Respondent's Motion to..." — even though you're filing it.
-              </p>
-            </div>
-
-            <div className="nav-buttons">
-              <div />
-              <button 
-                className="next-btn" 
-                onClick={() => setStep(2)}
-                disabled={!caseData.user_role}
-              >
-                Continue →
+              <button type="button" className={`role-option ${formData.user_role === "respondent" ? "selected" : ""}`} onClick={() => setFormData(prev => ({ ...prev, user_role: "respondent" }))}>
+                <strong>I am the RESPONDENT</strong><span>They filed the original petition</span>
               </button>
             </div>
           </div>
-        )}
 
-        {/* Step 2: Case Info */}
-        {step === 2 && (
-          <div className="card">
-            <h2>Case Information</h2>
-            <p className="subtitle">This information appears on court documents</p>
-
+          <div className="form-section">
+            <h3>Case Details</h3>
             <div className="form-grid">
-              <div className="form-group">
-                <label>Case Number</label>
-                <input
-                  type="text"
-                  value={caseData.case_number}
-                  onChange={e => setCaseData(prev => ({ ...prev, case_number: e.target.value }))}
-                  placeholder="e.g., FC2020-001234"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Original Filing Date</label>
-                <input
-                  type="date"
-                  value={caseData.original_filing_date}
-                  onChange={e => setCaseData(prev => ({ ...prev, original_filing_date: e.target.value }))}
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>Court Name</label>
-                <input
-                  type="text"
-                  value={caseData.court_name}
-                  onChange={e => setCaseData(prev => ({ ...prev, court_name: e.target.value }))}
-                  placeholder="e.g., Superior Court of Arizona"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>County</label>
-                <input
-                  type="text"
-                  value={caseData.court_county}
-                  onChange={e => setCaseData(prev => ({ ...prev, court_county: e.target.value }))}
-                  placeholder="e.g., Maricopa"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>State</label>
-                <select
-                  value={caseData.court_state}
-                  onChange={e => setCaseData(prev => ({ ...prev, court_state: e.target.value }))}
-                >
-                  <option value="Arizona">Arizona</option>
-                  <option value="California">California</option>
-                  <option value="Texas">Texas</option>
-                  <option value="Florida">Florida</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="form-group full-width">
-                <label>Judge Name (if assigned)</label>
-                <input
-                  type="text"
-                  value={caseData.judge_name}
-                  onChange={e => setCaseData(prev => ({ ...prev, judge_name: e.target.value }))}
-                  placeholder="e.g., Hon. Jane Smith"
-                />
-              </div>
-            </div>
-
-            <div className="nav-buttons">
-              <button className="back-step-btn" onClick={() => setStep(1)}>
-                ← Back
-              </button>
-              <button className="next-btn" onClick={() => setStep(3)}>
-                Continue →
-              </button>
+              <div className="form-group"><label>Case Number</label><input type="text" value={formData.case_number} onChange={e => setFormData(prev => ({ ...prev, case_number: e.target.value }))} placeholder="e.g., FC-2024-001234" /></div>
+              <div className="form-group"><label>Filing Date</label><input type="date" value={formData.filing_date} onChange={e => setFormData(prev => ({ ...prev, filing_date: e.target.value }))} /></div>
+              <div className="form-group full"><label>Court Name</label><input type="text" value={formData.court_name} onChange={e => setFormData(prev => ({ ...prev, court_name: e.target.value }))} placeholder="e.g., Superior Court of Arizona" /></div>
+              <div className="form-group"><label>County</label><input type="text" value={formData.county} onChange={e => setFormData(prev => ({ ...prev, county: e.target.value }))} placeholder="e.g., Maricopa" /></div>
+              <div className="form-group"><label>State</label><select value={formData.state} onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))}><option value="">Select state...</option>{US_STATES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+              <div className="form-group full"><label>Judge Name (optional)</label><input type="text" value={formData.judge_name} onChange={e => setFormData(prev => ({ ...prev, judge_name: e.target.value }))} placeholder="e.g., Hon. Jane Smith" /></div>
             </div>
           </div>
-        )}
 
-        {/* Step 3: Parties */}
-        {step === 3 && (
-          <div className="card">
-            <h2>Party Information</h2>
-            <p className="subtitle">Names as they appear on court documents (ALL CAPS recommended)</p>
-
-            <div className="party-section">
-              <div className="party-label">
-                {caseData.user_role === 'petitioner' ? 'PETITIONER (You)' : 'RESPONDENT (You)'}
-              </div>
-              <input
-                type="text"
-                value={caseData.user_legal_name}
-                onChange={e => setCaseData(prev => ({ ...prev, user_legal_name: e.target.value }))}
-                placeholder="YOUR FULL LEGAL NAME"
-                className="party-input"
-              />
+          <div className="form-section">
+            <h3>Party Information</h3>
+            <div className="form-grid">
+              <div className="form-group full"><label>Your Legal Name</label><input type="text" value={formData.user_legal_name} onChange={e => setFormData(prev => ({ ...prev, user_legal_name: e.target.value }))} placeholder="As it appears on court documents" /></div>
+              <div className="form-group full"><label>Co-Parent's Legal Name</label><input type="text" value={formData.coparent_legal_name} onChange={e => setFormData(prev => ({ ...prev, coparent_legal_name: e.target.value }))} placeholder="As it appears on court documents" /></div>
             </div>
+          </div>
 
-            <div className="party-section">
-              <div className="party-label">
-                {caseData.user_role === 'petitioner' ? 'RESPONDENT (Co-Parent)' : 'PETITIONER (Co-Parent)'}
-              </div>
-              <input
-                type="text"
-                value={caseData.coparent_legal_name}
-                onChange={e => setCaseData(prev => ({ ...prev, coparent_legal_name: e.target.value }))}
-                placeholder="CO-PARENT'S FULL LEGAL NAME"
-                className="party-input"
-              />
-            </div>
-
-            <div className="children-section">
-              <div className="party-label">MINOR CHILD(REN)</div>
-              {caseData.children_names.map((name, index) => (
-                <div key={index} className="child-row">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={e => updateChildName(index, e.target.value)}
-                    placeholder={`Child ${index + 1} name`}
-                    className="child-input"
-                  />
-                  {caseData.children_names.length > 1 && (
-                    <button 
-                      className="remove-child-btn"
-                      onClick={() => removeChild(index)}
-                    >
-                      ×
-                    </button>
-                  )}
+          <div className="form-section">
+            <h3>Children</h3>
+            <div className="children-inputs">
+              {formData.children_names.map((name, i) => (
+                <div key={i} className="child-input">
+                  <input type="text" value={name} onChange={e => updateChild(i, e.target.value)} placeholder={`Child ${i + 1} name`} />
+                  {formData.children_names.length > 1 && <button type="button" onClick={() => removeChild(i)} className="remove-btn">x</button>}
                 </div>
               ))}
-              <button className="add-child-btn" onClick={addChild}>
-                + Add Another Child
-              </button>
-            </div>
-
-            {/* Preview */}
-            <div className="preview-box">
-              <div className="preview-title">Document Header Preview</div>
-              <div className="preview-content">
-                <div><strong>{caseData.user_role === 'petitioner' ? caseData.user_legal_name || '[YOUR NAME]' : caseData.coparent_legal_name || '[CO-PARENT NAME]'}</strong></div>
-                <div className="preview-role">Petitioner,</div>
-                <div className="preview-vs">vs.</div>
-                <div><strong>{caseData.user_role === 'respondent' ? caseData.user_legal_name || '[YOUR NAME]' : caseData.coparent_legal_name || '[CO-PARENT NAME]'}</strong></div>
-                <div className="preview-role">Respondent.</div>
-              </div>
-            </div>
-
-            <div className="nav-buttons">
-              <button className="back-step-btn" onClick={() => setStep(2)}>
-                ← Back
-              </button>
-              <button 
-                className="save-btn" 
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : existingCase ? 'Update Case Info' : 'Save & Continue'}
-              </button>
+              <button type="button" onClick={addChild} className="add-child-btn">+ Add Child</button>
             </div>
           </div>
-        )}
-      </main>
+
+          <div className="form-actions">
+            <button className="save-btn" onClick={handleSave} disabled={!formData.user_role || saving}>
+              {saving ? "Saving..." : existingCase ? "Save Changes" : "Save Case Information"}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <style jsx>{`
-        .setup-page {
-          min-height: 100vh;
-          background: #f8faf9;
-        }
-        .header {
-          background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
-          padding: 20px 24px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          color: white;
-        }
-        .back-btn {
-          background: none;
-          border: none;
-          color: rgba(255,255,255,0.8);
-          font-size: 14px;
-          cursor: pointer;
-        }
-        .header h1 {
-          font-size: 20px;
-          font-weight: 600;
-          margin: 0;
-        }
-
-        .main {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 24px;
-        }
-
-        .progress {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 24px;
-        }
-        .progress-step {
-          flex: 1;
-          padding: 12px;
-          text-align: center;
-          background: #e0e0e0;
-          border-radius: 8px;
-          font-size: 13px;
-          color: #666;
-        }
-        .progress-step.active {
-          background: #1a3a2f;
-          color: white;
-        }
-
-        .card {
-          background: white;
-          border-radius: 16px;
-          padding: 32px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        .card h2 {
-          margin: 0 0 8px;
-          color: #1a3a2f;
-          font-size: 22px;
-        }
-        .subtitle {
-          color: #666;
-          margin: 0 0 24px;
-          font-size: 14px;
-        }
-
-        .role-options {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .role-btn {
-          padding: 24px;
-          border: 2px solid #e0e0e0;
-          border-radius: 12px;
-          background: white;
-          cursor: pointer;
-          text-align: center;
-          transition: all 0.2s;
-        }
-        .role-btn:hover {
-          border-color: #2dd4a8;
-        }
-        .role-btn.selected {
-          border-color: #1a3a2f;
-          background: #f0f9f6;
-        }
-        .role-icon {
-          font-size: 32px;
-          margin-bottom: 12px;
-        }
-        .role-title {
-          font-weight: 600;
-          color: #1a3a2f;
-          margin-bottom: 4px;
-        }
-        .role-desc {
-          font-size: 13px;
-          color: #666;
-        }
-
-        .info-box {
-          background: #f0f9f6;
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 24px;
-        }
-        .info-box strong {
-          color: #1a3a2f;
-        }
-        .info-box p {
-          margin: 8px 0 0;
-          font-size: 13px;
-          color: #555;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .form-group.full-width {
-          grid-column: span 2;
-        }
-        .form-group label {
-          font-size: 13px;
-          font-weight: 500;
-          color: #333;
-        }
-        .form-group input,
-        .form-group select {
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-        .form-group input:focus,
-        .form-group select:focus {
-          outline: none;
-          border-color: #2dd4a8;
-        }
-
-        .party-section {
-          margin-bottom: 20px;
-        }
-        .party-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #1a3a2f;
-          margin-bottom: 8px;
-          letter-spacing: 0.5px;
-        }
-        .party-input {
-          width: 100%;
-          padding: 14px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 16px;
-          text-transform: uppercase;
-        }
-
-        .children-section {
-          margin-bottom: 24px;
-        }
-        .child-row {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .child-input {
-          flex: 1;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-        .remove-child-btn {
-          width: 40px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          background: white;
-          color: #999;
-          font-size: 20px;
-          cursor: pointer;
-        }
-        .remove-child-btn:hover {
-          background: #fee;
-          color: #c00;
-          border-color: #fcc;
-        }
-        .add-child-btn {
-          background: none;
-          border: none;
-          color: #2dd4a8;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 8px 0;
-        }
-
-        .preview-box {
-          background: #f8f8f8;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 24px;
-        }
-        .preview-title {
-          font-size: 11px;
-          color: #999;
-          margin-bottom: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .preview-content {
-          font-family: 'Times New Roman', serif;
-          font-size: 14px;
-          line-height: 1.6;
-        }
-        .preview-role {
-          margin-left: 40px;
-          font-style: italic;
-        }
-        .preview-vs {
-          margin: 8px 0;
-          font-style: italic;
-        }
-
-        .nav-buttons {
-          display: flex;
-          justify-content: space-between;
-        }
-        .back-step-btn {
-          padding: 14px 24px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          background: white;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .next-btn,
-        .save-btn {
-          padding: 14px 32px;
-          border: none;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          color: white;
-          font-weight: 600;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .next-btn:disabled,
-        .save-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .save-btn {
-          background: #2dd4a8;
-          color: #1a3a2f;
-        }
-
-        @media (max-width: 640px) {
-          .role-options {
-            grid-template-columns: 1fr;
-          }
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-          .form-group.full-width {
-            grid-column: span 1;
-          }
-        }
+        .case-page { max-width: 700px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header h1 { margin: 0; font-size: 28px; color: #1a3a2f; }
+        .cancel-btn { background: none; border: 1px solid #ddd; color: #666; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .form-card { background: white; border-radius: 16px; padding: 24px; }
+        .form-section { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #eee; }
+        .form-section:last-child { border-bottom: none; }
+        .form-section h3 { margin: 0 0 8px; font-size: 16px; color: #1a3a2f; }
+        .section-desc { margin: 0 0 16px; font-size: 13px; color: #888; }
+        .role-options { display: flex; gap: 16px; }
+        .role-option { flex: 1; padding: 20px; border: 2px solid #eee; border-radius: 12px; background: white; cursor: pointer; text-align: left; }
+        .role-option:hover { border-color: #ccc; }
+        .role-option.selected { border-color: #2dd4a8; background: #f0f9f6; }
+        .role-option strong { display: block; color: #1a3a2f; margin-bottom: 4px; }
+        .role-option span { font-size: 13px; color: #666; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label { font-size: 13px; color: #666; margin-bottom: 6px; }
+        .form-group input, .form-group select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2dd4a8; }
+        .children-inputs { display: flex; flex-direction: column; gap: 12px; }
+        .child-input { display: flex; gap: 8px; }
+        .child-input input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        .remove-btn { width: 40px; background: #fee; border: none; border-radius: 8px; color: #c00; font-size: 20px; cursor: pointer; }
+        .add-child-btn { background: none; border: 1px dashed #ccc; padding: 12px; border-radius: 8px; color: #666; cursor: pointer; }
+        .form-actions { padding-top: 24px; }
+        .save-btn { width: 100%; padding: 16px; background: #2dd4a8; border: none; border-radius: 10px; color: #1a3a2f; font-weight: 700; font-size: 16px; cursor: pointer; }
+        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @media (max-width: 600px) { .role-options { flex-direction: column; } .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: span 1; } }
       `}</style>
-    </div>
+    </AppLayout>
   );
 }
