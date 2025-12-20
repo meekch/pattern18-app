@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
@@ -57,17 +57,17 @@ const affirmations = [
 ];
 
 const groundingSteps = [
-  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "👁️" },
-  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "✋" },
-  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "👂" },
-  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "👃" },
-  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "👅" },
+  { sense: "SEE", instruction: "Name 5 things you can see right now.", icon: "ðŸ‘ï¸" },
+  { sense: "TOUCH", instruction: "Name 4 things you can physically feel.", icon: "âœ‹" },
+  { sense: "HEAR", instruction: "Name 3 things you can hear.", icon: "ðŸ‘‚" },
+  { sense: "SMELL", instruction: "Name 2 things you can smell.", icon: "ðŸ‘ƒ" },
+  { sense: "TASTE", instruction: "Name 1 thing you can taste.", icon: "ðŸ‘…" },
 ];
 
 const welcomeMessage: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Hey, I'm glad you're here. 💚\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe — I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
+  content: "Hey, I'm glad you're here. ðŸ’š\n\nI'm your 24/7 strategic partner. Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe â€” I've got you.\n\nBe present. Don't react. Let's take back your control.\n\nWhat's going on?",
   timestamp: new Date(),
 };
 
@@ -395,7 +395,7 @@ export default function CoachPage() {
       }
     }
 
-    const displayText = text || (isPdf ? "📄 Document uploaded" : "📷 Screenshot uploaded");
+    const displayText = text || (isPdf ? "ðŸ“„ Document uploaded" : "ðŸ“· Screenshot uploaded");
 
     const userMessage: Message = {
       id: userMessageId,
@@ -617,10 +617,10 @@ INSTRUCTIONS:
 
   const formatMessage = (content: string) => {
     return content
-      .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">⚠️ $1 detected</span></div>')
+      .replace(/\*\*\[([^\]]+)\]\s*detected\*\*/g, '<div class="pattern-alert"><span class="pattern-badge">âš ï¸ $1 detected</span></div>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/^• (.+)$/gm, '<li>$1</li>')
+      .replace(/^â€¢ (.+)$/gm, '<li>$1</li>')
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
       .replace(/\n/g, '<br>');
@@ -662,13 +662,13 @@ INSTRUCTIONS:
         flexDirection: 'column',
         gap: '16px'
       }}>
-        <div style={{ fontSize: '48px' }}>💚</div>
+        <div style={{ fontSize: '48px' }}>ðŸ’š</div>
         <p style={{ color: '#666' }}>Loading...</p>
       </div>
     );
   }
 
-  if (subscriptionStatus && subscriptionStatus !== 'active') {
+  if (subscriptionStatus && subscriptionStatus !== 'active' && subscriptionStatus !== 'trialing') {
     return <SubscriptionGate status={subscriptionStatus} email={user?.email || ''} />;
   }
 
@@ -707,39 +707,39 @@ INSTRUCTIONS:
       <div className={`sidebar ${showSidebar ? "open" : ""}`}>
         <div className="sidebar-header">
           <h3>Menu</h3>
-          <button onClick={() => setShowSidebar(false)} className="close-sidebar">✕</button>
+          <button onClick={() => setShowSidebar(false)} className="close-sidebar">âœ•</button>
         </div>
         
         <div className="sidebar-menu">
           <button onClick={() => { startNewConversation(); setMode("chat"); setShowSidebar(false); }} className="menu-item">
-            <span>💬</span> New Chat
+            <span>ðŸ’¬</span> New Chat
           </button>
           <button onClick={() => { setMode("document"); setShowSidebar(false); }} className="menu-item">
-            <span>📝</span> Documents
+            <span>ðŸ“</span> Documents
           </button>
           <button onClick={() => { router.push("/evidence"); setShowSidebar(false); }} className="menu-item">
-            <span>📊</span> Evidence Dashboard
+            <span>ðŸ“Š</span> Evidence Dashboard
           </button>
           <button onClick={() => { setShowRegulate(true); setRegulateMode("menu"); setShowSidebar(false); }} className="menu-item breathe-item">
-            <span>🫁</span> Breathe & Ground
+            <span>ðŸ«</span> Breathe & Ground
           </button>
           
           <div className="menu-divider" />
           
           <button onClick={() => { router.push("/faq"); setShowSidebar(false); }} className="menu-item">
-            <span>❓</span> FAQ
+            <span>â“</span> FAQ
           </button>
           <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="menu-item safety-item">
-            <span>🤍</span> Safety Resources
+            <span>ðŸ¤</span> Safety Resources
           </button>
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="menu-item">
-            <span>💬</span> Send Feedback
+            <span>ðŸ’¬</span> Send Feedback
           </button>
           
           <div className="menu-divider" />
           
           <button onClick={handleLogout} className="menu-item logout-item">
-            <span>🚪</span> Log Out
+            <span>ðŸšª</span> Log Out
           </button>
         </div>
         
@@ -768,7 +768,7 @@ INSTRUCTIONS:
       {showDisclaimer && (
         <div className="disclaimer-overlay">
           <div className="disclaimer-modal">
-            <div className="disclaimer-icon">💚</div>
+            <div className="disclaimer-icon">ðŸ’š</div>
             <h2>Welcome to Pattern 18</h2>
             <p className="disclaimer-tagline">Be prepared. Be empowered. Take back control.</p>
             <div className="disclaimer-content">
@@ -781,7 +781,7 @@ INSTRUCTIONS:
                 <li>Create legal documents</li>
                 <li>Stay calm and regulated when it gets hard</li>
               </ul>
-              <p className="disclaimer-note">I'm not a lawyer — always have an attorney review documents before filing.</p>
+              <p className="disclaimer-note">I'm not a lawyer â€” always have an attorney review documents before filing.</p>
             </div>
             <button 
               className="disclaimer-btn" 
@@ -790,7 +790,7 @@ INSTRUCTIONS:
                 setShowDisclaimer(false);
               }}
             >
-              Let's do this 💚
+              Let's do this ðŸ’š
             </button>
           </div>
         </div>
@@ -803,27 +803,27 @@ INSTRUCTIONS:
             {regulateMode === "menu" && (
               <>
                 <div className="regulate-header">
-                  <span className="regulate-icon">💚</span>
+                  <span className="regulate-icon">ðŸ’š</span>
                   <h2>Take a moment</h2>
                   <p>You're safe here. Whatever just happened can wait.</p>
                 </div>
                 <div className="regulate-options">
                   <button onClick={() => { setBreatheCount(0); setBreathePhase("inhale"); setRegulateMode("breathe"); }}>
-                    <span className="option-icon">🫁</span>
+                    <span className="option-icon">ðŸ«</span>
                     <span className="option-text">
                       <strong>Breathe</strong>
                       <small>Box breathing to calm your nervous system</small>
                     </span>
                   </button>
                   <button onClick={() => setRegulateMode("ground")}>
-                    <span className="option-icon">🌳</span>
+                    <span className="option-icon">ðŸŒ³</span>
                     <span className="option-text">
                       <strong>Ground</strong>
                       <small>5-4-3-2-1 sensory grounding</small>
                     </span>
                   </button>
                   <button onClick={() => { setCurrentAffirmation(getRandomAffirmation()); setRegulateMode("affirm"); }}>
-                    <span className="option-icon">💪</span>
+                    <span className="option-icon">ðŸ’ª</span>
                     <span className="option-text">
                       <strong>Remember</strong>
                       <small>A reminder from someone who's been there</small>
@@ -864,16 +864,16 @@ INSTRUCTIONS:
                       key={i} 
                       className={`progress-dot ${i < breatheCount ? 'complete' : ''} ${i === breatheCount ? 'active' : ''}`}
                     >
-                      {i < breatheCount && <span>✓</span>}
+                      {i < breatheCount && <span>âœ“</span>}
                     </div>
                   ))}
                 </div>
                 
                 <p className="breathe-cycle">
-                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete 💚"}
+                  {breatheCount < 4 ? `Cycle ${breatheCount + 1} of 4` : "Complete ðŸ’š"}
                 </p>
                 
-                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>← Back</button>
+                <button className="regulate-skip" onClick={() => setRegulateMode("menu")}>â† Back</button>
               </div>
             )}
 
@@ -886,13 +886,13 @@ INSTRUCTIONS:
                     <div key={i} className="ground-step">
                       <span className="ground-icon">{step.icon}</span>
                       <div>
-                        <strong>{5 - i} — {step.sense}</strong>
+                        <strong>{5 - i} â€” {step.sense}</strong>
                         <p>{step.instruction}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>← Back</button>
+                <button className="regulate-close" onClick={() => setRegulateMode("menu")}>â† Back</button>
               </div>
             )}
 
@@ -902,10 +902,10 @@ INSTRUCTIONS:
                   <p className="affirm-text">"{currentAffirmation.text}"</p>
                   <p className="affirm-subtext">{currentAffirmation.subtext}</p>
                 </div>
-                <p className="affirm-signature">— From someone who's been there</p>
+                <p className="affirm-signature">â€” From someone who's been there</p>
                 <div className="affirm-actions">
-                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another ✨</button>
-                  <button onClick={() => setRegulateMode("menu")}>← Back</button>
+                  <button onClick={() => setCurrentAffirmation(getRandomAffirmation())}>Another âœ¨</button>
+                  <button onClick={() => setRegulateMode("menu")}>â† Back</button>
                 </div>
               </div>
             )}
@@ -917,7 +917,7 @@ INSTRUCTIONS:
         <div className="header-content">
           <div className="logo-section">
             <button onClick={() => setShowSidebar(true)} className="menu-btn">
-              ☰
+              â˜°
             </button>
             <div className="logo">
               <div className="logo-icon">18</div>
@@ -939,11 +939,11 @@ INSTRUCTIONS:
       {(caseContext || storedPdf) && (
         <div className="context-banner">
           <span>
-            {caseContext && <>📋 <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}</>}
-            {storedPdf && !caseContext && <>📄 {storedPdf.name}</>}
-            {storedPdf && caseContext && <> • PDF loaded</>}
+            {caseContext && <>ðŸ“‹ <strong>{caseContext.caseNumber}</strong> â€” {caseContext.petitioner} v. {caseContext.respondent}</>}
+            {storedPdf && !caseContext && <>ðŸ“„ {storedPdf.name}</>}
+            {storedPdf && caseContext && <> â€¢ PDF loaded</>}
           </span>
-          <button onClick={clearCaseContext}>✕</button>
+          <button onClick={clearCaseContext}>âœ•</button>
         </div>
       )}
 
@@ -951,13 +951,13 @@ INSTRUCTIONS:
         <div className="document-editor">
           <div className="editor-container">
             <div className="editor-header">
-              <h2>📝 Document Editor</h2>
+              <h2>ðŸ“ Document Editor</h2>
               <p>Create precise court documents. Paste text and tell me what to change.</p>
             </div>
             
             {caseContext && (
               <div className="editor-context">
-                <strong>{caseContext.caseNumber}</strong> — {caseContext.petitioner} v. {caseContext.respondent}
+                <strong>{caseContext.caseNumber}</strong> â€” {caseContext.petitioner} v. {caseContext.respondent}
               </div>
             )}
 
@@ -1015,7 +1015,7 @@ INSTRUCTIONS:
                     <>
                       {msg.patterns && msg.patterns.length > 0 && (
                         <div className="patterns-detected">
-                          <span className="patterns-label">🎯 Patterns identified:</span>
+                          <span className="patterns-label">ðŸŽ¯ Patterns identified:</span>
                           <div className="pattern-tags">
                             {msg.patterns.map((pattern, i) => (
                               <span key={i} className="pattern-tag">{pattern}</span>
@@ -1024,9 +1024,9 @@ INSTRUCTIONS:
                         </div>
                       )}
                       <div className="message-actions">
-                        <button onClick={() => copyToClipboard(msg.content)}>📋 Copy</button>
+                        <button onClick={() => copyToClipboard(msg.content)}>ðŸ“‹ Copy</button>
                         {msg.savedToEvidence ? (
-                          <span className="saved-badge">✓ Saved</span>
+                          <span className="saved-badge">âœ“ Saved</span>
                         ) : (
                           <button 
                             onClick={() => {
@@ -1037,7 +1037,7 @@ INSTRUCTIONS:
                             disabled={savingEvidence === msg.id}
                             className="save-evidence-btn"
                           >
-                            {savingEvidence === msg.id ? '💾 Saving...' : '💾 Save to Evidence'}
+                            {savingEvidence === msg.id ? 'ðŸ’¾ Saving...' : 'ðŸ’¾ Save to Evidence'}
                           </button>
                         )}
                       </div>
@@ -1247,7 +1247,7 @@ INSTRUCTIONS:
         .disclaimer-content ul { margin: 16px 0; padding-left: 0; list-style: none; }
         .disclaimer-content li { padding: 10px 0 10px 32px; position: relative; border-bottom: 1px solid #f0f0f0; }
         .disclaimer-content li:last-child { border-bottom: none; }
-        .disclaimer-content li::before { content: "✓"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; font-size: 18px; }
+        .disclaimer-content li::before { content: "âœ“"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; font-size: 18px; }
         .disclaimer-note { font-size: 13px; color: #888; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
         .disclaimer-btn {
           margin-top: 28px;
@@ -1617,7 +1617,7 @@ INSTRUCTIONS:
         .message-content :global(em) { font-style: italic; color: #666; }
         .message-content :global(ul) { margin: 16px 0; padding-left: 0; list-style: none; }
         .message-content :global(li) { padding: 8px 0 8px 28px; position: relative; }
-        .message-content :global(li::before) { content: "→"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; }
+        .message-content :global(li::before) { content: "â†’"; position: absolute; left: 0; color: #2dd4a8; font-weight: bold; }
         .message-content :global(.pattern-alert) {
           background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
           border-left: 4px solid #e57373;
