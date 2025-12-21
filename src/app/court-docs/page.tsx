@@ -90,16 +90,53 @@ export default function DocumentGeneratorPage() {
         setCaseContext(caseData);
       }
       
-      // Load incidents
+      // Load from incidents table
       const { data: incidentsData } = await supabase
         .from('incidents')
         .select('*')
         .eq('user_id', session.user.id)
         .order('date', { ascending: false });
       
+      // Load from evidence table (coach saves)
+      const { data: evidenceData } = await supabase
+        .from('evidence')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      
+      // Combine both sources
+      const allIncidents: Incident[] = [];
+      
       if (incidentsData) {
-        setIncidents(incidentsData);
+        incidentsData.forEach(inc => {
+          allIncidents.push({
+            id: inc.id,
+            date: inc.date || inc.created_at,
+            description: inc.description,
+            patterns: inc.patterns || [],
+            severity: inc.severity || 'medium',
+            category: inc.category || 'Other',
+          });
+        });
       }
+      
+      if (evidenceData) {
+        evidenceData.forEach(ev => {
+          allIncidents.push({
+            id: ev.id,
+            date: ev.created_at,
+            description: ev.original_message || ev.content?.slice(0, 500) || 'Documented from coach',
+            patterns: ev.patterns || [],
+            severity: ev.patterns?.length > 2 ? 'high' : ev.patterns?.length > 0 ? 'medium' : 'low',
+            category: 'Coach Analysis',
+          });
+        });
+      }
+      
+      // Sort by date
+      allIncidents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setIncidents(allIncidents);
       
       setLoading(false);
     };
