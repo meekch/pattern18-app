@@ -153,6 +153,11 @@ export default function CoachPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Conversation history state
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [pastConversations, setPastConversations] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  
   // UI state
   const [showSidebar, setShowSidebar] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -278,11 +283,86 @@ export default function CoachPage() {
         }
       }
       
+      // Load past conversations
+      const { data: convos } = await supabase
+        .from('conversations')
+        .select('id, title, preview, updated_at, patterns_found')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      
+      if (convos) {
+        setPastConversations(convos);
+      }
+      
       setAuthLoading(false);
     };
     
     init();
   }, [router]);
+
+  // Save conversation when messages change
+  useEffect(() => {
+    const saveConversation = async () => {
+      if (!user || messages.length === 0) return;
+      
+      // Generate title from first user message
+      const firstUserMsg = messages.find(m => m.role === 'user');
+      const title = firstUserMsg?.content?.slice(0, 50) + (firstUserMsg?.content && firstUserMsg.content.length > 50 ? '...' : '') || 'New conversation';
+      
+      // Get preview from last assistant message
+      const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+      const preview = lastAssistantMsg?.content?.slice(0, 100) || '';
+      
+      // Collect all patterns found
+      const allPatterns = messages
+        .filter(m => m.patterns && m.patterns.length > 0)
+        .flatMap(m => m.patterns || []);
+      const uniquePatterns = [...new Set(allPatterns)];
+      
+      if (currentConversationId) {
+        // Update existing conversation
+        await supabase
+          .from('conversations')
+          .update({
+            messages: messages,
+            title,
+            preview,
+            patterns_found: uniquePatterns,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', currentConversationId);
+      } else if (messages.length >= 2) {
+        // Create new conversation after first exchange
+        const { data } = await supabase
+          .from('conversations')
+          .insert({
+            user_id: user.id,
+            messages: messages,
+            title,
+            preview,
+            patterns_found: uniquePatterns,
+          })
+          .select('id')
+          .single();
+        
+        if (data) {
+          setCurrentConversationId(data.id);
+          // Refresh conversation list
+          const { data: convos } = await supabase
+            .from('conversations')
+            .select('id, title, preview, updated_at, patterns_found')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+          if (convos) setPastConversations(convos);
+        }
+      }
+    };
+    
+    const debounce = setTimeout(saveConversation, 1000);
+    return () => clearTimeout(debounce);
+  }, [messages, user, currentConversationId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -333,6 +413,48 @@ export default function CoachPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
+  };
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setShowWelcome(true);
+    setShowHistory(false);
+    setShowSidebar(false);
+  };
+
+  const loadConversation = async (conversationId: string) => {
+    const { data } = await supabase
+      .from('conversations')
+      .select('messages')
+      .eq('id', conversationId)
+      .single();
+    
+    if (data?.messages) {
+      // Convert timestamp strings back to Date objects
+      const messagesWithDates = data.messages.map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      }));
+      setMessages(messagesWithDates);
+      setCurrentConversationId(conversationId);
+      setShowWelcome(false);
+      setShowHistory(false);
+      setShowSidebar(false);
+    }
+  };
+
+  const deleteConversation = async (conversationId: string) => {
+    await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+    
+    setPastConversations(prev => prev.filter(c => c.id !== conversationId));
+    
+    if (currentConversationId === conversationId) {
+      startNewConversation();
+    }
   };
 
   const sendMessage = async (overrideMessage?: string) => {
@@ -528,6 +650,52 @@ export default function CoachPage() {
           <button onClick={() => setShowSidebar(false)} className="close-btn">×</button>
         </div>
         
+        {/* New Conversation Button */}
+        <button onClick={startNewConversation} className="new-chat-btn">
+          + New Conversation
+        </button>
+        
+        {/* Conversation History */}
+        {pastConversations.length > 0 && (
+          <div className="history-section">
+            <button 
+              className="history-toggle" 
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              🕐 Recent Chats ({pastConversations.length})
+              <span className={`toggle-arrow ${showHistory ? 'open' : ''}`}>›</span>
+            </button>
+            
+            {showHistory && (
+              <div className="history-list">
+                {pastConversations.map(convo => (
+                  <div 
+                    key={convo.id} 
+                    className={`history-item ${currentConversationId === convo.id ? 'active' : ''}`}
+                    onClick={() => loadConversation(convo.id)}
+                  >
+                    <div className="history-item-content">
+                      <span className="history-title">{convo.title || 'Untitled'}</span>
+                      <span className="history-date">
+                        {new Date(convo.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    {convo.patterns_found && convo.patterns_found.length > 0 && (
+                      <span className="history-patterns">{convo.patterns_found.length} patterns</span>
+                    )}
+                    <button 
+                      className="history-delete"
+                      onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
         <nav className="nav">
           <button onClick={() => { router.push('/dashboard'); setShowSidebar(false); }} className="nav-item">
             🏠 Home
@@ -584,6 +752,11 @@ export default function CoachPage() {
           </div>
         </div>
         <div className="header-right">
+          {messages.length > 0 && (
+            <button onClick={startNewConversation} className="new-chat-header-btn" title="New conversation">
+              +
+            </button>
+          )}
           {daysUntilCourt && (
             <div className="court-badge" onClick={() => router.push('/case-setup')}>
               <span className="court-days">{daysUntilCourt}</span>
@@ -635,6 +808,23 @@ export default function CoachPage() {
             <button className="breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode('menu'); }}>
               🌿 Take care of you first
             </button>
+
+            {pastConversations.length > 0 && (
+              <div className="recent-chats-welcome">
+                <span className="recent-label">Continue a conversation:</span>
+                <div className="recent-chips">
+                  {pastConversations.slice(0, 3).map(convo => (
+                    <button 
+                      key={convo.id}
+                      className="recent-chip"
+                      onClick={() => loadConversation(convo.id)}
+                    >
+                      {convo.title?.slice(0, 30) || 'Untitled'}...
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="messages">
@@ -1382,6 +1572,110 @@ export default function CoachPage() {
           font-size: 28px;
           cursor: pointer;
         }
+        .new-chat-btn {
+          margin: 12px 16px;
+          padding: 12px 16px;
+          background: #14b8a6;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          text-align: center;
+        }
+        .new-chat-btn:hover {
+          background: #0d9488;
+        }
+        .history-section {
+          border-top: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .history-toggle {
+          width: 100%;
+          padding: 12px 16px;
+          background: transparent;
+          border: none;
+          color: rgba(255,255,255,0.7);
+          font-size: 13px;
+          text-align: left;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .history-toggle:hover {
+          color: white;
+        }
+        .toggle-arrow {
+          transition: transform 0.2s;
+        }
+        .toggle-arrow.open {
+          transform: rotate(90deg);
+        }
+        .history-list {
+          max-height: 200px;
+          overflow-y: auto;
+          padding: 0 8px 8px;
+        }
+        .history-item {
+          padding: 10px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          margin-bottom: 4px;
+          position: relative;
+          background: rgba(255,255,255,0.05);
+        }
+        .history-item:hover {
+          background: rgba(255,255,255,0.1);
+        }
+        .history-item.active {
+          background: rgba(20, 184, 166, 0.3);
+        }
+        .history-item-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+        .history-title {
+          font-size: 13px;
+          color: white;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
+        }
+        .history-date {
+          font-size: 11px;
+          color: rgba(255,255,255,0.5);
+          white-space: nowrap;
+        }
+        .history-patterns {
+          font-size: 11px;
+          color: #5eead4;
+          display: block;
+          margin-top: 4px;
+        }
+        .history-delete {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: rgba(255,255,255,0.3);
+          font-size: 18px;
+          cursor: pointer;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .history-item:hover .history-delete {
+          opacity: 1;
+        }
+        .history-delete:hover {
+          color: #f87171;
+        }
         .nav {
           padding: 16px;
           display: flex;
@@ -1475,6 +1769,22 @@ export default function CoachPage() {
           padding: 2px 8px;
           border-radius: 10px;
           font-weight: 700;
+        }
+        .new-chat-header-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.15);
+          border: none;
+          color: white;
+          font-size: 20px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .new-chat-header-btn:hover {
+          background: rgba(255,255,255,0.25);
         }
         .evidence-badge {
           display: flex;
@@ -1588,6 +1898,36 @@ export default function CoachPage() {
         .breathe-btn:hover {
           transform: scale(1.02);
           background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+        }
+        .recent-chats-welcome {
+          margin-top: 24px;
+          text-align: center;
+        }
+        .recent-label {
+          font-size: 13px;
+          color: #666;
+          display: block;
+          margin-bottom: 10px;
+        }
+        .recent-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: center;
+        }
+        .recent-chip {
+          background: white;
+          border: 1px solid #e5e7eb;
+          padding: 8px 14px;
+          border-radius: 16px;
+          font-size: 13px;
+          color: #444;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .recent-chip:hover {
+          border-color: #14b8a6;
+          color: #14b8a6;
         }
         .bulk-analyzer-promo {
           display: flex;
