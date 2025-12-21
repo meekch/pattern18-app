@@ -1349,7 +1349,7 @@ export default function CoachPage() {
               <div className="onboarding-step">
                 <div className="onboarding-icon">🎯</div>
                 <h2>I See Through It</h2>
-                <p>I identify manipulation tactics instantly — what took courts years to see.</p>
+                <p>You're not crazy. I'll help you name it, document it, and stop second-guessing yourself.</p>
                 <p className="onboarding-sub">Gaslighting, DARVO, baiting, blame-shifting... I'll name it and help you respond without reacting.</p>
               </div>
             )}
