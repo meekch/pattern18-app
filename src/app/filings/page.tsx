@@ -50,6 +50,7 @@ export default function FilingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filings, setFilings] = useState<Filing[]>([]);
+  const [existingCaseInfo, setExistingCaseInfo] = useState<any>(null);
   
   // Upload & analyze state
   const [showUpload, setShowUpload] = useState(false);
@@ -57,6 +58,11 @@ export default function FilingsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  
+  // Case info confirmation
+  const [showCaseConfirm, setShowCaseConfirm] = useState(false);
+  const [extractedCaseInfo, setExtractedCaseInfo] = useState<any>(null);
+  const [savingCaseInfo, setSavingCaseInfo] = useState(false);
   
   // Form state for new filing
   const [newFiling, setNewFiling] = useState({
@@ -80,6 +86,18 @@ export default function FilingsPage() {
       }
       setUser(session.user);
       await loadFilings(session.user.id);
+      
+      // Load existing case context
+      const { data: caseData } = await supabase
+        .from('case_context')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (caseData) {
+        setExistingCaseInfo(caseData);
+      }
+      
       setLoading(false);
     };
     init();
@@ -162,12 +180,54 @@ export default function FilingsPage() {
       
       if (data) {
         setFilings(prev => [data, ...prev]);
+        
+        // Check if we extracted case info and don't have existing case context
+        const caseInfo = analysisResult?.case_info;
+        if (caseInfo && !existingCaseInfo && (caseInfo.case_number || caseInfo.court || caseInfo.petitioner_name)) {
+          setExtractedCaseInfo(caseInfo);
+          setShowCaseConfirm(true);
+        }
+        
         resetUpload();
       }
     } catch (error) {
       console.error('Save error:', error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const saveCaseInfo = async () => {
+    if (!user || !extractedCaseInfo) return;
+    setSavingCaseInfo(true);
+    
+    try {
+      const caseData = {
+        user_id: user.id,
+        caseNumber: extractedCaseInfo.case_number || '',
+        court: extractedCaseInfo.court || '',
+        county: extractedCaseInfo.county || '',
+        petitionerName: extractedCaseInfo.petitioner_name || '',
+        respondentName: extractedCaseInfo.respondent_name || '',
+        judgeName: extractedCaseInfo.judge_name || '',
+      };
+      
+      const { data, error } = await supabase
+        .from('case_context')
+        .upsert(caseData, { onConflict: 'user_id' })
+        .select()
+        .single();
+      
+      if (data) {
+        setExistingCaseInfo(data);
+      }
+      
+      setShowCaseConfirm(false);
+      setExtractedCaseInfo(null);
+    } catch (error) {
+      console.error('Save case info error:', error);
+    } finally {
+      setSavingCaseInfo(false);
     }
   };
 
@@ -555,6 +615,41 @@ export default function FilingsPage() {
                         </div>
                       )}
                       
+                      {analysisResult.case_info && (analysisResult.case_info.case_number || analysisResult.case_info.court) && (
+                        <div className="analysis-section case-info-section">
+                          <h4>📁 Case Details Detected</h4>
+                          <div className="case-info-grid">
+                            {analysisResult.case_info.case_number && (
+                              <div className="case-info-item">
+                                <span className="case-label">Case #:</span>
+                                <span className="case-value">{analysisResult.case_info.case_number}</span>
+                              </div>
+                            )}
+                            {analysisResult.case_info.court && (
+                              <div className="case-info-item">
+                                <span className="case-label">Court:</span>
+                                <span className="case-value">{analysisResult.case_info.court}</span>
+                              </div>
+                            )}
+                            {analysisResult.case_info.petitioner_name && (
+                              <div className="case-info-item">
+                                <span className="case-label">Petitioner:</span>
+                                <span className="case-value">{analysisResult.case_info.petitioner_name}</span>
+                              </div>
+                            )}
+                            {analysisResult.case_info.respondent_name && (
+                              <div className="case-info-item">
+                                <span className="case-label">Respondent:</span>
+                                <span className="case-value">{analysisResult.case_info.respondent_name}</span>
+                              </div>
+                            )}
+                          </div>
+                          {!existingCaseInfo && (
+                            <p className="case-info-note">✨ We'll ask you to save this after uploading</p>
+                          )}
+                        </div>
+                      )}
+                      
                       {analysisResult.deadlines?.length > 0 && (
                         <div className="analysis-section deadlines">
                           <h4>⏰ Deadlines Found</h4>
@@ -696,6 +791,76 @@ export default function FilingsPage() {
                   💬 Get Help from Coach
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Case Info Confirmation Modal */}
+      {showCaseConfirm && extractedCaseInfo && (
+        <div className="modal-overlay" onClick={() => setShowCaseConfirm(false)}>
+          <div className="modal case-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📋 Case Details Found</h2>
+              <button onClick={() => setShowCaseConfirm(false)} className="modal-close">×</button>
+            </div>
+            
+            <div className="modal-content">
+              <p className="case-intro">We found your case information in this document. Save it to auto-fill your court documents?</p>
+              
+              <div className="case-details">
+                {extractedCaseInfo.case_number && (
+                  <div className="case-row">
+                    <label>Case Number</label>
+                    <span>{extractedCaseInfo.case_number}</span>
+                  </div>
+                )}
+                {extractedCaseInfo.court && (
+                  <div className="case-row">
+                    <label>Court</label>
+                    <span>{extractedCaseInfo.court}</span>
+                  </div>
+                )}
+                {extractedCaseInfo.county && (
+                  <div className="case-row">
+                    <label>County</label>
+                    <span>{extractedCaseInfo.county}</span>
+                  </div>
+                )}
+                {extractedCaseInfo.petitioner_name && (
+                  <div className="case-row">
+                    <label>Petitioner</label>
+                    <span>{extractedCaseInfo.petitioner_name}</span>
+                  </div>
+                )}
+                {extractedCaseInfo.respondent_name && (
+                  <div className="case-row">
+                    <label>Respondent</label>
+                    <span>{extractedCaseInfo.respondent_name}</span>
+                  </div>
+                )}
+                {extractedCaseInfo.judge_name && (
+                  <div className="case-row">
+                    <label>Judge</label>
+                    <span>{extractedCaseInfo.judge_name}</span>
+                  </div>
+                )}
+              </div>
+              
+              <p className="case-note">You can edit these anytime in Settings.</p>
+            </div>
+            
+            <div className="modal-footer">
+              <button onClick={() => setShowCaseConfirm(false)} className="cancel-btn">
+                Skip for now
+              </button>
+              <button 
+                onClick={saveCaseInfo}
+                disabled={savingCaseInfo}
+                className="save-btn"
+              >
+                {savingCaseInfo ? 'Saving...' : '✓ Save Case Info'}
+              </button>
             </div>
           </div>
         </div>
@@ -975,6 +1140,75 @@ export default function FilingsPage() {
         }
         .detail-modal {
           max-width: 600px;
+        }
+        .case-modal {
+          max-width: 480px;
+        }
+        .case-intro {
+          font-size: 15px;
+          color: #444;
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+        .case-details {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 16px;
+        }
+        .case-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+          border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .case-row:last-child {
+          border-bottom: none;
+        }
+        .case-row label {
+          font-size: 13px;
+          color: #666;
+        }
+        .case-row span {
+          font-size: 14px;
+          font-weight: 600;
+          color: #1a3a2f;
+          text-align: right;
+          max-width: 60%;
+        }
+        .case-note {
+          font-size: 12px;
+          color: #666;
+          text-align: center;
+          font-style: italic;
+        }
+        .case-info-section {
+          background: #f0fdf4;
+          border: 1px solid #a7f3d0;
+        }
+        .case-info-grid {
+          display: grid;
+          gap: 8px;
+        }
+        .case-info-item {
+          display: flex;
+          gap: 8px;
+        }
+        .case-label {
+          font-size: 13px;
+          color: #666;
+          min-width: 80px;
+        }
+        .case-value {
+          font-size: 13px;
+          font-weight: 600;
+          color: #065f46;
+        }
+        .case-info-note {
+          font-size: 12px;
+          color: #14b8a6;
+          margin-top: 10px;
+          margin-bottom: 0;
         }
         .modal-header {
           display: flex;

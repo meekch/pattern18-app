@@ -68,6 +68,17 @@ Analyze this court document and extract the following in JSON format:
   "type": "order" | "motion" | "response" | "declaration" | "other",
   "date_filed": "YYYY-MM-DD if visible, or null",
   "summary": "2-3 sentence plain English summary of what this document says/means",
+  
+  "case_info": {
+    "case_number": "The case/cause number if visible (e.g., 'FC-2024-001234', 'DR2024-001234')",
+    "court": "Full court name (e.g., 'Maricopa County Superior Court', 'Family Court of the State of Arizona')",
+    "county": "County name if visible",
+    "state": "State if visible",
+    "petitioner_name": "Name of Petitioner/Plaintiff",
+    "respondent_name": "Name of Respondent/Defendant",
+    "judge_name": "Judge's name if visible"
+  },
+  
   "deadlines": [
     {
       "id": "unique_id",
@@ -96,6 +107,7 @@ Analyze this court document and extract the following in JSON format:
 }
 
 Important guidelines:
+- Extract ALL case identifying information you can find (case number, court, parties, judge)
 - Calculate actual dates based on today's date and any "within X days" requirements
 - Today's date is ${new Date().toISOString().split('T')[0]}
 - Be specific about action items - don't be vague
