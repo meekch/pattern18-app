@@ -762,16 +762,26 @@ export default function CoachPage() {
           </button>
         </div>
         {messages.length > 0 && messages.some(m => m.patterns && m.patterns.length > 0) && (
-          <button 
-            className="no-respond-btn"
-            onClick={() => {
-              const lastPattern = messages.filter(m => m.patterns && m.patterns.length > 0).pop();
-              const patternName = lastPattern?.patterns?.[0] || 'manipulation';
-              sendMessage(`I'm choosing not to respond to that ${patternName.toLowerCase()}. Silence is my power.`);
-            }}
-          >
-            🚫 I'm not responding to this
-          </button>
+          <div className="response-options">
+            <button 
+              className="help-respond-btn"
+              onClick={() => {
+                sendMessage(`Help me craft a response to this. Keep it brief and strategic - no JADE (Justify, Argue, Defend, Explain).`);
+              }}
+            >
+              ✍️ Help me respond
+            </button>
+            <button 
+              className="no-respond-btn"
+              onClick={() => {
+                const lastPattern = messages.filter(m => m.patterns && m.patterns.length > 0).pop();
+                const patternName = lastPattern?.patterns?.[0] || 'manipulation';
+                sendMessage(`I'm choosing not to respond to that ${patternName.toLowerCase()}. Silence is my power.`);
+              }}
+            >
+              🚫 I'm not responding
+            </button>
+          </div>
         )}
       </div>
 
@@ -1587,12 +1597,30 @@ export default function CoachPage() {
           opacity: 0.5;
           cursor: not-allowed;
         }
+        .response-options {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 12px;
+          flex-wrap: wrap;
+        }
+        .help-respond-btn {
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          border: none;
+          padding: 10px 18px;
+          border-radius: 20px;
+          font-size: 14px;
+          color: #1e40af;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .help-respond-btn:hover {
+          background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+        }
         .no-respond-btn {
-          display: block;
-          margin: 12px auto 0;
           background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
           border: none;
-          padding: 10px 20px;
+          padding: 10px 18px;
           border-radius: 20px;
           font-size: 14px;
           color: #92400e;
