@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
+  const [showSidebar, setShowSidebar] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     totalIncidents: 0,
     totalEvidence: 0,
@@ -205,11 +206,52 @@ export default function DashboardPage() {
 
   return (
     <div className="container">
+      {/* Sidebar Overlay */}
+      {showSidebar && <div className="overlay" onClick={() => setShowSidebar(false)} />}
+
+      {/* Sidebar */}
+      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <span className="sidebar-logo">18</span>
+            <span>Pattern 18</span>
+          </div>
+          <button onClick={() => setShowSidebar(false)} className="close-btn">×</button>
+        </div>
+        
+        <nav className="nav">
+          <button className="nav-item active" onClick={() => setShowSidebar(false)}>
+            🏠 Home
+          </button>
+          <button onClick={() => { router.push('/coach'); setShowSidebar(false); }} className="nav-item">
+            💬 Coach
+          </button>
+          <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
+            📁 My Documentation
+          </button>
+          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
+            ⚖️ Court Documents
+          </button>
+          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
+            📱 Message Analyzer
+          </button>
+          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item healing">
+            🌿 Healing Journey
+          </button>
+          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
+            ⚙️ Settings
+          </button>
+        </nav>
+      </div>
+
       {/* Header */}
       <header className="header">
-        <div className="header-brand">
-          <span className="logo">18</span>
-          <span className="brand-name">Pattern 18</span>
+        <div className="header-left">
+          <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
+          <div className="header-brand">
+            <span className="logo">18</span>
+            <span className="brand-name">Pattern 18</span>
+          </div>
         </div>
         <button onClick={() => router.push('/coach')} className="coach-btn">
           💬 Coach
@@ -381,6 +423,88 @@ export default function DashboardPage() {
           padding-bottom: 80px;
         }
 
+        /* Overlay */
+        .overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 40;
+        }
+
+        /* Sidebar */
+        .sidebar {
+          position: fixed;
+          left: -280px;
+          top: 0;
+          bottom: 0;
+          width: 280px;
+          background: #1a3a2f;
+          z-index: 50;
+          transition: left 0.3s ease;
+          overflow-y: auto;
+        }
+        .sidebar.open {
+          left: 0;
+        }
+        .sidebar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          font-weight: 600;
+        }
+        .sidebar-logo {
+          background: rgba(255,255,255,0.15);
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-weight: 700;
+        }
+        .close-btn {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 28px;
+          cursor: pointer;
+        }
+        .nav {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          background: transparent;
+          border: none;
+          border-radius: 8px;
+          color: rgba(255,255,255,0.8);
+          font-size: 15px;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+        }
+        .nav-item:hover {
+          background: rgba(255,255,255,0.1);
+          color: white;
+        }
+        .nav-item.active {
+          background: rgba(255,255,255,0.15);
+          color: white;
+        }
+        .nav-item.healing { color: #86efac; }
+        .nav-item.parser { color: #93c5fd; }
+        .nav-item.court { color: #fcd34d; }
+
         /* Header */
         .header {
           display: flex;
@@ -389,6 +513,19 @@ export default function DashboardPage() {
           padding: 16px 20px;
           background: #1a3a2f;
           color: white;
+        }
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .menu-btn {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 22px;
+          cursor: pointer;
+          padding: 4px;
         }
         .header-brand {
           display: flex;
