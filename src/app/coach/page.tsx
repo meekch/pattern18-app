@@ -166,6 +166,14 @@ export default function CoachPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   
+  // What's New and Feedback modals
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature' | 'bug'>('feedback');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  
   // Case & evidence state
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
   const [evidenceCount, setEvidenceCount] = useState(0);
@@ -528,7 +536,7 @@ export default function CoachPage() {
             💬 Coach
           </button>
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
-            📁 Evidence
+            📁 My Documentation
           </button>
           <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
             📱 Message Analyzer
@@ -538,6 +546,18 @@ export default function CoachPage() {
           </button>
           <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
             ⚙️ Settings
+          </button>
+          
+          <div className="nav-divider" />
+          
+          <button onClick={() => { setShowOnboarding(true); setOnboardingStep(0); setShowSidebar(false); }} className="nav-item">
+            📖 How It Works
+          </button>
+          <button onClick={() => { setShowWhatsNew(true); setShowSidebar(false); }} className="nav-item new">
+            ✨ What's New
+          </button>
+          <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
+            💬 Feedback
           </button>
           
           <div className="nav-divider" />
@@ -572,7 +592,7 @@ export default function CoachPage() {
           )}
           <div className="evidence-badge" onClick={() => router.push('/evidence')}>
             <span className="evidence-count">{evidenceCount}</span>
-            <span>Evidence</span>
+            <span>Documented</span>
           </div>
         </div>
       </header>
@@ -1185,6 +1205,126 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* What's New Modal */}
+      {showWhatsNew && (
+        <div className="modal-overlay" onClick={() => setShowWhatsNew(false)}>
+          <div className="whats-new-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowWhatsNew(false)}>×</button>
+            <h2>✨ What's New</h2>
+            <p className="whats-new-intro">We're constantly improving Pattern 18 based on your feedback.</p>
+            
+            <div className="update-list">
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>🌿 Healing Journey</h4>
+                <p>Morning intentions, evening releases, and weekly healing challenges. Set reminders to build healing habits.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>📱 Bulk Message Analyzer</h4>
+                <p>Upload months of text messages at once. We'll scan for all manipulation patterns and help you document.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>💛 Kid Connection Ideas</h4>
+                <p>Age-appropriate ideas to stay connected with your kids, even during the hardest times.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>✍️ Help Me Respond</h4>
+                <p>Get strategic response suggestions that avoid JADE (Justify, Argue, Defend, Explain).</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>📊 Dashboard</h4>
+                <p>See your progress at a glance - evidence count, pattern trends, healing streaks, and court countdown.</p>
+              </div>
+            </div>
+            
+            <p className="whats-new-footer">Have an idea? Tap "Feedback" in the menu!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
+          <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowFeedback(false)}>×</button>
+            
+            {feedbackSent ? (
+              <div className="feedback-success">
+                <span className="success-icon">💚</span>
+                <h2>Thank You!</h2>
+                <p>Your feedback helps us build a better tool for survivors.</p>
+                <button onClick={() => { setShowFeedback(false); setFeedbackSent(false); setFeedbackText(''); }} className="feedback-done-btn">
+                  Done
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2>💬 We'd Love to Hear From You</h2>
+                <p className="feedback-intro">Your feedback shapes Pattern 18. What's on your mind?</p>
+                
+                <div className="feedback-types">
+                  <button 
+                    className={`feedback-type ${feedbackType === 'feedback' ? 'active' : ''}`}
+                    onClick={() => setFeedbackType('feedback')}
+                  >
+                    💭 General Feedback
+                  </button>
+                  <button 
+                    className={`feedback-type ${feedbackType === 'feature' ? 'active' : ''}`}
+                    onClick={() => setFeedbackType('feature')}
+                  >
+                    ✨ Feature Request
+                  </button>
+                  <button 
+                    className={`feedback-type ${feedbackType === 'bug' ? 'active' : ''}`}
+                    onClick={() => setFeedbackType('bug')}
+                  >
+                    🐛 Report a Bug
+                  </button>
+                </div>
+                
+                <textarea
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder={
+                    feedbackType === 'feedback' ? "What's working? What could be better?" :
+                    feedbackType === 'feature' ? "What would help you most? Describe your idea..." :
+                    "What happened? What did you expect to happen?"
+                  }
+                  rows={5}
+                />
+                
+                <button 
+                  className="submit-feedback-btn"
+                  disabled={!feedbackText.trim() || feedbackSending}
+                  onClick={async () => {
+                    setFeedbackSending(true);
+                    try {
+                      await supabase.from('feedback').insert({
+                        user_id: user?.id,
+                        type: feedbackType,
+                        message: feedbackText,
+                        created_at: new Date().toISOString(),
+                      });
+                      setFeedbackSent(true);
+                    } catch (err) {
+                      console.error('Feedback error:', err);
+                    }
+                    setFeedbackSending(false);
+                  }}
+                >
+                  {feedbackSending ? 'Sending...' : 'Send Feedback'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .container {
           display: flex;
@@ -1453,7 +1593,7 @@ export default function CoachPage() {
           display: flex;
           align-items: center;
           gap: 14px;
-          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
           padding: 16px 20px;
           border-radius: 14px;
           cursor: pointer;
@@ -1471,16 +1611,16 @@ export default function CoachPage() {
         }
         .promo-title {
           font-weight: 600;
-          color: #1e40af;
+          color: #065f46;
           font-size: 15px;
           margin-bottom: 2px;
         }
         .promo-desc {
           font-size: 13px;
-          color: #3b82f6;
+          color: #047857;
         }
         .promo-arrow {
-          color: #1e40af;
+          color: #065f46;
           font-size: 20px;
         }
 
@@ -1605,17 +1745,17 @@ export default function CoachPage() {
           flex-wrap: wrap;
         }
         .help-respond-btn {
-          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
           border: none;
           padding: 10px 18px;
           border-radius: 20px;
           font-size: 14px;
-          color: #1e40af;
+          color: #0f766e;
           cursor: pointer;
           font-weight: 500;
         }
         .help-respond-btn:hover {
-          background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+          background: linear-gradient(135deg, #99f6e4 0%, #5eead4 100%);
         }
         .no-respond-btn {
           background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -2284,6 +2424,178 @@ export default function CoachPage() {
           font-size: 13px;
           margin-top: 16px;
           cursor: pointer;
+        }
+
+        /* Modal Overlay (shared) */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .modal-close {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: none;
+          border: none;
+          font-size: 28px;
+          color: #999;
+          cursor: pointer;
+        }
+
+        /* What's New Modal */
+        .whats-new-modal {
+          background: white;
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 500px;
+          width: 100%;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+        }
+        .whats-new-modal h2 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .whats-new-intro {
+          color: #666;
+          margin-bottom: 24px;
+        }
+        .update-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .update-item {
+          background: #f9fafb;
+          border-radius: 12px;
+          padding: 16px;
+        }
+        .update-date {
+          font-size: 11px;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .update-item h4 {
+          font-size: 15px;
+          color: #1a3a2f;
+          margin: 6px 0;
+        }
+        .update-item p {
+          font-size: 13px;
+          color: #666;
+          line-height: 1.5;
+          margin: 0;
+        }
+        .whats-new-footer {
+          text-align: center;
+          color: #14b8a6;
+          font-size: 14px;
+          margin-top: 20px;
+        }
+
+        /* Feedback Modal */
+        .feedback-modal {
+          background: white;
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 480px;
+          width: 100%;
+          position: relative;
+        }
+        .feedback-modal h2 {
+          font-size: 22px;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .feedback-intro {
+          color: #666;
+          margin-bottom: 20px;
+        }
+        .feedback-types {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+        }
+        .feedback-type {
+          padding: 10px 16px;
+          border-radius: 20px;
+          border: 2px solid #e5e7eb;
+          background: white;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .feedback-type.active {
+          border-color: #1a3a2f;
+          background: #f0fdf4;
+        }
+        .feedback-modal textarea {
+          width: 100%;
+          padding: 14px;
+          border-radius: 12px;
+          border: 2px solid #e5e7eb;
+          font-size: 15px;
+          font-family: inherit;
+          resize: vertical;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+        }
+        .feedback-modal textarea:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+        .submit-feedback-btn {
+          width: 100%;
+          padding: 14px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .submit-feedback-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .feedback-success {
+          text-align: center;
+          padding: 20px;
+        }
+        .success-icon {
+          font-size: 56px;
+          display: block;
+          margin-bottom: 16px;
+        }
+        .feedback-success h2 {
+          margin-bottom: 8px;
+        }
+        .feedback-success p {
+          color: #666;
+          margin-bottom: 24px;
+        }
+        .feedback-done-btn {
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          padding: 12px 32px;
+          border-radius: 8px;
+          font-size: 15px;
+          cursor: pointer;
+        }
+        .nav-item.new {
+          color: #f59e0b;
         }
 
         @media (max-width: 640px) {

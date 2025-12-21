@@ -248,7 +248,7 @@ export default function DashboardPage() {
           <div className="stat-card primary" onClick={() => router.push('/evidence')}>
             <span className="stat-icon">📁</span>
             <span className="stat-number">{stats.totalEvidence}</span>
-            <span className="stat-label">Evidence Items</span>
+            <span className="stat-label">Documented</span>
           </div>
           <div className="stat-card" onClick={() => router.push('/evidence')}>
             <span className="stat-icon">🎯</span>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
             </button>
             <button className="action-card" onClick={() => router.push('/evidence')}>
               <span className="action-icon">📁</span>
-              <span className="action-label">View Evidence</span>
+              <span className="action-label">View Docs</span>
             </button>
             <button className="action-card" onClick={() => router.push('/healing')}>
               <span className="action-icon">🌿</span>
@@ -362,7 +362,7 @@ export default function DashboardPage() {
         </button>
         <button className="nav-item" onClick={() => router.push('/evidence')}>
           <span>📁</span>
-          <span>Evidence</span>
+          <span>Docs</span>
         </button>
         <button className="nav-item" onClick={() => router.push('/healing')}>
           <span>🌿</span>

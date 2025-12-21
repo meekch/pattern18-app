@@ -1,50 +1,48 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-interface ParsedMessage {
-  id: string;
-  date: Date;
-  sender: string;
-  content: string;
-  isFromThem: boolean;
+interface DashboardStats {
+  totalIncidents: number;
+  totalEvidence: number;
+  patternsDetected: { [key: string]: number };
+  recentActivity: { date: string; type: string; description: string }[];
+  daysUntilCourt: number | null;
+  courtDate: string | null;
+  morningStreak: number;
+  eveningStreak: number;
+  daysOnPlatform: number;
 }
 
-interface DetectedIncident {
-  id: string;
-  date: Date;
-  messages: ParsedMessage[];
-  patterns: string[];
-  severity: 'low' | 'medium' | 'high';
-  summary: string;
-  saved: boolean;
-}
+const motivationalQuotes = [
+  { quote: "You're not documenting drama. You're building freedom.", author: "Pattern 18" },
+  { quote: "Every calm response is evidence of your strength.", author: "Pattern 18" },
+  { quote: "The truth doesn't need to be loud. It just needs to be documented.", author: "Pattern 18" },
+  { quote: "You're not crazy. You're not dramatic. You're paying attention.", author: "Pattern 18" },
+  { quote: "Healing yourself is the greatest gift you can give your children.", author: "Pattern 18" },
+  { quote: "Their chaos is not your emergency.", author: "Pattern 18" },
+  { quote: "You survived 100% of your worst days. You'll survive this too.", author: "Pattern 18" },
+];
 
-export default function MessageParserPage() {
+export default function DashboardPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [parsing, setParsing] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressText, setProgressText] = useState('');
-  
-  const [coparentName, setCoparentName] = useState('');
-  const [messages, setMessages] = useState<ParsedMessage[]>([]);
-  const [incidents, setIncidents] = useState<DetectedIncident[]>([]);
-  const [stats, setStats] = useState<{
-    totalMessages: number;
-    totalIncidents: number;
-    patterns: { [key: string]: number };
-    dateRange: { start: Date | null; end: Date | null };
-  } | null>(null);
-  
-  const [savingAll, setSavingAll] = useState(false);
-  const [savedCount, setSavedCount] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [stats, setStats] = useState<DashboardStats>({
+    totalIncidents: 0,
+    totalEvidence: 0,
+    patternsDetected: {},
+    recentActivity: [],
+    daysUntilCourt: null,
+    courtDate: null,
+    morningStreak: 0,
+    eveningStreak: 0,
+    daysOnPlatform: 0,
+  });
+  const [quote, setQuote] = useState(motivationalQuotes[0]);
 
   useEffect(() => {
     const init = async () => {
@@ -55,336 +53,132 @@ export default function MessageParserPage() {
       }
       setUser(session.user);
       
-      // Load coparent name from case context
+      // Set random quote
+      setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+      
+      // Load user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, created_at')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profile?.full_name) {
+        setUserName(profile.full_name.split(' ')[0]);
+      }
+      
+      const daysOnPlatform = profile?.created_at 
+        ? Math.ceil((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        : 1;
+      
+      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
-        .select('coparent_name')
+        .select('*')
         .eq('user_id', session.user.id)
         .single();
       
-      if (caseData?.coparent_name) {
-        setCoparentName(caseData.coparent_name);
+      let daysUntilCourt = null;
+      let courtDate = null;
+      if (caseData?.nextCourtDate) {
+        const days = Math.ceil((new Date(caseData.nextCourtDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (days > 0) {
+          daysUntilCourt = days;
+          courtDate = caseData.nextCourtDate;
+        }
       }
+      
+      // Load incidents count and patterns
+      const { data: incidents } = await supabase
+        .from('incidents')
+        .select('patterns, created_at')
+        .eq('user_id', session.user.id);
+      
+      const patternsDetected: { [key: string]: number } = {};
+      incidents?.forEach(inc => {
+        if (inc.patterns && Array.isArray(inc.patterns)) {
+          inc.patterns.forEach((p: string) => {
+            patternsDetected[p] = (patternsDetected[p] || 0) + 1;
+          });
+        }
+      });
+      
+      // Load evidence count
+      const { count: evidenceCount } = await supabase
+        .from('evidence')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+      
+      // Load healing preferences for streaks
+      const { data: healingPrefs } = await supabase
+        .from('healing_preferences')
+        .select('morning_streak, evening_streak')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      // Build recent activity
+      const recentActivity: { date: string; type: string; description: string }[] = [];
+      
+      // Add recent incidents
+      const recentIncidents = incidents
+        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3);
+      
+      recentIncidents?.forEach(inc => {
+        recentActivity.push({
+          date: inc.created_at,
+          type: 'incident',
+          description: `Documented ${inc.patterns?.[0] || 'incident'}`,
+        });
+      });
+      
+      setStats({
+        totalIncidents: incidents?.length || 0,
+        totalEvidence: (evidenceCount || 0) + (incidents?.length || 0),
+        patternsDetected,
+        recentActivity: recentActivity.slice(0, 5),
+        daysUntilCourt,
+        courtDate,
+        morningStreak: healingPrefs?.morning_streak || 0,
+        eveningStreak: healingPrefs?.evening_streak || 0,
+        daysOnPlatform,
+      });
       
       setLoading(false);
     };
+    
     init();
   }, [router]);
 
-  const parseCSV = (text: string): ParsedMessage[] => {
-    const lines = text.split('\n');
-    const messages: ParsedMessage[] = [];
-    
-    // Try to detect format (various export tools)
-    const header = lines[0]?.toLowerCase() || '';
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      // Parse CSV properly (handle quoted fields)
-      const fields = parseCSVLine(line);
-      
-      if (fields.length >= 3) {
-        // Common formats: Date, Sender, Message or Date, Type, Sender, Message
-        let date: Date;
-        let sender: string;
-        let content: string;
-        
-        // Try to detect date field
-        const dateIndex = fields.findIndex(f => /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(f) || /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(f));
-        
-        if (dateIndex !== -1) {
-          date = new Date(fields[dateIndex]);
-          // Find sender and content
-          const remaining = fields.filter((_, idx) => idx !== dateIndex);
-          sender = remaining[0] || 'Unknown';
-          content = remaining.slice(1).join(' ') || remaining[0] || '';
-          
-          // If content is empty, sender might be the content
-          if (!content && sender) {
-            content = sender;
-            sender = 'Unknown';
-          }
-        } else {
-          // Fallback: assume Date, Sender, Message
-          date = new Date(fields[0]);
-          sender = fields[1] || 'Unknown';
-          content = fields.slice(2).join(' ');
-        }
-        
-        if (!isNaN(date.getTime()) && content) {
-          const isFromThem = coparentName ? 
-            sender.toLowerCase().includes(coparentName.toLowerCase()) :
-            !sender.toLowerCase().includes('me');
-          
-          messages.push({
-            id: `msg-${i}`,
-            date,
-            sender,
-            content,
-            isFromThem,
-          });
-        }
-      }
-    }
-    
-    return messages.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  const parseCSVLine = (line: string): string[] => {
-    const fields: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        fields.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    fields.push(current.trim());
-    
-    return fields;
+  const getTopPatterns = () => {
+    return Object.entries(stats.patternsDetected)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
-    setParsing(true);
-    setProgress(10);
-    setProgressText('Reading file...');
-    
-    try {
-      const text = await file.text();
-      setProgress(30);
-      setProgressText('Parsing messages...');
-      
-      const parsed = parseCSV(text);
-      setMessages(parsed);
-      setProgress(50);
-      setProgressText(`Found ${parsed.length} messages. Analyzing patterns...`);
-      
-      if (parsed.length > 0) {
-        await analyzeMessages(parsed);
-      }
-    } catch (error) {
-      console.error('Parse error:', error);
-      setProgressText('Error parsing file. Please check the format.');
-    } finally {
-      setParsing(false);
-    }
-  };
-
-  const analyzeMessages = async (msgs: ParsedMessage[]) => {
-    setAnalyzing(true);
-    setProgress(60);
-    
-    // Group messages into conversation chunks (within 2 hours of each other)
-    const chunks: ParsedMessage[][] = [];
-    let currentChunk: ParsedMessage[] = [];
-    
-    for (const msg of msgs) {
-      if (currentChunk.length === 0) {
-        currentChunk.push(msg);
-      } else {
-        const lastMsg = currentChunk[currentChunk.length - 1];
-        const timeDiff = msg.date.getTime() - lastMsg.date.getTime();
-        
-        if (timeDiff > 2 * 60 * 60 * 1000) { // 2 hours
-          chunks.push(currentChunk);
-          currentChunk = [msg];
-        } else {
-          currentChunk.push(msg);
-        }
-      }
-    }
-    if (currentChunk.length > 0) chunks.push(currentChunk);
-    
-    setProgressText(`Analyzing ${chunks.length} conversation chunks...`);
-    
-    // Analyze each chunk for patterns
-    const detectedIncidents: DetectedIncident[] = [];
-    const patternCounts: { [key: string]: number } = {};
-    
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      setProgress(60 + Math.floor((i / chunks.length) * 30));
-      
-      // Get messages from them in this chunk
-      const theirMessages = chunk.filter(m => m.isFromThem);
-      if (theirMessages.length === 0) continue;
-      
-      const combinedText = theirMessages.map(m => m.content).join(' ');
-      const patterns = detectPatterns(combinedText);
-      
-      if (patterns.length > 0) {
-        // Calculate severity
-        const severity = patterns.length >= 3 ? 'high' : patterns.length >= 2 ? 'medium' : 'low';
-        
-        // Count patterns
-        patterns.forEach(p => {
-          patternCounts[p] = (patternCounts[p] || 0) + 1;
-        });
-        
-        detectedIncidents.push({
-          id: `incident-${i}`,
-          date: chunk[0].date,
-          messages: chunk,
-          patterns,
-          severity,
-          summary: generateSummary(patterns, theirMessages[0]?.content || ''),
-          saved: false,
-        });
-      }
-    }
-    
-    setIncidents(detectedIncidents);
-    setStats({
-      totalMessages: msgs.length,
-      totalIncidents: detectedIncidents.length,
-      patterns: patternCounts,
-      dateRange: {
-        start: msgs[0]?.date || null,
-        end: msgs[msgs.length - 1]?.date || null,
-      },
-    });
-    
-    setProgress(100);
-    setProgressText('Analysis complete!');
-    setAnalyzing(false);
-  };
-
-  const detectPatterns = (text: string): string[] => {
-    const patterns: string[] = [];
-    const lowerText = text.toLowerCase();
-    
-    // Baiting / Provocation
-    if (/you always|you never|why can't you|what's wrong with you|you're (so|such)|how dare you/i.test(text)) {
-      patterns.push('Baiting');
-    }
-    
-    // DARVO
-    if (/you('re| are) the (one|problem)|you did this|this is your fault|you made me|look what you|i('m| am) the victim/i.test(text)) {
-      patterns.push('DARVO');
-    }
-    
-    // Gaslighting
-    if (/never (happened|said)|you('re| are) (crazy|imagining|making.*up)|that('s| is) not (true|what)|i didn't|you('re| are) (remembering|misremember)/i.test(text)) {
-      patterns.push('Gaslighting');
-    }
-    
-    // Blame-shifting
-    if (/because (of )?you|your fault|you caused|you('re| are) (the reason|to blame)|if you (hadn't|didn't|would)/i.test(text)) {
-      patterns.push('Blame-shifting');
-    }
-    
-    // Threats
-    if (/i('ll| will) (take|get|make sure)|you('ll| will) (never|lose|regret)|court|lawyer|custody|judge/i.test(text)) {
-      patterns.push('Threats/Intimidation');
-    }
-    
-    // Manipulation through kids
-    if (/(kids?|children|son|daughter).*(said|told|want|hate|don't like|prefer)|tell(ing)? (the )?(kids?|children)/i.test(text)) {
-      patterns.push('Triangulation (Kids)');
-    }
-    
-    // Financial control
-    if (/money|pay|owe|support|afford|cheap|greedy/i.test(text)) {
-      patterns.push('Financial Manipulation');
-    }
-    
-    // Schedule manipulation
-    if (/can't (make|do)|change.*(time|day|schedule)|switch|not (available|free)|busy|something came up/i.test(text)) {
-      patterns.push('Schedule Manipulation');
-    }
-    
-    // Word salad / confusion
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim());
-    if (sentences.length > 3 && text.length > 500) {
-      const topics = new Set(sentences.map(s => s.slice(0, 20)));
-      if (topics.size > sentences.length * 0.7) {
-        patterns.push('Word Salad');
-      }
-    }
-    
-    // Hoovering
-    if (/miss you|love you|family|remember when|we (used to|were)|give (me|us) (another|a) chance|for the kids/i.test(text)) {
-      patterns.push('Hoovering');
-    }
-    
-    // Projection
-    if (/you('re| are) (controlling|manipulative|abusive|narcissi|lying|the abuser)/i.test(text)) {
-      patterns.push('Projection');
-    }
-    
-    // Silent treatment mention
-    if (/won't (talk|respond|answer)|ignore|silent|not speaking/i.test(text)) {
-      patterns.push('Silent Treatment');
-    }
-    
-    return [...new Set(patterns)];
-  };
-
-  const generateSummary = (patterns: string[], sampleText: string): string => {
-    const preview = sampleText.slice(0, 100) + (sampleText.length > 100 ? '...' : '');
-    return `${patterns.join(', ')} detected: "${preview}"`;
-  };
-
-  const saveIncident = async (incident: DetectedIncident) => {
-    if (!user) return;
-    
-    const { error } = await supabase
-      .from('incidents')
-      .insert({
-        user_id: user.id,
-        date: incident.date.toISOString(),
-        description: incident.messages.filter(m => m.isFromThem).map(m => m.content).join('\n\n'),
-        patterns: incident.patterns,
-        severity: incident.severity,
-        source: 'bulk_import',
-        raw_messages: incident.messages,
-      });
-    
-    if (!error) {
-      setIncidents(prev => prev.map(inc => 
-        inc.id === incident.id ? { ...inc, saved: true } : inc
-      ));
-      setSavedCount(prev => prev + 1);
-    }
-  };
-
-  const saveAllIncidents = async () => {
-    setSavingAll(true);
-    const unsaved = incidents.filter(inc => !inc.saved);
-    
-    for (const incident of unsaved) {
-      await saveIncident(incident);
-    }
-    
-    setSavingAll(false);
-  };
-
-  const severityColor = (severity: string) => {
-    switch (severity) {
-      case 'high': return '#ef4444';
-      case 'medium': return '#f59e0b';
-      default: return '#6b7280';
-    }
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   if (loading) {
     return (
       <div className="loading">
-        <span>📱</span>
-        <p>Loading...</p>
+        <div className="loading-logo">18</div>
+        <p>Loading your progress...</p>
         <style jsx>{`
           .loading {
             display: flex;
@@ -392,10 +186,18 @@ export default function MessageParserPage() {
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #f5f7f6;
+            background: linear-gradient(135deg, #1a3a2f 0%, #2d5a47 100%);
           }
-          .loading span { font-size: 48px; margin-bottom: 16px; }
-          .loading p { color: #666; }
+          .loading-logo {
+            font-size: 64px;
+            font-weight: 700;
+            color: white;
+            background: rgba(255,255,255,0.15);
+            padding: 20px 32px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+          }
+          .loading p { color: rgba(255,255,255,0.7); }
         `}</style>
       </div>
     );
@@ -403,209 +205,183 @@ export default function MessageParserPage() {
 
   return (
     <div className="container">
+      {/* Header */}
       <header className="header">
-        <button onClick={() => router.back()} className="back-btn">← Back</button>
-        <h1>📱 Message Analyzer</h1>
-        <div style={{ width: 60 }} />
+        <div className="header-brand">
+          <span className="logo">18</span>
+          <span className="brand-name">Pattern 18</span>
+        </div>
+        <button onClick={() => router.push('/coach')} className="coach-btn">
+          💬 Coach
+        </button>
       </header>
 
       <div className="content">
-        {!stats ? (
-          // Upload State
-          <div className="upload-section">
-            <div className="upload-intro">
-              <span className="upload-icon">📱</span>
-              <h2>Upload Your Message History</h2>
-              <p>
-                Upload a CSV export of your text messages and Pattern 18 will automatically 
-                scan months of conversations to identify manipulation patterns.
-              </p>
-              <div className="how-to">
-                <h4>How to export your texts:</h4>
-                <p className="how-to-intro">Use any tool that exports texts to CSV format:</p>
-                <ul className="tool-list">
-                  <li><strong>iPhone:</strong> iMazing, AnyTrans, iExplorer, TouchCopy</li>
-                  <li><strong>Android:</strong> SMS Backup & Restore, SMS to Text</li>
-                  <li><strong>Any phone:</strong> Dr.Fone, MobileTrans</li>
-                </ul>
-                <p className="how-to-note">Export the conversation as CSV, then upload here. We're not affiliated with any of these tools.</p>
-              </div>
-            </div>
+        {/* Greeting Section */}
+        <section className="greeting-section">
+          <h1>{getGreeting()}{userName ? `, ${userName}` : ''} 💚</h1>
+          <p className="greeting-sub">Day {stats.daysOnPlatform} of building your case</p>
+        </section>
 
-            {!coparentName && (
-              <div className="name-input">
-                <label>Co-parent's name (to identify their messages):</label>
-                <input
-                  type="text"
-                  value={coparentName}
-                  onChange={(e) => setCoparentName(e.target.value)}
-                  placeholder="Enter their name..."
-                />
-              </div>
-            )}
-
-            <div 
-              className="upload-zone"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.txt"
-                onChange={handleFileUpload}
-                hidden
-              />
-              <span className="upload-plus">+</span>
-              <p>Click to upload CSV file</p>
-              <span className="upload-hint">or drag and drop</span>
-            </div>
-
-            {(parsing || analyzing) && (
-              <div className="progress-section">
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${progress}%` }} />
-                </div>
-                <p className="progress-text">{progressText}</p>
-              </div>
-            )}
-
-            <div className="privacy-note">
-              <span>🔒</span>
-              <p>Your messages are analyzed locally and never stored on our servers. Only the incidents you choose to save are stored in your private evidence library.</p>
-            </div>
-          </div>
-        ) : (
-          // Results State
-          <div className="results-section">
-            <div className="stats-cards">
-              <div className="stat-card">
-                <span className="stat-number">{stats.totalMessages}</span>
-                <span className="stat-label">Messages Analyzed</span>
-              </div>
-              <div className="stat-card highlight">
-                <span className="stat-number">{stats.totalIncidents}</span>
-                <span className="stat-label">Incidents Found</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-number">
-                  {stats.dateRange.start ? `${Math.ceil((stats.dateRange.end!.getTime() - stats.dateRange.start.getTime()) / (1000 * 60 * 60 * 24))} days` : '-'}
+        {/* Court Countdown */}
+        {stats.daysUntilCourt && (
+          <section className="court-countdown" onClick={() => router.push('/case-setup')}>
+            <div className="countdown-content">
+              <span className="countdown-number">{stats.daysUntilCourt}</span>
+              <div className="countdown-text">
+                <span className="countdown-label">days until court</span>
+                <span className="countdown-date">
+                  {new Date(stats.courtDate!).toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
                 </span>
-                <span className="stat-label">Date Range</span>
               </div>
             </div>
+            <span className="countdown-arrow">→</span>
+          </section>
+        )}
 
-            {Object.keys(stats.patterns).length > 0 && (
-              <div className="pattern-summary">
-                <h3>Patterns Detected</h3>
-                <div className="pattern-bars">
-                  {Object.entries(stats.patterns)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([pattern, count]) => (
-                      <div key={pattern} className="pattern-bar-row">
-                        <span className="pattern-name">{pattern}</span>
-                        <div className="pattern-bar">
-                          <div 
-                            className="pattern-bar-fill"
-                            style={{ width: `${(count / Math.max(...Object.values(stats.patterns))) * 100}%` }}
-                          />
-                        </div>
-                        <span className="pattern-count">{count}</span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
+        {/* Stats Grid */}
+        <section className="stats-grid">
+          <div className="stat-card primary" onClick={() => router.push('/evidence')}>
+            <span className="stat-icon">📁</span>
+            <span className="stat-number">{stats.totalEvidence}</span>
+            <span className="stat-label">Documented</span>
+          </div>
+          <div className="stat-card" onClick={() => router.push('/evidence')}>
+            <span className="stat-icon">🎯</span>
+            <span className="stat-number">{Object.keys(stats.patternsDetected).length}</span>
+            <span className="stat-label">Pattern Types</span>
+          </div>
+          <div className="stat-card" onClick={() => router.push('/healing')}>
+            <span className="stat-icon">🌅</span>
+            <span className="stat-number">{stats.morningStreak}</span>
+            <span className="stat-label">Morning Streak</span>
+          </div>
+          <div className="stat-card" onClick={() => router.push('/healing')}>
+            <span className="stat-icon">🌙</span>
+            <span className="stat-number">{stats.eveningStreak}</span>
+            <span className="stat-label">Evening Streak</span>
+          </div>
+        </section>
 
-            {incidents.length > 0 && (
-              <>
-                <div className="incidents-header">
-                  <h3>Incidents ({incidents.length})</h3>
-                  <button 
-                    className="save-all-btn"
-                    onClick={saveAllIncidents}
-                    disabled={savingAll || incidents.every(i => i.saved)}
-                  >
-                    {savingAll ? 'Saving...' : incidents.every(i => i.saved) ? '✓ All Saved' : `Save All to Evidence (${incidents.filter(i => !i.saved).length})`}
-                  </button>
-                </div>
-
-                <div className="incidents-list">
-                  {incidents.map(incident => (
-                    <div key={incident.id} className={`incident-card ${incident.severity}`}>
-                      <div className="incident-header">
-                        <span className="incident-date">
-                          {incident.date.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                        <span 
-                          className="incident-severity"
-                          style={{ background: severityColor(incident.severity) }}
-                        >
-                          {incident.severity}
-                        </span>
-                      </div>
-                      
-                      <div className="incident-patterns">
-                        {incident.patterns.map(p => (
-                          <span key={p} className="pattern-tag">{p}</span>
-                        ))}
-                      </div>
-                      
-                      <div className="incident-preview">
-                        {incident.messages.slice(0, 3).map(msg => (
-                          <div key={msg.id} className={`preview-msg ${msg.isFromThem ? 'them' : 'me'}`}>
-                            <span className="msg-sender">{msg.isFromThem ? coparentName || 'Them' : 'You'}:</span>
-                            <span className="msg-text">{msg.content.slice(0, 150)}{msg.content.length > 150 ? '...' : ''}</span>
-                          </div>
-                        ))}
-                        {incident.messages.length > 3 && (
-                          <span className="more-msgs">+{incident.messages.length - 3} more messages</span>
-                        )}
-                      </div>
-                      
-                      <div className="incident-actions">
-                        {incident.saved ? (
-                          <span className="saved-badge">✓ Saved to Evidence</span>
-                        ) : (
-                          <button 
-                            className="save-btn"
-                            onClick={() => saveIncident(incident)}
-                          >
-                            📌 Save to Evidence
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <button 
-              className="new-upload-btn"
-              onClick={() => {
-                setStats(null);
-                setMessages([]);
-                setIncidents([]);
-                setProgress(0);
-              }}
-            >
-              📱 Analyze Another Export
+        {/* Quick Actions */}
+        <section className="quick-actions">
+          <h2>Quick Actions</h2>
+          <div className="actions-grid">
+            <button className="action-card" onClick={() => router.push('/coach')}>
+              <span className="action-icon">💬</span>
+              <span className="action-label">Talk to Coach</span>
+            </button>
+            <button className="action-card" onClick={() => router.push('/message-parser')}>
+              <span className="action-icon">📱</span>
+              <span className="action-label">Analyze Messages</span>
+            </button>
+            <button className="action-card" onClick={() => router.push('/evidence')}>
+              <span className="action-icon">📁</span>
+              <span className="action-label">View Docs</span>
+            </button>
+            <button className="action-card" onClick={() => router.push('/healing')}>
+              <span className="action-icon">🌿</span>
+              <span className="action-label">Healing Journey</span>
             </button>
           </div>
+        </section>
+
+        {/* Pattern Breakdown */}
+        {getTopPatterns().length > 0 && (
+          <section className="patterns-section">
+            <h2>Patterns You've Documented</h2>
+            <p className="section-sub">This is your evidence of their behavior over time</p>
+            <div className="patterns-list">
+              {getTopPatterns().map(([pattern, count]) => (
+                <div key={pattern} className="pattern-row">
+                  <span className="pattern-name">{pattern}</span>
+                  <div className="pattern-bar-container">
+                    <div 
+                      className="pattern-bar-fill"
+                      style={{ 
+                        width: `${(count / Math.max(...Object.values(stats.patternsDetected))) * 100}%` 
+                      }}
+                    />
+                  </div>
+                  <span className="pattern-count">{count}</span>
+                </div>
+              ))}
+            </div>
+            <p className="patterns-insight">
+              💡 Courts look for patterns, not isolated incidents. You're building exactly what they need to see.
+            </p>
+          </section>
         )}
+
+        {/* Recent Activity */}
+        {stats.recentActivity.length > 0 && (
+          <section className="activity-section">
+            <h2>Recent Activity</h2>
+            <div className="activity-list">
+              {stats.recentActivity.map((activity, i) => (
+                <div key={i} className="activity-item">
+                  <span className="activity-dot" />
+                  <div className="activity-content">
+                    <span className="activity-desc">{activity.description}</span>
+                    <span className="activity-date">{formatDate(activity.date)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Motivational Quote */}
+        <section className="quote-section">
+          <blockquote>"{quote.quote}"</blockquote>
+          <cite>— {quote.author}</cite>
+        </section>
+
+        {/* Bottom CTA */}
+        <section className="bottom-cta">
+          <button className="cta-primary" onClick={() => router.push('/coach')}>
+            💬 What's happening right now?
+          </button>
+          <p className="cta-sub">Your coach is ready 24/7</p>
+        </section>
       </div>
+
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        <button className="nav-item active">
+          <span>🏠</span>
+          <span>Home</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/coach')}>
+          <span>💬</span>
+          <span>Coach</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/evidence')}>
+          <span>📁</span>
+          <span>Docs</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/healing')}>
+          <span>🌿</span>
+          <span>Heal</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/case-setup')}>
+          <span>⚙️</span>
+          <span>Settings</span>
+        </button>
+      </nav>
 
       <style jsx>{`
         .container {
           min-height: 100vh;
           background: #f5f7f6;
+          padding-bottom: 80px;
         }
+
+        /* Header */
         .header {
           display: flex;
           justify-content: space-between;
@@ -614,229 +390,202 @@ export default function MessageParserPage() {
           background: #1a3a2f;
           color: white;
         }
-        .header h1 {
-          font-size: 18px;
+        .header-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .logo {
+          background: rgba(255,255,255,0.15);
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-weight: 700;
+        }
+        .brand-name {
           font-weight: 600;
         }
-        .back-btn {
-          background: none;
+        .coach-btn {
+          background: rgba(255,255,255,0.15);
           border: none;
           color: white;
-          font-size: 15px;
+          padding: 10px 16px;
+          border-radius: 20px;
+          font-size: 14px;
           cursor: pointer;
         }
+
         .content {
-          max-width: 800px;
+          max-width: 600px;
           margin: 0 auto;
           padding: 20px;
         }
 
-        /* Upload Section */
-        .upload-section {
-          background: white;
-          border-radius: 16px;
-          padding: 32px;
-        }
-        .upload-intro {
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .upload-icon {
-          font-size: 56px;
-          display: block;
-          margin-bottom: 16px;
-        }
-        .upload-intro h2 {
-          color: #1a3a2f;
-          margin-bottom: 12px;
-        }
-        .upload-intro p {
-          color: #666;
-          line-height: 1.6;
-        }
-        .how-to {
-          background: #f9fafb;
-          border-radius: 12px;
-          padding: 16px;
-          margin-top: 20px;
-          text-align: left;
-        }
-        .how-to h4 {
-          color: #1a3a2f;
-          margin-bottom: 8px;
-          font-size: 14px;
-        }
-        .how-to-intro {
-          font-size: 13px;
-          color: #666;
-          margin-bottom: 10px;
-        }
-        .tool-list {
-          margin: 0 0 10px 0;
-          padding-left: 20px;
-          color: #666;
-          font-size: 13px;
-        }
-        .tool-list li {
-          margin-bottom: 6px;
-        }
-        .tool-list strong {
-          color: #444;
-        }
-        .how-to-note {
-          font-size: 12px;
-          color: #999;
-          font-style: italic;
-          margin: 0;
-        }
-        .how-to ol {
-          margin: 0;
-          padding-left: 20px;
-          color: #666;
-          font-size: 14px;
-        }
-        .how-to li {
-          margin-bottom: 6px;
-        }
-        .name-input {
+        /* Greeting */
+        .greeting-section {
           margin-bottom: 20px;
         }
-        .name-input label {
-          display: block;
-          font-size: 14px;
-          color: #666;
-          margin-bottom: 8px;
-        }
-        .name-input input {
-          width: 100%;
-          padding: 12px 16px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 16px;
-        }
-        .upload-zone {
-          border: 2px dashed #ddd;
-          border-radius: 16px;
-          padding: 40px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .upload-zone:hover {
-          border-color: #14b8a6;
-          background: #f0fdf4;
-        }
-        .upload-plus {
-          font-size: 48px;
-          color: #14b8a6;
-          display: block;
-          margin-bottom: 12px;
-        }
-        .upload-zone p {
-          color: #333;
-          font-weight: 500;
+        .greeting-section h1 {
+          font-size: 28px;
+          color: #1a3a2f;
           margin-bottom: 4px;
         }
-        .upload-hint {
-          color: #999;
-          font-size: 13px;
-        }
-        .progress-section {
-          margin-top: 24px;
-        }
-        .progress-bar {
-          height: 8px;
-          background: #e5e7eb;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #14b8a6, #0d9488);
-          transition: width 0.3s;
-        }
-        .progress-text {
-          text-align: center;
+        .greeting-sub {
           color: #666;
-          font-size: 14px;
-          margin-top: 12px;
-        }
-        .privacy-note {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin-top: 24px;
-          padding: 16px;
-          background: #fef9c3;
-          border-radius: 12px;
-        }
-        .privacy-note span {
-          font-size: 20px;
-        }
-        .privacy-note p {
-          font-size: 13px;
-          color: #854d0e;
-          line-height: 1.5;
-          margin: 0;
+          font-size: 15px;
         }
 
-        /* Results Section */
-        .results-section {
-          
-        }
-        .stats-cards {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
+        /* Court Countdown */
+        .court-countdown {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border-radius: 16px;
+          padding: 20px;
           margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .court-countdown:hover {
+          transform: scale(1.01);
+        }
+        .countdown-content {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .countdown-number {
+          font-size: 48px;
+          font-weight: 700;
+          color: #92400e;
+        }
+        .countdown-text {
+          display: flex;
+          flex-direction: column;
+        }
+        .countdown-label {
+          font-weight: 600;
+          color: #92400e;
+          font-size: 16px;
+        }
+        .countdown-date {
+          color: #a16207;
+          font-size: 14px;
+        }
+        .countdown-arrow {
+          color: #92400e;
+          font-size: 24px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-bottom: 24px;
         }
         .stat-card {
           background: white;
-          border-radius: 12px;
+          border-radius: 16px;
           padding: 20px;
           text-align: center;
+          cursor: pointer;
+          transition: transform 0.2s;
         }
-        .stat-card.highlight {
+        .stat-card:hover {
+          transform: scale(1.02);
+        }
+        .stat-card.primary {
           background: #1a3a2f;
           color: white;
         }
-        .stat-number {
+        .stat-icon {
+          font-size: 24px;
           display: block;
-          font-size: 28px;
+          margin-bottom: 8px;
+        }
+        .stat-number {
+          font-size: 32px;
           font-weight: 700;
-          margin-bottom: 4px;
+          display: block;
         }
         .stat-label {
           font-size: 13px;
           opacity: 0.8;
         }
-        .pattern-summary {
+
+        /* Quick Actions */
+        .quick-actions {
+          margin-bottom: 24px;
+        }
+        .quick-actions h2 {
+          font-size: 18px;
+          color: #1a3a2f;
+          margin-bottom: 12px;
+        }
+        .actions-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        .action-card {
+          background: white;
+          border: none;
+          border-radius: 12px;
+          padding: 16px 8px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .action-card:hover {
+          background: #f0fdf4;
+          transform: translateY(-2px);
+        }
+        .action-icon {
+          font-size: 24px;
+          display: block;
+          margin-bottom: 6px;
+        }
+        .action-label {
+          font-size: 11px;
+          color: #444;
+          font-weight: 500;
+        }
+
+        /* Patterns Section */
+        .patterns-section {
           background: white;
           border-radius: 16px;
           padding: 20px;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
-        .pattern-summary h3 {
+        .patterns-section h2 {
+          font-size: 18px;
           color: #1a3a2f;
-          margin-bottom: 16px;
-          font-size: 16px;
+          margin-bottom: 4px;
         }
-        .pattern-bars {
+        .section-sub {
+          color: #666;
+          font-size: 13px;
+          margin-bottom: 16px;
+        }
+        .patterns-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
-        .pattern-bar-row {
+        .pattern-row {
           display: flex;
           align-items: center;
           gap: 12px;
         }
         .pattern-name {
-          width: 140px;
+          width: 120px;
           font-size: 13px;
           color: #444;
+          flex-shrink: 0;
         }
-        .pattern-bar {
+        .pattern-bar-container {
           flex: 1;
           height: 8px;
           background: #e5e7eb;
@@ -845,162 +594,158 @@ export default function MessageParserPage() {
         }
         .pattern-bar-fill {
           height: 100%;
-          background: linear-gradient(90deg, #f59e0b, #ef4444);
+          background: linear-gradient(90deg, #14b8a6, #0d9488);
           border-radius: 4px;
+          transition: width 0.5s;
         }
         .pattern-count {
-          width: 30px;
+          width: 28px;
           text-align: right;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 600;
-          color: #666;
+          color: #1a3a2f;
         }
-        .incidents-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        .patterns-insight {
+          margin-top: 16px;
+          padding: 12px;
+          background: #f0fdf4;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #065f46;
+          line-height: 1.5;
+        }
+
+        /* Activity Section */
+        .activity-section {
+          background: white;
+          border-radius: 16px;
+          padding: 20px;
+          margin-bottom: 24px;
+        }
+        .activity-section h2 {
+          font-size: 18px;
+          color: #1a3a2f;
           margin-bottom: 16px;
         }
-        .incidents-header h3 {
-          color: #1a3a2f;
-          font-size: 16px;
-        }
-        .save-all-btn {
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          padding: 10px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .save-all-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .incidents-list {
+        .activity-list {
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
-        .incident-card {
-          background: white;
-          border-radius: 12px;
-          padding: 16px;
-          border-left: 4px solid #6b7280;
+        .activity-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
-        .incident-card.high {
-          border-left-color: #ef4444;
+        .activity-dot {
+          width: 8px;
+          height: 8px;
+          background: #14b8a6;
+          border-radius: 50%;
+          flex-shrink: 0;
         }
-        .incident-card.medium {
-          border-left-color: #f59e0b;
-        }
-        .incident-header {
+        .activity-content {
+          flex: 1;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
         }
-        .incident-date {
-          font-size: 13px;
-          color: #666;
+        .activity-desc {
+          font-size: 14px;
+          color: #444;
         }
-        .incident-severity {
-          font-size: 11px;
-          font-weight: 600;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 10px;
-          text-transform: uppercase;
-        }
-        .incident-patterns {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-bottom: 12px;
-        }
-        .pattern-tag {
-          background: #fef3c7;
-          color: #92400e;
-          padding: 4px 10px;
-          border-radius: 12px;
+        .activity-date {
           font-size: 12px;
-          font-weight: 500;
-        }
-        .incident-preview {
-          background: #f9fafb;
-          border-radius: 8px;
-          padding: 12px;
-          margin-bottom: 12px;
-        }
-        .preview-msg {
-          margin-bottom: 8px;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-        .preview-msg:last-child {
-          margin-bottom: 0;
-        }
-        .preview-msg.them {
-          color: #dc2626;
-        }
-        .preview-msg.me {
-          color: #666;
-        }
-        .msg-sender {
-          font-weight: 600;
-          margin-right: 6px;
-        }
-        .more-msgs {
-          display: block;
           color: #999;
-          font-size: 12px;
-          margin-top: 8px;
-        }
-        .incident-actions {
-          display: flex;
-          justify-content: flex-end;
-        }
-        .save-btn {
-          background: #f3f4f6;
-          border: none;
-          padding: 8px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          cursor: pointer;
-          font-weight: 500;
-        }
-        .save-btn:hover {
-          background: #e5e7eb;
-        }
-        .saved-badge {
-          color: #059669;
-          font-size: 13px;
-          font-weight: 500;
-        }
-        .new-upload-btn {
-          width: 100%;
-          padding: 14px;
-          margin-top: 24px;
-          background: white;
-          border: 1px solid #ddd;
-          border-radius: 12px;
-          font-size: 15px;
-          cursor: pointer;
         }
 
-        @media (max-width: 640px) {
-          .stats-cards {
-            grid-template-columns: 1fr;
+        /* Quote Section */
+        .quote-section {
+          background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .quote-section blockquote {
+          font-size: 18px;
+          color: #065f46;
+          font-style: italic;
+          line-height: 1.6;
+          margin-bottom: 12px;
+        }
+        .quote-section cite {
+          font-size: 14px;
+          color: #14b8a6;
+          font-style: normal;
+        }
+
+        /* Bottom CTA */
+        .bottom-cta {
+          text-align: center;
+          padding: 20px 0;
+        }
+        .cta-primary {
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          padding: 16px 32px;
+          border-radius: 30px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .cta-primary:hover {
+          transform: scale(1.02);
+        }
+        .cta-sub {
+          color: #666;
+          font-size: 14px;
+          margin-top: 12px;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: white;
+          display: flex;
+          justify-content: space-around;
+          padding: 10px 0 20px;
+          border-top: 1px solid #eee;
+        }
+        .nav-item {
+          background: none;
+          border: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          color: #666;
+          font-size: 11px;
+          cursor: pointer;
+          padding: 8px 16px;
+        }
+        .nav-item span:first-child {
+          font-size: 20px;
+        }
+        .nav-item.active {
+          color: #1a3a2f;
+        }
+
+        @media (max-width: 480px) {
+          .actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .countdown-number {
+            font-size: 36px;
           }
           .pattern-name {
-            width: 100px;
-          }
-          .incidents-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
+            width: 90px;
+            font-size: 12px;
           }
         }
       `}</style>

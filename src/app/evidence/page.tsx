@@ -240,7 +240,7 @@ export default function EvidencePage() {
       <header className="header">
         <div className="header-left">
           <button onClick={() => router.push('/dashboard')} className="back-btn">← Back</button>
-          <h1>📁 Evidence Library</h1>
+          <h1>📁 Documentation Library</h1>
         </div>
         <button className="capture-btn" onClick={() => setShowQuickCapture(true)}>
           + Quick Capture
@@ -491,7 +491,7 @@ export default function EvidencePage() {
                 onClick={quickCapture}
                 disabled={!captureText.trim() || captureSaving}
               >
-                {captureSaving ? 'Analyzing & Saving...' : '📌 Save to Evidence'}
+                {captureSaving ? 'Analyzing & Saving...' : '📌 Save'}
               </button>
             </div>
           </div>
@@ -510,7 +510,7 @@ export default function EvidencePage() {
         </button>
         <button className="nav-item active">
           <span>📁</span>
-          <span>Evidence</span>
+          <span>Docs</span>
         </button>
         <button className="nav-item" onClick={() => router.push('/healing')}>
           <span>🌿</span>
