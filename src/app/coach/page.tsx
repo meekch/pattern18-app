@@ -70,16 +70,33 @@ const breathingTypes = {
 };
 
 const kidConnectionIdeas = [
-  { idea: "Write them a letter they'll read someday", desc: "Tell them about this time. How hard you fought. How much you love them." },
-  { idea: "Plan a special adventure", desc: "Even small ones count. A new park, a picnic, stargazing in the backyard." },
-  { idea: "Learn something new together", desc: "A card trick, a recipe, a few words in another language. They'll remember." },
-  { idea: "Create a secret handshake", desc: "Something just between you. A tiny bond no one can take." },
-  { idea: "Start a tradition", desc: "Sunday pancakes, Friday movie night, a special goodbye phrase." },
-  { idea: "Make them a playlist", desc: "Songs that remind you of them. Songs that will make them smile." },
-  { idea: "Collect rocks or leaves together", desc: "Start a little nature collection. Name them silly things." },
-  { idea: "Write jokes to tell them", desc: "Kids love jokes. Save up some good ones for next time." },
-  { idea: "Plan a kindness mission", desc: "Make cards for neighbors, feed birds, leave painted rocks around town." },
-  { idea: "Create a memory jar", desc: "Write down happy moments together on slips of paper." },
+  // Toddlers & Preschool (2-5)
+  { idea: "Create a 'hug token' they can save", desc: "Give them something small they can hold when they miss you - a smooth rock, a button, a little heart. Tell them it holds your hugs.", age: "Ages 2-5", category: "connection" },
+  { idea: "Make up a special goodbye ritual", desc: "A secret handshake, butterfly kisses, or a silly phrase only you two know. Consistency builds security in little ones.", age: "Ages 2-5", category: "ritual" },
+  { idea: "Read the same book at bedtime", desc: "Even apart, you can both read the same story at night. 'I'm reading this to you right now, wherever you are.'", age: "Ages 2-5", category: "connection" },
+  
+  // School Age (6-10)
+  { idea: "Start a joke exchange", desc: "Kids this age LOVE jokes. Text them a riddle or knock-knock joke to share. They'll look forward to your humor.", age: "Ages 6-10", category: "fun" },
+  { idea: "Create a secret code together", desc: "Simple symbols that mean 'I love you' or 'thinking of you.' They can draw it, you can text it. A private language.", age: "Ages 6-10", category: "connection" },
+  { idea: "Plan a 'someday' adventure list", desc: "Dream together about places to go, things to try. The anticipation is bonding even if it takes time.", age: "Ages 6-10", category: "planning" },
+  { idea: "Learn a skill together", desc: "Magic trick, card game, origami, a few words in another language. Mastering something together builds confidence.", age: "Ages 6-10", category: "growth" },
+  
+  // Tweens (10-13)
+  { idea: "Ask their opinion on something real", desc: "Tweens want to feel respected. Ask what they think about a decision (appropriate one). Their input matters.", age: "Ages 10-13", category: "respect" },
+  { idea: "Share music with each other", desc: "Send them a song, ask what they're listening to. Music is identity at this age - showing interest shows love.", age: "Ages 10-13", category: "connection" },
+  { idea: "Create a shared playlist", desc: "Add songs that remind you of each other. A living document of your relationship.", age: "Ages 10-13", category: "creative" },
+  
+  // Teens (13-18)
+  { idea: "Text without expecting a response", desc: "Teens need space but also need to know you're there. 'Just thinking of you. No reply needed.' removes pressure.", age: "Ages 13-18", category: "space" },
+  { idea: "Acknowledge their hard stuff", desc: "'I know this situation is hard on you too. I see you.' Teens often feel invisible in adult conflict.", age: "Ages 13-18", category: "validation" },
+  { idea: "Share something vulnerable", desc: "Age-appropriately share a struggle or mistake you made at their age. It builds trust and models authenticity.", age: "Ages 13-18", category: "trust" },
+  { idea: "Support their interests without agenda", desc: "Ask about their game, their friend, their hobby. No segue into life lessons. Just genuine curiosity.", age: "Ages 13-18", category: "respect" },
+  
+  // All Ages
+  { idea: "Write letters for the future", desc: "Letters they'll read someday - about this time, how hard you fought, how much you love them. Healing for you both.", age: "All ages", category: "legacy" },
+  { idea: "Create a memory jar together", desc: "Write happy moments on slips of paper. Open them when you're together or when times are hard.", age: "All ages", category: "ritual" },
+  { idea: "Establish a 'thinking of you' signal", desc: "Every time you see a rainbow, a certain bird, or a specific time (11:11), you're both thinking of each other.", age: "All ages", category: "connection" },
+  { idea: "Celebrate tiny moments", desc: "Not just birthdays - celebrate Tuesday, celebrate sunshine, celebrate being together. Joy doesn't need permission.", age: "All ages", category: "presence" },
 ];
 
 const gratitudePrompts = [
@@ -513,6 +530,9 @@ export default function CoachPage() {
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
             📁 Evidence
           </button>
+          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
+            📱 Message Analyzer
+          </button>
           <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item healing">
             🌿 Healing Journey
           </button>
@@ -581,6 +601,15 @@ export default function CoachPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="bulk-analyzer-promo" onClick={() => router.push('/message-parser')}>
+              <div className="promo-icon">📱</div>
+              <div className="promo-content">
+                <div className="promo-title">Have months of texts to analyze?</div>
+                <div className="promo-desc">Upload your message history and find all patterns automatically</div>
+              </div>
+              <span className="promo-arrow">→</span>
             </div>
 
             <button className="breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode('menu'); }}>
@@ -960,11 +989,13 @@ export default function CoachPage() {
               <div className="kids-mode">
                 <div className="kids-card">
                   <span className="kids-icon">💛</span>
+                  <span className="age-badge">{currentKidIdea.age}</span>
                   <h3>{currentKidIdea.idea}</h3>
                   <p>{currentKidIdea.desc}</p>
                 </div>
                 <button onClick={nextKidIdea} className="next-affirm">Another idea →</button>
                 <p className="kids-reminder">They feel your love even when you're apart.</p>
+                <p className="kids-expert">Expert tip: Connection doesn't require perfection. Your presence - even imperfect - is what they need most.</p>
                 <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
               </div>
             )}
@@ -1226,6 +1257,7 @@ export default function CoachPage() {
         }
         .nav-item.breathe { color: #5eead4; }
         .nav-item.healing { color: #86efac; }
+        .nav-item.parser { color: #93c5fd; }
         .nav-item.safety { color: #f9a8d4; }
         .nav-item.logout { color: #fca5a5; }
         .nav-divider {
@@ -1406,6 +1438,40 @@ export default function CoachPage() {
         .breathe-btn:hover {
           transform: scale(1.02);
           background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+        }
+        .bulk-analyzer-promo {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          padding: 16px 20px;
+          border-radius: 14px;
+          cursor: pointer;
+          margin-bottom: 16px;
+          transition: transform 0.2s;
+        }
+        .bulk-analyzer-promo:hover {
+          transform: scale(1.01);
+        }
+        .promo-icon {
+          font-size: 28px;
+        }
+        .promo-content {
+          flex: 1;
+        }
+        .promo-title {
+          font-weight: 600;
+          color: #1e40af;
+          font-size: 15px;
+          margin-bottom: 2px;
+        }
+        .promo-desc {
+          font-size: 13px;
+          color: #3b82f6;
+        }
+        .promo-arrow {
+          color: #1e40af;
+          font-size: 20px;
         }
 
         /* Messages */
@@ -1929,7 +1995,25 @@ export default function CoachPage() {
           color: #666;
           font-size: 13px;
           font-style: italic;
-          margin: 16px 0;
+          margin: 16px 0 8px;
+        }
+        .kids-expert {
+          color: #14b8a6;
+          font-size: 12px;
+          margin: 0 0 8px;
+          padding: 10px;
+          background: #f0fdf4;
+          border-radius: 8px;
+        }
+        .age-badge {
+          display: inline-block;
+          background: #854d0e;
+          color: white;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 12px;
+          margin-bottom: 12px;
         }
         .kids-option {
           background: #fefce8 !important;
