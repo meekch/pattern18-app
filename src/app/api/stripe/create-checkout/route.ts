@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       subscription_data: {
         trial_period_days: 7,
       },
-      success_url: `${baseUrl}/dashboard?success=true`,
+      success_url: `${baseUrl}/coach?success=true`,
       cancel_url: `${baseUrl}/login?canceled=true`,
       allow_promotion_codes: true,
     });

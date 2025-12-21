@@ -45,6 +45,11 @@ export default function DashboardPage() {
   });
   const [quote, setQuote] = useState(motivationalQuotes[0]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -243,6 +248,27 @@ export default function DashboardPage() {
           </button>
           <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
             ⚙️ Settings
+          </button>
+          
+          <div className="nav-divider" />
+          
+          <button onClick={() => router.push('/coach')} className="nav-item">
+            📖 How It Works
+          </button>
+          <button onClick={() => router.push('/coach')} className="nav-item new">
+            ✨ What's New
+          </button>
+          <button onClick={() => router.push('/coach')} className="nav-item">
+            💬 Feedback
+          </button>
+          
+          <div className="nav-divider" />
+          
+          <button onClick={() => router.push('/coach')} className="nav-item safety">
+            🤍 Safety Resources
+          </button>
+          <button onClick={handleLogout} className="nav-item logout">
+            🚪 Log Out
           </button>
         </nav>
       </div>
@@ -508,6 +534,14 @@ export default function DashboardPage() {
         .nav-item.parser { color: #93c5fd; }
         .nav-item.court { color: #fcd34d; }
         .nav-item.filings { color: #f9a8d4; }
+        .nav-item.new { color: #fbbf24; }
+        .nav-item.safety { color: #f9a8d4; }
+        .nav-item.logout { color: #f87171; }
+        .nav-divider {
+          height: 1px;
+          background: rgba(255,255,255,0.1);
+          margin: 8px 16px;
+        }
 
         /* Header */
         .header {
