@@ -127,13 +127,18 @@ export default function CoachPage() {
         }
       }
       
-      // Load evidence count
-      const { count } = await supabase
+      // Load evidence count - check both tables
+      const { count: evidenceTableCount } = await supabase
         .from('evidence')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
       
-      setEvidenceCount(count || 0);
+      const { count: incidentsCount } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+      
+      setEvidenceCount((evidenceTableCount || 0) + (incidentsCount || 0));
       setAuthLoading(false);
     };
     
@@ -358,30 +363,21 @@ export default function CoachPage() {
         </div>
         
         <nav className="nav">
-          <button onClick={() => router.push('/dashboard')} className="nav-item">
-            📊 Dashboard
+          <button onClick={() => { router.push('/dashboard'); setShowSidebar(false); }} className="nav-item">
+            🏠 Home
           </button>
           <button className="nav-item active">
-            💬 AI Coach
+            💬 Coach
           </button>
-          <button onClick={() => router.push('/evidence')} className="nav-item">
-            📁 Evidence Library
+          <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
+            📁 Evidence
           </button>
-          <button onClick={() => router.push('/case-setup')} className="nav-item">
-            ⚙️ Case Settings
-          </button>
-          
-          <div className="nav-divider" />
-          
-          <button onClick={() => { setShowRegulate(true); setRegulateMode('menu'); setShowSidebar(false); }} className="nav-item breathe">
-            🫁 Breathe &amp; Ground
+          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
+            ⚙️ Settings
           </button>
           
           <div className="nav-divider" />
           
-          <button onClick={() => router.push('/faq')} className="nav-item">
-            ❓ FAQ
-          </button>
           <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="nav-item safety">
             🤍 Safety Resources
           </button>
@@ -395,7 +391,7 @@ export default function CoachPage() {
       <header className="header">
         <div className="header-left">
           <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
-          <div className="brand">
+          <div className="brand" onClick={() => router.push('/dashboard')} style={{cursor: 'pointer'}}>
             <span className="logo">18</span>
             <div className="brand-text">
               <span className="brand-name">Pattern 18</span>
@@ -424,15 +420,9 @@ export default function CoachPage() {
             <div className="welcome-heart">💚</div>
             <h1 className="welcome-title">Hey, I am glad you are here.</h1>
             <p className="welcome-text">
-              I am your 24/7 strategic partner. Whether you just got a message that made your
-              stomach drop, need help with a court document, or simply need a moment to
-              breathe - I have got you.
+              Whether you just got a message that made your stomach drop, 
+              need help with a court document, or simply need a moment to breathe - I have got you.
             </p>
-            <div className="tagline">
-              <span className="tag">Be present.</span>
-              <span className="tag">Don't react.</span>
-              <span className="tag">Take back control.</span>
-            </div>
 
             <div className="quick-actions">
               <h3>What can I help with?</h3>
@@ -807,6 +797,10 @@ export default function CoachPage() {
           padding: 8px 12px;
           border-radius: 8px;
           font-weight: 700;
+        }
+        .brand-text {
+          display: flex;
+          flex-direction: column;
         }
         .brand-name { font-weight: 600; }
         .brand-tag { font-size: 12px; opacity: 0.7; }
