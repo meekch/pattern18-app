@@ -75,7 +75,7 @@ export default function MessageParserPage() {
     const lines = text.split('\n');
     const messages: ParsedMessage[] = [];
     
-    // Try to detect format (iMazing, etc.)
+    // Try to detect format (various export tools)
     const header = lines[0]?.toLowerCase() || '';
     
     for (let i = 1; i < lines.length; i++) {
@@ -421,13 +421,14 @@ export default function MessageParserPage() {
                 scan months of conversations to identify manipulation patterns.
               </p>
               <div className="how-to">
-                <h4>How to export from iMazing:</h4>
-                <ol>
-                  <li>Connect your iPhone to iMazing</li>
-                  <li>Select Messages → Choose the conversation</li>
-                  <li>Click Export → Choose CSV format</li>
-                  <li>Upload the file here</li>
-                </ol>
+                <h4>How to export your texts:</h4>
+                <p className="how-to-intro">Use any tool that exports texts to CSV format:</p>
+                <ul className="tool-list">
+                  <li><strong>iPhone:</strong> iMazing, AnyTrans, iExplorer, TouchCopy</li>
+                  <li><strong>Android:</strong> SMS Backup & Restore, SMS to Text</li>
+                  <li><strong>Any phone:</strong> Dr.Fone, MobileTrans</li>
+                </ul>
+                <p className="how-to-note">Export the conversation as CSV, then upload here. We're not affiliated with any of these tools.</p>
               </div>
             </div>
 
@@ -662,8 +663,31 @@ export default function MessageParserPage() {
         }
         .how-to h4 {
           color: #1a3a2f;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           font-size: 14px;
+        }
+        .how-to-intro {
+          font-size: 13px;
+          color: #666;
+          margin-bottom: 10px;
+        }
+        .tool-list {
+          margin: 0 0 10px 0;
+          padding-left: 20px;
+          color: #666;
+          font-size: 13px;
+        }
+        .tool-list li {
+          margin-bottom: 6px;
+        }
+        .tool-list strong {
+          color: #444;
+        }
+        .how-to-note {
+          font-size: 12px;
+          color: #999;
+          font-style: italic;
+          margin: 0;
         }
         .how-to ol {
           margin: 0;
