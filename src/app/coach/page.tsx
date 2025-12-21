@@ -709,6 +709,9 @@ export default function CoachPage() {
           <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
             ⚖️ Court Documents
           </button>
+          <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item filings">
+            📋 Case Filings
+          </button>
           <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
             📱 Message Analyzer
           </button>
@@ -1409,6 +1412,11 @@ export default function CoachPage() {
             <div className="update-list">
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
+                <h4>📋 Case Filings & Order Reader</h4>
+                <p>Upload court orders and we'll extract deadlines, action items, and requirements automatically. Track all filings in one place.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
                 <h4>⚖️ Court Document Generator</h4>
                 <p>Generate declarations, exhibit lists, pattern summaries, and incident timelines. Court-ready in minutes.</p>
               </div>
@@ -1426,11 +1434,6 @@ export default function CoachPage() {
                 <span className="update-date">Dec 2024</span>
                 <h4>📱 Bulk Message Analyzer</h4>
                 <p>Upload months of text messages at once. We'll scan for all manipulation patterns and help you document.</p>
-              </div>
-              <div className="update-item">
-                <span className="update-date">Dec 2024</span>
-                <h4>✍️ Help Me Respond</h4>
-                <p>Get strategic response suggestions that avoid JADE (Justify, Argue, Defend, Explain).</p>
               </div>
             </div>
             
@@ -1706,6 +1709,7 @@ export default function CoachPage() {
         .nav-item.healing { color: #86efac; }
         .nav-item.parser { color: #93c5fd; }
         .nav-item.court { color: #fcd34d; }
+        .nav-item.filings { color: #f9a8d4; }
         .nav-item.safety { color: #f9a8d4; }
         .nav-item.logout { color: #fca5a5; }
         .nav-divider {

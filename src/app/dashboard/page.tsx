@@ -232,6 +232,9 @@ export default function DashboardPage() {
           <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
             ⚖️ Court Documents
           </button>
+          <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item filings">
+            📋 Case Filings
+          </button>
           <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
             📱 Message Analyzer
           </button>
@@ -504,6 +507,7 @@ export default function DashboardPage() {
         .nav-item.healing { color: #86efac; }
         .nav-item.parser { color: #93c5fd; }
         .nav-item.court { color: #fcd34d; }
+        .nav-item.filings { color: #f9a8d4; }
 
         /* Header */
         .header {
