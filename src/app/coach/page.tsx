@@ -41,7 +41,7 @@ const affirmations = [
   { text: "The best response is often no response.", subtext: "Let them tell on themselves." },
   { text: "You survived 100% of your worst days.", subtext: "You'll survive this one too." },
   { text: "Document. Breathe. Protect. Repeat.", subtext: "You're doing it right." },
-  { text: "They want you reactive. Stay strategic.", subtext: "Your calm is your superpower." },
+  { text: "They want you reactive. Stay grounded.", subtext: "Your calm is your superpower." },
   { text: "Be present. Be prepared. Be empowered.", subtext: "You've got this." },
 ];
 
@@ -134,7 +134,7 @@ const eveningReflections = [
 
 const quickActions = [
   { icon: '📱', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
-  { icon: '✍️', title: 'Draft a response', desc: 'Strategic, calm replies', prompt: 'I need to respond to this message. Help me craft something strategic:\n\n' },
+  { icon: '✍️', title: 'Draft a response', desc: 'Calm, healthy replies', prompt: 'I need to respond to this message. Help me respond calmly without JADE (Justify, Argue, Defend, Explain):\n\n' },
   { icon: '⚖️', title: 'Court document help', desc: 'Motions, declarations, exhibits', prompt: 'I need help with a court document. Here\'s what I\'m trying to accomplish:\n\n' },
   { icon: '🎯', title: 'Identify patterns', desc: 'See the manipulation tactics', prompt: 'Can you help me identify manipulation patterns in this situation:\n\n' },
 ];
@@ -982,7 +982,7 @@ export default function CoachPage() {
             <button 
               className="help-respond-btn"
               onClick={() => {
-                sendMessage(`Help me craft a response to this. Keep it brief and strategic - no JADE (Justify, Argue, Defend, Explain).`);
+                sendMessage(`Help me respond to this calmly. Keep it brief - no JADE (Justify, Argue, Defend, Explain). Just the facts, no emotion.`);
               }}
             >
               ✍️ Help me respond
@@ -1350,7 +1350,7 @@ export default function CoachPage() {
                 <div className="onboarding-icon">🎯</div>
                 <h2>I See Through It</h2>
                 <p>I identify manipulation tactics instantly — what took courts years to see.</p>
-                <p className="onboarding-sub">Gaslighting, DARVO, baiting, blame-shifting... I'll name it and help you respond strategically.</p>
+                <p className="onboarding-sub">Gaslighting, DARVO, baiting, blame-shifting... I'll name it and help you respond without reacting.</p>
               </div>
             )}
             {onboardingStep === 3 && (

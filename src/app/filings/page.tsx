@@ -459,9 +459,15 @@ export default function FilingsPage() {
         {filteredFilings.length === 0 ? (
           <div className="empty-state">
             <span>📋</span>
-            <h3>No filings yet</h3>
-            <p>Upload a court order to get started. We'll extract deadlines and action items automatically.</p>
-            <button onClick={() => setShowUpload(true)}>+ Upload Court Order</button>
+            <h3>Track Your Case Documents</h3>
+            <p>Upload court orders, motions, and other filings. We'll automatically extract:</p>
+            <ul className="feature-list">
+              <li>⏰ <strong>Deadlines</strong> - Response dates, hearing dates</li>
+              <li>✓ <strong>Action items</strong> - What you need to do</li>
+              <li>📁 <strong>Case details</strong> - Case number, court, parties</li>
+            </ul>
+            <p className="hint">Start with any court order you've received - we'll read it and tell you what to do next.</p>
+            <button onClick={() => setShowUpload(true)}>+ Upload a Document</button>
           </div>
         ) : (
           <div className="filings-list">
@@ -1039,7 +1045,7 @@ export default function FilingsPage() {
         /* Empty State */
         .empty-state {
           text-align: center;
-          padding: 60px 20px;
+          padding: 40px 20px;
           background: white;
           border-radius: 16px;
         }
@@ -1050,14 +1056,34 @@ export default function FilingsPage() {
         }
         .empty-state h3 {
           color: #1a3a2f;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
         }
         .empty-state p {
           color: #666;
-          margin-bottom: 20px;
-          max-width: 300px;
+          margin-bottom: 16px;
+          max-width: 350px;
           margin-left: auto;
           margin-right: auto;
+        }
+        .feature-list {
+          list-style: none;
+          padding: 0;
+          margin: 0 auto 20px;
+          max-width: 320px;
+          text-align: left;
+        }
+        .feature-list li {
+          padding: 8px 0;
+          color: #444;
+          font-size: 14px;
+        }
+        .feature-list strong {
+          color: #1a3a2f;
+        }
+        .hint {
+          font-size: 13px;
+          color: #14b8a6;
+          font-style: italic;
         }
         .empty-state button {
           background: #1a3a2f;
