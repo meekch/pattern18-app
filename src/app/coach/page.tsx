@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import SafetyResources, { detectCrisis } from '@/components/SafetyResources';
 
 // ============================================
 // TYPES
@@ -77,6 +78,10 @@ export default function CoachPage() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
+  
+  // Safety state
+  const [showSafetyResources, setShowSafetyResources] = useState(false);
+  const [safetyTriggered, setSafetyTriggered] = useState(false);
   
   // Case & evidence state
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
@@ -184,6 +189,12 @@ export default function CoachPage() {
     setInput('');
     setIsLoading(true);
     setShowWelcome(false);
+
+    // Check for crisis keywords - gentle safety check
+    if (detectCrisis(messageText)) {
+      setSafetyTriggered(true);
+      setShowSafetyResources(true);
+    }
 
     const assistantId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, {
@@ -371,6 +382,9 @@ export default function CoachPage() {
           <button onClick={() => router.push('/faq')} className="nav-item">
             ❓ FAQ
           </button>
+          <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="nav-item safety">
+            🤍 Safety Resources
+          </button>
           <button onClick={handleLogout} className="nav-item logout">
             🚪 Log Out
           </button>
@@ -448,30 +462,25 @@ export default function CoachPage() {
                 </div>
                 {msg.role === 'assistant' && msg.content && (
                   <div className="message-actions">
-                    {msg.patterns && msg.patterns.length > 0 && (
-                      <div className="patterns">
-                        {msg.patterns.map((p, i) => (
-                          <span key={i} className="pattern-tag">{p}</span>
-                        ))}
-                      </div>
-                    )}
                     <div className="action-buttons">
                       <button onClick={() => navigator.clipboard.writeText(msg.content)} className="action-btn">
                         📋 Copy
                       </button>
-                      {msg.savedToEvidence ? (
-                        <span className="saved-badge">✓ Saved</span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            const userMsg = idx > 0 ? messages[idx - 1] : undefined;
-                            saveToEvidence(msg, userMsg);
-                          }}
-                          disabled={savingEvidence === msg.id}
-                          className="action-btn save"
-                        >
-                          {savingEvidence === msg.id ? '💾 Saving...' : '💾 Save to Evidence'}
-                        </button>
+                      {msg.patterns && msg.patterns.length > 0 && (
+                        msg.savedToEvidence ? (
+                          <span className="saved-badge">✓ Saved</span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              const userMsg = idx > 0 ? messages[idx - 1] : undefined;
+                              saveToEvidence(msg, userMsg);
+                            }}
+                            disabled={savingEvidence === msg.id}
+                            className="action-btn save"
+                          >
+                            {savingEvidence === msg.id ? 'Saving...' : '📌 Save'}
+                          </button>
+                        )
                       )}
                     </div>
                   </div>
@@ -486,7 +495,94 @@ export default function CoachPage() {
       <div className="input-area">
         <div className="input-container">
           <button onClick={() => fileInputRef.current?.click()} className="attach-btn">📎</button>
-          <input type="file" ref={fileInputRef} hidden accept="image/*,.pdf" />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            hidden 
+            accept="image/*,.pdf" 
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('message', input || '');
+              formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content }))));
+              if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
+              
+              setIsLoading(true);
+              setShowWelcome(false);
+              
+              const userMsg: Message = {
+                id: Date.now().toString(),
+                role: 'user',
+                content: input || `[Uploaded: ${file.name}]`,
+                timestamp: new Date(),
+              };
+              setMessages(prev => [...prev, userMsg]);
+              setInput('');
+              
+              const assistantId = (Date.now() + 1).toString();
+              setMessages(prev => [...prev, {
+                id: assistantId,
+                role: 'assistant',
+                content: '',
+                timestamp: new Date(),
+              }]);
+              
+              try {
+                const response = await fetch('/api/coach', {
+                  method: 'POST',
+                  body: formData,
+                });
+                
+                const reader = response.body?.getReader();
+                const decoder = new TextDecoder();
+                let patterns: string[] = [];
+                
+                if (reader) {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        try {
+                          const data = JSON.parse(line.slice(6));
+                          if (data.text) {
+                            setMessages(prev => prev.map(m =>
+                              m.id === assistantId
+                                ? { ...m, content: m.content + data.text }
+                                : m
+                            ));
+                          }
+                          if (data.patterns) patterns = data.patterns;
+                          if (data.done && patterns.length > 0) {
+                            setMessages(prev => prev.map(m =>
+                              m.id === assistantId ? { ...m, patterns } : m
+                            ));
+                          }
+                        } catch {}
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Upload error:', error);
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId
+                    ? { ...m, content: 'Sorry, I had trouble with that file. Try again?' }
+                    : m
+                ));
+              } finally {
+                setIsLoading(false);
+                e.target.value = '';
+              }
+            }}
+          />
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -581,6 +677,16 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* Safety Resources Modal */}
+      <SafetyResources 
+        isOpen={showSafetyResources} 
+        onClose={() => {
+          setShowSafetyResources(false);
+          setSafetyTriggered(false);
+        }}
+        triggered={safetyTriggered}
+      />
+
       <style jsx>{`
         .container {
           display: flex;
@@ -662,6 +768,7 @@ export default function CoachPage() {
           color: white;
         }
         .nav-item.breathe { color: #5eead4; }
+        .nav-item.safety { color: #f9a8d4; }
         .nav-item.logout { color: #fca5a5; }
         .nav-divider {
           height: 1px;
