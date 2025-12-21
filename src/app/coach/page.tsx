@@ -53,6 +53,48 @@ const groundingSteps = [
   { sense: 'TASTE', instruction: 'Name 1 thing you can taste.', icon: '👅' },
 ];
 
+const bodyScanSteps = [
+  { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: '🦶' },
+  { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: '🦵' },
+  { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: '🫁' },
+  { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: '💚' },
+  { area: 'Shoulders', instruction: 'Drop your shoulders away from your ears. Roll them back. Release what you have been carrying.', icon: '💆' },
+  { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: '😌' },
+  { area: 'Whole Body', instruction: 'Take one deep breath. You are here. You are whole. You are safe in this moment.', icon: '✨' },
+];
+
+const breathingTypes = {
+  box: { name: 'Box Breathing', desc: 'Used by Navy SEALs to stay calm', phases: ['inhale', 'hold', 'exhale', 'hold2'], times: [4, 4, 4, 4] },
+  '478': { name: '4-7-8 Breath', desc: 'Deep calm and better sleep', phases: ['inhale', 'hold', 'exhale'], times: [4, 7, 8] },
+  sigh: { name: 'Physiological Sigh', desc: 'Fastest way to calm down', phases: ['inhale', 'inhale', 'exhale'], times: [2, 1, 6] },
+};
+
+const kidConnectionIdeas = [
+  { idea: "Write them a letter they'll read someday", desc: "Tell them about this time. How hard you fought. How much you love them." },
+  { idea: "Plan a special adventure", desc: "Even small ones count. A new park, a picnic, stargazing in the backyard." },
+  { idea: "Learn something new together", desc: "A card trick, a recipe, a few words in another language. They'll remember." },
+  { idea: "Create a secret handshake", desc: "Something just between you. A tiny bond no one can take." },
+  { idea: "Start a tradition", desc: "Sunday pancakes, Friday movie night, a special goodbye phrase." },
+  { idea: "Make them a playlist", desc: "Songs that remind you of them. Songs that will make them smile." },
+  { idea: "Collect rocks or leaves together", desc: "Start a little nature collection. Name them silly things." },
+  { idea: "Write jokes to tell them", desc: "Kids love jokes. Save up some good ones for next time." },
+  { idea: "Plan a kindness mission", desc: "Make cards for neighbors, feed birds, leave painted rocks around town." },
+  { idea: "Create a memory jar", desc: "Write down happy moments together on slips of paper." },
+];
+
+const gratitudePrompts = [
+  { prompt: "What's one small thing that went right today?", followup: "Even tiny wins count." },
+  { prompt: "Who showed you kindness recently?", followup: "It's okay if it was yourself." },
+  { prompt: "What's something your body did for you today?", followup: "It carried you through." },
+  { prompt: "What's a challenge you've survived?", followup: "You're still here. That's strength." },
+  { prompt: "What do your kids teach you?", followup: "They see things we forget to notice." },
+  { prompt: "What's one thing you're looking forward to?", followup: "Even small things count." },
+  { prompt: "What made you smile this week?", followup: "Joy still finds you." },
+  { prompt: "What's something you did well recently?", followup: "You're doing better than you think." },
+  { prompt: "Who would you thank if you could?", followup: "Gratitude heals the giver." },
+  { prompt: "What's beautiful around you right now?", followup: "Beauty exists even in hard seasons." },
+];
+
 const quickActions = [
   { icon: '📱', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
   { icon: '✍️', title: 'Draft a response', desc: 'Strategic, calm replies', prompt: 'I need to respond to this message. Help me craft something strategic:\n\n' },
@@ -94,10 +136,17 @@ export default function CoachPage() {
   
   // Regulate state
   const [showRegulate, setShowRegulate] = useState(false);
-  const [regulateMode, setRegulateMode] = useState<'menu' | 'breathe' | 'ground' | 'affirm'>('menu');
-  const [breathePhase, setBreathePhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
+  const [regulateMode, setRegulateMode] = useState<'menu' | 'breathe' | 'ground' | 'affirm' | 'body' | 'release' | 'shake' | 'kids' | 'gratitude'>('menu');
+  const [breatheType, setBreatheType] = useState<'box' | '478' | 'sigh'>('box');
+  const [breathePhase, setBreathePhase] = useState<'inhale' | 'hold' | 'exhale' | 'hold2'>('inhale');
+  const [breatheCount, setBreatheCount] = useState(0);
   const [groundStep, setGroundStep] = useState(0);
+  const [bodyStep, setBodyStep] = useState(0);
+  const [releaseText, setReleaseText] = useState('');
+  const [shakeSeconds, setShakeSeconds] = useState(30);
   const [currentAffirmation, setCurrentAffirmation] = useState(affirmations[0]);
+  const [currentKidIdea, setCurrentKidIdea] = useState(kidConnectionIdeas[0]);
+  const [currentGratitude, setCurrentGratitude] = useState(gratitudePrompts[0]);
   
   // Refs
   const chatRef = useRef<HTMLDivElement>(null);
@@ -163,23 +212,40 @@ export default function CoachPage() {
     }
   }, [messages]);
 
-  // Breathing animation
+  // Breathing animation - handles different breathing types
   useEffect(() => {
     if (showRegulate && regulateMode === 'breathe') {
-      const phases = ['inhale', 'hold', 'exhale'] as const;
-      const durations = [4000, 4000, 4000];
+      const config = breathingTypes[breatheType];
+      const phases = config.phases as ('inhale' | 'hold' | 'exhale' | 'hold2')[];
+      const times = config.times;
       let index = 0;
       
       const cycle = () => {
         setBreathePhase(phases[index]);
-        index = (index + 1) % 3;
+        setBreatheCount(times[index]);
+        const duration = times[index] * 1000;
+        index = (index + 1) % phases.length;
+        return duration;
       };
       
-      cycle();
-      const interval = setInterval(cycle, durations[index]);
-      return () => clearInterval(interval);
+      let timeout: NodeJS.Timeout;
+      const runCycle = () => {
+        const duration = cycle();
+        timeout = setTimeout(runCycle, duration);
+      };
+      
+      runCycle();
+      return () => clearTimeout(timeout);
     }
-  }, [showRegulate, regulateMode]);
+  }, [showRegulate, regulateMode, breatheType]);
+
+  // Shake timer
+  useEffect(() => {
+    if (showRegulate && regulateMode === 'shake' && shakeSeconds > 0) {
+      const timer = setTimeout(() => setShakeSeconds(s => s - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [showRegulate, regulateMode, shakeSeconds]);
 
   // ============================================
   // HANDLERS
@@ -327,6 +393,16 @@ export default function CoachPage() {
     setCurrentAffirmation(affirmations[(currentIndex + 1) % affirmations.length]);
   };
 
+  const nextKidIdea = () => {
+    const currentIndex = kidConnectionIdeas.indexOf(currentKidIdea);
+    setCurrentKidIdea(kidConnectionIdeas[(currentIndex + 1) % kidConnectionIdeas.length]);
+  };
+
+  const nextGratitude = () => {
+    const currentIndex = gratitudePrompts.indexOf(currentGratitude);
+    setCurrentGratitude(gratitudePrompts[(currentIndex + 1) % gratitudePrompts.length]);
+  };
+
   // ============================================
   // RENDER
   // ============================================
@@ -451,7 +527,7 @@ export default function CoachPage() {
             </div>
 
             <button className="breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode('menu'); }}>
-              🫁 Need to breathe first?
+              🌿 Take care of you first
             </button>
           </div>
         ) : (
@@ -613,7 +689,7 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* Regulate Modal */}
+      {/* Regulate Modal - Enhanced Somatic Healing */}
       {showRegulate && (
         <div className="regulate-overlay" onClick={() => setShowRegulate(false)}>
           <div className="regulate-modal" onClick={(e) => e.stopPropagation()}>
@@ -621,21 +697,42 @@ export default function CoachPage() {
             
             {regulateMode === 'menu' && (
               <div className="regulate-menu">
-                <h2>Take a moment</h2>
-                <p>What do you need right now?</p>
+                <h2>🌿 Restore</h2>
+                <p>You can't pour from an empty cup</p>
                 <div className="regulate-options">
                   <button onClick={() => setRegulateMode('breathe')} className="regulate-option">
                     <span>🫁</span>
                     <div>
                       <strong>Breathe</strong>
-                      <p>4-4-4 calming breath</p>
+                      <p>Calm your nervous system</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setBodyStep(0); setRegulateMode('body'); }} className="regulate-option">
+                    <span>💆</span>
+                    <div>
+                      <strong>Body Scan</strong>
+                      <p>Release stored tension</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('ground')} className="regulate-option">
                     <span>🌳</span>
                     <div>
                       <strong>Ground</strong>
-                      <p>5-4-3-2-1 senses</p>
+                      <p>Come back to now</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setShakeSeconds(30); setRegulateMode('shake'); }} className="regulate-option">
+                    <span>🦋</span>
+                    <div>
+                      <strong>Shake It Out</strong>
+                      <p>Release the energy</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setReleaseText(''); setRegulateMode('release'); }} className="regulate-option">
+                    <span>🔥</span>
+                    <div>
+                      <strong>Write & Release</strong>
+                      <p>Let it go</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('affirm')} className="regulate-option">
@@ -645,14 +742,54 @@ export default function CoachPage() {
                       <p>Words of truth</p>
                     </div>
                   </button>
+                  <button onClick={() => setRegulateMode('kids')} className="regulate-option kids-option">
+                    <span>💛</span>
+                    <div>
+                      <strong>For Your Kids</strong>
+                      <p>Ideas to make them smile</p>
+                    </div>
+                  </button>
+                  <button onClick={() => setRegulateMode('gratitude')} className="regulate-option">
+                    <span>✨</span>
+                    <div>
+                      <strong>Gratitude</strong>
+                      <p>Find the light</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
 
             {regulateMode === 'breathe' && (
               <div className="breathe-mode">
+                <div className="breathe-selector">
+                  <button 
+                    className={`breathe-type ${breatheType === 'box' ? 'active' : ''}`}
+                    onClick={() => setBreatheType('box')}
+                  >
+                    Box
+                  </button>
+                  <button 
+                    className={`breathe-type ${breatheType === '478' ? 'active' : ''}`}
+                    onClick={() => setBreatheType('478')}
+                  >
+                    4-7-8
+                  </button>
+                  <button 
+                    className={`breathe-type ${breatheType === 'sigh' ? 'active' : ''}`}
+                    onClick={() => setBreatheType('sigh')}
+                  >
+                    Sigh
+                  </button>
+                </div>
+                <p className="breathe-desc">{breathingTypes[breatheType].desc}</p>
                 <div className={`breathe-circle ${breathePhase}`}>
-                  <span>{breathePhase === 'inhale' ? 'Breathe in' : breathePhase === 'hold' ? 'Hold' : 'Breathe out'}</span>
+                  <span className="breathe-instruction">
+                    {breathePhase === 'inhale' ? 'Breathe in' : 
+                     breathePhase === 'hold' || breathePhase === 'hold2' ? 'Hold' : 
+                     'Breathe out'}
+                  </span>
+                  <span className="breathe-counter">{breatheCount}</span>
                 </div>
                 <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
               </div>
@@ -676,6 +813,81 @@ export default function CoachPage() {
               </div>
             )}
 
+            {regulateMode === 'body' && (
+              <div className="body-mode">
+                <div className="body-step">
+                  <span className="body-icon">{bodyScanSteps[bodyStep].icon}</span>
+                  <h3>{bodyScanSteps[bodyStep].area}</h3>
+                  <p>{bodyScanSteps[bodyStep].instruction}</p>
+                </div>
+                <div className="body-progress">
+                  {bodyScanSteps.map((_, i) => (
+                    <span key={i} className={`body-dot ${i <= bodyStep ? 'active' : ''}`} />
+                  ))}
+                </div>
+                <div className="ground-nav">
+                  <button onClick={() => setBodyStep(Math.max(0, bodyStep - 1))} disabled={bodyStep === 0}>Previous</button>
+                  <button onClick={() => bodyStep < bodyScanSteps.length - 1 ? setBodyStep(bodyStep + 1) : setRegulateMode('menu')}>
+                    {bodyStep < bodyScanSteps.length - 1 ? 'Next' : 'Complete'}
+                  </button>
+                </div>
+                <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
+              </div>
+            )}
+
+            {regulateMode === 'shake' && (
+              <div className="shake-mode">
+                <h3>Shake It Out</h3>
+                <p className="shake-instruction">
+                  Stand up if you can. Shake your hands, arms, legs - let your whole body move. 
+                  This releases the stress energy stored in your muscles.
+                </p>
+                <div className="shake-timer">
+                  <span className="shake-emoji">🦋</span>
+                  <span className="shake-seconds">{shakeSeconds}</span>
+                  <span className="shake-label">seconds</span>
+                </div>
+                {shakeSeconds === 0 && (
+                  <div className="shake-complete">
+                    <p>Notice how your body feels now. Lighter? Calmer?</p>
+                    <button onClick={() => setShakeSeconds(30)} className="shake-again">Go again</button>
+                  </div>
+                )}
+                <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
+              </div>
+            )}
+
+            {regulateMode === 'release' && (
+              <div className="release-mode">
+                <h3>Write & Release</h3>
+                <p className="release-instruction">
+                  Type everything you wish you could say. Get it all out. 
+                  No one will ever see this.
+                </p>
+                <textarea 
+                  className="release-textarea"
+                  value={releaseText}
+                  onChange={(e) => setReleaseText(e.target.value)}
+                  placeholder="Let it all out..."
+                  rows={6}
+                />
+                {releaseText.length > 0 && (
+                  <button 
+                    className="release-burn"
+                    onClick={() => {
+                      setReleaseText('');
+                    }}
+                  >
+                    🔥 Release & Let Go
+                  </button>
+                )}
+                {releaseText === '' && releaseText !== undefined && (
+                  <p className="release-done">Released. Those words no longer have power over you.</p>
+                )}
+                <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
+              </div>
+            )}
+
             {regulateMode === 'affirm' && (
               <div className="affirm-mode">
                 <div className="affirmation">
@@ -683,6 +895,31 @@ export default function CoachPage() {
                   <p className="affirm-subtext">{currentAffirmation.subtext}</p>
                 </div>
                 <button onClick={nextAffirmation} className="next-affirm">Another →</button>
+                <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
+              </div>
+            )}
+
+            {regulateMode === 'kids' && (
+              <div className="kids-mode">
+                <div className="kids-card">
+                  <span className="kids-icon">💛</span>
+                  <h3>{currentKidIdea.idea}</h3>
+                  <p>{currentKidIdea.desc}</p>
+                </div>
+                <button onClick={nextKidIdea} className="next-affirm">Another idea →</button>
+                <p className="kids-reminder">They feel your love even when you're apart.</p>
+                <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
+              </div>
+            )}
+
+            {regulateMode === 'gratitude' && (
+              <div className="gratitude-mode">
+                <div className="gratitude-card">
+                  <span className="gratitude-icon">✨</span>
+                  <h3>{currentGratitude.prompt}</h3>
+                  <p>{currentGratitude.followup}</p>
+                </div>
+                <button onClick={nextGratitude} className="next-affirm">Another prompt →</button>
                 <button onClick={() => setRegulateMode('menu')} className="back-btn">← Back</button>
               </div>
             )}
@@ -1024,13 +1261,19 @@ export default function CoachPage() {
         .action-title { font-weight: 600; color: #1a3a2f; }
         .action-desc { font-size: 13px; color: #666; }
         .breathe-btn {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
           border: none;
           padding: 12px 24px;
           border-radius: 24px;
           font-size: 15px;
           cursor: pointer;
-          color: #92400e;
+          color: #065f46;
+          font-weight: 500;
+          transition: transform 0.2s;
+        }
+        .breathe-btn:hover {
+          transform: scale(1.02);
+          background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
         }
 
         /* Messages */
@@ -1176,9 +1419,11 @@ export default function CoachPage() {
           background: white;
           border-radius: 24px;
           padding: 32px;
-          max-width: 400px;
+          max-width: 440px;
           width: 90%;
           position: relative;
+          max-height: 90vh;
+          overflow-y: auto;
         }
         .regulate-close {
           position: absolute;
@@ -1200,23 +1445,28 @@ export default function CoachPage() {
           margin-bottom: 24px;
         }
         .regulate-options {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
         }
         .regulate-option {
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 16px;
+          gap: 12px;
+          padding: 14px;
           background: #f9fafb;
           border: 1px solid #e5e7eb;
           border-radius: 12px;
           cursor: pointer;
           text-align: left;
+          transition: all 0.2s;
+        }
+        .regulate-option:hover {
+          background: #f0fdf4;
+          border-color: #14b8a6;
         }
         .regulate-option span {
-          font-size: 32px;
+          font-size: 28px;
         }
         .regulate-option strong {
           display: block;
@@ -1247,11 +1497,11 @@ export default function CoachPage() {
           border-radius: 50%;
           background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           margin: 0 auto 24px;
           color: white;
-          font-size: 20px;
           font-weight: 600;
           transition: transform 4s ease-in-out;
         }
@@ -1331,6 +1581,253 @@ export default function CoachPage() {
           border-radius: 10px;
           cursor: pointer;
           font-weight: 500;
+        }
+
+        /* Enhanced Breathe Mode */
+        .breathe-selector {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .breathe-type {
+          padding: 8px 16px;
+          border: 1px solid #ddd;
+          border-radius: 20px;
+          background: white;
+          cursor: pointer;
+          font-size: 13px;
+        }
+        .breathe-type.active {
+          background: #1a3a2f;
+          color: white;
+          border-color: #1a3a2f;
+        }
+        .breathe-desc {
+          color: #666;
+          font-size: 13px;
+          margin-bottom: 20px;
+        }
+        .breathe-circle {
+          flex-direction: column;
+        }
+        .breathe-instruction {
+          font-size: 18px;
+        }
+        .breathe-counter {
+          font-size: 48px;
+          font-weight: 300;
+          margin-top: 8px;
+        }
+        .breathe-circle.hold2 { transform: scale(1); }
+
+        /* Body Scan Mode */
+        .body-mode {
+          text-align: center;
+        }
+        .body-step {
+          padding: 24px;
+          min-height: 200px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .body-icon {
+          font-size: 56px;
+          display: block;
+          margin-bottom: 16px;
+        }
+        .body-step h3 {
+          color: #1a3a2f;
+          font-size: 24px;
+          margin-bottom: 12px;
+        }
+        .body-step p {
+          color: #555;
+          line-height: 1.6;
+          font-size: 15px;
+        }
+        .body-progress {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin: 16px 0;
+        }
+        .body-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #ddd;
+          transition: background 0.3s;
+        }
+        .body-dot.active {
+          background: #14b8a6;
+        }
+
+        /* Shake Mode */
+        .shake-mode {
+          text-align: center;
+          padding: 20px;
+        }
+        .shake-mode h3 {
+          color: #1a3a2f;
+          margin-bottom: 12px;
+        }
+        .shake-instruction {
+          color: #666;
+          font-size: 14px;
+          line-height: 1.6;
+          margin-bottom: 24px;
+        }
+        .shake-timer {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 24px 0;
+        }
+        .shake-emoji {
+          font-size: 64px;
+          animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0) rotate(0deg); }
+          25% { transform: translateX(-5px) rotate(-5deg); }
+          75% { transform: translateX(5px) rotate(5deg); }
+        }
+        .shake-seconds {
+          font-size: 56px;
+          font-weight: 700;
+          color: #1a3a2f;
+        }
+        .shake-label {
+          color: #666;
+          font-size: 14px;
+        }
+        .shake-complete {
+          margin-top: 16px;
+        }
+        .shake-complete p {
+          color: #666;
+          margin-bottom: 12px;
+        }
+        .shake-again {
+          background: #14b8a6;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
+        /* Release Mode */
+        .release-mode {
+          text-align: center;
+          padding: 20px;
+        }
+        .release-mode h3 {
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .release-instruction {
+          color: #666;
+          font-size: 14px;
+          margin-bottom: 16px;
+        }
+        .release-textarea {
+          width: 100%;
+          padding: 16px;
+          border: 1px solid #ddd;
+          border-radius: 12px;
+          font-size: 15px;
+          font-family: inherit;
+          resize: none;
+          margin-bottom: 16px;
+        }
+        .release-textarea:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+        .release-burn {
+          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+          color: white;
+          border: none;
+          padding: 14px 28px;
+          border-radius: 10px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .release-burn:hover {
+          transform: scale(1.05);
+        }
+        .release-done {
+          color: #14b8a6;
+          font-style: italic;
+          margin-top: 16px;
+        }
+
+        /* Kids Mode */
+        .kids-mode {
+          text-align: center;
+          padding: 20px;
+        }
+        .kids-card {
+          background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+          border-radius: 16px;
+          padding: 28px 24px;
+          margin-bottom: 20px;
+        }
+        .kids-icon {
+          font-size: 48px;
+          display: block;
+          margin-bottom: 12px;
+        }
+        .kids-card h3 {
+          font-size: 20px;
+          color: #854d0e;
+          margin-bottom: 10px;
+        }
+        .kids-card p {
+          color: #a16207;
+          font-size: 15px;
+          line-height: 1.5;
+        }
+        .kids-reminder {
+          color: #666;
+          font-size: 13px;
+          font-style: italic;
+          margin: 16px 0;
+        }
+        .kids-option {
+          background: #fefce8 !important;
+          border-color: #fef08a !important;
+        }
+
+        /* Gratitude Mode */
+        .gratitude-mode {
+          text-align: center;
+          padding: 20px;
+        }
+        .gratitude-card {
+          background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+          border-radius: 16px;
+          padding: 28px 24px;
+          margin-bottom: 20px;
+        }
+        .gratitude-icon {
+          font-size: 48px;
+          display: block;
+          margin-bottom: 12px;
+        }
+        .gratitude-card h3 {
+          font-size: 20px;
+          color: #6b21a8;
+          margin-bottom: 10px;
+        }
+        .gratitude-card p {
+          color: #7c3aed;
+          font-size: 15px;
         }
 
         /* Onboarding */
