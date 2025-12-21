@@ -706,6 +706,9 @@ export default function CoachPage() {
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
             📁 My Documentation
           </button>
+          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
+            ⚖️ Court Documents
+          </button>
           <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
             📱 Message Analyzer
           </button>
@@ -1406,6 +1409,16 @@ export default function CoachPage() {
             <div className="update-list">
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
+                <h4>⚖️ Court Document Generator</h4>
+                <p>Generate declarations, exhibit lists, pattern summaries, and incident timelines. Court-ready in minutes.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
+                <h4>💬 Conversation History</h4>
+                <p>Your coaching sessions are now saved automatically. Pick up right where you left off.</p>
+              </div>
+              <div className="update-item">
+                <span className="update-date">Dec 2024</span>
                 <h4>🌿 Healing Journey</h4>
                 <p>Morning intentions, evening releases, and weekly healing challenges. Set reminders to build healing habits.</p>
               </div>
@@ -1416,18 +1429,8 @@ export default function CoachPage() {
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>💛 Kid Connection Ideas</h4>
-                <p>Age-appropriate ideas to stay connected with your kids, even during the hardest times.</p>
-              </div>
-              <div className="update-item">
-                <span className="update-date">Dec 2024</span>
                 <h4>✍️ Help Me Respond</h4>
                 <p>Get strategic response suggestions that avoid JADE (Justify, Argue, Defend, Explain).</p>
-              </div>
-              <div className="update-item">
-                <span className="update-date">Dec 2024</span>
-                <h4>📊 Dashboard</h4>
-                <p>See your progress at a glance - evidence count, pattern trends, healing streaks, and court countdown.</p>
               </div>
             </div>
             
@@ -1702,6 +1705,7 @@ export default function CoachPage() {
         .nav-item.breathe { color: #5eead4; }
         .nav-item.healing { color: #86efac; }
         .nav-item.parser { color: #93c5fd; }
+        .nav-item.court { color: #fcd34d; }
         .nav-item.safety { color: #f9a8d4; }
         .nav-item.logout { color: #fca5a5; }
         .nav-divider {

@@ -283,9 +283,9 @@ export default function DashboardPage() {
               <span className="action-icon">📁</span>
               <span className="action-label">View Docs</span>
             </button>
-            <button className="action-card" onClick={() => router.push('/healing')}>
-              <span className="action-icon">🌿</span>
-              <span className="action-label">Healing Journey</span>
+            <button className="action-card court" onClick={() => router.push('/court-docs')}>
+              <span className="action-icon">⚖️</span>
+              <span className="action-label">Court Prep</span>
             </button>
           </div>
         </section>
@@ -540,6 +540,12 @@ export default function DashboardPage() {
         .action-card:hover {
           background: #f0fdf4;
           transform: translateY(-2px);
+        }
+        .action-card.court {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+        .action-card.court:hover {
+          background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
         }
         .action-icon {
           font-size: 24px;
