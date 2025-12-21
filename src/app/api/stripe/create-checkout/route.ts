@@ -1,37 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+});
 
 export async function POST(req: NextRequest) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2025-11-17.clover",
-  });
-
   try {
     const { email } = await req.json();
 
+    if (!email) {
+      return NextResponse.json({ error: 'Email required' }, { status: 400 });
+    }
+
+    // Get the price ID from environment
+    const priceId = process.env.STRIPE_PRICE_ID;
+    
+    if (!priceId) {
+      console.error('STRIPE_PRICE_ID not configured');
+      return NextResponse.json({ error: 'Payment not configured' }, { status: 500 });
+    }
+
+    // Determine the base URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                    'http://localhost:3000';
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "subscription",
-      allow_promotion_codes: true,
+      mode: 'subscription',
+      payment_method_types: ['card'],
       customer_email: email,
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
       subscription_data: {
         trial_period_days: 7,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/login`,
+      success_url: `${baseUrl}/dashboard?success=true`,
+      cancel_url: `${baseUrl}/login?canceled=true`,
+      allow_promotion_codes: true,
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error) {
-    console.error("Checkout error:", error);
+  } catch (error: any) {
+    console.error('Stripe checkout error:', error);
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
     );
   }
