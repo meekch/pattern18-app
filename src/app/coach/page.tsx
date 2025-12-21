@@ -95,6 +95,26 @@ const gratitudePrompts = [
   { prompt: "What's beautiful around you right now?", followup: "Beauty exists even in hard seasons." },
 ];
 
+const morningIntentions = [
+  { intention: "Today, I choose peace over proving.", reflection: "You don't need to justify your reality to anyone." },
+  { intention: "Their chaos is not my emergency.", reflection: "You set the pace of your day, not them." },
+  { intention: "I respond from strength, not fear.", reflection: "Every calm response is a victory." },
+  { intention: "I am building a life they can't touch.", reflection: "Document. Breathe. Protect. Repeat." },
+  { intention: "My peace is not negotiable today.", reflection: "The boundaries you set teach your kids what's acceptable." },
+  { intention: "I release what I cannot control.", reflection: "Focus only on your next right move." },
+  { intention: "Today I trust my own perception.", reflection: "You are not crazy. This is real." },
+  { intention: "I am the calm in my children's storm.", reflection: "Your regulation teaches them regulation." },
+];
+
+const eveningReflections = [
+  { reflection: "What did I handle well today?", prompt: "Even small wins matter. Celebrate them." },
+  { reflection: "What can I release from today?", prompt: "It served its purpose. Let it go now." },
+  { reflection: "What am I grateful for tonight?", prompt: "Gratitude rewires your brain for hope." },
+  { reflection: "How did I show up for myself?", prompt: "Self-care isn't selfish. It's survival." },
+  { reflection: "What would I tell a friend in my situation?", prompt: "Now tell yourself the same thing." },
+  { reflection: "What do I need to forgive myself for?", prompt: "You're doing your best in impossible circumstances." },
+];
+
 const quickActions = [
   { icon: '📱', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
   { icon: '✍️', title: 'Draft a response', desc: 'Strategic, calm replies', prompt: 'I need to respond to this message. Help me craft something strategic:\n\n' },
@@ -148,6 +168,10 @@ export default function CoachPage() {
   const [currentKidIdea, setCurrentKidIdea] = useState(kidConnectionIdeas[0]);
   const [currentGratitude, setCurrentGratitude] = useState(gratitudePrompts[0]);
   
+  // Morning/Evening healing content
+  const [showMorningContent, setShowMorningContent] = useState(false);
+  const [showEveningContent, setShowEveningContent] = useState(false);
+  
   // Refs
   const chatRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -197,6 +221,36 @@ export default function CoachPage() {
       const hasSeenOnboarding = localStorage.getItem('p18_onboarding_complete');
       if (!hasSeenOnboarding) {
         setShowOnboarding(true);
+      }
+      
+      // Check healing preferences for morning/evening content
+      const { data: healingPrefs } = await supabase
+        .from('healing_preferences')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (healingPrefs) {
+        const hour = new Date().getHours();
+        const todayKey = new Date().toDateString();
+        
+        // Morning check (5am-11am)
+        if (healingPrefs.morning_intention && hour >= 5 && hour < 11) {
+          const lastMorningShown = localStorage.getItem('p18_morning_shown');
+          if (lastMorningShown !== todayKey) {
+            setShowMorningContent(true);
+            localStorage.setItem('p18_morning_shown', todayKey);
+          }
+        }
+        
+        // Evening check (7pm-11pm)
+        if (healingPrefs.evening_release && hour >= 19 && hour < 23) {
+          const lastEveningShown = localStorage.getItem('p18_evening_shown');
+          if (lastEveningShown !== todayKey) {
+            setShowEveningContent(true);
+            localStorage.setItem('p18_evening_shown', todayKey);
+          }
+        }
       }
       
       setAuthLoading(false);
@@ -458,6 +512,9 @@ export default function CoachPage() {
           </button>
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
             📁 Evidence
+          </button>
+          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item healing">
+            🌿 Healing Journey
           </button>
           <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
             ⚙️ Settings
@@ -937,6 +994,80 @@ export default function CoachPage() {
         triggered={safetyTriggered}
       />
 
+      {/* Morning Intention Modal */}
+      {showMorningContent && (
+        <div className="healing-overlay">
+          <div className="healing-modal morning">
+            <div className="healing-header">
+              <span className="healing-time">🌅 Good Morning</span>
+              <h2>Your Daily Intention</h2>
+              <p>Take 30 seconds to set the tone for today</p>
+            </div>
+            <div className="healing-content">
+              <p className="intention-text">
+                {morningIntentions[new Date().getDay() % morningIntentions.length].intention}
+              </p>
+              <p className="intention-reflection">
+                {morningIntentions[new Date().getDay() % morningIntentions.length].reflection}
+              </p>
+            </div>
+            <div className="healing-education">
+              <span className="edu-tag">Why this matters</span>
+              <p>Morning intentions activate your prefrontal cortex - the rational brain - before stress can trigger your amygdala. You're literally choosing which neural pathways fire first today.</p>
+              <p className="for-kids">💛 Your kids feel your energy the moment they see you. Starting regulated means they start regulated too.</p>
+            </div>
+            <div className="healing-actions">
+              <button onClick={() => setShowMorningContent(false)} className="healing-btn primary">
+                I receive this 💚
+              </button>
+              <button onClick={() => { setShowMorningContent(false); setShowRegulate(true); setRegulateMode('breathe'); }} className="healing-btn secondary">
+                I need to breathe first
+              </button>
+            </div>
+            <button onClick={() => setShowMorningContent(false)} className="healing-skip">
+              Skip for now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Evening Release Modal */}
+      {showEveningContent && (
+        <div className="healing-overlay">
+          <div className="healing-modal evening">
+            <div className="healing-header">
+              <span className="healing-time">🌙 Good Evening</span>
+              <h2>Release & Restore</h2>
+              <p>Let go of what today held so tomorrow can be new</p>
+            </div>
+            <div className="healing-content">
+              <p className="intention-text">
+                {eveningReflections[new Date().getDay() % eveningReflections.length].reflection}
+              </p>
+              <p className="intention-reflection">
+                {eveningReflections[new Date().getDay() % eveningReflections.length].prompt}
+              </p>
+            </div>
+            <div className="healing-education">
+              <span className="edu-tag">Why this matters</span>
+              <p>Unprocessed stress gets stored in your body overnight, keeping your nervous system activated even during sleep. This simple practice signals safety to your brain: "The day is done. We made it."</p>
+              <p className="for-kids">💛 Better sleep tonight means more patience tomorrow. The rested version of you is the parent your kids deserve.</p>
+            </div>
+            <div className="healing-actions">
+              <button onClick={() => setShowEveningContent(false)} className="healing-btn primary">
+                I release today 💚
+              </button>
+              <button onClick={() => { setShowEveningContent(false); setShowRegulate(true); setRegulateMode('body'); }} className="healing-btn secondary">
+                Guide me through a body scan
+              </button>
+            </div>
+            <button onClick={() => setShowEveningContent(false)} className="healing-skip">
+              Skip for now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Onboarding Modal */}
       {showOnboarding && (
         <div className="onboarding-overlay">
@@ -1094,6 +1225,7 @@ export default function CoachPage() {
           color: white;
         }
         .nav-item.breathe { color: #5eead4; }
+        .nav-item.healing { color: #86efac; }
         .nav-item.safety { color: #f9a8d4; }
         .nav-item.logout { color: #fca5a5; }
         .nav-divider {
@@ -1828,6 +1960,130 @@ export default function CoachPage() {
         .gratitude-card p {
           color: #7c3aed;
           font-size: 15px;
+        }
+
+        /* Healing Modals (Morning/Evening) */
+        .healing-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(26, 58, 47, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .healing-modal {
+          background: white;
+          border-radius: 24px;
+          padding: 32px;
+          max-width: 440px;
+          width: 100%;
+          text-align: center;
+        }
+        .healing-modal.morning {
+          background: linear-gradient(180deg, #fef9c3 0%, white 30%);
+        }
+        .healing-modal.evening {
+          background: linear-gradient(180deg, #e0e7ff 0%, white 30%);
+        }
+        .healing-header {
+          margin-bottom: 24px;
+        }
+        .healing-time {
+          font-size: 14px;
+          color: #666;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .healing-header h2 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .healing-header p {
+          color: #666;
+          font-size: 15px;
+        }
+        .healing-content {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 20px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .intention-text {
+          font-size: 22px;
+          color: #1a3a2f;
+          font-weight: 600;
+          line-height: 1.4;
+          margin-bottom: 12px;
+        }
+        .intention-reflection {
+          color: #666;
+          font-size: 15px;
+          font-style: italic;
+        }
+        .healing-education {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 20px;
+          text-align: left;
+        }
+        .healing-education .edu-tag {
+          display: inline-block;
+          background: #14b8a6;
+          color: white;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 10px;
+        }
+        .healing-education p {
+          font-size: 13px;
+          color: #444;
+          line-height: 1.6;
+          margin-bottom: 10px;
+        }
+        .healing-education .for-kids {
+          background: #fef9c3;
+          padding: 10px 12px;
+          border-radius: 8px;
+          color: #854d0e;
+          margin-bottom: 0;
+        }
+        .healing-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .healing-btn {
+          padding: 14px 24px;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+        }
+        .healing-btn.primary {
+          background: #1a3a2f;
+          color: white;
+        }
+        .healing-btn.secondary {
+          background: #f3f4f6;
+          color: #1a3a2f;
+        }
+        .healing-skip {
+          background: none;
+          border: none;
+          color: #999;
+          font-size: 13px;
+          margin-top: 16px;
+          cursor: pointer;
         }
 
         /* Onboarding */
