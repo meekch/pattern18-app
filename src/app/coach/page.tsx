@@ -83,6 +83,10 @@ export default function CoachPage() {
   const [showSafetyResources, setShowSafetyResources] = useState(false);
   const [safetyTriggered, setSafetyTriggered] = useState(false);
   
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  
   // Case & evidence state
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
   const [evidenceCount, setEvidenceCount] = useState(0);
@@ -139,6 +143,13 @@ export default function CoachPage() {
         .eq('user_id', session.user.id);
       
       setEvidenceCount((evidenceTableCount || 0) + (incidentsCount || 0));
+      
+      // Check if first time user (show onboarding)
+      const hasSeenOnboarding = localStorage.getItem('p18_onboarding_complete');
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
+      
       setAuthLoading(false);
     };
     
@@ -588,6 +599,18 @@ export default function CoachPage() {
             ➤
           </button>
         </div>
+        {messages.length > 0 && messages.some(m => m.patterns && m.patterns.length > 0) && (
+          <button 
+            className="no-respond-btn"
+            onClick={() => {
+              const lastPattern = messages.filter(m => m.patterns && m.patterns.length > 0).pop();
+              const patternName = lastPattern?.patterns?.[0] || 'manipulation';
+              sendMessage(`I'm choosing not to respond to that ${patternName.toLowerCase()}. Silence is my power.`);
+            }}
+          >
+            🚫 I'm not responding to this
+          </button>
+        )}
       </div>
 
       {/* Regulate Modal */}
@@ -676,6 +699,82 @@ export default function CoachPage() {
         }}
         triggered={safetyTriggered}
       />
+
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div className="onboarding-overlay">
+          <div className="onboarding-modal">
+            {onboardingStep === 0 && (
+              <div className="onboarding-step">
+                <div className="onboarding-icon">💚</div>
+                <h2>Welcome to Pattern 18</h2>
+                <p>Your 24/7 strategic partner for navigating high-conflict situations.</p>
+                <p className="onboarding-sub">Let me show you around in 60 seconds.</p>
+              </div>
+            )}
+            {onboardingStep === 1 && (
+              <div className="onboarding-step">
+                <div className="onboarding-icon">📱</div>
+                <h2>The Crisis Moment</h2>
+                <p>Got a text that made your stomach drop?</p>
+                <p className="onboarding-sub">Click 📎 to upload a screenshot or just paste the message. I'll show you exactly what's happening.</p>
+              </div>
+            )}
+            {onboardingStep === 2 && (
+              <div className="onboarding-step">
+                <div className="onboarding-icon">🎯</div>
+                <h2>I See Through It</h2>
+                <p>I identify manipulation tactics instantly — what took courts years to see.</p>
+                <p className="onboarding-sub">Gaslighting, DARVO, baiting, blame-shifting... I'll name it and help you respond strategically.</p>
+              </div>
+            )}
+            {onboardingStep === 3 && (
+              <div className="onboarding-step">
+                <div className="onboarding-icon">📁</div>
+                <h2>Build Your Case</h2>
+                <p>Every conversation can become evidence.</p>
+                <p className="onboarding-sub">When I identify patterns, you can save the analysis with one tap. Building your case happens automatically.</p>
+              </div>
+            )}
+            {onboardingStep === 4 && (
+              <div className="onboarding-step">
+                <div className="onboarding-icon">🫁</div>
+                <h2>You're Not Alone</h2>
+                <p>Need to breathe first? I've got that too.</p>
+                <p className="onboarding-sub">Grounding exercises, affirmations, and safety resources are always here when you need them.</p>
+              </div>
+            )}
+            <div className="onboarding-nav">
+              <div className="onboarding-dots">
+                {[0,1,2,3,4].map(i => (
+                  <span key={i} className={`dot ${onboardingStep === i ? 'active' : ''}`} />
+                ))}
+              </div>
+              {onboardingStep < 4 ? (
+                <button onClick={() => setOnboardingStep(onboardingStep + 1)} className="onboarding-btn">
+                  Next →
+                </button>
+              ) : (
+                <button onClick={() => { 
+                  localStorage.setItem('p18_onboarding_complete', 'true');
+                  setShowOnboarding(false); 
+                }} className="onboarding-btn primary">
+                  Let's Go 💚
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => { 
+                localStorage.setItem('p18_onboarding_complete', 'true');
+                setShowOnboarding(false); 
+              }} 
+              className="onboarding-skip"
+            >
+              Skip intro
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .container {
@@ -1047,6 +1146,21 @@ export default function CoachPage() {
           opacity: 0.5;
           cursor: not-allowed;
         }
+        .no-respond-btn {
+          display: block;
+          margin: 12px auto 0;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: none;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 14px;
+          color: #92400e;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .no-respond-btn:hover {
+          background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+        }
 
         /* Regulate Modal */
         .regulate-overlay {
@@ -1217,6 +1331,94 @@ export default function CoachPage() {
           border-radius: 10px;
           cursor: pointer;
           font-weight: 500;
+        }
+
+        /* Onboarding */
+        .onboarding-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(26, 58, 47, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .onboarding-modal {
+          background: white;
+          border-radius: 24px;
+          padding: 40px 32px 32px;
+          max-width: 420px;
+          width: 100%;
+          text-align: center;
+        }
+        .onboarding-step {
+          min-height: 200px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .onboarding-icon {
+          font-size: 56px;
+          margin-bottom: 20px;
+        }
+        .onboarding-step h2 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin: 0 0 12px;
+        }
+        .onboarding-step p {
+          color: #333;
+          font-size: 16px;
+          line-height: 1.5;
+          margin: 0 0 8px;
+        }
+        .onboarding-sub {
+          color: #666 !important;
+          font-size: 14px !important;
+        }
+        .onboarding-nav {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 32px;
+          padding-top: 20px;
+          border-top: 1px solid #eee;
+        }
+        .onboarding-dots {
+          display: flex;
+          gap: 8px;
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #ddd;
+        }
+        .dot.active {
+          background: #14b8a6;
+        }
+        .onboarding-btn {
+          background: #f3f4f6;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #1a3a2f;
+        }
+        .onboarding-btn.primary {
+          background: #1a3a2f;
+          color: white;
+        }
+        .onboarding-skip {
+          background: none;
+          border: none;
+          color: #999;
+          font-size: 13px;
+          margin-top: 16px;
+          cursor: pointer;
         }
 
         @media (max-width: 640px) {
