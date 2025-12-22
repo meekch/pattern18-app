@@ -243,22 +243,13 @@ export default function CoachPage() {
       
       // Check for active subscription
       const { data: subscription } = await supabase
-        .from('subscriptions')
+        .from('user_subscriptions')
         .select('*')
-        .eq('user_id', session.user.id)
-        .eq('status', 'active')
+        .eq('email', session.user.email?.toLowerCase())
+        .in('status', ['active', 'trialing'])
         .single();
       
-      // Also check for trialing status
-      const { data: trialSub } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('status', 'trialing')
-        .single();
-      
-      if (!subscription && !trialSub) {
-        // No active subscription - redirect to subscribe page
+      if (!subscription) {
         router.push('/subscribe');
         return;
       }
