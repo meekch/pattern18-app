@@ -133,10 +133,9 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📸', title: 'Upload a screenshot', desc: 'I\'ll read it for you', prompt: '__SCREENSHOT__', isScreenshot: true },
-  { icon: '💬', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
-  { icon: '✍️', title: 'Draft a response', desc: 'Help me reply calmly', prompt: 'I need to respond to this message. Help me reply calmly without JADE (Justify, Argue, Defend, Explain):\n\n[paste message here]' },
-  { icon: '📄', title: 'Prepare for court', desc: 'Documents, strategy, what to expect', prompt: 'I need help preparing for court. Here\'s my situation:\n\n' },
+  { icon: '📱', title: 'Upload something', desc: 'Messages, screenshots, or court orders', action: '__UPLOAD__' },
+  { icon: '📄', title: 'Build a document', desc: 'From your evidence, grounded in your orders', action: '__DOCUMENT__' },
+  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
 
 // ============================================
@@ -224,6 +223,199 @@ export default function CoachPage() {
   // Morning/Evening healing content
   const [showMorningContent, setShowMorningContent] = useState(false);
   const [showEveningContent, setShowEveningContent] = useState(false);
+  
+  // "Before You Respond" Pause state
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  
+  // Unified Upload Modal state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'choose' | 'processing' | 'preview'>('choose');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [detectedType, setDetectedType] = useState<'screenshot' | 'court_order' | 'message_export' | 'unknown' | null>(null);
+  const [pasteText, setPasteText] = useState('');
+  
+  // Detect file type from uploaded file
+  const detectFileType = (file: File): 'screenshot' | 'court_order' | 'message_export' | 'unknown' => {
+    const name = file.name.toLowerCase();
+    const type = file.type;
+    
+    // Image files = screenshots
+    if (type.startsWith('image/')) {
+      return 'screenshot';
+    }
+    
+    // CSV or TXT with message-related names = message export
+    if (name.includes('message') || name.includes('sms') || name.includes('text') || 
+        name.includes('imessage') || name.includes('chat') || name.includes('export')) {
+      return 'message_export';
+    }
+    
+    // PDF with order/custody/court in name = court order
+    if (type === 'application/pdf' && 
+        (name.includes('order') || name.includes('custody') || name.includes('court') || 
+         name.includes('decree') || name.includes('parenting') || name.includes('judgment'))) {
+      return 'court_order';
+    }
+    
+    // Generic PDF - could be either, we'll ask
+    if (type === 'application/pdf') {
+      return 'unknown'; // Will ask user
+    }
+    
+    // CSV/TXT default to message export
+    if (name.endsWith('.csv') || name.endsWith('.txt')) {
+      return 'message_export';
+    }
+    
+    return 'unknown';
+  };
+  
+  const handleUploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
+    setShowUploadModal(false);
+    setUploadMode('choose');
+    setUploadedFile(null);
+    setDetectedType(null);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileType', type);
+    formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content }))));
+    if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
+    
+    // Set appropriate message based on type
+    let promptMessage = '';
+    if (type === 'screenshot') {
+      promptMessage = "I'm uploading a screenshot of a message. Please extract the text, identify any manipulation patterns, and tell me if I need to respond.";
+    } else if (type === 'court_order') {
+      promptMessage = "I'm uploading a court order. Please extract and remember the key information: custody schedule, important rules, deadlines, and any provisions I should know about. This will help you reference the order in future conversations.";
+    } else if (type === 'message_export') {
+      promptMessage = "I'm uploading a message history export. Please analyze the messages for patterns of manipulation or coercive control, summarize what you find, and save any significant incidents to my evidence.";
+    }
+    formData.append('message', promptMessage);
+    
+    setIsLoading(true);
+    setShowWelcome(false);
+    
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: `[Uploaded: ${file.name}] ${promptMessage}`,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    
+    const assistantId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    }]);
+    
+    try {
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, content: m.content + parsed.content } : m
+                ));
+              }
+              if (parsed.patterns) {
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, patterns: parsed.patterns } : m
+                ));
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, content: 'Sorry, I had trouble processing that file. Please try again.' } : m
+      ));
+    }
+    
+    setIsLoading(false);
+  };
+  
+  const handlePasteSubmit = () => {
+    if (!pasteText.trim()) return;
+    setShowUploadModal(false);
+    setPasteText('');
+    setInput(`I just received this message and need help understanding what's really going on:\n\n${pasteText}`);
+    setTimeout(() => sendMessage(`I just received this message and need help understanding what's really going on:\n\n${pasteText}`, true), 100);
+  };
+  
+  // Detect if user might be activated (responding to triggering content)
+  const detectActivation = (message: string): boolean => {
+    const lowerMsg = message.toLowerCase();
+    
+    // Check if they're drafting a response
+    const isDraftingResponse = 
+      lowerMsg.includes('help me respond') ||
+      lowerMsg.includes('draft a response') ||
+      lowerMsg.includes('what should i say') ||
+      lowerMsg.includes('how do i reply') ||
+      lowerMsg.includes('respond to this') ||
+      lowerMsg.includes('write back') ||
+      lowerMsg.includes('tell them') ||
+      lowerMsg.includes('say back');
+    
+    if (!isDraftingResponse) return false;
+    
+    // Check for signs of emotional activation in the pasted content
+    const activationSigns = [
+      // Anger indicators
+      'can\'t believe', 'unbelievable', 'ridiculous', 'insane', 'crazy',
+      'furious', 'pissed', 'livid', 'angry', 'mad',
+      // Threat indicators  
+      'lawyer', 'court', 'custody', 'police', 'sue', 'judge',
+      // Manipulation red flags
+      'never said', 'you always', 'you never', 'your fault', 'blame',
+      'liar', 'lying', 'lie', 'manipulat', 'narciss', 'abuse',
+      // Urgency/pressure
+      'immediately', 'right now', 'asap', 'urgent', 'emergency',
+      'or else', 'last chance', 'final warning',
+      // Emotional hooks
+      'the kids', 'children deserve', 'bad parent', 'bad mother', 'bad father',
+      // ALL CAPS (sign of yelling in message)
+      /[A-Z]{5,}/.test(message) ? 'caps_detected' : '',
+      // Excessive punctuation
+      /[!?]{2,}/.test(message) ? 'exclaim_detected' : '',
+    ].filter(Boolean);
+    
+    const activationCount = activationSigns.filter(sign => 
+      typeof sign === 'string' && lowerMsg.includes(sign)
+    ).length;
+    
+    // Also check for caps and exclamation patterns
+    const hasCapsYelling = /[A-Z]{5,}/.test(message);
+    const hasExcessivePunctuation = /[!?]{3,}/.test(message);
+    
+    return activationCount >= 2 || hasCapsYelling || hasExcessivePunctuation;
+  };
   
   // Refs
   const chatRef = useRef<HTMLDivElement>(null);
@@ -494,9 +686,16 @@ export default function CoachPage() {
     }
   };
 
-  const sendMessage = async (overrideMessage?: string) => {
+  const sendMessage = async (overrideMessage?: string, bypassPause?: boolean) => {
     const messageText = overrideMessage || input.trim();
     if (!messageText || isLoading) return;
+
+    // Check if user might be activated and needs a pause
+    if (!bypassPause && detectActivation(messageText)) {
+      setPendingMessage(messageText);
+      setShowPauseModal(true);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -679,13 +878,27 @@ export default function CoachPage() {
     }
   };
 
-  const selectQuickAction = (prompt: string) => {
-    if (prompt === '__SCREENSHOT__') {
-      // Trigger file picker for screenshot
+  const selectQuickAction = (action: string) => {
+    if (action === '__UPLOAD__') {
+      setShowUploadModal(true);
+      setUploadMode('choose');
+      return;
+    }
+    if (action === '__DOCUMENT__') {
+      router.push('/court-docs');
+      return;
+    }
+    if (action === '__REGULATE__') {
+      setShowRegulate(true);
+      setRegulateMode('menu');
+      return;
+    }
+    // Legacy support for prompts
+    if (action === '__SCREENSHOT__') {
       fileInputRef.current?.click();
       return;
     }
-    setInput(prompt);
+    setInput(action);
     setShowWelcome(false);
   };
 
@@ -885,25 +1098,21 @@ export default function CoachPage() {
             <div className="quick-actions">
               <h3>What can I help with?</h3>
               <div className="actions-grid">
-                {quickActions.map((action, i) => (
+                {quickActions.map((qa, i) => (
                   <button 
                     key={i} 
-                    className={`action-card ${(action as any).isScreenshot ? 'screenshot-action' : ''}`} 
-                    onClick={() => selectQuickAction(action.prompt)}
+                    className={`action-card ${i === 0 ? 'primary-action' : ''}`} 
+                    onClick={() => selectQuickAction(qa.action)}
                   >
-                    <span className="action-icon">{action.icon}</span>
+                    <span className="action-icon">{qa.icon}</span>
                     <div>
-                      <div className="action-title">{action.title}</div>
-                      <div className="action-desc">{action.desc}</div>
+                      <div className="action-title">{qa.title}</div>
+                      <div className="action-desc">{qa.desc}</div>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
-
-            <button className="breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode('menu'); }}>
-              🌿 Take care of you first
-            </button>
 
             {pastConversations.length > 0 && (
               <div className="recent-chats-welcome">
@@ -1543,6 +1752,52 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* Before You Respond Pause Modal */}
+      {showPauseModal && (
+        <div className="modal-overlay">
+          <div className="pause-modal">
+            <div className="pause-icon">🌿</div>
+            <h2>Before you respond...</h2>
+            <p className="pause-message">
+              I notice this message might have you activated. That's completely understandable given what you're dealing with.
+            </p>
+            <p className="pause-submessage">
+              Taking 60 seconds to breathe can help you respond from a place of power, not reaction. Your future self (and your case) will thank you.
+            </p>
+            
+            <div className="pause-buttons">
+              <button 
+                className="pause-breathe-btn"
+                onClick={() => {
+                  setShowPauseModal(false);
+                  setShowRegulate(true);
+                  setRegulateMode('breathe');
+                  setBreatheType('box');
+                }}
+              >
+                🌬️ Breathe First (60 sec)
+              </button>
+              <button 
+                className="pause-continue-btn"
+                onClick={() => {
+                  setShowPauseModal(false);
+                  if (pendingMessage) {
+                    sendMessage(pendingMessage, true);
+                    setPendingMessage(null);
+                  }
+                }}
+              >
+                I'm Okay, Continue
+              </button>
+            </div>
+            
+            <p className="pause-reminder">
+              Remember: Every calm response is a win. Every reaction is ammunition for them.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Feedback Modal */}
       {showFeedback && (
         <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
@@ -1616,6 +1871,221 @@ export default function CoachPage() {
                 >
                   {feedbackSending ? 'Sending...' : 'Send Feedback'}
                 </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Before You Respond Pause Modal */}
+      {showPauseModal && (
+        <div className="modal-overlay">
+          <div className="pause-modal">
+            <div className="pause-icon">💚</div>
+            <h3>Before you respond...</h3>
+            <p className="pause-text">
+              I notice this message might have you activated. That's completely understandable 
+              given what you're dealing with.
+            </p>
+            <p className="pause-text">
+              Taking 60 seconds to regulate first helps you respond from a place of strength, 
+              not reaction. Your calm is your superpower in court.
+            </p>
+            
+            <div className="pause-buttons">
+              <button 
+                className="pause-btn-breathe"
+                onClick={() => {
+                  setShowPauseModal(false);
+                  setShowRegulate(true);
+                  setRegulateMode('breathe');
+                }}
+              >
+                🌿 Breathe First (60 sec)
+              </button>
+              <button 
+                className="pause-btn-continue"
+                onClick={() => {
+                  setShowPauseModal(false);
+                  if (pendingMessage) {
+                    sendMessage(pendingMessage, true);
+                    setPendingMessage(null);
+                  }
+                }}
+              >
+                I'm Okay, Continue
+              </button>
+            </div>
+            
+            <p className="pause-reminder">
+              Remember: One reactive text can undo months of good documentation.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Unified Upload Modal */}
+      {showUploadModal && (
+        <div className="modal-overlay" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>
+          <div className="upload-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>×</button>
+            
+            {uploadMode === 'choose' && (
+              <>
+                <div className="upload-header">
+                  <span className="upload-emoji">📱</span>
+                  <h2>What do you have?</h2>
+                  <p>I'll analyze it and remember what matters</p>
+                </div>
+                
+                <div className="upload-options">
+                  <label className="upload-option">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      hidden 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleUploadFile(file, 'screenshot');
+                        }
+                      }}
+                    />
+                    <div className="option-icon">📸</div>
+                    <div className="option-text">
+                      <div className="option-title">Screenshot</div>
+                      <div className="option-desc">Photo of a text or message</div>
+                    </div>
+                  </label>
+                  
+                  <div 
+                    className="upload-option"
+                    onClick={() => setUploadMode('paste' as any)}
+                  >
+                    <div className="option-icon">📝</div>
+                    <div className="option-text">
+                      <div className="option-title">Paste text</div>
+                      <div className="option-desc">Copy and paste a message</div>
+                    </div>
+                  </div>
+                  
+                  <label className="upload-option">
+                    <input 
+                      type="file" 
+                      accept=".pdf,.doc,.docx,image/*" 
+                      hidden 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const type = detectFileType(file);
+                          if (type === 'unknown') {
+                            setUploadedFile(file);
+                            setUploadMode('clarify' as any);
+                          } else if (type === 'court_order') {
+                            handleUploadFile(file, 'court_order');
+                          } else {
+                            handleUploadFile(file, 'screenshot');
+                          }
+                        }
+                      }}
+                    />
+                    <div className="option-icon">📋</div>
+                    <div className="option-text">
+                      <div className="option-title">Court order / Legal doc</div>
+                      <div className="option-desc">I'll learn your rules & schedule</div>
+                    </div>
+                  </label>
+                  
+                  <label className="upload-option">
+                    <input 
+                      type="file" 
+                      accept=".csv,.txt,.pdf" 
+                      hidden 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleUploadFile(file, 'message_export');
+                        }
+                      }}
+                    />
+                    <div className="option-icon">📦</div>
+                    <div className="option-text">
+                      <div className="option-title">Message history</div>
+                      <div className="option-desc">CSV or text export from your phone</div>
+                    </div>
+                  </label>
+                </div>
+              </>
+            )}
+            
+            {uploadMode === ('paste' as any) && (
+              <>
+                <div className="upload-header">
+                  <span className="upload-emoji">📝</span>
+                  <h2>Paste the message</h2>
+                  <p>I'll analyze it and help you respond (or not)</p>
+                </div>
+                
+                <textarea
+                  className="paste-textarea"
+                  placeholder="Paste the message here..."
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  rows={6}
+                  autoFocus
+                />
+                
+                <div className="paste-buttons">
+                  <button 
+                    className="paste-back"
+                    onClick={() => { setUploadMode('choose'); setPasteText(''); }}
+                  >
+                    ← Back
+                  </button>
+                  <button 
+                    className="paste-submit"
+                    disabled={!pasteText.trim()}
+                    onClick={handlePasteSubmit}
+                  >
+                    Analyze This
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {uploadMode === ('clarify' as any) && uploadedFile && (
+              <>
+                <div className="upload-header">
+                  <span className="upload-emoji">🤔</span>
+                  <h2>What is this?</h2>
+                  <p>Help me understand so I process it correctly</p>
+                </div>
+                
+                <p className="clarify-filename">{uploadedFile.name}</p>
+                
+                <div className="clarify-options">
+                  <button 
+                    className="clarify-btn"
+                    onClick={() => handleUploadFile(uploadedFile, 'court_order')}
+                  >
+                    <span>📋</span>
+                    <span>Court Order / Legal Document</span>
+                  </button>
+                  <button 
+                    className="clarify-btn"
+                    onClick={() => handleUploadFile(uploadedFile, 'message_export')}
+                  >
+                    <span>📦</span>
+                    <span>Message History / Export</span>
+                  </button>
+                  <button 
+                    className="clarify-btn"
+                    onClick={() => handleUploadFile(uploadedFile, 'screenshot')}
+                  >
+                    <span>📸</span>
+                    <span>Screenshot / Other</span>
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -2117,18 +2587,18 @@ export default function CoachPage() {
           margin-bottom: 16px;
         }
         .actions-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          display: flex;
+          flex-direction: column;
           gap: 12px;
         }
         .action-card {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 16px;
+          gap: 16px;
+          padding: 18px 20px;
           background: #f9fafb;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 16px;
           cursor: pointer;
           text-align: left;
           transition: all 0.2s;
@@ -2136,27 +2606,15 @@ export default function CoachPage() {
         .action-card:hover {
           border-color: #14b8a6;
           background: #f0fdfa;
+          transform: translateX(4px);
         }
-        .action-card.screenshot-action {
+        .action-card.primary-action {
           background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
           border: 2px solid #14b8a6;
-          position: relative;
         }
-        .action-card.screenshot-action::after {
-          content: 'NEW';
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background: #14b8a6;
-          color: white;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 2px 6px;
-          border-radius: 8px;
-        }
-        .action-icon { font-size: 24px; }
-        .action-title { font-weight: 600; color: #1a3a2f; }
-        .action-desc { font-size: 13px; color: #666; }
+        .action-icon { font-size: 28px; }
+        .action-title { font-weight: 600; color: #1a3a2f; font-size: 16px; }
+        .action-desc { font-size: 14px; color: #666; margin-top: 2px; }
         .breathe-btn {
           background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
           border: none;
@@ -3061,6 +3519,233 @@ export default function CoachPage() {
           cursor: pointer;
         }
 
+        /* Before You Respond Pause Modal */
+        .pause-modal {
+          background: white;
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 420px;
+          width: 100%;
+          text-align: center;
+          animation: modalSlideUp 0.3s ease;
+        }
+        @keyframes modalSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .pause-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+          animation: gentlePulse 2s ease-in-out infinite;
+        }
+        @keyframes gentlePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        .pause-modal h3 {
+          color: #1a3a2f;
+          font-size: 22px;
+          margin: 0 0 16px;
+        }
+        .pause-text {
+          color: #4b5563;
+          font-size: 15px;
+          line-height: 1.6;
+          margin: 0 0 12px;
+        }
+        .pause-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin: 24px 0 16px;
+        }
+        .pause-btn-breathe {
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          border: none;
+          padding: 16px 24px;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .pause-btn-breathe:hover {
+          transform: scale(1.02);
+        }
+        .pause-btn-continue {
+          background: transparent;
+          color: #666;
+          border: 1px solid #e5e7eb;
+          padding: 14px 24px;
+          border-radius: 12px;
+          font-size: 15px;
+          cursor: pointer;
+        }
+        .pause-btn-continue:hover {
+          background: #f9fafb;
+        }
+        .pause-reminder {
+          color: #9ca3af;
+          font-size: 13px;
+          font-style: italic;
+          margin: 0;
+        }
+
+        /* Unified Upload Modal */
+        .upload-modal {
+          background: white;
+          border-radius: 24px;
+          padding: 32px;
+          max-width: 480px;
+          width: 90%;
+          position: relative;
+          animation: modalSlideUp 0.3s ease;
+        }
+        .upload-header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .upload-emoji {
+          font-size: 48px;
+          display: block;
+          margin-bottom: 12px;
+        }
+        .upload-header h2 {
+          color: #1a3a2f;
+          font-size: 24px;
+          margin: 0 0 8px;
+        }
+        .upload-header p {
+          color: #6b7280;
+          font-size: 15px;
+          margin: 0;
+        }
+        .upload-options {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .upload-option {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px 20px;
+          background: #f9fafb;
+          border: 2px solid #e5e7eb;
+          border-radius: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .upload-option:hover {
+          border-color: #14b8a6;
+          background: #f0fdfa;
+        }
+        .option-icon {
+          font-size: 28px;
+        }
+        .option-text {
+          text-align: left;
+        }
+        .option-title {
+          font-weight: 600;
+          color: #1a3a2f;
+          font-size: 16px;
+        }
+        .option-desc {
+          color: #6b7280;
+          font-size: 13px;
+          margin-top: 2px;
+        }
+        .paste-textarea {
+          width: 100%;
+          padding: 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 15px;
+          font-family: inherit;
+          resize: none;
+          margin-bottom: 16px;
+        }
+        .paste-textarea:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+        .paste-buttons {
+          display: flex;
+          gap: 12px;
+        }
+        .paste-back {
+          padding: 14px 24px;
+          background: transparent;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          color: #666;
+          font-size: 15px;
+          cursor: pointer;
+        }
+        .paste-submit {
+          flex: 1;
+          padding: 14px 24px;
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          border: none;
+          border-radius: 12px;
+          color: white;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .paste-submit:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .clarify-filename {
+          text-align: center;
+          color: #6b7280;
+          font-size: 14px;
+          background: #f3f4f6;
+          padding: 8px 16px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          word-break: break-all;
+        }
+        .clarify-options {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .clarify-btn {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 20px;
+          background: #f9fafb;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .clarify-btn:hover {
+          border-color: #14b8a6;
+          background: #f0fdfa;
+        }
+        .clarify-btn span:first-child {
+          font-size: 24px;
+        }
+
+        /* Primary action highlight */
+        .action-card.primary-action {
+          background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
+          border: 2px solid #14b8a6;
+        }
+
         /* What's New Modal */
         .whats-new-modal {
           background: white;
@@ -3113,6 +3798,93 @@ export default function CoachPage() {
           color: #14b8a6;
           font-size: 14px;
           margin-top: 20px;
+        }
+
+        /* Pause Modal */
+        .pause-modal {
+          background: white;
+          border-radius: 24px;
+          padding: 40px 32px;
+          max-width: 440px;
+          width: 90%;
+          text-align: center;
+          animation: breatheIn 0.4s ease;
+        }
+        @keyframes breatheIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .pause-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+          animation: gentlePulse 2s ease-in-out infinite;
+        }
+        @keyframes gentlePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        .pause-modal h2 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin-bottom: 16px;
+        }
+        .pause-message {
+          color: #4b5563;
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 12px;
+        }
+        .pause-submessage {
+          color: #6b7280;
+          font-size: 14px;
+          line-height: 1.5;
+          margin-bottom: 24px;
+        }
+        .pause-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        .pause-breathe-btn {
+          padding: 16px 24px;
+          background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+          color: white;
+          border: none;
+          border-radius: 16px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .pause-breathe-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+        }
+        .pause-continue-btn {
+          padding: 14px 24px;
+          background: transparent;
+          color: #6b7280;
+          border: 2px solid #e5e7eb;
+          border-radius: 16px;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .pause-continue-btn:hover {
+          border-color: #d1d5db;
+          color: #4b5563;
+        }
+        .pause-reminder {
+          font-size: 13px;
+          color: #9ca3af;
+          font-style: italic;
         }
 
         /* Feedback Modal */
