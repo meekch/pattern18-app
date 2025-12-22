@@ -133,10 +133,10 @@ const eveningReflections = [
 ];
 
 const quickActions = [
+  { icon: '📸', title: 'Upload a screenshot', desc: 'I\'ll read it for you', prompt: '__SCREENSHOT__', isScreenshot: true },
   { icon: '💬', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
   { icon: '✍️', title: 'Draft a response', desc: 'Help me reply calmly', prompt: 'I need to respond to this message. Help me reply calmly without JADE (Justify, Argue, Defend, Explain):\n\n[paste message here]' },
   { icon: '📄', title: 'Prepare for court', desc: 'Documents, strategy, what to expect', prompt: 'I need help preparing for court. Here\'s my situation:\n\n' },
-  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', prompt: 'I\'m feeling overwhelmed right now and need help calming down.' },
 ];
 
 // ============================================
@@ -183,6 +183,29 @@ export default function CoachPage() {
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [daysUntilCourt, setDaysUntilCourt] = useState<number | null>(null);
+  
+  // Celebration state
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState({ title: '', subtitle: '' });
+  
+  const milestones: Record<number, { title: string; subtitle: string }> = {
+    1: { title: '🎉 First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
+    5: { title: '📊 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
+    10: { title: '💪 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
+    25: { title: '🔥 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
+    50: { title: '⭐ 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
+    100: { title: '🏆 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
+    150: { title: '👑 150 and counting!', subtitle: 'Your documentation is undeniable.' },
+    200: { title: '🎯 200 documented!', subtitle: 'You are a documentation warrior.' },
+  };
+
+  const checkMilestone = (newCount: number) => {
+    if (milestones[newCount]) {
+      setCelebrationMessage(milestones[newCount]);
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 4000);
+    }
+  };
   
   // Regulate state
   const [showRegulate, setShowRegulate] = useState(false);
@@ -635,7 +658,9 @@ export default function CoachPage() {
       setMessages(prev => prev.map(m =>
         m.id === msg.id ? { ...m, savedToEvidence: true } : m
       ));
-      setEvidenceCount(prev => prev + 1);
+      const newCount = evidenceCount + 1;
+      setEvidenceCount(newCount);
+      checkMilestone(newCount);
       setShowSaveModal(false);
       setSaveModalData(null);
     } catch (error) {
@@ -664,6 +689,11 @@ export default function CoachPage() {
   };
 
   const selectQuickAction = (prompt: string) => {
+    if (prompt === '__SCREENSHOT__') {
+      // Trigger file picker for screenshot
+      fileInputRef.current?.click();
+      return;
+    }
     setInput(prompt);
     setShowWelcome(false);
   };
@@ -716,6 +746,16 @@ export default function CoachPage() {
 
   return (
     <div className="container">
+      {/* Celebration Toast */}
+      {showCelebration && (
+        <div className="celebration-toast">
+          <div className="celebration-content">
+            <div className="celebration-title">{celebrationMessage.title}</div>
+            <div className="celebration-subtitle">{celebrationMessage.subtitle}</div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar Overlay */}
       {showSidebar && <div className="overlay" onClick={() => setShowSidebar(false)} />}
 
@@ -855,7 +895,11 @@ export default function CoachPage() {
               <h3>What can I help with?</h3>
               <div className="actions-grid">
                 {quickActions.map((action, i) => (
-                  <button key={i} className="action-card" onClick={() => selectQuickAction(action.prompt)}>
+                  <button 
+                    key={i} 
+                    className={`action-card ${(action as any).isScreenshot ? 'screenshot-action' : ''}`} 
+                    onClick={() => selectQuickAction(action.prompt)}
+                  >
                     <span className="action-icon">{action.icon}</span>
                     <div>
                       <div className="action-title">{action.title}</div>
@@ -1701,6 +1745,49 @@ export default function CoachPage() {
           z-index: 40;
         }
 
+        /* Celebration Toast */
+        .celebration-toast {
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 1000;
+          animation: slideDown 0.4s ease, fadeOut 0.5s ease 3.5s forwards;
+        }
+        .celebration-content {
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          padding: 16px 28px;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+          text-align: center;
+        }
+        .celebration-title {
+          font-size: 18px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+        .celebration-subtitle {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        @keyframes fadeOut {
+          to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+          }
+        }
+
         /* Sidebar */
         .sidebar {
           position: fixed;
@@ -2058,6 +2145,23 @@ export default function CoachPage() {
         .action-card:hover {
           border-color: #14b8a6;
           background: #f0fdfa;
+        }
+        .action-card.screenshot-action {
+          background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
+          border: 2px solid #14b8a6;
+          position: relative;
+        }
+        .action-card.screenshot-action::after {
+          content: 'NEW';
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: #14b8a6;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 8px;
         }
         .action-icon { font-size: 24px; }
         .action-title { font-weight: 600; color: #1a3a2f; }

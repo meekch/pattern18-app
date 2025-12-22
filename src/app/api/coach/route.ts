@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
           };
           if (!userMessage) {
             userMessage =
-              "I'm sharing a screenshot from my co-parent. What do you see?";
+              "I'm uploading a screenshot of a message from my co-parent. Please: 1) Extract and show me the exact text from the screenshot, 2) Identify any manipulation patterns you see, 3) Tell me if I need to respond or can ignore it.";
           }
         }
       } else if (storedPdfBase64) {
