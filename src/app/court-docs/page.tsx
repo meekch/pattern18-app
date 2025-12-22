@@ -84,6 +84,20 @@ export default function DocumentGeneratorPage() {
         router.push('/login');
         return;
       }
+      
+      // Check for active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .in('status', ['active', 'trialing'])
+        .single();
+      
+      if (!subscription) {
+        router.push('/subscribe');
+        return;
+      }
+      
       setUser(session.user);
       
       // Load case context

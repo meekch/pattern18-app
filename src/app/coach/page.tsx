@@ -217,6 +217,29 @@ export default function CoachPage() {
         router.push('/login');
         return;
       }
+      
+      // Check for active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .single();
+      
+      // Also check for trialing status
+      const { data: trialSub } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'trialing')
+        .single();
+      
+      if (!subscription && !trialSub) {
+        // No active subscription - redirect to subscribe page
+        router.push('/subscribe');
+        return;
+      }
+      
       setUser(session.user);
       
       // Load case context

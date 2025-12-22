@@ -57,6 +57,20 @@ export default function DashboardPage() {
         router.push('/login');
         return;
       }
+      
+      // Check for active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .in('status', ['active', 'trialing'])
+        .single();
+      
+      if (!subscription) {
+        router.push('/subscribe');
+        return;
+      }
+      
       setUser(session.user);
       
       // Set random quote
