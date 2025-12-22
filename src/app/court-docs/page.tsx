@@ -90,19 +90,23 @@ export default function DocumentGeneratorPage() {
         setCaseContext(caseData);
       }
       
-      // Load from incidents table
-      const { data: incidentsData } = await supabase
+      // Load from incidents table (with error handling)
+      const { data: incidentsData, error: incError } = await supabase
         .from('incidents')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('date', { ascending: false });
+        .order('created_at', { ascending: false });
+      
+      if (incError) console.log('Incidents query:', incError.message);
       
       // Load from evidence table (coach saves)
-      const { data: evidenceData } = await supabase
+      const { data: evidenceData, error: evError } = await supabase
         .from('evidence')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
+      
+      if (evError) console.log('Evidence query:', evError.message);
       
       // Combine both sources
       const allIncidents: Incident[] = [];
