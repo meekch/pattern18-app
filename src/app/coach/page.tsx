@@ -133,8 +133,8 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📱', title: 'Upload something', desc: 'Messages, screenshots, or court orders', action: '__UPLOAD__' },
-  { icon: '📄', title: 'Build a document', desc: 'From your evidence, grounded in your orders', action: '__DOCUMENT__' },
+  { icon: '📱', title: 'Upload something', desc: 'Saved and analyzed for when you need it', action: '__UPLOAD__' },
+  { icon: '📄', title: 'Build a document', desc: 'Your orders + your documentation = court-ready', action: '__DOCUMENT__' },
   { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
 
