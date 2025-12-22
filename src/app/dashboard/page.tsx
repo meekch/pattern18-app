@@ -4,51 +4,71 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-interface DashboardStats {
-  totalIncidents: number;
-  totalEvidence: number;
-  patternsDetected: { [key: string]: number };
-  recentActivity: { date: string; type: string; description: string }[];
-  daysUntilCourt: number | null;
-  courtDate: string | null;
-  morningStreak: number;
-  eveningStreak: number;
-  daysOnPlatform: number;
+interface Incident {
+  id: string;
+  date: string;
+  description: string;
+  patterns: string[];
+  severity: string;
+  category: string;
 }
 
-const motivationalQuotes = [
-  { quote: "You're not documenting drama. You're building freedom.", author: "Pattern 18" },
-  { quote: "Every calm response is evidence of your strength.", author: "Pattern 18" },
-  { quote: "The truth doesn't need to be loud. It just needs to be documented.", author: "Pattern 18" },
-  { quote: "You're not crazy. You're not dramatic. You're paying attention.", author: "Pattern 18" },
-  { quote: "Healing yourself is the greatest gift you can give your children.", author: "Pattern 18" },
-  { quote: "Their chaos is not your emergency.", author: "Pattern 18" },
-  { quote: "You survived 100% of your worst days. You'll survive this too.", author: "Pattern 18" },
+interface CaseContext {
+  caseNumber: string;
+  court: string;
+  petitionerName: string;
+  respondentName: string;
+  userRole: 'petitioner' | 'respondent';
+  childrenNames: string[];
+  nextCourtDate: string;
+  coparent_name: string;
+}
+
+const DOCUMENT_TYPES = [
+  { 
+    id: 'declaration', 
+    icon: '📝', 
+    title: 'Declaration', 
+    desc: 'Sworn statement of facts for the court',
+    time: '5-10 min'
+  },
+  { 
+    id: 'exhibit-list', 
+    icon: '📋', 
+    title: 'Exhibit List', 
+    desc: 'Organized list of your evidence',
+    time: '2-3 min'
+  },
+  { 
+    id: 'pattern-summary', 
+    icon: '🎯', 
+    title: 'Pattern Summary', 
+    desc: 'Overview of documented manipulation patterns',
+    time: '3-5 min'
+  },
+  { 
+    id: 'incident-timeline', 
+    icon: '📅', 
+    title: 'Incident Timeline', 
+    desc: 'Chronological list of incidents',
+    time: '2-3 min'
+  },
 ];
 
-export default function DashboardPage() {
+export default function DocumentGeneratorPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalIncidents: 0,
-    totalEvidence: 0,
-    patternsDetected: {},
-    recentActivity: [],
-    daysUntilCourt: null,
-    courtDate: null,
-    morningStreak: 0,
-    eveningStreak: 0,
-    daysOnPlatform: 0,
-  });
-  const [quote, setQuote] = useState(motivationalQuotes[0]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
+  const [generating, setGenerating] = useState(false);
+  const [generatedDoc, setGeneratedDoc] = useState<string | null>(null);
+  
+  const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
+  const [declarationPurpose, setDeclarationPurpose] = useState('');
+  
+  const [step, setStep] = useState<'select-type' | 'select-incidents' | 'customize' | 'preview'>('select-type');
 
   useEffect(() => {
     const init = async () => {
@@ -59,24 +79,6 @@ export default function DashboardPage() {
       }
       setUser(session.user);
       
-      // Set random quote
-      setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-      
-      // Load user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, created_at')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profile?.full_name) {
-        setUserName(profile.full_name.split(' ')[0]);
-      }
-      
-      const daysOnPlatform = profile?.created_at 
-        ? Math.ceil((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 1;
-      
       // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
@@ -84,107 +86,121 @@ export default function DashboardPage() {
         .eq('user_id', session.user.id)
         .single();
       
-      let daysUntilCourt = null;
-      let courtDate = null;
-      if (caseData?.nextCourtDate) {
-        const days = Math.ceil((new Date(caseData.nextCourtDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        if (days > 0) {
-          daysUntilCourt = days;
-          courtDate = caseData.nextCourtDate;
-        }
+      if (caseData) {
+        setCaseContext(caseData);
       }
       
-      // Load incidents count and patterns
-      const { data: incidents } = await supabase
+      // Load from incidents table
+      const { data: incidentsData } = await supabase
         .from('incidents')
-        .select('patterns, created_at')
-        .eq('user_id', session.user.id);
-      
-      const patternsDetected: { [key: string]: number } = {};
-      incidents?.forEach(inc => {
-        if (inc.patterns && Array.isArray(inc.patterns)) {
-          inc.patterns.forEach((p: string) => {
-            patternsDetected[p] = (patternsDetected[p] || 0) + 1;
-          });
-        }
-      });
-      
-      // Load evidence count
-      const { count: evidenceCount } = await supabase
-        .from('evidence')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id);
-      
-      // Load healing preferences for streaks
-      const { data: healingPrefs } = await supabase
-        .from('healing_preferences')
-        .select('morning_streak, evening_streak')
+        .select('*')
         .eq('user_id', session.user.id)
-        .single();
+        .order('date', { ascending: false });
       
-      // Build recent activity
-      const recentActivity: { date: string; type: string; description: string }[] = [];
+      // Load from evidence table (coach saves)
+      const { data: evidenceData } = await supabase
+        .from('evidence')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
       
-      // Add recent incidents
-      const recentIncidents = incidents
-        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3);
+      // Combine both sources
+      const allIncidents: Incident[] = [];
       
-      recentIncidents?.forEach(inc => {
-        recentActivity.push({
-          date: inc.created_at,
-          type: 'incident',
-          description: `Documented ${inc.patterns?.[0] || 'incident'}`,
+      if (incidentsData) {
+        incidentsData.forEach(inc => {
+          allIncidents.push({
+            id: inc.id,
+            date: inc.date || inc.created_at,
+            description: inc.description,
+            patterns: inc.patterns || [],
+            severity: inc.severity || 'medium',
+            category: inc.category || 'Other',
+          });
         });
-      });
+      }
       
-      setStats({
-        totalIncidents: incidents?.length || 0,
-        totalEvidence: (evidenceCount || 0) + (incidents?.length || 0),
-        patternsDetected,
-        recentActivity: recentActivity.slice(0, 5),
-        daysUntilCourt,
-        courtDate,
-        morningStreak: healingPrefs?.morning_streak || 0,
-        eveningStreak: healingPrefs?.evening_streak || 0,
-        daysOnPlatform,
-      });
+      if (evidenceData) {
+        evidenceData.forEach(ev => {
+          allIncidents.push({
+            id: ev.id,
+            date: ev.created_at,
+            description: ev.original_message || ev.content?.slice(0, 500) || 'Documented from coach',
+            patterns: ev.patterns || [],
+            severity: ev.patterns?.length > 2 ? 'high' : ev.patterns?.length > 0 ? 'medium' : 'low',
+            category: 'Coach Analysis',
+          });
+        });
+      }
+      
+      // Sort by date
+      allIncidents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setIncidents(allIncidents);
       
       setLoading(false);
     };
-    
     init();
   }, [router]);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const getTopPatterns = () => {
-    return Object.entries(stats.patternsDetected)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const generateDocument = async () => {
+    setGenerating(true);
     
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const selectedIncidentData = incidents.filter(i => selectedIncidents.includes(i.id));
+    
+    try {
+      const response = await fetch('/api/generate-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentType: selectedType,
+          incidents: selectedIncidentData,
+          caseContext,
+          purpose: declarationPurpose,
+        }),
+      });
+      
+      const data = await response.json();
+      if (data.document) {
+        setGeneratedDoc(data.document);
+        setStep('preview');
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+    } finally {
+      setGenerating(false);
+    }
   };
+
+  const copyToClipboard = () => {
+    if (generatedDoc) {
+      navigator.clipboard.writeText(generatedDoc);
+    }
+  };
+
+  const downloadAsText = () => {
+    if (generatedDoc) {
+      const blob = new Blob([generatedDoc], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedType}-${new Date().toISOString().split('T')[0]}.txt`;
+      a.click();
+    }
+  };
+
+  const patternStats = incidents.reduce((acc, inc) => {
+    inc.patterns?.forEach(p => {
+      acc[p] = (acc[p] || 0) + 1;
+    });
+    return acc;
+  }, {} as { [key: string]: number });
 
   if (loading) {
     return (
       <div className="loading">
-        <div className="loading-logo">18</div>
-        <p>Loading your progress...</p>
+        <span>⚖️</span>
+        <p>Loading your case...</p>
         <style jsx>{`
           .loading {
             display: flex;
@@ -192,18 +208,10 @@ export default function DashboardPage() {
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(135deg, #1a3a2f 0%, #2d5a47 100%);
+            background: #f5f7f6;
           }
-          .loading-logo {
-            font-size: 64px;
-            font-weight: 700;
-            color: white;
-            background: rgba(255,255,255,0.15);
-            padding: 20px 32px;
-            border-radius: 16px;
-            margin-bottom: 20px;
-          }
-          .loading p { color: rgba(255,255,255,0.7); }
+          .loading span { font-size: 48px; margin-bottom: 16px; }
+          .loading p { color: #666; }
         `}</style>
       </div>
     );
@@ -211,339 +219,274 @@ export default function DashboardPage() {
 
   return (
     <div className="container">
-      {/* Sidebar Overlay */}
-      {showSidebar && <div className="overlay" onClick={() => setShowSidebar(false)} />}
-
-      {/* Sidebar */}
-      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-brand">
-            <span className="sidebar-logo">18</span>
-            <span>Pattern 18</span>
-          </div>
-          <button onClick={() => setShowSidebar(false)} className="close-btn">×</button>
-        </div>
-        
-        <nav className="nav">
-          <button className="nav-item active" onClick={() => setShowSidebar(false)}>
-            🏠 Home
-          </button>
-          <button onClick={() => { router.push('/coach'); setShowSidebar(false); }} className="nav-item">
-            💬 Coach
-          </button>
-          <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
-            📁 My Documentation
-          </button>
-          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
-            ⚖️ Court Documents
-          </button>
-          <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item filings">
-            📋 Case Filings
-          </button>
-          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
-            📱 Message Analyzer
-          </button>
-          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item healing">
-            🌿 Healing Journey
-          </button>
-          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
-            ⚙️ Settings
-          </button>
-          
-          <div className="nav-divider" />
-          
-          <button onClick={() => router.push('/coach')} className="nav-item">
-            📖 How It Works
-          </button>
-          <button onClick={() => router.push('/coach')} className="nav-item new">
-            ✨ What's New
-          </button>
-          <button onClick={() => router.push('/coach')} className="nav-item">
-            💬 Feedback
-          </button>
-          
-          <div className="nav-divider" />
-          
-          <button onClick={() => router.push('/coach')} className="nav-item safety">
-            🤍 Safety Resources
-          </button>
-          <button onClick={handleLogout} className="nav-item logout">
-            🚪 Log Out
-          </button>
-        </nav>
-      </div>
-
-      {/* Header */}
       <header className="header">
-        <div className="header-left">
-          <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
-          <div className="header-brand">
-            <span className="logo">18</span>
-            <span className="brand-name">Pattern 18</span>
-          </div>
-        </div>
-        <button onClick={() => router.push('/coach')} className="coach-btn">
-          💬 Coach
-        </button>
+        <button onClick={() => router.back()} className="back-btn">← Back</button>
+        <h1>⚖️ Court Documents</h1>
+        <div style={{ width: 60 }} />
       </header>
 
       <div className="content">
-        {/* Greeting Section */}
-        <section className="greeting-section">
-          <h1>{getGreeting()}{userName ? `, ${userName}` : ''} 💚</h1>
-          <p className="greeting-sub">Day {stats.daysOnPlatform} of building your case</p>
-        </section>
+        {/* Progress Steps */}
+        <div className="progress-steps">
+          <div className={`progress-step ${step === 'select-type' ? 'active' : ''} ${['select-incidents', 'customize', 'preview'].includes(step) ? 'completed' : ''}`}>
+            <span className="step-num">1</span>
+            <span className="step-label">Type</span>
+          </div>
+          <div className="progress-line" />
+          <div className={`progress-step ${step === 'select-incidents' ? 'active' : ''} ${['customize', 'preview'].includes(step) ? 'completed' : ''}`}>
+            <span className="step-num">2</span>
+            <span className="step-label">Select</span>
+          </div>
+          <div className="progress-line" />
+          <div className={`progress-step ${step === 'customize' ? 'active' : ''} ${step === 'preview' ? 'completed' : ''}`}>
+            <span className="step-num">3</span>
+            <span className="step-label">Details</span>
+          </div>
+          <div className="progress-line" />
+          <div className={`progress-step ${step === 'preview' ? 'active' : ''}`}>
+            <span className="step-num">4</span>
+            <span className="step-label">Review</span>
+          </div>
+        </div>
 
-        {/* Court Countdown */}
-        {stats.daysUntilCourt && (
-          <section className="court-countdown" onClick={() => router.push('/case-setup')}>
-            <div className="countdown-content">
-              <span className="countdown-number">{stats.daysUntilCourt}</span>
-              <div className="countdown-text">
-                <span className="countdown-label">days until court</span>
-                <span className="countdown-date">
-                  {new Date(stats.courtDate!).toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </span>
+        {/* Step 1: Select Document Type */}
+        {step === 'select-type' && (
+          <div className="step-content">
+            <h2>What do you need?</h2>
+            <p className="step-desc">Select the type of document you want to create</p>
+            
+            <div className="doc-types">
+              {DOCUMENT_TYPES.map(doc => (
+                <button
+                  key={doc.id}
+                  className={`doc-type-card ${selectedType === doc.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedType(doc.id)}
+                >
+                  <span className="doc-icon">{doc.icon}</span>
+                  <div className="doc-info">
+                    <h3>{doc.title}</h3>
+                    <p>{doc.desc}</p>
+                    <span className="doc-time">~{doc.time}</span>
+                  </div>
+                  {selectedType === doc.id && <span className="check">✓</span>}
+                </button>
+              ))}
+            </div>
+
+            {!caseContext && (
+              <div className="warning-box">
+                <span>⚠️</span>
+                <div>
+                  <strong>Case details not set up</strong>
+                  <p>Add your case number, court, and party names for properly formatted documents.</p>
+                  <button onClick={() => router.push('/case-setup')}>Set Up Case →</button>
+                </div>
               </div>
-            </div>
-            <span className="countdown-arrow">→</span>
-          </section>
+            )}
+
+            <button 
+              className="next-btn"
+              disabled={!selectedType}
+              onClick={() => setStep('select-incidents')}
+            >
+              Continue →
+            </button>
+          </div>
         )}
 
-        {/* Stats Grid */}
-        <section className="stats-grid">
-          <div className="stat-card primary" onClick={() => router.push('/evidence')}>
-            <span className="stat-icon">📁</span>
-            <span className="stat-number">{stats.totalEvidence}</span>
-            <span className="stat-label">Documented</span>
-          </div>
-          <div className="stat-card" onClick={() => router.push('/evidence')}>
-            <span className="stat-icon">🎯</span>
-            <span className="stat-number">{Object.keys(stats.patternsDetected).length}</span>
-            <span className="stat-label">Pattern Types</span>
-          </div>
-          <div className="stat-card" onClick={() => router.push('/healing')}>
-            <span className="stat-icon">🌅</span>
-            <span className="stat-number">{stats.morningStreak}</span>
-            <span className="stat-label">Morning Streak</span>
-          </div>
-          <div className="stat-card" onClick={() => router.push('/healing')}>
-            <span className="stat-icon">🌙</span>
-            <span className="stat-number">{stats.eveningStreak}</span>
-            <span className="stat-label">Evening Streak</span>
-          </div>
-        </section>
+        {/* Step 2: Select Incidents */}
+        {step === 'select-incidents' && (
+          <div className="step-content">
+            <h2>Select incidents to include</h2>
+            <p className="step-desc">Choose which documented incidents to include in your {selectedType?.replace('-', ' ')}</p>
+            
+            <div className="select-actions">
+              <button 
+                className="select-all-btn"
+                onClick={() => setSelectedIncidents(incidents.map(i => i.id))}
+              >
+                Select All ({incidents.length})
+              </button>
+              <button 
+                className="clear-btn"
+                onClick={() => setSelectedIncidents([])}
+              >
+                Clear
+              </button>
+              <span className="selected-count">{selectedIncidents.length} selected</span>
+            </div>
 
-        {/* Quick Actions */}
-        <section className="quick-actions">
-          <h2>Quick Actions</h2>
-          <div className="actions-grid">
-            <button className="action-card" onClick={() => router.push('/coach')}>
-              <span className="action-icon">💬</span>
-              <span className="action-label">Talk to Coach</span>
-            </button>
-            <button className="action-card" onClick={() => router.push('/message-parser')}>
-              <span className="action-icon">📱</span>
-              <span className="action-label">Analyze Messages</span>
-            </button>
-            <button className="action-card" onClick={() => router.push('/evidence')}>
-              <span className="action-icon">📁</span>
-              <span className="action-label">View Docs</span>
-            </button>
-            <button className="action-card court" onClick={() => router.push('/court-docs')}>
-              <span className="action-icon">⚖️</span>
-              <span className="action-label">Court Prep</span>
-            </button>
-          </div>
-        </section>
-
-        {/* Pattern Breakdown */}
-        {getTopPatterns().length > 0 && (
-          <section className="patterns-section">
-            <h2>Patterns You've Documented</h2>
-            <p className="section-sub">This is your evidence of their behavior over time</p>
-            <div className="patterns-list">
-              {getTopPatterns().map(([pattern, count]) => (
-                <div key={pattern} className="pattern-row">
-                  <span className="pattern-name">{pattern}</span>
-                  <div className="pattern-bar-container">
-                    <div 
-                      className="pattern-bar-fill"
-                      style={{ 
-                        width: `${(count / Math.max(...Object.values(stats.patternsDetected))) * 100}%` 
-                      }}
-                    />
-                  </div>
-                  <span className="pattern-count">{count}</span>
+            <div className="incidents-list">
+              {incidents.length === 0 ? (
+                <div className="empty-incidents">
+                  <p>No incidents documented yet.</p>
+                  <button onClick={() => router.push('/coach')}>Document with Coach →</button>
                 </div>
-              ))}
-            </div>
-            <p className="patterns-insight">
-              💡 Courts look for patterns, not isolated incidents. You're building exactly what they need to see.
-            </p>
-          </section>
-        )}
-
-        {/* Recent Activity */}
-        {stats.recentActivity.length > 0 && (
-          <section className="activity-section">
-            <h2>Recent Activity</h2>
-            <div className="activity-list">
-              {stats.recentActivity.map((activity, i) => (
-                <div key={i} className="activity-item">
-                  <span className="activity-dot" />
-                  <div className="activity-content">
-                    <span className="activity-desc">{activity.description}</span>
-                    <span className="activity-date">{formatDate(activity.date)}</span>
+              ) : (
+                incidents.map(incident => (
+                  <div 
+                    key={incident.id}
+                    className={`incident-select-card ${selectedIncidents.includes(incident.id) ? 'selected' : ''}`}
+                    onClick={() => {
+                      setSelectedIncidents(prev => 
+                        prev.includes(incident.id) 
+                          ? prev.filter(id => id !== incident.id)
+                          : [...prev, incident.id]
+                      );
+                    }}
+                  >
+                    <div className="incident-checkbox">
+                      {selectedIncidents.includes(incident.id) ? '✓' : ''}
+                    </div>
+                    <div className="incident-content">
+                      <div className="incident-header">
+                        <span className="incident-date">
+                          {new Date(incident.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className={`incident-severity ${incident.severity}`}>{incident.severity}</span>
+                      </div>
+                      <p className="incident-desc">{incident.description?.slice(0, 150)}...</p>
+                      {incident.patterns && incident.patterns.length > 0 && (
+                        <div className="incident-patterns">
+                          {incident.patterns.map(p => (
+                            <span key={p} className="pattern-tag">{p}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          </section>
+
+            <div className="step-nav">
+              <button className="back-step-btn" onClick={() => setStep('select-type')}>← Back</button>
+              <button 
+                className="next-btn"
+                disabled={selectedIncidents.length === 0}
+                onClick={() => setStep('customize')}
+              >
+                Continue →
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Motivational Quote */}
-        <section className="quote-section">
-          <blockquote>"{quote.quote}"</blockquote>
-          <cite>— {quote.author}</cite>
-        </section>
+        {/* Step 3: Customize */}
+        {step === 'customize' && (
+          <div className="step-content">
+            <h2>Add context</h2>
+            <p className="step-desc">Help us tailor the document to your needs</p>
 
-        {/* Bottom CTA */}
-        <section className="bottom-cta">
-          <button className="cta-primary" onClick={() => router.push('/coach')}>
-            💬 What's happening right now?
-          </button>
-          <p className="cta-sub">Your coach is ready 24/7</p>
-        </section>
+            {selectedType === 'declaration' && (
+              <div className="customize-form">
+                <label>What is this declaration for?</label>
+                <textarea
+                  value={declarationPurpose}
+                  onChange={(e) => setDeclarationPurpose(e.target.value)}
+                  placeholder="e.g., Response to motion to modify custody, Support for restraining order, Evidence of parental alienation..."
+                  rows={4}
+                />
+                <p className="form-hint">This helps us frame your declaration appropriately for the court.</p>
+              </div>
+            )}
+
+            <div className="summary-box">
+              <h4>Document Summary</h4>
+              <div className="summary-item">
+                <span>Document Type:</span>
+                <strong>{DOCUMENT_TYPES.find(d => d.id === selectedType)?.title}</strong>
+              </div>
+              <div className="summary-item">
+                <span>Incidents Included:</span>
+                <strong>{selectedIncidents.length}</strong>
+              </div>
+              <div className="summary-item">
+                <span>Patterns Covered:</span>
+                <strong>{Object.keys(patternStats).length} types</strong>
+              </div>
+              {caseContext && (
+                <>
+                  <div className="summary-item">
+                    <span>Case:</span>
+                    <strong>{caseContext.caseNumber || 'Not set'}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span>Court:</span>
+                    <strong>{caseContext.court || 'Not set'}</strong>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="disclaimer">
+              <span>⚠️</span>
+              <p>This document is generated to help you prepare. It is not legal advice. Review with your attorney before filing.</p>
+            </div>
+
+            <div className="step-nav">
+              <button className="back-step-btn" onClick={() => setStep('select-incidents')}>← Back</button>
+              <button 
+                className="generate-btn"
+                disabled={generating}
+                onClick={generateDocument}
+              >
+                {generating ? 'Generating...' : '✨ Generate Document'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Preview */}
+        {step === 'preview' && generatedDoc && (
+          <div className="step-content">
+            <h2>Your document is ready</h2>
+            <p className="step-desc">Review, copy, or download your generated document</p>
+
+            <div className="doc-actions">
+              <button className="action-btn" onClick={copyToClipboard}>
+                📋 Copy to Clipboard
+              </button>
+              <button className="action-btn" onClick={downloadAsText}>
+                💾 Download
+              </button>
+            </div>
+
+            <div className="document-preview">
+              <pre>{generatedDoc}</pre>
+            </div>
+
+            <div className="next-steps">
+              <h4>Next Steps:</h4>
+              <ul>
+                <li>Review the document carefully for accuracy</li>
+                <li>Have your attorney review before filing</li>
+                <li>Make any necessary edits in your word processor</li>
+                <li>Sign and date where indicated</li>
+              </ul>
+            </div>
+
+            <div className="step-nav">
+              <button className="back-step-btn" onClick={() => setStep('customize')}>← Edit</button>
+              <button className="new-doc-btn" onClick={() => {
+                setSelectedType(null);
+                setSelectedIncidents([]);
+                setDeclarationPurpose('');
+                setGeneratedDoc(null);
+                setStep('select-type');
+              }}>
+                + Create Another Document
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Bottom Nav */}
-      <nav className="bottom-nav">
-        <button className="nav-item active">
-          <span>🏠</span>
-          <span>Home</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/coach')}>
-          <span>💬</span>
-          <span>Coach</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/evidence')}>
-          <span>📁</span>
-          <span>Docs</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/healing')}>
-          <span>🌿</span>
-          <span>Heal</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/case-setup')}>
-          <span>⚙️</span>
-          <span>Settings</span>
-        </button>
-      </nav>
 
       <style jsx>{`
         .container {
           min-height: 100vh;
           background: #f5f7f6;
-          padding-bottom: 80px;
         }
-
-        /* Overlay */
-        .overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          z-index: 40;
-        }
-
-        /* Sidebar */
-        .sidebar {
-          position: fixed;
-          left: -280px;
-          top: 0;
-          bottom: 0;
-          width: 280px;
-          background: #1a3a2f;
-          z-index: 50;
-          transition: left 0.3s ease;
-          overflow-y: auto;
-        }
-        .sidebar.open {
-          left: 0;
-        }
-        .sidebar-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .sidebar-brand {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: white;
-          font-weight: 600;
-        }
-        .sidebar-logo {
-          background: rgba(255,255,255,0.15);
-          padding: 6px 10px;
-          border-radius: 6px;
-          font-weight: 700;
-        }
-        .close-btn {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 28px;
-          cursor: pointer;
-        }
-        .nav {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          background: transparent;
-          border: none;
-          border-radius: 8px;
-          color: rgba(255,255,255,0.8);
-          font-size: 15px;
-          cursor: pointer;
-          text-align: left;
-          transition: all 0.2s;
-        }
-        .nav-item:hover {
-          background: rgba(255,255,255,0.1);
-          color: white;
-        }
-        .nav-item.active {
-          background: rgba(255,255,255,0.15);
-          color: white;
-        }
-        .nav-item.healing { color: #86efac; }
-        .nav-item.parser { color: #93c5fd; }
-        .nav-item.court { color: #fcd34d; }
-        .nav-item.filings { color: #f9a8d4; }
-        .nav-item.new { color: #fbbf24; }
-        .nav-item.safety { color: #f9a8d4; }
-        .nav-item.logout { color: #f87171; }
-        .nav-divider {
-          height: 1px;
-          background: rgba(255,255,255,0.1);
-          margin: 8px 16px;
-        }
-
-        /* Header */
         .header {
           display: flex;
           justify-content: space-between;
@@ -552,381 +495,489 @@ export default function DashboardPage() {
           background: #1a3a2f;
           color: white;
         }
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
+        .header h1 {
+          font-size: 18px;
+          font-weight: 600;
         }
-        .menu-btn {
+        .back-btn {
           background: none;
           border: none;
           color: white;
-          font-size: 22px;
-          cursor: pointer;
-          padding: 4px;
-        }
-        .header-brand {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .logo {
-          background: rgba(255,255,255,0.15);
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-weight: 700;
-        }
-        .brand-name {
-          font-weight: 600;
-        }
-        .coach-btn {
-          background: rgba(255,255,255,0.15);
-          border: none;
-          color: white;
-          padding: 10px 16px;
-          border-radius: 20px;
-          font-size: 14px;
+          font-size: 15px;
           cursor: pointer;
         }
-
         .content {
-          max-width: 600px;
+          max-width: 700px;
           margin: 0 auto;
           padding: 20px;
         }
 
-        /* Greeting */
-        .greeting-section {
-          margin-bottom: 20px;
-        }
-        .greeting-section h1 {
-          font-size: 28px;
-          color: #1a3a2f;
-          margin-bottom: 4px;
-        }
-        .greeting-sub {
-          color: #666;
-          font-size: 15px;
-        }
-
-        /* Court Countdown */
-        .court-countdown {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 20px;
+        /* Progress Steps */
+        .progress-steps {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          cursor: pointer;
-          transition: transform 0.2s;
+          justify-content: center;
+          margin-bottom: 32px;
         }
-        .court-countdown:hover {
-          transform: scale(1.01);
-        }
-        .countdown-content {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .countdown-number {
-          font-size: 48px;
-          font-weight: 700;
-          color: #92400e;
-        }
-        .countdown-text {
-          display: flex;
-          flex-direction: column;
-        }
-        .countdown-label {
-          font-weight: 600;
-          color: #92400e;
-          font-size: 16px;
-        }
-        .countdown-date {
-          color: #a16207;
-          font-size: 14px;
-        }
-        .countdown-arrow {
-          color: #92400e;
-          font-size: 24px;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-          margin-bottom: 24px;
-        }
-        .stat-card {
-          background: white;
-          border-radius: 16px;
-          padding: 20px;
-          text-align: center;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-        .stat-card:hover {
-          transform: scale(1.02);
-        }
-        .stat-card.primary {
-          background: #1a3a2f;
-          color: white;
-        }
-        .stat-icon {
-          font-size: 24px;
-          display: block;
-          margin-bottom: 8px;
-        }
-        .stat-number {
-          font-size: 32px;
-          font-weight: 700;
-          display: block;
-        }
-        .stat-label {
-          font-size: 13px;
-          opacity: 0.8;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-          margin-bottom: 24px;
-        }
-        .quick-actions h2 {
-          font-size: 18px;
-          color: #1a3a2f;
-          margin-bottom: 12px;
-        }
-        .actions-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-        }
-        .action-card {
-          background: white;
-          border: none;
-          border-radius: 12px;
-          padding: 16px 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .action-card:hover {
-          background: #f0fdf4;
-          transform: translateY(-2px);
-        }
-        .action-card.court {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        }
-        .action-card.court:hover {
-          background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-        }
-        .action-icon {
-          font-size: 24px;
-          display: block;
-          margin-bottom: 6px;
-        }
-        .action-label {
-          font-size: 11px;
-          color: #444;
-          font-weight: 500;
-        }
-
-        /* Patterns Section */
-        .patterns-section {
-          background: white;
-          border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 24px;
-        }
-        .patterns-section h2 {
-          font-size: 18px;
-          color: #1a3a2f;
-          margin-bottom: 4px;
-        }
-        .section-sub {
-          color: #666;
-          font-size: 13px;
-          margin-bottom: 16px;
-        }
-        .patterns-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .pattern-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .pattern-name {
-          width: 120px;
-          font-size: 13px;
-          color: #444;
-          flex-shrink: 0;
-        }
-        .pattern-bar-container {
-          flex: 1;
-          height: 8px;
-          background: #e5e7eb;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .pattern-bar-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #14b8a6, #0d9488);
-          border-radius: 4px;
-          transition: width 0.5s;
-        }
-        .pattern-count {
-          width: 28px;
-          text-align: right;
-          font-size: 14px;
-          font-weight: 600;
-          color: #1a3a2f;
-        }
-        .patterns-insight {
-          margin-top: 16px;
-          padding: 12px;
-          background: #f0fdf4;
-          border-radius: 8px;
-          font-size: 13px;
-          color: #065f46;
-          line-height: 1.5;
-        }
-
-        /* Activity Section */
-        .activity-section {
-          background: white;
-          border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 24px;
-        }
-        .activity-section h2 {
-          font-size: 18px;
-          color: #1a3a2f;
-          margin-bottom: 16px;
-        }
-        .activity-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .activity-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .activity-dot {
-          width: 8px;
-          height: 8px;
-          background: #14b8a6;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .activity-content {
-          flex: 1;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .activity-desc {
-          font-size: 14px;
-          color: #444;
-        }
-        .activity-date {
-          font-size: 12px;
-          color: #999;
-        }
-
-        /* Quote Section */
-        .quote-section {
-          background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
-          border-radius: 16px;
-          padding: 24px;
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .quote-section blockquote {
-          font-size: 18px;
-          color: #065f46;
-          font-style: italic;
-          line-height: 1.6;
-          margin-bottom: 12px;
-        }
-        .quote-section cite {
-          font-size: 14px;
-          color: #14b8a6;
-          font-style: normal;
-        }
-
-        /* Bottom CTA */
-        .bottom-cta {
-          text-align: center;
-          padding: 20px 0;
-        }
-        .cta-primary {
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          padding: 16px 32px;
-          border-radius: 30px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-        .cta-primary:hover {
-          transform: scale(1.02);
-        }
-        .cta-sub {
-          color: #666;
-          font-size: 14px;
-          margin-top: 12px;
-        }
-
-        /* Bottom Nav */
-        .bottom-nav {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: white;
-          display: flex;
-          justify-content: space-around;
-          padding: 10px 0 20px;
-          border-top: 1px solid #eee;
-        }
-        .nav-item {
-          background: none;
-          border: none;
+        .progress-step {
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 4px;
+        }
+        .step-num {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 14px;
           color: #666;
+        }
+        .progress-step.active .step-num {
+          background: #1a3a2f;
+          color: white;
+        }
+        .progress-step.completed .step-num {
+          background: #14b8a6;
+          color: white;
+        }
+        .step-label {
           font-size: 11px;
+          color: #666;
+        }
+        .progress-line {
+          width: 40px;
+          height: 2px;
+          background: #e5e7eb;
+          margin: 0 8px 20px;
+        }
+
+        /* Step Content */
+        .step-content h2 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .step-desc {
+          color: #666;
+          margin-bottom: 24px;
+        }
+
+        /* Document Types */
+        .doc-types {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+        .doc-type-card {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 20px;
+          background: white;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
           cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+          position: relative;
+        }
+        .doc-type-card:hover {
+          border-color: #14b8a6;
+        }
+        .doc-type-card.selected {
+          border-color: #1a3a2f;
+          background: #f0fdf4;
+        }
+        .doc-icon {
+          font-size: 32px;
+        }
+        .doc-info h3 {
+          font-size: 16px;
+          color: #1a3a2f;
+          margin-bottom: 4px;
+        }
+        .doc-info p {
+          font-size: 13px;
+          color: #666;
+          margin-bottom: 4px;
+        }
+        .doc-time {
+          font-size: 11px;
+          color: #14b8a6;
+        }
+        .check {
+          position: absolute;
+          right: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 24px;
+          height: 24px;
+          background: #1a3a2f;
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+        }
+
+        /* Warning Box */
+        .warning-box {
+          display: flex;
+          gap: 12px;
+          padding: 16px;
+          background: #fef3c7;
+          border-radius: 12px;
+          margin-bottom: 24px;
+        }
+        .warning-box span {
+          font-size: 24px;
+        }
+        .warning-box strong {
+          display: block;
+          color: #92400e;
+          margin-bottom: 4px;
+        }
+        .warning-box p {
+          font-size: 13px;
+          color: #a16207;
+          margin-bottom: 8px;
+        }
+        .warning-box button {
+          background: #92400e;
+          color: white;
+          border: none;
           padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 13px;
+          cursor: pointer;
         }
-        .nav-item span:first-child {
-          font-size: 20px;
+
+        /* Buttons */
+        .next-btn, .generate-btn {
+          width: 100%;
+          padding: 16px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
         }
-        .nav-item.active {
+        .next-btn:disabled, .generate-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .generate-btn {
+          background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+        }
+
+        /* Select Actions */
+        .select-actions {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .select-all-btn, .clear-btn {
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 13px;
+          cursor: pointer;
+        }
+        .select-all-btn {
+          background: #1a3a2f;
+          color: white;
+          border: none;
+        }
+        .clear-btn {
+          background: white;
+          border: 1px solid #ddd;
+          color: #666;
+        }
+        .selected-count {
+          margin-left: auto;
+          font-size: 14px;
+          color: #14b8a6;
+          font-weight: 600;
+        }
+
+        /* Incidents List */
+        .incidents-list {
+          max-height: 400px;
+          overflow-y: auto;
+          margin-bottom: 24px;
+        }
+        .incident-select-card {
+          display: flex;
+          gap: 12px;
+          padding: 16px;
+          background: white;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          margin-bottom: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .incident-select-card:hover {
+          border-color: #14b8a6;
+        }
+        .incident-select-card.selected {
+          border-color: #1a3a2f;
+          background: #f0fdf4;
+        }
+        .incident-checkbox {
+          width: 24px;
+          height: 24px;
+          border: 2px solid #ddd;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          color: white;
+          flex-shrink: 0;
+        }
+        .incident-select-card.selected .incident-checkbox {
+          background: #1a3a2f;
+          border-color: #1a3a2f;
+        }
+        .incident-content {
+          flex: 1;
+        }
+        .incident-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+        .incident-date {
+          font-size: 12px;
+          color: #666;
+        }
+        .incident-severity {
+          font-size: 10px;
+          padding: 2px 8px;
+          border-radius: 10px;
+          text-transform: uppercase;
+          font-weight: 600;
+        }
+        .incident-severity.critical { background: #fef2f2; color: #dc2626; }
+        .incident-severity.high { background: #fff7ed; color: #ea580c; }
+        .incident-severity.medium { background: #fefce8; color: #ca8a04; }
+        .incident-severity.low { background: #f0fdf4; color: #16a34a; }
+        .incident-desc {
+          font-size: 13px;
+          color: #444;
+          line-height: 1.5;
+          margin-bottom: 8px;
+        }
+        .incident-patterns {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        .pattern-tag {
+          font-size: 10px;
+          padding: 2px 8px;
+          background: #e0e7ff;
+          color: #4f46e5;
+          border-radius: 8px;
+        }
+        .empty-incidents {
+          text-align: center;
+          padding: 40px;
+          background: white;
+          border-radius: 12px;
+        }
+        .empty-incidents p {
+          color: #666;
+          margin-bottom: 16px;
+        }
+        .empty-incidents button {
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
+        /* Customize Form */
+        .customize-form {
+          margin-bottom: 24px;
+        }
+        .customize-form label {
+          display: block;
+          font-weight: 600;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+        .customize-form textarea {
+          width: 100%;
+          padding: 14px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 15px;
+          font-family: inherit;
+          resize: vertical;
+          box-sizing: border-box;
+        }
+        .customize-form textarea:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+        .form-hint {
+          font-size: 12px;
+          color: #666;
+          margin-top: 6px;
+        }
+
+        /* Summary Box */
+        .summary-box {
+          background: white;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 20px;
+        }
+        .summary-box h4 {
+          font-size: 14px;
+          color: #1a3a2f;
+          margin-bottom: 12px;
+        }
+        .summary-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #f3f4f6;
+          font-size: 14px;
+        }
+        .summary-item:last-child {
+          border-bottom: none;
+        }
+        .summary-item span {
+          color: #666;
+        }
+        .summary-item strong {
           color: #1a3a2f;
         }
 
-        @media (max-width: 480px) {
-          .actions-grid {
-            grid-template-columns: repeat(2, 1fr);
+        /* Disclaimer */
+        .disclaimer {
+          display: flex;
+          gap: 10px;
+          padding: 14px;
+          background: #fef2f2;
+          border-radius: 10px;
+          margin-bottom: 24px;
+        }
+        .disclaimer span {
+          font-size: 18px;
+        }
+        .disclaimer p {
+          font-size: 12px;
+          color: #991b1b;
+          margin: 0;
+        }
+
+        /* Step Navigation */
+        .step-nav {
+          display: flex;
+          gap: 12px;
+        }
+        .back-step-btn {
+          padding: 16px 24px;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 12px;
+          font-size: 15px;
+          cursor: pointer;
+        }
+        .step-nav .next-btn, .step-nav .generate-btn {
+          flex: 1;
+        }
+
+        /* Preview */
+        .doc-actions {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        .action-btn {
+          flex: 1;
+          padding: 12px;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+        .action-btn:hover {
+          background: #f9fafb;
+        }
+        .document-preview {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          margin-bottom: 24px;
+          max-height: 500px;
+          overflow-y: auto;
+        }
+        .document-preview pre {
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.6;
+          color: #333;
+        }
+        .next-steps {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 24px;
+        }
+        .next-steps h4 {
+          color: #065f46;
+          margin-bottom: 10px;
+          font-size: 14px;
+        }
+        .next-steps ul {
+          margin: 0;
+          padding-left: 20px;
+          font-size: 13px;
+          color: #047857;
+        }
+        .next-steps li {
+          margin-bottom: 6px;
+        }
+        .new-doc-btn {
+          flex: 1;
+          padding: 16px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          cursor: pointer;
+        }
+
+        @media (max-width: 640px) {
+          .progress-line {
+            width: 20px;
           }
-          .countdown-number {
-            font-size: 36px;
+          .doc-type-card {
+            padding: 16px;
           }
-          .pattern-name {
-            width: 90px;
-            font-size: 12px;
+          .doc-icon {
+            font-size: 24px;
           }
         }
       `}</style>

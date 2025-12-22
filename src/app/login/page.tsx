@@ -28,7 +28,7 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else if (data.session) {
-      router.push('/dashboard')
+      router.push('/coach')
     }
   }
 
