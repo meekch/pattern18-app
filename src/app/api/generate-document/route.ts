@@ -1,189 +1,205 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, PageNumber } from "docx";
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic();
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, documentType, caseInfo } = await req.json();
+    const { documentType, incidents, caseContext, purpose } = await req.json();
 
-    if (!content) {
-      return NextResponse.json({ error: 'No content provided' }, { status: 400 });
+    if (!documentType || !incidents || incidents.length === 0) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Parse the plain text content into paragraphs
-    const lines = content.split('\n').filter((line: string) => line.trim() !== '');
-    
-    const children: Paragraph[] = [];
-    
-    lines.forEach((line: string, index: number) => {
-      const trimmedLine = line.trim();
-      
-      // Detect headers/titles (all caps or specific patterns)
-      const isTitle = index === 0 || 
-        trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 10 ||
-        trimmedLine.startsWith('DECLARATION OF') ||
-        trimmedLine.startsWith('EXHIBIT LIST') ||
-        trimmedLine.startsWith('PATTERN SUMMARY') ||
-        trimmedLine.startsWith('INCIDENT TIMELINE') ||
-        trimmedLine.startsWith('SUPERIOR COURT');
-      
-      // Detect case caption elements
-      const isCaseCaption = trimmedLine.includes(' v. ') || 
-        trimmedLine.startsWith('Case No') ||
-        trimmedLine === 'Petitioner,' ||
-        trimmedLine === 'Respondent.';
-      
-      // Detect numbered paragraphs
-      const isNumberedParagraph = /^\d+\./.test(trimmedLine);
-      
-      // Detect signature line
-      const isSignatureLine = trimmedLine.startsWith('____') || 
-        trimmedLine.startsWith('Executed on') ||
-        trimmedLine.includes('penalty of perjury');
+    // Build case info - use real data, not placeholders
+    const petitionerName = caseContext?.petitionerName || 'the Petitioner';
+    const respondentName = caseContext?.respondentName || caseContext?.coparent_name || 'the Respondent';
+    const caseNumber = caseContext?.caseNumber || '';
+    const court = caseContext?.court || 'Superior Court';
+    const county = caseContext?.county || 'Maricopa County';
+    const userRole = caseContext?.userRole || 'petitioner';
+    const userName = userRole === 'petitioner' ? petitionerName : respondentName;
+    const otherParty = userRole === 'petitioner' ? respondentName : petitionerName;
 
-      if (isTitle) {
-        children.push(
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 240, after: 120 },
-            children: [
-              new TextRun({ 
-                text: trimmedLine, 
-                bold: true, 
-                size: 28,
-                font: "Times New Roman"
-              })
-            ]
-          })
-        );
-      } else if (isCaseCaption) {
-        children.push(
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 60, after: 60 },
-            children: [
-              new TextRun({ 
-                text: trimmedLine, 
-                size: 24,
-                font: "Times New Roman"
-              })
-            ]
-          })
-        );
-      } else if (isNumberedParagraph) {
-        children.push(
-          new Paragraph({
-            spacing: { before: 200, after: 200 },
-            indent: { firstLine: 720 },
-            children: [
-              new TextRun({ 
-                text: trimmedLine, 
-                size: 24,
-                font: "Times New Roman"
-              })
-            ]
-          })
-        );
-      } else if (isSignatureLine) {
-        children.push(
-          new Paragraph({
-            spacing: { before: 400, after: 100 },
-            children: [
-              new TextRun({ 
-                text: trimmedLine, 
-                size: 24,
-                font: "Times New Roman"
-              })
-            ]
-          })
-        );
-      } else {
-        // Regular paragraph
-        children.push(
-          new Paragraph({
-            spacing: { before: 120, after: 120 },
-            children: [
-              new TextRun({ 
-                text: trimmedLine, 
-                size: 24,
-                font: "Times New Roman"
-              })
-            ]
-          })
-        );
-      }
+    // Format incidents with ACTUAL content
+    const incidentsFormatted = incidents.map((inc: any, idx: number) => {
+      const date = new Date(inc.date).toLocaleDateString('en-US', { 
+        month: 'long', day: 'numeric', year: 'numeric' 
+      });
+      const patterns = inc.patterns?.length > 0 ? inc.patterns.join(', ') : '';
+      const description = inc.description || '';
+      
+      return {
+        num: idx + 1,
+        date,
+        patterns,
+        description: description.slice(0, 1000),
+        severity: inc.severity || 'medium'
+      };
     });
 
-    // Create the document
-    const doc = new Document({
-      styles: {
-        default: {
-          document: {
-            run: {
-              font: "Times New Roman",
-              size: 24 // 12pt
-            }
-          }
-        }
-      },
-      sections: [{
-        properties: {
-          page: {
-            margin: {
-              top: 1440,    // 1 inch
-              right: 1440,
-              bottom: 1440,
-              left: 1440
-            }
-          }
-        },
-        headers: {
-          default: new Header({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.RIGHT,
-                children: [
-                  new TextRun({ 
-                    text: caseInfo?.caseNumber || '',
-                    size: 20,
-                    font: "Times New Roman"
-                  })
-                ]
-              })
-            ]
-          })
-        },
-        footers: {
-          default: new Footer({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: "Page ", size: 20, font: "Times New Roman" }),
-                  new TextRun({ children: [PageNumber.CURRENT], size: 20, font: "Times New Roman" }),
-                  new TextRun({ text: " of ", size: 20, font: "Times New Roman" }),
-                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 20, font: "Times New Roman" })
-                ]
-              })
-            ]
-          })
-        },
-        children: children
-      }]
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    switch (documentType) {
+      case 'declaration':
+        systemPrompt = `You are helping a family court litigant prepare a declaration. 
+
+CRITICAL RULES:
+- Output PLAIN TEXT only. No markdown, no asterisks, no # symbols.
+- Use the ACTUAL incident descriptions provided. Do not generalize or use placeholders.
+- Write in first person from the declarant's perspective.
+- Be factual and specific. Include actual dates and descriptions from the incidents.
+- Do not say "TO BE INSERTED" or use any brackets for missing info.
+- If information is missing, write around it naturally.
+- Each numbered paragraph should contain REAL facts from the incidents provided.
+- Never use em dashes. Use periods or commas instead.
+- Do not add placeholder instructions like "[SPECIFIC DETAILS TO BE INSERTED]"`;
+
+        userPrompt = `Generate a declaration for ${userName} to file in ${court}, ${county}, Arizona.
+${caseNumber ? `Case Number: ${caseNumber}` : ''}
+
+The other party is: ${otherParty}
+${userName} is the ${userRole}.
+
+PURPOSE: ${purpose || 'To document concerning behavior patterns by ' + otherParty}
+
+HERE ARE THE ACTUAL DOCUMENTED INCIDENTS TO INCLUDE (use these exact details in the declaration):
+
+${incidentsFormatted.map(inc => `
+INCIDENT ${inc.num} - ${inc.date}:
+${inc.description}
+${inc.patterns ? `Patterns identified: ${inc.patterns}` : ''}
+`).join('\n---\n')}
+
+Generate a complete declaration with:
+1. Proper court header (plain text, no markdown)
+2. "I, ${userName}, declare under penalty of perjury that the following is true and correct:"
+3. Numbered paragraphs using the ACTUAL incident details above. Write out what happened based on each incident description. Do not generalize.
+4. Include the specific dates, specific behaviors, and specific impacts from the incidents.
+5. A conclusion paragraph.
+6. Signature line: "Executed on [DATE], at [CITY], Arizona." followed by a signature line.
+
+Output plain text only. No formatting symbols. No placeholder text.`;
+        break;
+
+      case 'exhibit-list':
+        systemPrompt = `You create exhibit lists for family court. Output PLAIN TEXT only. No markdown, no asterisks, no # symbols. Never use em dashes.`;
+
+        userPrompt = `Create an exhibit list for a family court case.
+
+Court: ${court}, ${county}
+${caseNumber ? `Case Number: ${caseNumber}` : ''}
+${userName} v. ${otherParty}
+
+Create exhibits from these documented incidents:
+
+${incidentsFormatted.map(inc => `
+${inc.date}: ${inc.description.slice(0, 200)}
+Patterns: ${inc.patterns || 'Communication issues'}
+`).join('\n')}
+
+Format as:
+
+EXHIBIT LIST
+
+Exhibit 1: [Date] - [Brief description based on actual incident]
+Exhibit 2: [Date] - [Brief description based on actual incident]
+etc.
+
+Plain text only. Use the actual incident descriptions provided.`;
+        break;
+
+      case 'pattern-summary':
+        systemPrompt = `You summarize behavioral patterns for family court. Output PLAIN TEXT only. No markdown. Be factual, let patterns speak for themselves. Never use em dashes.`;
+
+        // Group incidents by pattern
+        const patternCounts: Record<string, number> = {};
+        incidents.forEach((inc: any) => {
+          (inc.patterns || []).forEach((p: string) => {
+            patternCounts[p] = (patternCounts[p] || 0) + 1;
+          });
+        });
+
+        userPrompt = `Create a pattern summary for ${court}.
+${caseNumber ? `Case Number: ${caseNumber}` : ''}
+${userName} v. ${otherParty}
+
+PATTERN FREQUENCY:
+${Object.entries(patternCounts).map(([p, count]) => `- ${p}: ${count} occurrences`).join('\n')}
+
+DOCUMENTED INCIDENTS:
+${incidentsFormatted.map(inc => `
+${inc.date}: ${inc.description.slice(0, 300)}
+Patterns: ${inc.patterns}
+`).join('\n')}
+
+Create a summary showing:
+1. Overview of patterns observed
+2. Specific examples with dates from the incidents above
+3. Frequency of each pattern type
+4. Impact on family/children
+
+Plain text only, no markdown. Use actual incident details.`;
+        break;
+
+      case 'incident-timeline':
+        systemPrompt = `You create chronological timelines for family court. Output PLAIN TEXT only. No markdown symbols. Never use em dashes.`;
+
+        userPrompt = `Create a chronological timeline for ${court}.
+${caseNumber ? `Case Number: ${caseNumber}` : ''}
+${userName} v. ${otherParty}
+
+INCIDENTS (already in date order):
+${incidentsFormatted.map(inc => `
+${inc.date}
+${inc.description}
+Patterns: ${inc.patterns || 'N/A'}
+Severity: ${inc.severity}
+`).join('\n---\n')}
+
+Format as a clean timeline:
+
+INCIDENT TIMELINE
+${userName} v. ${otherParty}
+${caseNumber ? `Case No. ${caseNumber}` : ''}
+
+[Date]: [What happened based on the actual description provided]
+Pattern: [Pattern type if identified]
+
+Use the actual incident descriptions. Plain text only.`;
+        break;
+
+      default:
+        return NextResponse.json({ error: 'Invalid document type' }, { status: 400 });
+    }
+
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: userPrompt }
+      ]
     });
 
-    // Generate the document buffer
-    const buffer = await Packer.toBuffer(doc);
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      return NextResponse.json({ error: 'Generation failed' }, { status: 500 });
+    }
 
-    // Return as downloadable file
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${documentType || 'document'}-${new Date().toISOString().split('T')[0]}.docx"`
-      }
-    });
+    // Clean any remaining markdown that might slip through
+    let cleanText = content.text
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/^#+\s/gm, '')
+      .replace(/^---$/gm, '')
+      .replace(/—/g, ' - ');
+
+    return NextResponse.json({ document: cleanText });
 
   } catch (error) {
-    console.error('DOCX generation error:', error);
+    console.error('Document generation error:', error);
     return NextResponse.json({ error: 'Failed to generate document' }, { status: 500 });
   }
 }
