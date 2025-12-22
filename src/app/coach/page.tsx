@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import SafetyResources, { detectCrisis } from '@/components/SafetyResources';
+import OnboardingWow from '@/components/OnboardingWow';
 
 // ============================================
 // TYPES
@@ -168,7 +169,6 @@ export default function CoachPage() {
   
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
   
   // What's New and Feedback modals
   const [showWhatsNew, setShowWhatsNew] = useState(false);
@@ -599,6 +599,43 @@ export default function CoachPage() {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Handle onboarding action selection
+  useEffect(() => {
+    const handleOnboardingAction = (e: CustomEvent) => {
+      const action = e.detail;
+      setShowWelcome(false);
+      
+      switch (action) {
+        case 'screenshot':
+          setShowUploadModal(true);
+          setUploadMode('choose');
+          break;
+        case 'paste':
+          // Focus on input with a helpful prompt
+          setInput("I just received this message and need help understanding what's really going on:\n\n");
+          setTimeout(() => {
+            const textarea = document.querySelector('.input-container textarea') as HTMLTextAreaElement;
+            if (textarea) {
+              textarea.focus();
+              textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+          }, 100);
+          break;
+        case 'court_order':
+          setShowUploadModal(true);
+          setUploadMode('choose');
+          break;
+        case 'explore':
+          // Just show the welcome screen with quick actions
+          setShowWelcome(true);
+          break;
+      }
+    };
+    
+    window.addEventListener('onboarding-action', handleOnboardingAction as EventListener);
+    return () => window.removeEventListener('onboarding-action', handleOnboardingAction as EventListener);
+  }, []);
 
   // Breathing animation - handles different breathing types
   useEffect(() => {
@@ -1635,80 +1672,15 @@ export default function CoachPage() {
         </div>
       )}
 
-      {/* Onboarding Modal */}
-      {showOnboarding && (
-        <div className="onboarding-overlay">
-          <div className="onboarding-modal">
-            {onboardingStep === 0 && (
-              <div className="onboarding-step">
-                <div className="onboarding-icon">💚</div>
-                <h2>You Found Us</h2>
-                <p>If you're here, you've been through more than most people understand.</p>
-                <p className="onboarding-sub">You're not crazy. You're not alone. And you just found something that's going to change everything.</p>
-              </div>
-            )}
-            {onboardingStep === 1 && (
-              <div className="onboarding-step">
-                <div className="onboarding-icon">✨</div>
-                <h2>We See What They're Doing</h2>
-                <p>Gaslighting. DARVO. Blame-shifting. Word salad. We recognize it instantly.</p>
-                <p className="onboarding-sub">Paste any message and we'll show you exactly what tactic is being used. No more doubting yourself.</p>
-              </div>
-            )}
-            {onboardingStep === 2 && (
-              <div className="onboarding-step">
-                <div className="onboarding-icon">📁</div>
-                <h2>Court-Ready When You Need It</h2>
-                <p>We help you identify and document patterns so you're prepared when it matters.</p>
-                <p className="onboarding-sub">Declarations, timelines, evidence summaries. Organized and ready for your attorney or your filing.</p>
-              </div>
-            )}
-            {onboardingStep === 3 && (
-              <div className="onboarding-step">
-                <div className="onboarding-icon">📱</div>
-                <h2>Months of Texts, Analyzed in Minutes</h2>
-                <p>Upload your entire message history. We'll find every manipulation pattern automatically.</p>
-                <p className="onboarding-sub">What took you years to recognize, we'll show you in one report.</p>
-              </div>
-            )}
-            {onboardingStep === 4 && (
-              <div className="onboarding-step">
-                <div className="onboarding-icon">🌿</div>
-                <h2>Protect Your Peace</h2>
-                <p>This isn't just about surviving. It's about healing while you fight.</p>
-                <p className="onboarding-sub">Grounding exercises, healthy response coaching, and support for you and your kids. We've got you.</p>
-              </div>
-            )}
-            <div className="onboarding-nav">
-              <div className="onboarding-dots">
-                {[0,1,2,3,4].map(i => (
-                  <span key={i} className={`dot ${onboardingStep === i ? 'active' : ''}`} />
-                ))}
-              </div>
-              {onboardingStep < 4 ? (
-                <button onClick={() => setOnboardingStep(onboardingStep + 1)} className="onboarding-btn">
-                  Next →
-                </button>
-              ) : (
-                <button onClick={() => { 
-                  localStorage.setItem('p18_onboarding_complete', 'true');
-                  setShowOnboarding(false); 
-                }} className="onboarding-btn primary">
-                  Let's Go 💚
-                </button>
-              )}
-            </div>
-            <button 
-              onClick={() => { 
-                localStorage.setItem('p18_onboarding_complete', 'true');
-                setShowOnboarding(false); 
-              }} 
-              className="onboarding-skip"
-            >
-              Skip intro
-            </button>
-          </div>
-        </div>
+      {/* Onboarding - WOW Experience */}
+      {showOnboarding && user && (
+        <OnboardingWow 
+          userId={user.id}
+          onComplete={() => {
+            localStorage.setItem('p18_onboarding_complete', 'true');
+            setShowOnboarding(false);
+          }}
+        />
       )}
 
       {/* What's New Modal */}
