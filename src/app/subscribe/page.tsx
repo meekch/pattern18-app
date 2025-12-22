@@ -9,8 +9,6 @@ export default function SubscribePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
-  const [promoApplied, setPromoApplied] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -41,27 +39,16 @@ export default function SubscribePage() {
     init();
   }, [router]);
 
-  const applyPromoCode = () => {
-    const code = promoCode.toUpperCase().trim();
-    if (code === 'BETA50' || code === 'FREEDOM') {
-      setPromoApplied(code);
-    } else {
-      alert('Invalid promo code');
-    }
-  };
-
   const handleCheckout = async () => {
     if (!user) return;
     setCheckoutLoading(true);
 
     try {
-      const response = await fetch('/api/create-checkout', {
+      const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
           email: user.email,
-          promoCode: promoApplied,
         }),
       });
 
@@ -116,14 +103,7 @@ export default function SubscribePage() {
           <div className="plan-header">
             <span className="plan-name">Pattern 18 Coach</span>
             <span className="plan-price">
-              {promoApplied ? (
-                <>
-                  <span className="original-price">$89</span>
-                  <span className="discounted-price">$44.50</span>
-                </>
-              ) : (
-                '$89'
-              )}
+              $89
               <span className="plan-period">/month</span>
             </span>
           </div>
@@ -137,24 +117,7 @@ export default function SubscribePage() {
           </ul>
         </div>
 
-        {!promoApplied ? (
-          <div className="promo-section">
-            <input
-              type="text"
-              placeholder="Promo code (optional)"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              className="promo-input"
-            />
-            <button onClick={applyPromoCode} className="apply-btn">
-              Apply
-            </button>
-          </div>
-        ) : (
-          <div className="promo-applied">
-            ✓ Code {promoApplied} applied - 50% off first month!
-          </div>
-        )}
+        <p className="promo-note">Have a promo code? You can enter it on the next screen.</p>
 
         <button 
           onClick={handleCheckout} 
@@ -239,15 +202,6 @@ export default function SubscribePage() {
           font-weight: 400;
           color: #666;
         }
-        .original-price {
-          text-decoration: line-through;
-          color: #999;
-          font-size: 16px;
-          margin-right: 8px;
-        }
-        .discounted-price {
-          color: #10b981;
-        }
         .features {
           list-style: none;
           padding: 0;
@@ -258,37 +212,10 @@ export default function SubscribePage() {
           color: #4b5563;
           font-size: 14px;
         }
-        .promo-section {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 20px;
-        }
-        .promo-input {
-          flex: 1;
-          padding: 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-        .promo-input:focus {
-          outline: none;
-          border-color: #14b8a6;
-        }
-        .apply-btn {
-          padding: 12px 20px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 8px;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .promo-applied {
-          background: #d1fae5;
-          color: #065f46;
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 14px;
-          margin-bottom: 20px;
+        .promo-note {
+          color: #666;
+          font-size: 13px;
+          margin-bottom: 16px;
         }
         .checkout-btn {
           width: 100%;
