@@ -285,27 +285,6 @@ CRITICAL: Use the ACTUAL QUOTES provided in the evidence. Do not paraphrase or g
 Reference exhibits by letter (Exhibit A, Exhibit B, etc.) when citing evidence.
 Plain text only, no markdown formatting.`;
         break;
-   - Total incidents documented
-   - Number of distinct pattern types identified
-   - Overall severity assessment (based on HIGH severity patterns)
-
-2. PATTERN ANALYSIS (for each pattern, in order of severity)
-   - Pattern name and severity level (HIGH/MEDIUM/LOW)
-   - Brief definition explaining what this tactic is
-   - Number of documented occurrences
-   - Specific examples with dates and quotes from the evidence
-
-3. CUMULATIVE IMPACT
-   - How these patterns work together
-   - Impact on the targeted parent
-   - Impact on children (if triangulation or alienation documented)
-
-4. CONCLUSION
-   - Summary of the documented pattern of behavior
-
-Use the actual examples provided. Do not generalize. Include specific quotes where available.
-Plain text only, no markdown formatting.`;
-        break;
 
       case 'incident-timeline':
         systemPrompt = `You create chronological timelines for family court. Output PLAIN TEXT only. No markdown symbols. Never use em dashes.`;
