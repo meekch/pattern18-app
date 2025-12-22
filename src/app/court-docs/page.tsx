@@ -126,12 +126,23 @@ export default function DocumentGeneratorPage() {
       
       if (evidenceData) {
         evidenceData.forEach(ev => {
+          // Try multiple fields for the description
+          const desc = ev.original_message 
+            || ev.message 
+            || ev.content 
+            || ev.text 
+            || ev.analysis 
+            || ev.title
+            || ev.summary
+            || ev.description
+            || 'Documented from coach';
+          
           allIncidents.push({
             id: ev.id,
             date: ev.created_at,
-            description: ev.original_message || ev.content?.slice(0, 500) || 'Documented from coach',
-            patterns: ev.patterns || [],
-            severity: ev.patterns?.length > 2 ? 'high' : ev.patterns?.length > 0 ? 'medium' : 'low',
+            description: typeof desc === 'string' ? desc.slice(0, 500) : JSON.stringify(desc).slice(0, 500),
+            patterns: ev.patterns || ev.detected_patterns || [],
+            severity: (ev.patterns?.length || ev.detected_patterns?.length || 0) > 2 ? 'high' : (ev.patterns?.length || ev.detected_patterns?.length || 0) > 0 ? 'medium' : 'low',
             category: 'Coach Analysis',
           });
         });
