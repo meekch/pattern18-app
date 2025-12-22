@@ -187,14 +187,54 @@ export default function DocumentGeneratorPage() {
     }
   };
 
-  const copyToClipboard = () => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async () => {
     if (generatedDoc) {
-      navigator.clipboard.writeText(generatedDoc);
+      try {
+        await navigator.clipboard.writeText(generatedDoc);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = generatedDoc;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
 
-  const downloadAsText = () => {
-    if (generatedDoc) {
+  const downloadAsWord = async () => {
+    if (!generatedDoc) return;
+    
+    try {
+      const response = await fetch('/api/generate-docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: generatedDoc,
+          documentType: selectedType,
+          caseInfo: caseContext
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to generate document');
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedType}-${new Date().toISOString().split('T')[0]}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback to text download
       const blob = new Blob([generatedDoc], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -459,11 +499,11 @@ export default function DocumentGeneratorPage() {
             <p className="step-desc">Review, copy, or download your generated document</p>
 
             <div className="doc-actions">
-              <button className="action-btn" onClick={copyToClipboard}>
-                📋 Copy to Clipboard
+              <button className={`action-btn ${copied ? 'copied' : ''}`} onClick={copyToClipboard}>
+                {copied ? '✓ Copied!' : '📋 Copy to Clipboard'}
               </button>
-              <button className="action-btn" onClick={downloadAsText}>
-                💾 Download
+              <button className="action-btn" onClick={downloadAsWord}>
+                📄 Download Word Doc
               </button>
             </div>
 
@@ -936,6 +976,11 @@ export default function DocumentGeneratorPage() {
         }
         .action-btn:hover {
           background: #f9fafb;
+        }
+        .action-btn.copied {
+          background: #d1fae5;
+          border-color: #10b981;
+          color: #065f46;
         }
         .document-preview {
           background: white;
