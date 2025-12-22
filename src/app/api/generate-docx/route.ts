@@ -55,26 +55,57 @@ export async function POST(req: NextRequest) {
       // Clean line for detection (remove ** for checking)
       const cleanLine = trimmedLine.replace(/\*\*/g, '');
       
-      // Detect headers/titles (all caps or specific patterns)
-      const isTitle = index === 0 || 
-        (cleanLine === cleanLine.toUpperCase() && cleanLine.length > 10) ||
+      // Detect DOCUMENT TITLE ONLY (centered) - very restrictive
+      const isDocumentTitle = index === 0 || 
+        cleanLine === 'BEHAVIORAL PATTERN SUMMARY' ||
+        cleanLine === 'BEHAVIORAL PATTERN ANALYSIS' ||
         cleanLine.startsWith('DECLARATION OF') ||
-        cleanLine.startsWith('EXHIBIT LIST') ||
-        cleanLine.startsWith('PATTERN SUMMARY') ||
-        cleanLine.startsWith('BEHAVIORAL PATTERN') ||
-        cleanLine.startsWith('INCIDENT TIMELINE') ||
-        cleanLine.startsWith('OVERVIEW') ||
-        cleanLine.startsWith('FREQUENCY') ||
-        cleanLine.startsWith('IMPACT') ||
-        cleanLine.startsWith('SPECIFIC EXAMPLES') ||
-        cleanLine.startsWith('SUPERIOR COURT');
+        cleanLine === 'EXHIBIT LIST' ||
+        cleanLine === 'INCIDENT TIMELINE' ||
+        cleanLine === 'PATTERN SUMMARY';
       
-      // Detect case caption elements
+      // Detect court name line (centered)
+      const isCourtName = cleanLine.includes('SUPERIOR COURT') ||
+        cleanLine.includes('COUNTY SUPERIOR COURT') ||
+        cleanLine === 'MARICOPA COUNTY SUPERIOR COURT';
+      
+      // Detect case caption elements (centered)
       const isCaseCaption = cleanLine.includes(' v. ') || 
         cleanLine.startsWith('Case No') ||
         cleanLine.startsWith('Case:') ||
+        cleanLine.startsWith('Date of Analysis:') ||
+        cleanLine.startsWith('Total Documented') ||
         cleanLine === 'Petitioner,' ||
         cleanLine === 'Respondent.';
+      
+      // Detect SECTION HEADERS (left-aligned, bold) - all caps headers
+      const isSectionHeader = (
+        cleanLine === 'EXECUTIVE SUMMARY' ||
+        cleanLine === 'METHODOLOGY' ||
+        cleanLine === 'PATTERN ANALYSIS' ||
+        cleanLine === 'EXHIBIT CROSS-REFERENCE' ||
+        cleanLine === 'CUMULATIVE IMPACT' ||
+        cleanLine === 'CONCLUSION' ||
+        cleanLine === 'DISCLAIMER' ||
+        cleanLine.startsWith('PATTERN 1:') ||
+        cleanLine.startsWith('PATTERN 2:') ||
+        cleanLine.startsWith('PATTERN 3:') ||
+        cleanLine.startsWith('PATTERN 4:') ||
+        cleanLine.startsWith('PATTERN 5:') ||
+        cleanLine.startsWith('PATTERN 6:') ||
+        cleanLine.startsWith('PATTERN 7:') ||
+        cleanLine.startsWith('PATTERN 8:') ||
+        cleanLine.startsWith('PATTERN 9:')
+      );
+      
+      // Detect sub-headers (left-aligned, bold, smaller)
+      const isSubHeader = 
+        cleanLine.startsWith('Severity Level:') ||
+        cleanLine.startsWith('Definition:') ||
+        cleanLine.startsWith('Documented Occurrences:') ||
+        cleanLine.startsWith('Evidence:') ||
+        cleanLine.startsWith('Impact on Targeted Parent:') ||
+        cleanLine.startsWith('Impact on Children:');
       
       // Detect numbered paragraphs
       const isNumberedParagraph = /^\d+\./.test(cleanLine);
@@ -84,26 +115,17 @@ export async function POST(req: NextRequest) {
         cleanLine.startsWith('Executed on') ||
         cleanLine.includes('penalty of perjury');
       
-      // Detect section headers (all caps, or specific patterns)
-      const isSectionHeader = (
-        (cleanLine === cleanLine.toUpperCase() && cleanLine.length > 5 && cleanLine.length < 60) ||
-        cleanLine.startsWith('PATTERN:') ||
-        cleanLine.startsWith('SEVERITY:') ||
-        cleanLine.startsWith('DEFINITION:') ||
-        cleanLine.startsWith('DOCUMENTED INCIDENTS:') ||
-        cleanLine.startsWith('METHODOLOGY') ||
-        cleanLine.startsWith('DISCLAIMER')
-      );
+      // Detect exhibit list items
+      const isExhibitItem = cleanLine.startsWith('Exhibit ') && cleanLine.includes(':');
       
-      // Detect evidence quotes (lines with "See Exhibit" or starting with "Exhibit")
+      // Detect evidence quotes
       const isEvidenceQuote = cleanLine.startsWith('See Exhibit') || 
-        cleanLine.startsWith('Exhibit ') ||
         (cleanLine.includes('"') && cleanLine.includes('Exhibit'));
       
-      // Detect bullet-like items
+      // Detect bullet items
       const isBulletItem = cleanLine.startsWith('- ') || cleanLine.startsWith('• ');
 
-      if (isTitle) {
+      if (isDocumentTitle) {
         children.push(
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -112,21 +134,20 @@ export async function POST(req: NextRequest) {
               new TextRun({ 
                 text: cleanLine, 
                 bold: true, 
-                size: 28,
+                size: 32,
                 font: "Times New Roman"
               })
             ]
           })
         );
-      } else if (isSectionHeader) {
+      } else if (isCourtName) {
         children.push(
           new Paragraph({
-            alignment: AlignmentType.LEFT,
-            spacing: { before: 300, after: 120 },
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 120, after: 120 },
             children: [
               new TextRun({ 
                 text: cleanLine, 
-                bold: true, 
                 size: 24,
                 font: "Times New Roman"
               })
@@ -147,10 +168,55 @@ export async function POST(req: NextRequest) {
             ]
           })
         );
-      } else if (isEvidenceQuote) {
-        // Indent and italicize evidence quotes
+      } else if (isSectionHeader) {
         children.push(
           new Paragraph({
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 360, after: 120 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                bold: true, 
+                size: 26,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
+      } else if (isSubHeader) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 120, after: 60 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                bold: true, 
+                size: 24,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
+      } else if (isExhibitItem) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 40, after: 40 },
+            indent: { left: 360 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                size: 22,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
+      } else if (isEvidenceQuote) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
             spacing: { before: 120, after: 120 },
             indent: { left: 720 },
             children: [
@@ -166,6 +232,7 @@ export async function POST(req: NextRequest) {
       } else if (isBulletItem) {
         children.push(
           new Paragraph({
+            alignment: AlignmentType.LEFT,
             spacing: { before: 60, after: 60 },
             indent: { left: 360 },
             children: [
@@ -180,6 +247,7 @@ export async function POST(req: NextRequest) {
       } else if (isNumberedParagraph) {
         children.push(
           new Paragraph({
+            alignment: AlignmentType.LEFT,
             spacing: { before: 200, after: 200 },
             indent: { firstLine: 720 },
             children: [
@@ -194,6 +262,7 @@ export async function POST(req: NextRequest) {
       } else if (isSignatureLine) {
         children.push(
           new Paragraph({
+            alignment: AlignmentType.LEFT,
             spacing: { before: 400, after: 100 },
             children: [
               new TextRun({ 
@@ -205,9 +274,10 @@ export async function POST(req: NextRequest) {
           })
         );
       } else {
-        // Regular paragraph
+        // Regular paragraph - LEFT ALIGNED
         children.push(
           new Paragraph({
+            alignment: AlignmentType.LEFT,
             spacing: { before: 120, after: 120 },
             children: [
               new TextRun({ 
