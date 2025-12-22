@@ -119,36 +119,125 @@ Plain text only. Use the actual incident descriptions provided.`;
         break;
 
       case 'pattern-summary':
-        systemPrompt = `You summarize behavioral patterns for family court. Output PLAIN TEXT only. No markdown. Be factual, let patterns speak for themselves. Never use em dashes.`;
+        // Pattern definitions for court education
+        const patternDefinitions: Record<string, string> = {
+          'Gaslighting': 'Making the victim question their own reality, memory, or perception of events.',
+          'DARVO': 'Deny, Attack, Reverse Victim and Offender. A manipulation tactic where the abuser denies the behavior, attacks the person confronting them, and reverses roles to claim they are the real victim.',
+          'Blame-Shifting': 'Deflecting responsibility for harmful actions onto the victim or others.',
+          'Financial Manipulation': 'Using money, assets, or financial resources to control, punish, or create dependency.',
+          'Name-Calling/Verbal Abuse': 'Using degrading language, insults, or derogatory terms to demean and control.',
+          'Minimizing/Mocking': 'Dismissing concerns as unimportant or ridiculing the other person\'s feelings and experiences.',
+          'Legal/Court Threats': 'Using threats of legal action or court proceedings as intimidation tactics.',
+          'False Accusations': 'Making untrue claims to damage reputation or gain advantage in legal proceedings.',
+          'Triangulating Child': 'Involving children in adult conflicts or using them as messengers or pawns.',
+          'Information Gatekeeping': 'Withholding important information to maintain control or create dependency.',
+          'Baiting': 'Intentionally provoking an emotional reaction to make the victim appear unstable.',
+          'Word Salad': 'Using confusing, circular, or contradictory language to disorient and frustrate.',
+          'Future Faking': 'Making promises about future behavior with no intention of following through.',
+          'Silent Treatment': 'Refusing to communicate as a form of punishment or control.',
+          'Love Bombing': 'Excessive flattery or affection used to manipulate or regain control.',
+          'Hoovering': 'Attempts to suck a person back into a toxic relationship cycle.',
+          'Projection': 'Accusing the victim of behaviors the abuser themselves is engaging in.',
+          'Moving Goalposts': 'Constantly changing expectations so the victim can never succeed.',
+          'Parental Alienation': 'Systematic campaign to damage the child\'s relationship with the other parent.',
+          'Schedule Manipulation': 'Using custody schedules and timing as a means of control or punishment.'
+        };
 
-        // Group incidents by pattern
-        const patternCounts: Record<string, number> = {};
+        // Group incidents by pattern with examples
+        const patternData: Record<string, { count: number; examples: string[]; severity: string }> = {};
+        
         incidents.forEach((inc: any) => {
           (inc.patterns || []).forEach((p: string) => {
-            patternCounts[p] = (patternCounts[p] || 0) + 1;
+            if (!patternData[p]) {
+              patternData[p] = { count: 0, examples: [], severity: 'LOW' };
+            }
+            patternData[p].count++;
+            // Store actual example (first 200 chars of description)
+            if (patternData[p].examples.length < 3 && inc.description) {
+              patternData[p].examples.push(`${inc.date}: "${inc.description.slice(0, 200)}"`);
+            }
           });
         });
 
-        userPrompt = `Create a pattern summary for ${court}.
+        // Calculate severity based on frequency and pattern type
+        const highSeverityPatterns = ['Parental Alienation', 'Triangulating Child', 'False Accusations', 'Legal/Court Threats'];
+        const mediumSeverityPatterns = ['Gaslighting', 'DARVO', 'Financial Manipulation', 'Name-Calling/Verbal Abuse'];
+        
+        Object.keys(patternData).forEach(p => {
+          const count = patternData[p].count;
+          const isHighType = highSeverityPatterns.some(hp => p.toLowerCase().includes(hp.toLowerCase()));
+          const isMedType = mediumSeverityPatterns.some(mp => p.toLowerCase().includes(mp.toLowerCase()));
+          
+          if (count >= 5 || (count >= 2 && isHighType)) {
+            patternData[p].severity = 'HIGH';
+          } else if (count >= 3 || (count >= 1 && isMedType)) {
+            patternData[p].severity = 'MEDIUM';
+          } else {
+            patternData[p].severity = 'LOW';
+          }
+        });
+
+        // Sort by severity then count
+        const sortedPatterns = Object.entries(patternData).sort((a, b) => {
+          const severityOrder: Record<string, number> = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2 };
+          if (severityOrder[a[1].severity] !== severityOrder[b[1].severity]) {
+            return severityOrder[a[1].severity] - severityOrder[b[1].severity];
+          }
+          return b[1].count - a[1].count;
+        });
+
+        // Build pattern details for prompt
+        const patternDetails = sortedPatterns.map(([pattern, data]) => {
+          const definition = patternDefinitions[pattern] || 'A documented manipulation or control tactic.';
+          return `
+PATTERN: ${pattern}
+Severity: ${data.severity} (${data.count} documented incidents)
+Definition: ${definition}
+Examples from this case:
+${data.examples.map(ex => `  - ${ex}`).join('\n')}
+`;
+        }).join('\n');
+
+        systemPrompt = `You create professional behavioral pattern summaries for family court. 
+Output PLAIN TEXT only. No markdown, no asterisks, no # symbols. Never use em dashes.
+Your job is to present documented patterns clearly so judges understand:
+1. What manipulation tactics are being used
+2. How severe and frequent they are
+3. Specific examples from the evidence
+Be factual and objective. Let the patterns and evidence speak for themselves.`;
+
+        userPrompt = `Create a comprehensive pattern summary for ${court}.
 ${caseNumber ? `Case Number: ${caseNumber}` : ''}
 ${userName} v. ${otherParty}
 
-PATTERN FREQUENCY:
-${Object.entries(patternCounts).map(([p, count]) => `- ${p}: ${count} occurrences`).join('\n')}
+Total Documented Incidents: ${incidents.length}
 
-DOCUMENTED INCIDENTS:
-${incidentsFormatted.map((inc: FormattedIncident) => `
-${inc.date}: ${inc.description.slice(0, 300)}
-Patterns: ${inc.patterns}
-`).join('\n')}
+DETAILED PATTERN ANALYSIS:
+${patternDetails}
 
-Create a summary showing:
-1. Overview of patterns observed
-2. Specific examples with dates from the incidents above
-3. Frequency of each pattern type
-4. Impact on family/children
+Generate a professional pattern summary document with these sections:
 
-Plain text only, no markdown. Use actual incident details.`;
+1. EXECUTIVE SUMMARY
+   - Total incidents documented
+   - Number of distinct pattern types identified
+   - Overall severity assessment (based on HIGH severity patterns)
+
+2. PATTERN ANALYSIS (for each pattern, in order of severity)
+   - Pattern name and severity level (HIGH/MEDIUM/LOW)
+   - Brief definition explaining what this tactic is
+   - Number of documented occurrences
+   - Specific examples with dates and quotes from the evidence
+
+3. CUMULATIVE IMPACT
+   - How these patterns work together
+   - Impact on the targeted parent
+   - Impact on children (if triangulation or alienation documented)
+
+4. CONCLUSION
+   - Summary of the documented pattern of behavior
+
+Use the actual examples provided. Do not generalize. Include specific quotes where available.
+Plain text only, no markdown formatting.`;
         break;
 
       case 'incident-timeline':
