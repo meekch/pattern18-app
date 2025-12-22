@@ -1342,7 +1342,7 @@ export default function CoachPage() {
                 <div className="onboarding-icon">✨</div>
                 <h2>We See What They're Doing</h2>
                 <p>Gaslighting. DARVO. Blame-shifting. Word salad. We recognize it instantly.</p>
-                <p className="onboarding-sub">Paste any message and we'll show you exactly what tactic is being used — so you can stop doubting yourself.</p>
+                <p className="onboarding-sub">Paste any message and we'll show you exactly what tactic is being used. No more doubting yourself.</p>
               </div>
             )}
             {onboardingStep === 2 && (
@@ -1350,7 +1350,7 @@ export default function CoachPage() {
                 <div className="onboarding-icon">📁</div>
                 <h2>Court-Ready When You Need It</h2>
                 <p>We help you identify and document patterns so you're prepared when it matters.</p>
-                <p className="onboarding-sub">Declarations, timelines, evidence summaries — organized and ready for your attorney or your filing.</p>
+                <p className="onboarding-sub">Declarations, timelines, evidence summaries. Organized and ready for your attorney or your filing.</p>
               </div>
             )}
             {onboardingStep === 3 && (
@@ -1365,7 +1365,7 @@ export default function CoachPage() {
               <div className="onboarding-step">
                 <div className="onboarding-icon">🌿</div>
                 <h2>Protect Your Peace</h2>
-                <p>This isn't just about surviving — it's about healing while you fight.</p>
+                <p>This isn't just about surviving. It's about healing while you fight.</p>
                 <p className="onboarding-sub">Grounding exercises, healthy response coaching, and support for you and your kids. We've got you.</p>
               </div>
             )}
