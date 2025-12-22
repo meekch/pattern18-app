@@ -3,6 +3,14 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
+interface FormattedIncident {
+  num: number;
+  date: string;
+  patterns: string;
+  description: string;
+  severity: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { documentType, incidents, caseContext, purpose } = await req.json();
@@ -22,7 +30,7 @@ export async function POST(req: NextRequest) {
     const otherParty = userRole === 'petitioner' ? respondentName : petitionerName;
 
     // Format incidents with ACTUAL content
-    const incidentsFormatted = incidents.map((inc: any, idx: number) => {
+    const incidentsFormatted: FormattedIncident[] = incidents.map((inc: any, idx: number) => {
       const date = new Date(inc.date).toLocaleDateString('en-US', { 
         month: 'long', day: 'numeric', year: 'numeric' 
       });
@@ -66,7 +74,7 @@ PURPOSE: ${purpose || 'To document concerning behavior patterns by ' + otherPart
 
 HERE ARE THE ACTUAL DOCUMENTED INCIDENTS TO INCLUDE (use these exact details in the declaration):
 
-${incidentsFormatted.map(inc => `
+${incidentsFormatted.map((inc: FormattedIncident) => `
 INCIDENT ${inc.num} - ${inc.date}:
 ${inc.description}
 ${inc.patterns ? `Patterns identified: ${inc.patterns}` : ''}
@@ -94,7 +102,7 @@ ${userName} v. ${otherParty}
 
 Create exhibits from these documented incidents:
 
-${incidentsFormatted.map(inc => `
+${incidentsFormatted.map((inc: FormattedIncident) => `
 ${inc.date}: ${inc.description.slice(0, 200)}
 Patterns: ${inc.patterns || 'Communication issues'}
 `).join('\n')}
@@ -129,7 +137,7 @@ PATTERN FREQUENCY:
 ${Object.entries(patternCounts).map(([p, count]) => `- ${p}: ${count} occurrences`).join('\n')}
 
 DOCUMENTED INCIDENTS:
-${incidentsFormatted.map(inc => `
+${incidentsFormatted.map((inc: FormattedIncident) => `
 ${inc.date}: ${inc.description.slice(0, 300)}
 Patterns: ${inc.patterns}
 `).join('\n')}
@@ -151,7 +159,7 @@ ${caseNumber ? `Case Number: ${caseNumber}` : ''}
 ${userName} v. ${otherParty}
 
 INCIDENTS (already in date order):
-${incidentsFormatted.map(inc => `
+${incidentsFormatted.map((inc: FormattedIncident) => `
 ${inc.date}
 ${inc.description}
 Patterns: ${inc.patterns || 'N/A'}
