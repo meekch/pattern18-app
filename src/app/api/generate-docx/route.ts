@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, PageNumber } from "docx";
 
+// Parse text with **bold** markers into TextRun array
+function parseTextWithBold(text: string, baseSize: number = 24): TextRun[] {
+  const runs: TextRun[] = [];
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  
+  parts.forEach(part => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Bold text
+      runs.push(new TextRun({
+        text: part.slice(2, -2),
+        bold: true,
+        size: baseSize,
+        font: "Times New Roman"
+      }));
+    } else if (part) {
+      // Regular text
+      runs.push(new TextRun({
+        text: part,
+        size: baseSize,
+        font: "Times New Roman"
+      }));
+    }
+  });
+  
+  return runs.length > 0 ? runs : [new TextRun({ text: text, size: baseSize, font: "Times New Roman" })];
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { content, documentType, caseInfo } = await req.json();
@@ -9,45 +36,65 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No content provided' }, { status: 400 });
     }
 
+    // Clean markdown from content first
+    let cleanContent = content
+      .replace(/^#+\s/gm, '') // Remove # headers
+      .replace(/^---$/gm, ''); // Remove hr lines
+
     // Parse the plain text content into paragraphs
-    const lines = content.split('\n').filter((line: string) => line.trim() !== '');
+    const lines = cleanContent.split('\n').filter((line: string) => line.trim() !== '');
     
     const children: Paragraph[] = [];
     
     lines.forEach((line: string, index: number) => {
-      const trimmedLine = line.trim();
+      let trimmedLine = line.trim();
+      
+      // Check if line has bold markers
+      const hasBold = trimmedLine.includes('**');
+      
+      // Clean line for detection (remove ** for checking)
+      const cleanLine = trimmedLine.replace(/\*\*/g, '');
       
       // Detect headers/titles (all caps or specific patterns)
       const isTitle = index === 0 || 
-        trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 10 ||
-        trimmedLine.startsWith('DECLARATION OF') ||
-        trimmedLine.startsWith('EXHIBIT LIST') ||
-        trimmedLine.startsWith('PATTERN SUMMARY') ||
-        trimmedLine.startsWith('INCIDENT TIMELINE') ||
-        trimmedLine.startsWith('SUPERIOR COURT');
+        (cleanLine === cleanLine.toUpperCase() && cleanLine.length > 10) ||
+        cleanLine.startsWith('DECLARATION OF') ||
+        cleanLine.startsWith('EXHIBIT LIST') ||
+        cleanLine.startsWith('PATTERN SUMMARY') ||
+        cleanLine.startsWith('BEHAVIORAL PATTERN') ||
+        cleanLine.startsWith('INCIDENT TIMELINE') ||
+        cleanLine.startsWith('OVERVIEW') ||
+        cleanLine.startsWith('FREQUENCY') ||
+        cleanLine.startsWith('IMPACT') ||
+        cleanLine.startsWith('SPECIFIC EXAMPLES') ||
+        cleanLine.startsWith('SUPERIOR COURT');
       
       // Detect case caption elements
-      const isCaseCaption = trimmedLine.includes(' v. ') || 
-        trimmedLine.startsWith('Case No') ||
-        trimmedLine === 'Petitioner,' ||
-        trimmedLine === 'Respondent.';
+      const isCaseCaption = cleanLine.includes(' v. ') || 
+        cleanLine.startsWith('Case No') ||
+        cleanLine.startsWith('Case:') ||
+        cleanLine === 'Petitioner,' ||
+        cleanLine === 'Respondent.';
       
       // Detect numbered paragraphs
-      const isNumberedParagraph = /^\d+\./.test(trimmedLine);
+      const isNumberedParagraph = /^\d+\./.test(cleanLine);
       
       // Detect signature line
-      const isSignatureLine = trimmedLine.startsWith('____') || 
-        trimmedLine.startsWith('Executed on') ||
-        trimmedLine.includes('penalty of perjury');
+      const isSignatureLine = cleanLine.startsWith('____') || 
+        cleanLine.startsWith('Executed on') ||
+        cleanLine.includes('penalty of perjury');
+      
+      // Detect section headers (bold text that's a header)
+      const isSectionHeader = hasBold && cleanLine.length < 60 && !cleanLine.includes(':') && index > 0;
 
-      if (isTitle) {
+      if (isTitle || isSectionHeader) {
         children.push(
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { before: 240, after: 120 },
             children: [
               new TextRun({ 
-                text: trimmedLine, 
+                text: cleanLine, 
                 bold: true, 
                 size: 28,
                 font: "Times New Roman"
@@ -62,7 +109,7 @@ export async function POST(req: NextRequest) {
             spacing: { before: 60, after: 60 },
             children: [
               new TextRun({ 
-                text: trimmedLine, 
+                text: cleanLine, 
                 size: 24,
                 font: "Times New Roman"
               })
@@ -76,7 +123,7 @@ export async function POST(req: NextRequest) {
             indent: { firstLine: 720 },
             children: [
               new TextRun({ 
-                text: trimmedLine, 
+                text: cleanLine, 
                 size: 24,
                 font: "Times New Roman"
               })
@@ -89,7 +136,7 @@ export async function POST(req: NextRequest) {
             spacing: { before: 400, after: 100 },
             children: [
               new TextRun({ 
-                text: trimmedLine, 
+                text: cleanLine, 
                 size: 24,
                 font: "Times New Roman"
               })
@@ -103,7 +150,7 @@ export async function POST(req: NextRequest) {
             spacing: { before: 120, after: 120 },
             children: [
               new TextRun({ 
-                text: trimmedLine, 
+                text: cleanLine, 
                 size: 24,
                 font: "Times New Roman"
               })
