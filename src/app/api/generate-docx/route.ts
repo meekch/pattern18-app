@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
     lines.forEach((line: string, index: number) => {
       let trimmedLine = line.trim();
       
-      // Check if line has bold markers
-      const hasBold = trimmedLine.includes('**');
+      // Check if line has bold markers - not used but kept for reference
+      // const hasBold = trimmedLine.includes('**');
       
       // Clean line for detection (remove ** for checking)
       const cleanLine = trimmedLine.replace(/\*\*/g, '');
@@ -84,10 +84,26 @@ export async function POST(req: NextRequest) {
         cleanLine.startsWith('Executed on') ||
         cleanLine.includes('penalty of perjury');
       
-      // Detect section headers (bold text that's a header)
-      const isSectionHeader = hasBold && cleanLine.length < 60 && !cleanLine.includes(':') && index > 0;
+      // Detect section headers (all caps, or specific patterns)
+      const isSectionHeader = (
+        (cleanLine === cleanLine.toUpperCase() && cleanLine.length > 5 && cleanLine.length < 60) ||
+        cleanLine.startsWith('PATTERN:') ||
+        cleanLine.startsWith('SEVERITY:') ||
+        cleanLine.startsWith('DEFINITION:') ||
+        cleanLine.startsWith('DOCUMENTED INCIDENTS:') ||
+        cleanLine.startsWith('METHODOLOGY') ||
+        cleanLine.startsWith('DISCLAIMER')
+      );
+      
+      // Detect evidence quotes (lines with "See Exhibit" or starting with "Exhibit")
+      const isEvidenceQuote = cleanLine.startsWith('See Exhibit') || 
+        cleanLine.startsWith('Exhibit ') ||
+        (cleanLine.includes('"') && cleanLine.includes('Exhibit'));
+      
+      // Detect bullet-like items
+      const isBulletItem = cleanLine.startsWith('- ') || cleanLine.startsWith('• ');
 
-      if (isTitle || isSectionHeader) {
+      if (isTitle) {
         children.push(
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -102,11 +118,56 @@ export async function POST(req: NextRequest) {
             ]
           })
         );
+      } else if (isSectionHeader) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 300, after: 120 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                bold: true, 
+                size: 24,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
       } else if (isCaseCaption) {
         children.push(
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { before: 60, after: 60 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                size: 24,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
+      } else if (isEvidenceQuote) {
+        // Indent and italicize evidence quotes
+        children.push(
+          new Paragraph({
+            spacing: { before: 120, after: 120 },
+            indent: { left: 720 },
+            children: [
+              new TextRun({ 
+                text: cleanLine, 
+                italics: true,
+                size: 22,
+                font: "Times New Roman"
+              })
+            ]
+          })
+        );
+      } else if (isBulletItem) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 60, after: 60 },
+            indent: { left: 360 },
             children: [
               new TextRun({ 
                 text: cleanLine, 

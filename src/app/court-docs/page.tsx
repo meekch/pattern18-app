@@ -11,6 +11,13 @@ interface Incident {
   patterns: string[];
   severity: string;
   category: string;
+  // New fields for court-ready docs
+  original_text?: string;
+  original_message?: string;
+  message_date?: string;
+  exhibit_number?: string;
+  source_platform?: string;
+  sender?: string;
 }
 
 interface CaseContext {
@@ -125,9 +132,12 @@ export default function DocumentGeneratorPage() {
       }
       
       if (evidenceData) {
-        evidenceData.forEach(ev => {
-          // Try multiple fields for the description
-          const desc = ev.original_message 
+        evidenceData.forEach((ev, idx) => {
+          // Prioritize original_text (actual quote) over analysis
+          const originalQuote = ev.original_text || ev.original_message || '';
+          
+          // Try multiple fields for the description/analysis
+          const desc = originalQuote
             || ev.message 
             || ev.content 
             || ev.text 
@@ -137,13 +147,23 @@ export default function DocumentGeneratorPage() {
             || ev.description
             || 'Documented from coach';
           
+          // Generate exhibit letter if not assigned
+          const exhibitLetter = ev.exhibit_number || `Exhibit ${String.fromCharCode(65 + idx)}`;
+          
           allIncidents.push({
             id: ev.id,
-            date: ev.created_at,
+            date: ev.message_date || ev.created_at,
             description: typeof desc === 'string' ? desc.slice(0, 500) : JSON.stringify(desc).slice(0, 500),
             patterns: ev.patterns || ev.detected_patterns || [],
             severity: (ev.patterns?.length || ev.detected_patterns?.length || 0) > 2 ? 'high' : (ev.patterns?.length || ev.detected_patterns?.length || 0) > 0 ? 'medium' : 'low',
             category: 'Coach Analysis',
+            // New fields
+            original_text: originalQuote,
+            original_message: ev.original_message || '',
+            message_date: ev.message_date || null,
+            exhibit_number: exhibitLetter,
+            source_platform: ev.source_platform || 'unknown',
+            sender: ev.sender || '',
           });
         });
       }

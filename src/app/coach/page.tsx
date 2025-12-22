@@ -552,17 +552,60 @@ export default function CoachPage() {
     }
   };
 
-  const saveToEvidence = async (msg: Message, userMsg?: Message) => {
+  // Evidence save modal state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveModalData, setSaveModalData] = useState<{
+    msg: Message;
+    userMsg?: Message;
+  } | null>(null);
+  const [evidenceDetails, setEvidenceDetails] = useState({
+    messageDate: '',
+    messageTime: '',
+    sourcePlatform: 'text',
+    senderName: '',
+    contextNotes: '',
+  });
+
+  const openSaveModal = (msg: Message, userMsg?: Message) => {
+    setSaveModalData({ msg, userMsg });
+    // Pre-fill sender name from case context
+    setEvidenceDetails(prev => ({
+      ...prev,
+      senderName: caseContext?.coparentName || '',
+      messageDate: new Date().toISOString().split('T')[0],
+      messageTime: '',
+      sourcePlatform: 'text',
+      contextNotes: '',
+    }));
+    setShowSaveModal(true);
+  };
+
+  const saveToEvidence = async (msg: Message, userMsg?: Message, details?: typeof evidenceDetails) => {
     if (!user || savingEvidence) return;
     setSavingEvidence(msg.id);
 
     try {
+      // Parse message date if provided
+      let messageDateTime = null;
+      if (details?.messageDate) {
+        const dateStr = details.messageDate;
+        const timeStr = details.messageTime || '12:00';
+        messageDateTime = new Date(`${dateStr}T${timeStr}`).toISOString();
+      }
+
       await supabase.from('evidence').insert({
         user_id: user.id,
         type: 'ai_analysis',
         content: msg.content,
         original_message: userMsg?.content || null,
+        original_text: userMsg?.content || null,
         patterns: msg.patterns || [],
+        message_date: messageDateTime,
+        source_platform: details?.sourcePlatform || 'text',
+        sender: details?.senderName || caseContext?.coparentName || null,
+        is_from_coparent: true,
+        context_notes: details?.contextNotes || null,
+        source: 'coach',
         created_at: new Date().toISOString(),
       });
 
@@ -570,11 +613,24 @@ export default function CoachPage() {
         m.id === msg.id ? { ...m, savedToEvidence: true } : m
       ));
       setEvidenceCount(prev => prev + 1);
+      setShowSaveModal(false);
+      setSaveModalData(null);
     } catch (error) {
       console.error('Failed to save evidence:', error);
     } finally {
       setSavingEvidence(null);
     }
+  };
+
+  const handleQuickSave = (msg: Message, userMsg?: Message) => {
+    // For quick save without modal, use defaults
+    saveToEvidence(msg, userMsg, {
+      messageDate: new Date().toISOString().split('T')[0],
+      messageTime: '',
+      sourcePlatform: 'text',
+      senderName: caseContext?.coparentName || '',
+      contextNotes: '',
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -698,49 +754,49 @@ export default function CoachPage() {
         
         <nav className="nav">
           <button onClick={() => { router.push('/dashboard'); setShowSidebar(false); }} className="nav-item">
-            🏠 Home
+            Home
           </button>
           <button className="nav-item active">
-            💬 Coach
+            Coach
           </button>
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
-            📁 My Documentation
+            My Documentation
           </button>
-          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item court">
-            ⚖️ Court Documents
+          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item">
+            Court Documents
           </button>
-          <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item filings">
-            📋 Case Filings
+          <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item">
+            Case Filings
           </button>
-          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item parser">
-            📱 Message Analyzer
+          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item">
+            Message Analyzer
           </button>
-          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item healing">
-            🌿 Healing Journey
+          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item">
+            Healing Journey
           </button>
           <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
-            ⚙️ Settings
+            Settings
           </button>
           
           <div className="nav-divider" />
           
           <button onClick={() => { setShowOnboarding(true); setOnboardingStep(0); setShowSidebar(false); }} className="nav-item">
-            📖 How It Works
+            How It Works
           </button>
-          <button onClick={() => { setShowWhatsNew(true); setShowSidebar(false); }} className="nav-item new">
-            ✨ What's New
+          <button onClick={() => { setShowWhatsNew(true); setShowSidebar(false); }} className="nav-item">
+            What's New
           </button>
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
-            💬 Feedback
+            Feedback
           </button>
           
           <div className="nav-divider" />
           
-          <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="nav-item safety">
-            🤍 Safety Resources
+          <button onClick={() => { setSafetyTriggered(false); setShowSafetyResources(true); setShowSidebar(false); }} className="nav-item">
+            Safety Resources
           </button>
           <button onClick={handleLogout} className="nav-item logout">
-            🚪 Log Out
+            Log Out
           </button>
         </nav>
       </div>
@@ -843,22 +899,33 @@ export default function CoachPage() {
                   <div className="message-actions">
                     <div className="action-buttons">
                       <button onClick={() => navigator.clipboard.writeText(msg.content)} className="action-btn">
-                        📋 Copy
+                        Copy
                       </button>
                       {msg.patterns && msg.patterns.length > 0 && (
                         msg.savedToEvidence ? (
                           <span className="saved-badge">✓ Saved</span>
                         ) : (
-                          <button
-                            onClick={() => {
-                              const userMsg = idx > 0 ? messages[idx - 1] : undefined;
-                              saveToEvidence(msg, userMsg);
-                            }}
-                            disabled={savingEvidence === msg.id}
-                            className="action-btn save"
-                          >
-                            {savingEvidence === msg.id ? 'Saving...' : '📌 Save'}
-                          </button>
+                          <>
+                            <button
+                              onClick={() => {
+                                const userMsg = idx > 0 ? messages[idx - 1] : undefined;
+                                handleQuickSave(msg, userMsg);
+                              }}
+                              disabled={savingEvidence === msg.id}
+                              className="action-btn save"
+                            >
+                              {savingEvidence === msg.id ? 'Saving...' : 'Quick Save'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const userMsg = idx > 0 ? messages[idx - 1] : undefined;
+                                openSaveModal(msg, userMsg);
+                              }}
+                              className="action-btn details"
+                            >
+                              + Details
+                            </button>
+                          </>
                         )
                       )}
                     </div>
@@ -1521,6 +1588,103 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* Save Evidence Modal */}
+      {showSaveModal && saveModalData && (
+        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+          <div className="save-modal" onClick={e => e.stopPropagation()}>
+            <h3>Save Evidence with Details</h3>
+            <p className="modal-subtitle">Adding details makes your documentation court-ready</p>
+            
+            <div className="form-group">
+              <label>Original Message</label>
+              <div className="quote-preview">
+                "{saveModalData.userMsg?.content?.slice(0, 300) || 'No message'}"
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Message Date</label>
+                <input
+                  type="date"
+                  value={evidenceDetails.messageDate}
+                  onChange={e => setEvidenceDetails(prev => ({ ...prev, messageDate: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Time (optional)</label>
+                <input
+                  type="time"
+                  value={evidenceDetails.messageTime}
+                  onChange={e => setEvidenceDetails(prev => ({ ...prev, messageTime: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Source</label>
+                <select
+                  value={evidenceDetails.sourcePlatform}
+                  onChange={e => setEvidenceDetails(prev => ({ ...prev, sourcePlatform: e.target.value }))}
+                >
+                  <option value="text">Text Message</option>
+                  <option value="imessage">iMessage</option>
+                  <option value="email">Email</option>
+                  <option value="ofw">OurFamilyWizard</option>
+                  <option value="talkingparents">TalkingParents</option>
+                  <option value="appclose">AppClose</option>
+                  <option value="voicemail">Voicemail</option>
+                  <option value="social">Social Media</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Sender</label>
+                <input
+                  type="text"
+                  placeholder="Who sent this?"
+                  value={evidenceDetails.senderName}
+                  onChange={e => setEvidenceDetails(prev => ({ ...prev, senderName: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Context Notes (optional)</label>
+              <textarea
+                placeholder="Any important context? (e.g., 'This was after I asked about pickup time')"
+                value={evidenceDetails.contextNotes}
+                onChange={e => setEvidenceDetails(prev => ({ ...prev, contextNotes: e.target.value }))}
+                rows={2}
+              />
+            </div>
+
+            <div className="patterns-preview">
+              <label>Patterns Identified</label>
+              <div className="pattern-tags">
+                {saveModalData.msg.patterns?.map(p => (
+                  <span key={p} className="pattern-tag">{p}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowSaveModal(false)} className="cancel-btn">
+                Cancel
+              </button>
+              <button
+                onClick={() => saveToEvidence(saveModalData.msg, saveModalData.userMsg, evidenceDetails)}
+                disabled={savingEvidence === saveModalData.msg.id}
+                className="save-btn"
+              >
+                {savingEvidence === saveModalData.msg.id ? 'Saving...' : 'Save Evidence'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .container {
           display: flex;
@@ -1700,22 +1864,29 @@ export default function CoachPage() {
           font-size: 15px;
           cursor: pointer;
           text-align: left;
+          width: 100%;
+          transition: all 0.15s ease;
         }
-        .nav-item:hover, .nav-item.active {
+        .nav-item:hover {
           background: rgba(255,255,255,0.1);
-          color: white;
+          color: rgba(255,255,255,0.9);
         }
-        .nav-item.breathe { color: #5eead4; }
-        .nav-item.healing { color: #86efac; }
-        .nav-item.parser { color: #93c5fd; }
-        .nav-item.court { color: #fcd34d; }
-        .nav-item.filings { color: #f9a8d4; }
-        .nav-item.safety { color: #f9a8d4; }
-        .nav-item.logout { color: #fca5a5; }
+        .nav-item.active {
+          background: rgba(20, 184, 166, 0.2);
+          color: #5eead4;
+          font-weight: 500;
+        }
+        .nav-item.logout { 
+          color: rgba(252, 165, 165, 0.8); 
+        }
+        .nav-item.logout:hover { 
+          color: #fca5a5;
+          background: rgba(239, 68, 68, 0.1);
+        }
         .nav-divider {
           height: 1px;
           background: rgba(255,255,255,0.1);
-          margin: 8px 0;
+          margin: 12px 0;
         }
 
         /* Header */
@@ -2942,8 +3113,125 @@ export default function CoachPage() {
           font-size: 15px;
           cursor: pointer;
         }
-        .nav-item.new {
-          color: #f59e0b;
+
+        /* Save Evidence Modal */
+        .save-modal {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          max-width: 500px;
+          width: 90%;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .save-modal h3 {
+          color: #1a3a2f;
+          margin: 0 0 4px;
+          font-size: 20px;
+        }
+        .modal-subtitle {
+          color: #666;
+          font-size: 14px;
+          margin: 0 0 20px;
+        }
+        .form-group {
+          margin-bottom: 16px;
+        }
+        .form-group label {
+          display: block;
+          font-size: 13px;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 6px;
+        }
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .save-modal input,
+        .save-modal select,
+        .save-modal textarea {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          box-sizing: border-box;
+        }
+        .save-modal input:focus,
+        .save-modal select:focus,
+        .save-modal textarea:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+        .quote-preview {
+          background: #f9fafb;
+          border-left: 3px solid #14b8a6;
+          padding: 12px;
+          border-radius: 0 8px 8px 0;
+          font-style: italic;
+          color: #4b5563;
+          font-size: 14px;
+          max-height: 100px;
+          overflow-y: auto;
+        }
+        .patterns-preview {
+          margin-bottom: 20px;
+        }
+        .patterns-preview label {
+          display: block;
+          font-size: 13px;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 8px;
+        }
+        .pattern-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .pattern-tag {
+          background: #e0e7ff;
+          color: #4f46e5;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 20px;
+        }
+        .cancel-btn {
+          flex: 1;
+          padding: 12px;
+          background: #f3f4f6;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .save-btn {
+          flex: 2;
+          padding: 12px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .save-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .action-btn.details {
+          background: #f0fdf4;
+          color: #166534;
         }
 
         @media (max-width: 640px) {
