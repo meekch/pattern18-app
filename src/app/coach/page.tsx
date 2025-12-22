@@ -1332,41 +1332,41 @@ export default function CoachPage() {
             {onboardingStep === 0 && (
               <div className="onboarding-step">
                 <div className="onboarding-icon">💚</div>
-                <h2>Welcome to Pattern 18</h2>
-                <p>Your 24/7 strategic partner for navigating high-conflict situations.</p>
-                <p className="onboarding-sub">Let me show you around in 60 seconds.</p>
+                <h2>You Found Us</h2>
+                <p>If you're here, you've been through more than most people understand.</p>
+                <p className="onboarding-sub">You're not crazy. You're not alone. And you just found something that's going to change everything.</p>
               </div>
             )}
             {onboardingStep === 1 && (
               <div className="onboarding-step">
-                <div className="onboarding-icon">📱</div>
-                <h2>The Crisis Moment</h2>
-                <p>Got a text that made your stomach drop?</p>
-                <p className="onboarding-sub">Click 📎 to upload a screenshot or just paste the message. I'll show you exactly what's happening.</p>
+                <div className="onboarding-icon">✨</div>
+                <h2>We See What They're Doing</h2>
+                <p>Gaslighting. DARVO. Blame-shifting. Word salad. We recognize it instantly.</p>
+                <p className="onboarding-sub">Paste any message and we'll show you exactly what tactic is being used — so you can stop doubting yourself.</p>
               </div>
             )}
             {onboardingStep === 2 && (
               <div className="onboarding-step">
-                <div className="onboarding-icon">🎯</div>
-                <h2>I See Through It</h2>
-                <p>You're not crazy. I'll help you name it, document it, and stop second-guessing yourself.</p>
-                <p className="onboarding-sub">Gaslighting, DARVO, baiting, blame-shifting... I'll name it and help you respond without reacting.</p>
+                <div className="onboarding-icon">📁</div>
+                <h2>Court-Ready When You Need It</h2>
+                <p>We help you identify and document patterns so you're prepared when it matters.</p>
+                <p className="onboarding-sub">Declarations, timelines, evidence summaries — organized and ready for your attorney or your filing.</p>
               </div>
             )}
             {onboardingStep === 3 && (
               <div className="onboarding-step">
-                <div className="onboarding-icon">📁</div>
-                <h2>Build Your Case</h2>
-                <p>Every conversation can become evidence.</p>
-                <p className="onboarding-sub">When I identify patterns, you can save the analysis with one tap. Building your case happens automatically.</p>
+                <div className="onboarding-icon">📱</div>
+                <h2>Months of Texts, Analyzed in Minutes</h2>
+                <p>Upload your entire message history. We'll find every manipulation pattern automatically.</p>
+                <p className="onboarding-sub">What took you years to recognize, we'll show you in one report.</p>
               </div>
             )}
             {onboardingStep === 4 && (
               <div className="onboarding-step">
-                <div className="onboarding-icon">🫁</div>
-                <h2>You're Not Alone</h2>
-                <p>Need to breathe first? I've got that too.</p>
-                <p className="onboarding-sub">Grounding exercises, affirmations, and safety resources are always here when you need them.</p>
+                <div className="onboarding-icon">🌿</div>
+                <h2>Protect Your Peace</h2>
+                <p>This isn't just about surviving — it's about healing while you fight.</p>
+                <p className="onboarding-sub">Grounding exercises, healthy response coaching, and support for you and your kids. We've got you.</p>
               </div>
             )}
             <div className="onboarding-nav">
