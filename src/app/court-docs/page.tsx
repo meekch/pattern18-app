@@ -295,8 +295,8 @@ export default function DocumentGeneratorPage() {
   return (
     <div className="container">
       <header className="header">
-        <button onClick={() => router.back()} className="back-btn">← Back</button>
-        <h1>⚖️ Court Documents</h1>
+        <button onClick={() => router.push('/evidence')} className="back-btn">←</button>
+        <h1>Create Document</h1>
         <div style={{ width: 60 }} />
       </header>
 

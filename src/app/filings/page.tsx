@@ -373,7 +373,7 @@ export default function FilingsPage() {
     <div className="container">
       <header className="header">
         <button onClick={() => router.back()} className="back-btn">← Back</button>
-        <h1>📋 Case Filings</h1>
+        <h1>Court Calendar</h1>
         <button onClick={() => setShowUpload(true)} className="add-btn">+ Add</button>
       </header>
 

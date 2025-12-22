@@ -133,10 +133,10 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📱', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
-  { icon: '✍️', title: 'Draft a response', desc: 'Calm, healthy replies', prompt: 'I need to respond to this message. Help me respond calmly without JADE (Justify, Argue, Defend, Explain):\n\n' },
-  { icon: '⚖️', title: 'Court document help', desc: 'Motions, declarations, exhibits', prompt: 'I need help with a court document. Here\'s what I\'m trying to accomplish:\n\n' },
-  { icon: '🎯', title: 'Identify patterns', desc: 'See the manipulation tactics', prompt: 'Can you help me identify manipulation patterns in this situation:\n\n' },
+  { icon: '💬', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
+  { icon: '✍️', title: 'Draft a response', desc: 'Help me reply calmly', prompt: 'I need to respond to this message. Help me reply calmly without JADE (Justify, Argue, Defend, Explain):\n\n[paste message here]' },
+  { icon: '📄', title: 'Prepare for court', desc: 'Documents, strategy, what to expect', prompt: 'I need help preparing for court. Here\'s my situation:\n\n' },
+  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', prompt: 'I\'m feeling overwhelmed right now and need help calming down.' },
 ];
 
 // ============================================
@@ -753,38 +753,23 @@ export default function CoachPage() {
         )}
         
         <nav className="nav">
-          <button onClick={() => { router.push('/dashboard'); setShowSidebar(false); }} className="nav-item">
-            Home
-          </button>
           <button className="nav-item active">
             Coach
           </button>
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
-            My Documentation
-          </button>
-          <button onClick={() => { router.push('/court-docs'); setShowSidebar(false); }} className="nav-item">
-            Court Documents
+            My Evidence
           </button>
           <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item">
-            Case Filings
-          </button>
-          <button onClick={() => { router.push('/message-parser'); setShowSidebar(false); }} className="nav-item">
-            Message Analyzer
-          </button>
-          <button onClick={() => { router.push('/healing'); setShowSidebar(false); }} className="nav-item">
-            Healing Journey
-          </button>
-          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
-            Settings
+            Court Calendar
           </button>
           
           <div className="nav-divider" />
           
+          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
+            Settings
+          </button>
           <button onClick={() => { setShowOnboarding(true); setOnboardingStep(0); setShowSidebar(false); }} className="nav-item">
             How It Works
-          </button>
-          <button onClick={() => { setShowWhatsNew(true); setShowSidebar(false); }} className="nav-item">
-            What's New
           </button>
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
             Feedback
@@ -856,15 +841,6 @@ export default function CoachPage() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="bulk-analyzer-promo" onClick={() => router.push('/message-parser')}>
-              <div className="promo-icon">📱</div>
-              <div className="promo-content">
-                <div className="promo-title">Have months of texts to analyze?</div>
-                <div className="promo-desc">Upload your message history and find all patterns automatically</div>
-              </div>
-              <span className="promo-arrow">→</span>
             </div>
 
             <button className="breathe-btn" onClick={() => { setShowRegulate(true); setRegulateMode('menu'); }}>

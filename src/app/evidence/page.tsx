@@ -77,46 +77,90 @@ export default function EvidencePage() {
         return;
       }
       setUser(session.user);
-      await loadIncidents(session.user.id);
+      await loadAllDocumentation(session.user.id);
       setLoading(false);
     };
     init();
   }, [router]);
 
-  const loadIncidents = async (userId: string) => {
-    const { data, error } = await supabase
+  const loadAllDocumentation = async (userId: string) => {
+    // Load from incidents table
+    const { data: incidentsData } = await supabase
       .from('incidents')
       .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false });
-
-    if (data) {
-      setIncidents(data);
-      
-      // Calculate stats
-      const now = new Date();
-      const thisMonth = data.filter(d => {
-        const date = new Date(d.date);
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      });
-      
-      const patterns: { [key: string]: number } = {};
-      data.forEach(inc => {
-        if (inc.patterns && Array.isArray(inc.patterns)) {
-          inc.patterns.forEach((p: string) => {
-            patterns[p] = (patterns[p] || 0) + 1;
-          });
-        }
-      });
-      
-      setStats({
-        total: data.length,
-        critical: data.filter(d => d.severity === 'critical').length,
-        high: data.filter(d => d.severity === 'high' || d.severity === 'critical').length,
-        thisMonth: thisMonth.length,
-        patterns,
+    
+    // Load from evidence table
+    const { data: evidenceData } = await supabase
+      .from('evidence')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    // Combine and normalize both sources
+    const allItems: Incident[] = [];
+    
+    // Add incidents
+    if (incidentsData) {
+      incidentsData.forEach(inc => {
+        allItems.push({
+          id: inc.id,
+          date: inc.date || inc.created_at,
+          description: inc.description,
+          patterns: inc.patterns || [],
+          severity: inc.severity || 'low',
+          category: inc.category || 'Other',
+          source: inc.source || 'incident',
+          created_at: inc.created_at,
+        });
       });
     }
+    
+    // Add evidence items (from coach saves)
+    if (evidenceData) {
+      evidenceData.forEach(ev => {
+        allItems.push({
+          id: ev.id,
+          date: ev.created_at,
+          description: ev.original_message || ev.content?.slice(0, 300) || 'Saved from coach',
+          patterns: ev.patterns || [],
+          severity: ev.patterns?.length > 2 ? 'high' : ev.patterns?.length > 0 ? 'medium' : 'low',
+          category: 'Coach Analysis',
+          source: 'coach',
+          created_at: ev.created_at,
+        });
+      });
+    }
+    
+    // Sort by date descending
+    allItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setIncidents(allItems);
+    
+    // Calculate stats
+    const now = new Date();
+    const thisMonth = allItems.filter(d => {
+      const date = new Date(d.date);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    });
+    
+    const patterns: { [key: string]: number } = {};
+    allItems.forEach(inc => {
+      if (inc.patterns && Array.isArray(inc.patterns)) {
+        inc.patterns.forEach((p: string) => {
+          patterns[p] = (patterns[p] || 0) + 1;
+        });
+      }
+    });
+    
+    setStats({
+      total: allItems.length,
+      critical: allItems.filter(d => d.severity === 'critical').length,
+      high: allItems.filter(d => d.severity === 'high' || d.severity === 'critical').length,
+      thisMonth: thisMonth.length,
+      patterns,
+    });
   };
 
   const quickCapture = async () => {
@@ -154,7 +198,7 @@ export default function EvidencePage() {
       if (!error) {
         setCaptureText('');
         setShowQuickCapture(false);
-        await loadIncidents(user.id);
+        await loadAllDocumentation(user.id);
       }
     } catch (err) {
       console.error('Capture error:', err);
@@ -239,12 +283,17 @@ export default function EvidencePage() {
       {/* Header */}
       <header className="header">
         <div className="header-left">
-          <button onClick={() => router.push('/dashboard')} className="back-btn">← Back</button>
-          <h1>📁 Documentation Library</h1>
+          <button onClick={() => router.push('/coach')} className="back-btn">←</button>
+          <h1>My Evidence</h1>
         </div>
-        <button className="capture-btn" onClick={() => setShowQuickCapture(true)}>
-          + Quick Capture
-        </button>
+        <div className="header-actions">
+          <button className="generate-btn" onClick={() => router.push('/court-docs')}>
+            Create Document
+          </button>
+          <button className="capture-btn" onClick={() => setShowQuickCapture(true)}>
+            + Capture
+          </button>
+        </div>
       </header>
 
       <div className="content">
@@ -349,7 +398,7 @@ export default function EvidencePage() {
           <div className="empty-state">
             <span>📭</span>
             <h3>No incidents found</h3>
-            <p>Start documenting to build your evidence library</p>
+            <p>Start documenting to build your case</p>
             <button onClick={() => setShowQuickCapture(true)}>+ Quick Capture</button>
           </div>
         ) : viewMode === 'cards' ? (
@@ -547,12 +596,27 @@ export default function EvidencePage() {
           background: none;
           border: none;
           color: rgba(255,255,255,0.8);
-          font-size: 15px;
+          font-size: 18px;
           cursor: pointer;
+          padding: 4px 8px;
         }
         .header h1 {
           font-size: 18px;
           font-weight: 600;
+        }
+        .header-actions {
+          display: flex;
+          gap: 10px;
+        }
+        .generate-btn {
+          background: white;
+          color: #1a3a2f;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
         }
         .capture-btn {
           background: #14b8a6;
