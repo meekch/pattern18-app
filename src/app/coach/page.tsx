@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from '@/lib/supabase';
 
 interface Message {
   id: string;
@@ -24,7 +24,7 @@ interface CoachSession {
 }
 
 export default function CoachPage() {
-  const supabase = createClientComponentClient();
+ 
   const [user, setUser] = useState<any>(null);
   const [caseData, setCaseData] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([
@@ -832,3 +832,4 @@ export default function CoachPage() {
     </div>
   );
 }
+
