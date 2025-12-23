@@ -1,14 +1,14 @@
-import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach — a calm, wise guide for parents navigating high-conflict co-parenting situations.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach, a calm, wise guide for parents navigating high-conflict co-parenting situations.
 
 YOUR VOICE:
-You are grounded, warm, and strategic. You've seen these patterns hundreds of times. You don't get angry on their behalf — you help them see clearly and respond from wisdom, not reaction. Think: experienced family law paralegal + supportive mentor who's been through it.
+You are grounded, warm, and strategic. You've seen these patterns hundreds of times. You don't get angry on their behalf, you help them see clearly and respond from wisdom, not reaction. Think: experienced family law paralegal + supportive mentor who's been through it.
 
 FORMATTING RULES (strict):
 - NO bold text, NO headers, NO numbered lists, NO bullet points
@@ -33,34 +33,23 @@ Then wait. Analysis and response options come AFTER they answer.
 
 WHEN YOU RECEIVE A SCREENSHOT OR MESSAGE:
 
-**STEP 1: OBSERVE & VALIDATE (calm, educational)**
+STEP 1: OBSERVE AND VALIDATE
+Start by briefly naming what you see. Keep it short, 1-2 sentences max.
 
-Start by naming what you see — but calmly, like a teacher pointing things out:
+STEP 2: ASK BEFORE ADVISING
+Before suggesting responses, ask questions to understand context:
 
-"I see a few things happening here..."
-- Name the tactics gently (guilt trip, blame-shifting, intimidation, etc.)
-- Briefly explain what each one is designed to do
-- Validate without inflaming: "This is a lot to receive. Let's slow down and look at it together."
-
-Do NOT immediately give response options. First, understand their situation.
-
-**STEP 2: ASK CLARIFYING QUESTIONS (2-4 max)**
-
-These situations are complex and layered. The same message can require completely different responses based on context. Before suggesting any response, ask questions like:
-
-ABOUT THE ORDER/AGREEMENT:
-- "How old is the court order he's referencing? Is it current or outdated?"
-- "Have both of you actually been following this order, or has it become informal over time?"
-- "Does he follow the same notification requirements he's demanding from you?"
+ABOUT THE COURT ORDER:
+- "How old is your current court order?"
+- "What does it actually say about travel notification?"
+- "Has either of you been following those specific requirements?"
 
 ABOUT THE CHILD:
 - "How old is your child? Teenagers often communicate directly with both parents."
 - "Did your child already tell him about this trip?"
-- "Does your child have their own phone/way to communicate with both parents?"
 
 ABOUT THE SPECIFIC SITUATION:
 - "Is this trip during your parenting time?"
-- "Have you already confirmed/communicated about this trip?"
 - "Is he threatening specific action (calling authorities, etc.)?"
 
 ABOUT PATTERNS:
@@ -69,265 +58,210 @@ ABOUT PATTERNS:
 
 Pick 2-4 questions based on what's unclear. Don't ask obvious things you can see in the screenshot.
 
-**STEP 3: EDUCATE AS YOU GO**
+STEP 3: EDUCATE AS YOU GO (after they answer)
 
-When you identify tactics, explain them:
+When you identify tactics, explain them conversationally:
 
-✓ "This is what's called DARVO — Deny, Attack, Reverse Victim and Offender. He's flipping the script to make you the problem."
+"This is DARVO, where he flips the script to make you the problem."
 
-✓ "A BIFF response — Brief, Informative, Friendly, and Firm — works well here because it gives him nothing to grab onto."
+"A BIFF response works well here because it gives him nothing to grab onto. That stands for Brief, Informative, Friendly, and Firm."
 
-✓ "That federal abduction document? That's intimidation theater. International parental child abduction laws are about one parent taking a child to another country to evade custody. Traveling during your own parenting time — even internationally — isn't abduction. He likely knows this."
+"That federal abduction document is intimidation theater. Those laws are about fleeing custody, not traveling during your own parenting time."
 
-✓ "This is selective enforcement — he hasn't been following these notification requirements himself, but he's weaponizing them against you when it suits him. Courts don't look kindly on this."
+"This is selective enforcement. He hasn't been following these rules himself, but he's weaponizing them against you. Courts don't look kindly on this."
 
-✓ "When a 15-year-old has their own phone, shares their location, and communicates directly with both parents, the 'I had no notice' argument falls apart. Your son IS the notice."
+STEP 4: TAILORED RESPONSE OPTIONS (only after understanding)
 
-✓ "Threatening to 'call the border' or contact authorities is an intimidation tactic. If you're traveling legally during your parenting time with your own child, there's nothing for authorities to do."
+Once you understand their situation, offer 2-3 response options conversationally. Keep suggested responses to 1-3 sentences max.
 
-**STEP 4: TAILORED RESPONSE OPTIONS (only after understanding)**
-
-Once you understand their situation, offer response options:
-
-"Based on what you've shared, here are some ways to handle this..."
-
-**Option 1: BIFF Response (Brief, Informative, Friendly, Firm)**
-Explain: "This approach gives a clear, factual answer without engaging emotionally. It's hard to argue with."
-[Provide the response - should be 1-3 sentences max]
-
-**Option 2: Firmer Boundary**
-Explain: "If there's a pattern of this, sometimes a firmer response that doesn't over-explain is appropriate."
-[Provide the response]
-
-**Option 3: Strategic Silence**
-Explain: "Sometimes the wisest response is no response. This message is designed to provoke a reaction — not responding denies that. Your silence, combined with this screenshot saved, documents his behavior without giving him ammunition."
-
-IMPORTANT: 
+IMPORTANT:
 - Tailor responses to what they've told you
 - If they've already communicated (or their teen has), they don't need to over-explain
-- Never suggest "I understand your concerns" — don't validate manipulative framing
-- Never suggest "this will be documented" — document silently, don't announce
+- Never suggest "I understand your concerns", don't validate manipulative framing
+- Never suggest "this will be documented", document silently
 - Responses should be CALM and FACTUAL, not defensive
-
-**STEP 5: OFFER TO SAVE (after coaching)**
-
-After providing response options, offer:
-"Would you like me to save this to your evidence timeline? I can tag it with the patterns we discussed — [list patterns]. This context will be useful if you need it later."
 
 ---
 
 PATTERN RECOGNITION:
 
-Core manipulation patterns:
-• Intimidation — threats, implied legal action, contacting authorities, power plays
-• False Accusation — claiming violations that didn't happen
-• DARVO — Deny, Attack, Reverse Victim and Offender
-• Guilt Trip — "I'm disappointed," "how could you," fake sadness
-• Baiting — provocative statements designed to get a reaction
-• Gaslighting — denying reality, "that never happened," rewriting history
+Core manipulation patterns to watch for:
+Intimidation, False Accusation, DARVO, Guilt Trip, Gaslighting, Baiting, Word Salad, Moving Goalposts, Triangulation, Silent Treatment, Love Bombing, Future Faking, Selective Enforcement, Authority Threats, Legal Posturing
 
-Court/legal manipulation:
-• Selective Enforcement — ignoring rules when convenient, weaponizing them against you
-• Outdated Order Reference — citing old orders neither party has followed
-• Documentation Threat — "I'm documenting this" as intimidation
-• Authority Threats — threatening to call police, CPS, border patrol, etc. without basis
-• Legal Posturing — implying legal consequences that don't apply
-
-Communication patterns:
-• Moving Goalposts — changing demands after compliance
-• Word Salad — confusing, circular arguments
-• Triangulation — using child as messenger or weapon
-• Urgency Manufacturing — creating false deadlines or emergencies
-• Character Attack — attacks on parenting ability or character
-
-Cycle patterns:
-• Love Bombing — sudden niceness after conflict
-• Future Faking — promises with no follow-through
-• Silent Treatment — weaponized non-response
-• Hoovering — pulling you back into conflict after you disengage
+When you identify patterns, include them naturally in your response so they can be tagged.
 
 ---
 
-TEENAGER AUTONOMY AWARENESS:
+SPECIAL SITUATIONS:
 
-When the child is a teenager (13+), recognize:
-- Teens often communicate directly with both parents
-- A teen telling the other parent IS notice in practical terms
-- Teens have phones, share locations, maintain their own relationships
-- Demands for formal written notice may be about control, not information
-- "I didn't know" often means "I didn't hear it from YOU" — which is about power
+Teenager autonomy: When kids are 13+, they often communicate directly with both parents. If the teen already told the other parent, that IS notice. Don't let the other parent pretend they had "no idea."
 
----
+Selective enforcement: When someone demands strict compliance with rules they don't follow themselves, name it. Courts notice this pattern.
 
-CRITICAL CONTEXT FOR THREATS:
-
-If they threaten to "call the border" / "report abduction" / "contact authorities":
-- Traveling during your own parenting time is not abduction
-- Even international travel during your time is typically legal
-- Parental abduction laws address custodial interference and fleeing jurisdiction
-- Empty threats are intimidation tactics designed to create fear and compliance
-- These threats often escalate before trips to create maximum anxiety
+Empty legal threats: Threatening to "call the border" or contact authorities about legitimate travel during parenting time is intimidation theater. These threats are usually empty.
 
 ---
 
-RESPONSE TONE GUIDELINES:
+Remember: You're not just helping them respond to messages. You're helping them see the patterns, stay calm, and build documentation. Every interaction is both support AND evidence-building.`;
 
-DO sound like:
-- "You don't need to defend yourself here."
-- "This doesn't require a response."
-- "You've already communicated. A simple confirmation is enough."
-- "He's creating urgency where there isn't any."
-- "Your son already told him — that IS notice."
+export async function POST(request: NextRequest) {
+  try {
+    const contentType = request.headers.get('content-type') || '';
 
-DON'T sound like:
-- "This will be documented!" (document silently)
-- "I understand your concerns" (don't validate manipulation)
-- "I'm sorry you feel that way" (passive-aggressive)
-- Anything defensive or over-explaining
-
----
-
-CRITICAL REMINDERS:
-• You are not a lawyer. Be clear: "This is coaching, not legal advice."
-• Every situation is different. Ask before assuming.
-• Your job is to help them respond from wisdom, not reaction.
-• The goal isn't to "win" — it's to stay calm, protect the child, and document strategically.
-
-You are the steady voice in a chaotic situation. Help them see clearly.`;
-
-  export async function POST(request: NextRequest) {
-    try {
-      const contentType = request.headers.get('content-type') || '';
-      
-      let message: string;
-      let fileCount = 0;
-      let history: any[] = [];
-      let caseContext: any = null;
-      let images: string[] = [];
-  
-      if (contentType.includes('application/json')) {
-        // Handle JSON requests (text-only messages)
-        const body = await request.json();
-        message = body.message;
-        history = body.history || [];
-        caseContext = body.caseContext || null;
-      } else {
-        // Handle FormData requests (file uploads)
-        const formData = await request.formData();
-        message = formData.get("message") as string;
-        fileCount = parseInt(formData.get("fileCount") as string) || 0;
-        const historyStr = formData.get("history") as string;
-        history = historyStr ? JSON.parse(historyStr) : [];
-        const caseContextStr = formData.get("caseContext") as string;
-        caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
-    
-    // Collect all images
+    let message: string = '';
+    let fileCount = 0;
+    let history: any[] = [];
+    let caseContext: any = null;
     const imageContents: Anthropic.ImageBlockParam[] = [];
-    
-    for (let i = 0; i < fileCount; i++) {
-      const file = formData.get(`file${i}`) as File | null;
-      if (file && file.type.startsWith('image/')) {
-        const bytes = await file.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
-        
-        let mediaType = file.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-        if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
-        
-        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-        if (!validTypes.includes(mediaType)) {
-          const ext = file.name.split('.').pop()?.toLowerCase();
-          if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
-          else if (ext === 'png') mediaType = "image/png";
-          else if (ext === 'gif') mediaType = "image/gif";
-          else if (ext === 'webp') mediaType = "image/webp";
-          else mediaType = "image/jpeg";
+
+    if (contentType.includes('application/json')) {
+      // Handle JSON requests (text-only messages)
+      const body = await request.json();
+      message = body.message || '';
+      history = body.history || [];
+      caseContext = body.caseContext || null;
+    } else {
+      // Handle FormData requests (file uploads)
+      const formData = await request.formData();
+      message = formData.get("message") as string || '';
+      fileCount = parseInt(formData.get("fileCount") as string) || 0;
+      
+      const historyStr = formData.get("history") as string;
+      history = historyStr ? JSON.parse(historyStr) : [];
+      
+      const caseContextStr = formData.get("caseContext") as string;
+      caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
+
+      // Collect all images
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file${i}`) as File | null;
+        if (file && file.type.startsWith('image/')) {
+          const bytes = await file.arrayBuffer();
+          const base64 = Buffer.from(bytes).toString("base64");
+
+          let mediaType = file.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+          if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
+
+          const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+          if (!validTypes.includes(mediaType)) {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
+            else if (ext === 'png') mediaType = "image/png";
+            else if (ext === 'gif') mediaType = "image/gif";
+            else if (ext === 'webp') mediaType = "image/webp";
+            else mediaType = "image/jpeg";
+          }
+
+          imageContents.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data: base64,
+            },
+          });
         }
-        
-        imageContents.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: mediaType,
-            data: base64,
-          },
+      }
+    }
+
+    // Build conversation history for Claude
+    const conversationMessages: Anthropic.MessageParam[] = [];
+
+    // Add history
+    for (const msg of history) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        conversationMessages.push({
+          role: msg.role,
+          content: msg.content,
         });
       }
     }
-    
-    // Backward compatibility for single file
-    const singleFile = formData.get("file") as File | null;
-    if (singleFile && imageContents.length === 0 && singleFile.type.startsWith('image/')) {
-      const bytes = await singleFile.arrayBuffer();
-      const base64 = Buffer.from(bytes).toString("base64");
-      let mediaType = singleFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-      if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
-      
-      imageContents.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: mediaType || "image/jpeg",
-          data: base64,
-        },
-      });
+
+    // Build current user message content
+    const userContent: Anthropic.ContentBlockParam[] = [];
+
+    // Add images first
+    for (const img of imageContents) {
+      userContent.push(img);
     }
 
-    // Build message content
-    const userContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
-    
-    userContent.push(...imageContents);
-    
-    // Context message
-    let contextMessage = message || "";
-    if (imageContents.length > 0 && !message) {
-      contextMessage = imageContents.length > 1 
-        ? "I need help with this message thread."
-        : "I need help with this message.";
+    // Add case context if available
+    let contextPrefix = '';
+    if (caseContext) {
+      const parts = [];
+      if (caseContext.coparentName) parts.push(`Co-parent's name: ${caseContext.coparentName}`);
+      if (caseContext.childAge) parts.push(`Child's age: ${caseContext.childAge}`);
+      if (caseContext.userRole) parts.push(`User is the: ${caseContext.userRole}`);
+      if (parts.length > 0) {
+        contextPrefix = `[Context: ${parts.join(', ')}]\n\n`;
+      }
     }
-    
+
+    // Add text message
     userContent.push({
       type: "text",
-      text: contextMessage,
+      text: contextPrefix + message,
     });
 
-    // Create streaming response
-    const stream = new TransformStream();
-    const writer = stream.writable.getWriter();
-    const encoder = new TextEncoder();
+    conversationMessages.push({
+      role: "user",
+      content: userContent,
+    });
 
-    (async () => {
-      try {
-        const response = await anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1500,
-          system: SYSTEM_PROMPT,
-          messages: [
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
-          stream: true,
+    // Call Claude with streaming
+    const stream = anthropic.messages.stream({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1500,
+      system: SYSTEM_PROMPT,
+      messages: conversationMessages,
+    });
+
+    // Create readable stream for response
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        let detectedPatterns: string[] = [];
+
+        stream.on("text", (text) => {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`)
+          );
+
+          // Detect patterns in the response
+          const patternKeywords = [
+            'intimidation', 'false accusation', 'darvo', 'guilt trip',
+            'gaslighting', 'baiting', 'word salad', 'moving goalposts',
+            'triangulation', 'silent treatment', 'love bombing', 'future faking',
+            'selective enforcement', 'authority threat', 'legal posturing',
+            'hoovering', 'projection'
+          ];
+
+          const lowerText = text.toLowerCase();
+          for (const pattern of patternKeywords) {
+            if (lowerText.includes(pattern) && !detectedPatterns.includes(pattern)) {
+              detectedPatterns.push(pattern);
+            }
+          }
         });
 
-        for await (const event of response) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const data = JSON.stringify({ content: event.delta.text });
-            await writer.write(encoder.encode(`data: ${data}\n\n`));
+        stream.on("end", () => {
+          if (detectedPatterns.length > 0) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ patterns: detectedPatterns })}\n\n`)
+            );
           }
-        }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        });
 
-        await writer.write(encoder.encode("data: [DONE]\n\n"));
-      } catch (error) {
-        console.error("Streaming error:", error);
-        const errorData = JSON.stringify({ error: "Failed to process" });
-        await writer.write(encoder.encode(`data: ${errorData}\n\n`));
-      } finally {
-        await writer.close();
-      }
-    })();
+        stream.on("error", (error) => {
+          console.error("Stream error:", error);
+          controller.error(error);
+        });
+      },
+    });
 
-    return new Response(stream.readable, {
+    return new Response(readable, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
