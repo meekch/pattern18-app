@@ -11,13 +11,14 @@ import OnboardingWow from '@/components/OnboardingWow';
 // ============================================
 
 interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  patterns?: string[];
-  savedToEvidence?: boolean;
-}
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    patterns?: string[];
+    savedToEvidence?: boolean;
+    images?: string[];
+  }
 
 interface CaseContext {
   caseNumber: string;
@@ -298,12 +299,20 @@ export default function CoachPage() {
     setIsLoading(true);
     setShowWelcome(false);
     
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: `[Uploaded: ${file.name}] ${promptMessage}`,
-      timestamp: new Date(),
-    };
+    // Convert file to base64 for display
+    const imagePreview = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+  
+      const userMsg: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: promptMessage,
+        timestamp: new Date(),
+        images: [imagePreview],
+      };
     setMessages(prev => [...prev, userMsg]);
     
     const assistantId = (Date.now() + 1).toString();
@@ -1222,9 +1231,27 @@ export default function CoachPage() {
           </div>
         ) : (
           <div className="messages">
-            {messages.map((msg, idx) => (
+           {messages.map((msg, idx) => (
               <div key={msg.id} className={`message ${msg.role}`}>
                 <div className="bubble">
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="message-images">
+                      {msg.images.map((img, i) => (
+                        <img 
+                          key={i} 
+                          src={img} 
+                          alt="Screenshot" 
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '300px',
+                            borderRadius: '8px',
+                            marginBottom: msg.content ? '10px' : '0'
+                          }}
+                          onClick={() => window.open(img, '_blank')}
+                        />
+                      ))}
+                    </div>
+                  )}
                   {msg.content || (isLoading && msg.role === 'assistant' ? '...' : '')}
                 </div>
                 {msg.role === 'assistant' && msg.content && (
