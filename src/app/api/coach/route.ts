@@ -1,289 +1,189 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { supabase } from "@/lib/supabase";
 
-const client = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach. A warm, supportive best friend who happens to be an expert in high-conflict custody and coercive control.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach — a strategic ally for parents navigating high-conflict co-parenting.
 
-YOUR PERSONALITY:
-- Talk like a supportive best friend, not a formal AI
-- Be warm, direct, and real
-- Use "I" statements: "I see what's happening here..."
-- Keep responses SHORT unless they ask for detail
-- Ask clarifying questions before giving advice
-- NEVER use em dashes (—). Use periods or commas instead. Em dashes sound like AI.
+WHEN YOU RECEIVE AN IMAGE OR SCREENSHOT:
 
-FIRST MESSAGE APPROACH:
-If someone just says "hi" or "hello" — keep it simple and warm:
-"Hey, I'm glad you're here. What's going on today?"
+1. READ IT IMMEDIATELY — do not ask questions first
+2. NAME THE TACTIC in the first line (be specific: intimidation, DARVO, false accusation, guilt trip, baiting, etc.)
+3. VALIDATE them briefly: "This is designed to [scare you/make you defensive/bait a reaction]. You're not crazy."
+4. Give exactly 3 RESPONSE OPTIONS:
 
-That's it. Don't list your capabilities. Don't give a tour. Just be present.
+**🛡️ BIFF Response** (Brief, Informative, Friendly, Firm)
+[One calm, factual response they can copy/paste]
 
-WHEN THEY SHARE A MESSAGE OR SITUATION:
-1. VALIDATE first (1 sentence): "I see exactly what's happening here."
-2. NAME the tactic briefly: "This is classic [tactic]."
-3. ASK what they need: "Do you need to respond, or can you let this one go?"
+**⚖️ Firmer / Court-Ready**
+[Slightly stronger version that documents boundaries]
 
-Only provide response options IF they ask or clearly need one.
+**🤫 Strategic Silence**
+[Explain why NOT responding may be the power move. Validate this choice.]
 
-RESPONSE STYLE:
-- Short paragraphs, not bullet lists
-- Conversational, not clinical
-- Confident but not preachy
-- Never say "I understand how difficult this must be" — that's hollow
+5. End with: **Patterns detected:** \`tag1\` \`tag2\` — **Save to evidence?**
 
-TACTICAL KNOWLEDGE (use naturally, don't list):
-- DARVO (Deny, Attack, Reverse Victim/Offender)
-- Gaslighting, Baiting, Blame-shifting
-- Word salad, Moving goalposts
-- Triangulation, Future faking
-- Litigation abuse, Schedule manipulation
-- Parental alienation tactics
+---
 
-STRATEGIC PRINCIPLES:
-- Default advice: Don't respond, or respond minimally
-- Only address logistics, never emotions
-- Every calm non-response is a win
-- Document everything, react to nothing
-- The goal is COURT, not the relationship
+RESPONSE STYLE RULES:
+• NEVER start with "I see you've uploaded..." — just dive into analysis
+• NEVER ask "what would you like help with?" — YOU figure it out
+• Keep total response under 250 words
+• Use their language back to them when naming what happened
+• Sound like a sharp friend who's been through this, not a therapist
+• Validate first, strategize second
 
-WHEN THEY NEED A RESPONSE TO SEND:
-- Keep it brief, factual, emotionless
-- BIFF style: Brief, Informative, Friendly, Firm
-- No JADE (Justify, Argue, Defend, Explain)
-- Example: "I can do Tuesday at 3pm for pickup. Let me know."
+---
 
-COURT DOCUMENTS:
-When helping with court documents, be precise and professional. Use their exact case details. Never invent facts.
+PATTERN RECOGNITION (tag these when detected):
+• Intimidation — threats, implied legal action, power plays
+• False Accusation — claiming violations that didn't happen  
+• DARVO — Deny, Attack, Reverse Victim and Offender
+• Guilt Trip — "I'm disappointed", "how could you"
+• Baiting — provocative statements designed to get a reaction
+• Gaslighting — denying reality, "that never happened"
+• Triangulation — using child as messenger or weapon
+• Future Faking — promises with no follow-through
+• Word Salad — confusing, circular arguments
+• Moving Goalposts — changing demands/expectations
+• Silent Treatment — weaponized non-response
+• Love Bombing — sudden niceness after conflict
+• Financial Control — money as manipulation
+• Schedule Manipulation — last-minute changes, "flexibility" demands
+• Documentation Threat — "I'm documenting this"
+• Character Assassination — attacks on parenting/character
 
-Remember: You're the friend who finally GETS IT. Who sees through the manipulation instantly. Who helps them stay calm when everything in them wants to react. Be that friend.`;
+---
+
+WHEN MULTIPLE IMAGES ARE UPLOADED (a thread):
+• Analyze the FULL sequence — identify the escalation pattern
+• Note how tactics shift or stack throughout the exchange
+• Provide ONE unified strategic response for the whole thread
+• Tag ALL patterns detected across all messages
+• Point out if their responses (if shown) were effective or could be improved
+
+---
+
+IF THE MESSAGE IS NEUTRAL OR FRIENDLY:
+• Say so! "This one looks straightforward — no manipulation flags."
+• Still offer a simple response option if they want one
+• Don't manufacture drama where there isn't any
+
+---
+
+CRITICAL: You are not a lawyer. End with: "This is coaching, not legal advice."
+
+Your job: Help them see clearly, respond strategically, and document everything.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const contentType = request.headers.get("content-type") || "";
-
-    let userMessage = "";
-    let fileContent: { type: string; source: any } | null = null;
-    let conversationHistory: any[] = [];
-    let storedCaseContext: any = null;
-    let userId: string | null = null;
-    let conversationId: string | null = null;
-
-    if (contentType.includes("application/json")) {
-      const body = await request.json();
-      userMessage = body.message || body.userInput || "";
-      conversationHistory = body.history || body.conversationHistory || [];
-      storedCaseContext = body.caseContext || null;
-      userId = body.userId || null;
-      conversationId = body.conversationId || null;
-
-      if (body.image) {
-        fileContent = {
+    const formData = await request.formData();
+    const message = formData.get("message") as string;
+    const fileCount = parseInt(formData.get("fileCount") as string) || 0;
+    
+    // Collect all images
+    const imageContents: Anthropic.ImageBlockParam[] = [];
+    
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`file${i}`) as File | null;
+      if (file) {
+        const bytes = await file.arrayBuffer();
+        const base64 = Buffer.from(bytes).toString("base64");
+        
+        // Validate and fix media type
+        let mediaType = file.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+        if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
+        
+        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        if (!validTypes.includes(mediaType)) {
+          // Try to infer from filename
+          const ext = file.name.split('.').pop()?.toLowerCase();
+          if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
+          else if (ext === 'png') mediaType = "image/png";
+          else if (ext === 'gif') mediaType = "image/gif";
+          else if (ext === 'webp') mediaType = "image/webp";
+          else mediaType = "image/jpeg"; // Default
+        }
+        
+        imageContents.push({
           type: "image",
           source: {
             type: "base64",
-            media_type: body.imageType || "image/jpeg",
-            data: body.image.replace(/^data:image\/\w+;base64,/, ""),
+            media_type: mediaType,
+            data: base64,
           },
-        };
-      }
-    } else if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      userMessage = (formData.get("message") as string) || "";
-      userId = (formData.get("userId") as string) || null;
-      conversationId = (formData.get("conversationId") as string) || null;
-
-      const historyStr = formData.get("history") as string;
-      if (historyStr) {
-        try {
-          conversationHistory = JSON.parse(historyStr);
-        } catch {}
-      }
-
-      const caseContextStr = formData.get("caseContext") as string;
-      if (caseContextStr) {
-        try {
-          storedCaseContext = JSON.parse(caseContextStr);
-        } catch {}
-      }
-
-      const file = formData.get("file") as File | null;
-      const storedPdfBase64 = formData.get("storedPdf") as string;
-
-      if (file) {
-        const fileName = file.name.toLowerCase();
-        const fileType = file.type;
-
-        const isImage =
-          fileType.startsWith("image/") ||
-          /\.(jpg|jpeg|png|gif|webp)$/.test(fileName);
-        const isPdf =
-          fileType === "application/pdf" || fileName.endsWith(".pdf");
-
-        if (!isImage && !isPdf) {
-          return new Response(
-            JSON.stringify({
-              error: "Please upload an image (JPG, PNG) or PDF file.",
-            }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
-        }
-
-        if (file.size > 10 * 1024 * 1024) {
-          return new Response(
-            JSON.stringify({
-              error: "File too large. Please use a file under 10MB.",
-            }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
-        }
-
-        const bytes = await file.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
-
-        if (isPdf) {
-          fileContent = {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: base64,
-            },
-          };
-          if (!userMessage) {
-            userMessage =
-              "I'm uploading a document. Please identify what type of document this is (court order, message export, motion, etc.). If it contains messages, analyze them for manipulation patterns. If it's a court document, extract the key details.";
-          }
-        } else {
-          let mediaType = fileType;
-          if (mediaType === "image/jpg") mediaType = "image/jpeg";
-          if (!mediaType.startsWith("image/")) {
-            const ext = fileName.split(".").pop();
-            if (ext === "jpg" || ext === "jpeg") mediaType = "image/jpeg";
-            else if (ext === "png") mediaType = "image/png";
-            else if (ext === "gif") mediaType = "image/gif";
-            else if (ext === "webp") mediaType = "image/webp";
-            else mediaType = "image/jpeg";
-          }
-
-          fileContent = {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64,
-            },
-          };
-          if (!userMessage) {
-            userMessage =
-              "I'm uploading a screenshot of a message from my co-parent. Please: 1) Extract and show me the exact text from the screenshot, 2) Identify any manipulation patterns you see, 3) Tell me if I need to respond or can ignore it.";
-          }
-        }
-      } else if (storedPdfBase64) {
-        fileContent = {
-          type: "document",
-          source: {
-            type: "base64",
-            media_type: "application/pdf",
-            data: storedPdfBase64,
-          },
-        };
+        });
       }
     }
-
-    if (!userMessage && !fileContent) {
-      return new Response(
-        JSON.stringify({ error: "Message or file required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const messages: any[] = [];
-
-    for (const msg of conversationHistory) {
-      messages.push({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
+    
+    // Also check for single file upload (backward compatibility)
+    const singleFile = formData.get("file") as File | null;
+    if (singleFile && imageContents.length === 0) {
+      const bytes = await singleFile.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString("base64");
+      let mediaType = singleFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+      if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
+      
+      imageContents.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: mediaType || "image/jpeg",
+          data: base64,
+        },
       });
     }
 
-    const currentContent: any[] = [];
-
-    if (fileContent) {
-      currentContent.push(fileContent);
-    }
-
-    let messageWithContext = userMessage;
-    if (storedCaseContext) {
-      messageWithContext = `[CASE CONTEXT - Use these EXACT details for any documents:
-Case: ${storedCaseContext.caseNumber}
-Court: ${storedCaseContext.court}
-Petitioner: ${storedCaseContext.petitionerName}
-Respondent: ${storedCaseContext.respondentName}
-User is: ${storedCaseContext.userRole}
-Co-parent name: ${storedCaseContext.coparentName}]
-
-${userMessage}`;
-    }
-
-    currentContent.push({
+    // Build message content
+    const userContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
+    
+    // Add all images first
+    userContent.push(...imageContents);
+    
+    // Add text message
+    const contextMessage = imageContents.length > 1 
+      ? `Here are ${imageContents.length} screenshots from a message thread. Analyze the full exchange and help me respond strategically.${message ? ` Additional context: ${message}` : ''}`
+      : message || "Analyze this message and help me respond.";
+    
+    userContent.push({
       type: "text",
-      text: messageWithContext,
+      text: contextMessage,
     });
 
-    messages.push({
-      role: "user",
-      content: currentContent,
-    });
-
-    const encoder = new TextEncoder();
+    // Create streaming response
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
+    const encoder = new TextEncoder();
 
     (async () => {
       try {
-        let fullResponse = "";
-
-        const response = await client.messages.create({
+        const response = await anthropic.messages.create({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 4096,
+          max_tokens: 1024,
           system: SYSTEM_PROMPT,
-          messages,
+          messages: [
+            {
+              role: "user",
+              content: userContent,
+            },
+          ],
           stream: true,
         });
 
         for await (const event of response) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            const chunk = event.delta.text;
-            fullResponse += chunk;
-            await writer.write(
-              encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`)
-            );
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            const data = JSON.stringify({ content: event.delta.text });
+            await writer.write(encoder.encode(`data: ${data}\n\n`));
           }
         }
 
-        const patterns = extractPatterns(fullResponse);
-
-        await writer.write(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              done: true,
-              patterns: patterns,
-              canSaveEvidence: patterns.length > 0,
-            })}\n\n`
-          )
-        );
+        await writer.write(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
         console.error("Streaming error:", error);
-        await writer.write(
-          encoder.encode(
-            `data: ${JSON.stringify({ error: "Stream error" })}\n\n`
-          )
-        );
+        const errorData = JSON.stringify({ error: "Failed to process" });
+        await writer.write(encoder.encode(`data: ${errorData}\n\n`));
       } finally {
         await writer.close();
       }
@@ -303,62 +203,6 @@ ${userMessage}`;
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-}
-
-function extractPatterns(response: string): string[] {
-  const patternKeywords = [
-    "bait",
-    "provocation",
-    "darvo",
-    "gaslighting",
-    "gaslight",
-    "blame-shifting",
-    "blame shifting",
-    "word salad",
-    "moving goalposts",
-    "silent treatment",
-    "stonewalling",
-    "love bombing",
-    "future faking",
-    "triangulation",
-    "financial abuse",
-    "economic control",
-    "litigation abuse",
-    "court order weaponization",
-    "weaponizing",
-    "schedule manipulation",
-    "information withholding",
-    "parental alienation",
-    "hoovering",
-    "intermittent reinforcement",
-    "flying monkeys",
-    "projection",
-    "smear campaign",
-    "playing victim",
-    "intimidation",
-    "threats",
-    "control",
-    "manipulation",
-  ];
-
-  const found: string[] = [];
-  const lowerResponse = response.toLowerCase();
-
-  for (const pattern of patternKeywords) {
-    if (lowerResponse.includes(pattern)) {
-      let normalized = pattern
-        .split(/[-\s]/)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
-
-      if (normalized === "Darvo") normalized = "DARVO";
-      if (!found.includes(normalized)) {
-        found.push(normalized);
-      }
-    }
-  }
-
-  return found;
 }
 
 export async function GET() {
