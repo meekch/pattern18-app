@@ -851,10 +851,10 @@ export default function CoachPage() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.text) {
+              if (data.content) {
                 setMessages(prev => prev.map(m =>
                   m.id === assistantId
-                    ? { ...m, content: m.content + data.text }
+                    ? { ...m, content: m.content + data.content }
                     : m
                 ));
               }
