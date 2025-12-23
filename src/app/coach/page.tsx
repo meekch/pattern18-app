@@ -309,7 +309,7 @@ export default function CoachPage() {
       const userMsg: Message = {
         id: Date.now().toString(),
         role: 'user',
-        content: promptMessage,
+        content: '',  // Don't show the system prompt to user
         timestamp: new Date(),
         images: [imagePreview],
       };
@@ -1257,7 +1257,15 @@ export default function CoachPage() {
                 {msg.role === 'assistant' && msg.content && (
                   <div className="message-actions">
                     <div className="action-buttons">
-                      <button onClick={() => navigator.clipboard.writeText(msg.content)} className="action-btn">
+                    <button 
+                        onClick={(e) => {
+                          navigator.clipboard.writeText(msg.content);
+                          const btn = e.target as HTMLButtonElement;
+                          btn.textContent = '✓ Copied';
+                          setTimeout(() => btn.textContent = 'Copy', 2000);
+                        }} 
+                        className="action-btn"
+                      >
                         Copy
                       </button>
                       {msg.patterns && msg.patterns.length > 0 && (
@@ -2798,12 +2806,18 @@ export default function CoachPage() {
           gap: 8px;
         }
         .action-btn {
-          background: #f3f4f6;
+          background: #1a3a2f;
+          color: white;
           border: none;
-          padding: 6px 12px;
-          border-radius: 6px;
+          padding: 8px 16px;
+          border-radius: 8px;
           font-size: 13px;
+          font-weight: 500;
           cursor: pointer;
+          transition: background 0.2s;
+        }
+        .action-btn:hover {
+          background: #2d5a47;
         }
         .action-btn.save {
           background: #14b8a6;
