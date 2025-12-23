@@ -195,11 +195,31 @@ CRITICAL REMINDERS:
 
 You are the steady voice in a chaotic situation. Help them see clearly.`;
 
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const message = formData.get("message") as string;
-    const fileCount = parseInt(formData.get("fileCount") as string) || 0;
+  export async function POST(request: NextRequest) {
+    try {
+      const contentType = request.headers.get('content-type') || '';
+      
+      let message: string;
+      let fileCount = 0;
+      let history: any[] = [];
+      let caseContext: any = null;
+      let images: string[] = [];
+  
+      if (contentType.includes('application/json')) {
+        // Handle JSON requests (text-only messages)
+        const body = await request.json();
+        message = body.message;
+        history = body.history || [];
+        caseContext = body.caseContext || null;
+      } else {
+        // Handle FormData requests (file uploads)
+        const formData = await request.formData();
+        message = formData.get("message") as string;
+        fileCount = parseInt(formData.get("fileCount") as string) || 0;
+        const historyStr = formData.get("history") as string;
+        history = historyStr ? JSON.parse(historyStr) : [];
+        const caseContextStr = formData.get("caseContext") as string;
+        caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
     
     // Collect all images
     const imageContents: Anthropic.ImageBlockParam[] = [];
