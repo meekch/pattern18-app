@@ -1072,9 +1072,9 @@ export default function CoachPage() {
           <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
             Settings
           </button>
-          <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }}
-            How It Works
-          </button>
+          <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }} className="nav-item">
+  How It Works
+</button>
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
             Feedback
           </button>
