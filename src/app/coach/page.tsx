@@ -354,8 +354,7 @@ export default function CoachPage() {
           }
         }
       }
-    }
-      
+
     // Auto-save screenshots to evidence timeline
     if (type === 'screenshot' && fullContent) {
       autoSaveToTimeline(file, fullContent, detectedPatterns);
