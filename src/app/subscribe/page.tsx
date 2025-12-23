@@ -9,6 +9,8 @@ export default function SubscribePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [showPromo, setShowPromo] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -28,7 +30,6 @@ export default function SubscribePage() {
         .single();
 
       if (subscription) {
-        // Already subscribed, go to coach
         router.push('/coach');
         return;
       }
@@ -36,6 +37,7 @@ export default function SubscribePage() {
       setUser(session.user);
       setLoading(false);
     };
+
     init();
   }, [router]);
 
@@ -49,11 +51,12 @@ export default function SubscribePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: user.email,
+          promoCode: promoCode || undefined,
         }),
       });
 
       const data = await response.json();
-      
+
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -75,17 +78,28 @@ export default function SubscribePage() {
   if (loading) {
     return (
       <div className="container">
-        <div className="loading">Loading...</div>
+        <div className="loading">
+          <div className="loading-icon">💚</div>
+          <p>Loading...</p>
+        </div>
         <style jsx>{`
           .container {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f5f7f6;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
           }
           .loading {
-            color: #666;
+            text-align: center;
+          }
+          .loading-icon {
+            font-size: 48px;
+            animation: pulse 1.5s ease-in-out infinite;
+          }
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
           }
         `}</style>
       </div>
@@ -95,151 +109,370 @@ export default function SubscribePage() {
   return (
     <div className="container">
       <div className="card">
-        <div className="logo">18</div>
-        <h1>One more step</h1>
-        <p className="subtitle">Start your subscription to access Pattern 18 Coach</p>
+        {/* Header */}
+        <div className="header">
+          <div className="logo">18</div>
+          <h1>Pattern 18 Coach</h1>
+          <p className="tagline">Your 24/7 Strategic Partner</p>
+        </div>
 
-        <div className="plan-box">
-          <div className="plan-header">
-            <span className="plan-name">Pattern 18 Coach</span>
-            <span className="plan-price">
-              $89
-              <span className="plan-period">/month</span>
-            </span>
-          </div>
-          <ul className="features">
-            <li>✓ Unlimited message analysis</li>
-            <li>✓ Pattern detection & documentation</li>
-            <li>✓ Court document generation</li>
-            <li>✓ Response drafting</li>
-            <li>✓ Healing & regulation tools</li>
-            <li>✓ Cancel anytime</li>
+        {/* Trial Badge */}
+        <div className="trial-badge">
+          <span className="trial-text">7-DAY FREE TRIAL</span>
+          <span className="trial-price">$0 today</span>
+        </div>
+
+        {/* What You Get */}
+        <div className="benefits">
+          <h2>What's included:</h2>
+          <ul>
+            <li>
+              <span className="check">✓</span>
+              <div>
+                <strong>24/7 AI Coach</strong>
+                <span>Analyze messages, draft responses, get support anytime</span>
+              </div>
+            </li>
+            <li>
+              <span className="check">✓</span>
+              <div>
+                <strong>Pattern Recognition</strong>
+                <span>Instantly identify manipulation tactics</span>
+              </div>
+            </li>
+            <li>
+              <span className="check">✓</span>
+              <div>
+                <strong>Evidence Documentation</strong>
+                <span>Build your case with organized, timestamped records</span>
+              </div>
+            </li>
+            <li>
+              <span className="check">✓</span>
+              <div>
+                <strong>Court Document Generation</strong>
+                <span>Create declarations, timelines, and exhibits</span>
+              </div>
+            </li>
+            <li>
+              <span className="check">✓</span>
+              <div>
+                <strong>Healing & Grounding Tools</strong>
+                <span>Breathing exercises, affirmations, and support</span>
+              </div>
+            </li>
           </ul>
         </div>
 
-        <p className="promo-note">Have a promo code? You can enter it on the next screen.</p>
+        {/* Pricing */}
+        <div className="pricing">
+          <div className="price-row">
+            <span>Today</span>
+            <span className="price-free">$0.00</span>
+          </div>
+          <div className="price-row future">
+            <span>After 7 days</span>
+            <span>$47/month</span>
+          </div>
+          <p className="cancel-note">Cancel anytime. No questions asked.</p>
+        </div>
 
-        <button 
-          onClick={handleCheckout} 
+        {/* Promo Code */}
+        {!showPromo ? (
+          <button className="promo-toggle" onClick={() => setShowPromo(true)}>
+            Have a promo code?
+          </button>
+        ) : (
+          <div className="promo-input">
+            <input
+              type="text"
+              placeholder="Enter promo code"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            />
+          </div>
+        )}
+
+        {/* CTA Button */}
+        <button
+          onClick={handleCheckout}
           disabled={checkoutLoading}
-          className="checkout-btn"
+          className="cta-button"
         >
-          {checkoutLoading ? 'Loading...' : 'Continue to Payment'}
+          {checkoutLoading ? (
+            'Loading...'
+          ) : (
+            <>Start My Free Trial →</>
+          )}
         </button>
 
-        <button onClick={handleLogout} className="logout-link">
-          Log out
-        </button>
+        <p className="secure-note">🔒 Secure checkout powered by Stripe</p>
+
+        {/* User Info */}
+        <div className="user-info">
+          <span>Signed in as {user?.email}</span>
+          <button onClick={handleLogout} className="logout-btn">
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      {/* Trust Elements */}
+      <div className="trust">
+        <p>"This tool helped me see what I couldn't see for years."</p>
+        <span>— Pattern 18 User</span>
       </div>
 
       <style jsx>{`
         .container {
           min-height: 100vh;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          padding: 20px;
+          padding: 24px;
+          background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
         .card {
           background: white;
-          border-radius: 20px;
-          padding: 40px;
-          max-width: 420px;
+          border-radius: 24px;
+          padding: 32px;
+          max-width: 440px;
           width: 100%;
-          text-align: center;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
+
+        .header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+
         .logo {
-          width: 50px;
-          height: 50px;
+          display: inline-block;
           background: #1a3a2f;
           color: white;
+          padding: 12px 20px;
           border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           font-weight: 700;
-          font-size: 18px;
-          margin: 0 auto 20px;
-        }
-        h1 {
-          color: #1a3a2f;
           font-size: 24px;
-          margin: 0 0 8px;
+          margin-bottom: 16px;
         }
-        .subtitle {
+
+        .header h1 {
+          font-size: 24px;
+          color: #1a3a2f;
+          margin-bottom: 4px;
+        }
+
+        .tagline {
           color: #666;
-          margin: 0 0 30px;
+          font-size: 14px;
+        }
+
+        .trial-badge {
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+          border: 2px solid #10b981;
+          border-radius: 16px;
+          padding: 16px;
+          text-align: center;
+          margin-bottom: 24px;
+        }
+
+        .trial-text {
+          display: block;
+          color: #059669;
+          font-weight: 700;
+          font-size: 14px;
+          letter-spacing: 1px;
+          margin-bottom: 4px;
+        }
+
+        .trial-price {
+          font-size: 32px;
+          font-weight: 700;
+          color: #1a3a2f;
+        }
+
+        .benefits h2 {
+          font-size: 14px;
+          color: #888;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 16px;
+        }
+
+        .benefits ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 24px 0;
+        }
+
+        .benefits li {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .check {
+          color: #10b981;
+          font-weight: 700;
+          font-size: 16px;
+          margin-top: 2px;
+        }
+
+        .benefits li strong {
+          display: block;
+          color: #1a3a2f;
           font-size: 15px;
         }
-        .plan-box {
-          background: #f9fafb;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 20px;
-          text-align: left;
+
+        .benefits li span {
+          color: #666;
+          font-size: 13px;
         }
-        .plan-header {
+
+        .pricing {
+          background: #f9fafb;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 16px;
+        }
+
+        .price-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 16px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid #e5e7eb;
+          padding: 8px 0;
         }
-        .plan-name {
-          font-weight: 600;
-          color: #1a3a2f;
+
+        .price-row.future {
+          border-top: 1px solid #e5e7eb;
+          margin-top: 8px;
+          padding-top: 16px;
+          color: #666;
+          font-size: 14px;
         }
-        .plan-price {
-          font-size: 20px;
+
+        .price-free {
+          font-size: 24px;
           font-weight: 700;
-          color: #1a3a2f;
+          color: #10b981;
         }
-        .plan-period {
+
+        .cancel-note {
+          text-align: center;
+          font-size: 12px;
+          color: #888;
+          margin-top: 12px;
+        }
+
+        .promo-toggle {
+          background: none;
+          border: none;
+          color: #14b8a6;
           font-size: 14px;
-          font-weight: 400;
-          color: #666;
-        }
-        .features {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-        .features li {
-          padding: 6px 0;
-          color: #4b5563;
-          font-size: 14px;
-        }
-        .promo-note {
-          color: #666;
-          font-size: 13px;
+          cursor: pointer;
+          width: 100%;
+          padding: 8px;
           margin-bottom: 16px;
         }
-        .checkout-btn {
+
+        .promo-input {
+          margin-bottom: 16px;
+        }
+
+        .promo-input input {
           width: 100%;
-          padding: 16px;
+          padding: 12px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 16px;
+          text-align: center;
+          letter-spacing: 2px;
+        }
+
+        .promo-input input:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+
+        .cta-button {
+          width: 100%;
+          padding: 18px;
           background: #1a3a2f;
           color: white;
           border: none;
-          border-radius: 12px;
-          font-size: 16px;
+          border-radius: 14px;
+          font-size: 18px;
           font-weight: 600;
           cursor: pointer;
-          margin-bottom: 16px;
+          transition: all 0.2s;
         }
-        .checkout-btn:disabled {
-          opacity: 0.6;
+
+        .cta-button:hover:not(:disabled) {
+          background: #2d5a4a;
+          transform: translateY(-2px);
+        }
+
+        .cta-button:disabled {
+          opacity: 0.7;
           cursor: not-allowed;
         }
-        .logout-link {
+
+        .secure-note {
+          text-align: center;
+          font-size: 12px;
+          color: #888;
+          margin-top: 12px;
+        }
+
+        .user-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 1px solid #eee;
+          font-size: 13px;
+          color: #888;
+        }
+
+        .logout-btn {
           background: none;
           border: none;
+          color: #ef4444;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .trust {
+          margin-top: 24px;
+          text-align: center;
+          max-width: 300px;
+        }
+
+        .trust p {
+          font-style: italic;
           color: #666;
           font-size: 14px;
-          cursor: pointer;
-          text-decoration: underline;
+          margin-bottom: 4px;
+        }
+
+        .trust span {
+          color: #888;
+          font-size: 12px;
+        }
+
+        @media (max-width: 480px) {
+          .card {
+            padding: 24px;
+          }
+
+          .trial-price {
+            font-size: 28px;
+          }
         }
       `}</style>
     </div>
