@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 interface Message {
@@ -10,31 +11,13 @@ interface Message {
   images?: string[];
   timestamp: Date;
   patterns?: string[];
-  savedToTimeline?: boolean;
-}
-
-interface CoachSession {
-  id: string;
-  startedAt: Date;
-  images: string[];
-  messages: Message[];
-  patterns: string[];
-  autoSaved: boolean;
-  needsReview: boolean;
 }
 
 export default function CoachPage() {
- 
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [caseData, setCaseData] = useState<any>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "I'm here. Drop a screenshot, paste a message, or upload a whole thread. Everything you share is automatically saved to your evidence timeline — you can focus on getting through this moment, and review the details later when you're ready.",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -42,7 +25,6 @@ export default function CoachPage() {
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
   
   // Session tracking for auto-save
-  const [currentSession, setCurrentSession] = useState<CoachSession | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [sessionImages, setSessionImages] = useState<string[]>([]);
   const [allPatterns, setAllPatterns] = useState<string[]>([]);
@@ -53,24 +35,27 @@ export default function CoachPage() {
   // Get current user and case data
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        router.push('/login');
+        return;
+      }
       
-      if (user) {
-        // Get case setup data
-        const { data: caseInfo } = await supabase
-          .from('user_cases')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (caseInfo) {
-          setCaseData(caseInfo);
-        }
+      setUser(session.user);
+      
+      // Get case setup data
+      const { data: caseInfo } = await supabase
+        .from('user_cases')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (caseInfo) {
+        setCaseData(caseInfo);
       }
     };
     init();
-  }, [supabase]);
+  }, [router]);
 
   const scrollToBottom = useCallback(() => {
     if (chatRef.current) {
@@ -100,7 +85,6 @@ export default function CoachPage() {
     const lowerContent = content.toLowerCase();
     knownPatterns.forEach(p => {
       if (lowerContent.includes(p)) {
-        // Normalize pattern name
         const normalized = p.replace(/-/g, ' ');
         if (!patterns.includes(normalized)) {
           patterns.push(normalized);
@@ -123,33 +107,35 @@ export default function CoachPage() {
     setSaveStatus("saving");
     
     try {
-      // Upload images to storage
       const imageUrls: string[] = [];
       
       for (let i = 0; i < images.length; i++) {
-        const base64Data = images[i].replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        const fileName = `${user.id}/${Date.now()}-${i}.png`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('evidence-screenshots')
-          .upload(fileName, buffer, {
-            contentType: 'image/png',
-            upsert: false
-          });
-
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('evidence-screenshots')
-            .getPublicUrl(fileName);
+        try {
+          const base64Data = images[i].replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          const fileName = `${user.id}/${Date.now()}-${i}.png`;
           
-          if (urlData?.publicUrl) {
-            imageUrls.push(urlData.publicUrl);
+          const { error: uploadError } = await supabase.storage
+            .from('evidence-screenshots')
+            .upload(fileName, buffer, {
+              contentType: 'image/png',
+              upsert: false
+            });
+
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('evidence-screenshots')
+              .getPublicUrl(fileName);
+            
+            if (urlData?.publicUrl) {
+              imageUrls.push(urlData.publicUrl);
+            }
           }
+        } catch (imgError) {
+          console.error('Image upload error:', imgError);
         }
       }
 
-      // Save to evidence timeline
       const { data, error } = await supabase
         .from('evidence_timeline')
         .insert({
@@ -161,7 +147,7 @@ export default function CoachPage() {
           co_parent_name: caseData?.co_parent_name || null,
           incident_date: new Date().toISOString(),
           auto_saved: true,
-          needs_review: true, // Flag for later review
+          needs_review: true,
           reviewed: false,
           created_at: new Date().toISOString()
         })
@@ -171,11 +157,13 @@ export default function CoachPage() {
       if (error) throw error;
 
       setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 3000);
       return data;
 
     } catch (error) {
       console.error("Auto-save error:", error);
       setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 5000);
       return null;
     }
   };
@@ -212,7 +200,6 @@ export default function CoachPage() {
     const userMessageId = Date.now().toString();
     const imagePreviews = [...pendingPreviews];
     
-    // Track images for this session
     if (imagePreviews.length > 0) {
       setSessionImages(prev => [...prev, ...imagePreviews]);
     }
@@ -249,11 +236,10 @@ export default function CoachPage() {
       });
       formData.append("fileCount", pendingImages.length.toString());
       
-      // Include case context if available
       if (caseData) {
         formData.append("caseContext", JSON.stringify({
           coParentName: caseData.co_parent_name,
-          userRole: caseData.user_role, // petitioner or respondent
+          userRole: caseData.user_role,
           childAge: caseData.child_age,
         }));
       }
@@ -304,7 +290,6 @@ export default function CoachPage() {
         }
       }
 
-      // Extract patterns
       const patterns = extractPatterns(fullContent);
       setAllPatterns(prev => [...new Set([...prev, ...patterns])]);
       
@@ -316,7 +301,7 @@ export default function CoachPage() {
         )
       );
 
-      // AUTO-SAVE if this conversation had images (evidence)
+      // AUTO-SAVE if this conversation had images
       if (hadImages && user) {
         const userMsgs = messages
           .filter(m => m.role === "user")
@@ -345,20 +330,6 @@ export default function CoachPage() {
     }
   };
 
-  // Mark for review later
-  const markForReview = () => {
-    // Visual feedback
-    setMessages(prev => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: "✓ Marked for review. This conversation is saved to your evidence timeline. When you're ready, go to Evidence → Needs Review to see everything you flagged.",
-        timestamp: new Date(),
-      }
-    ]);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -381,180 +352,282 @@ export default function CoachPage() {
     }
   };
 
+  // Quick action buttons
+  const quickActions = [
+    { icon: "📸", label: "Upload Screenshot", action: () => fileInputRef.current?.click() },
+    { icon: "😤", label: "Just Venting", action: () => setInput("I need to vent about what just happened...") },
+    { icon: "💬", label: "Help Me Respond", action: () => setInput("Help me respond to this message: ") },
+    { icon: "🤔", label: "Is This Manipulation?", action: () => setInput("Can you help me understand if this is manipulation? ") },
+  ];
+
   return (
-    <div 
-      className="coach-container"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      {/* Auto-save status indicator */}
-      {saveStatus !== "idle" && (
-        <div className={`save-status ${saveStatus}`}>
-          {saveStatus === "saving" && "💾 Saving to timeline..."}
-          {saveStatus === "saved" && "✓ Saved to evidence timeline"}
-          {saveStatus === "error" && "⚠ Couldn't save — try again later"}
-        </div>
-      )}
-
-      {dragOver && (
-        <div className="drag-overlay">
-          <div className="drag-content">
-            <span className="drag-icon">📸</span>
-            <p>Drop screenshot(s) here</p>
-            <p className="drag-subtext">Everything is auto-saved</p>
+    <div className="page-container">
+      {/* Header */}
+      <header className="header">
+        <div className="header-left">
+          <button onClick={() => router.push('/dashboard')} className="back-btn">←</button>
+          <div className="header-title">
+            <h1>Coach</h1>
+            <span className="header-subtitle">Your strategic ally</span>
           </div>
         </div>
-      )}
+        <div className="header-actions">
+          {saveStatus === "saved" && (
+            <span className="save-indicator">✓ Saved</span>
+          )}
+          {saveStatus === "saving" && (
+            <span className="save-indicator saving">Saving...</span>
+          )}
+          <button className="evidence-btn" onClick={() => router.push('/evidence')}>
+            📁 Evidence
+          </button>
+        </div>
+      </header>
 
-      <div className="chat-area" ref={chatRef}>
-        {messages.map((msg) => (
-          <div key={msg.id} className={`message ${msg.role}`}>
-            {msg.images && msg.images.length > 0 && (
-              <div className="message-images">
-                {msg.images.map((img, idx) => (
-                  <img 
-                    key={idx} 
-                    src={img} 
-                    alt={`Screenshot ${idx + 1}`} 
-                    className="message-image"
-                    onClick={() => window.open(img, '_blank')}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="message-content">{msg.content}</div>
-            
-            {/* Show patterns naturally, not as clinical tags */}
-            {msg.role === "assistant" && msg.patterns && msg.patterns.length > 0 && (
-              <div className="patterns-detected">
-                <span className="patterns-label">Patterns identified:</span>
-                {msg.patterns.map((p, i) => (
-                  <span key={i} className="pattern-tag">{p}</span>
-                ))}
-              </div>
-            )}
+      {/* Main Content */}
+      <div 
+        className="coach-container"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {dragOver && (
+          <div className="drag-overlay">
+            <div className="drag-content">
+              <span className="drag-icon">📸</span>
+              <p>Drop screenshot(s) here</p>
+              <p className="drag-subtext">Everything is auto-saved</p>
+            </div>
           </div>
-        ))}
-        
-        {isLoading && messages[messages.length - 1]?.content === "" && (
-          <div className="typing-indicator">Reading and analyzing...</div>
         )}
-      </div>
 
-      {/* Session controls - shows when there's been activity */}
-      {sessionImages.length > 0 && saveStatus === "saved" && (
-        <div className="session-controls">
-          <span className="session-info">
-            ✓ {sessionImages.length} screenshot{sessionImages.length > 1 ? 's' : ''} saved
-          </span>
-          <button onClick={markForReview} className="review-btn">
-            📌 Flag for Review Later
-          </button>
-        </div>
-      )}
-
-      {pendingPreviews.length > 0 && (
-        <div className="pending-images">
-          <div className="pending-label">
-            Ready to send ({pendingPreviews.length}):
-          </div>
-          <div className="pending-grid">
-            {pendingPreviews.map((preview, idx) => (
-              <div key={idx} className="pending-item">
-                <img src={preview} alt={`Preview ${idx + 1}`} />
-                <button 
-                  className="remove-btn"
-                  onClick={() => removePendingImage(idx)}
-                >×</button>
+        <div className="chat-area" ref={chatRef}>
+          {/* Welcome state when no messages */}
+          {messages.length === 0 ? (
+            <div className="welcome-state">
+              <div className="welcome-icon">💚</div>
+              <h2>I'm here for you</h2>
+              <p>Drop a screenshot, paste a message, or just tell me what's happening. Everything you share is automatically saved to your evidence timeline.</p>
+              
+              <div className="quick-actions">
+                {quickActions.map((action, i) => (
+                  <button key={i} className="quick-action" onClick={action.action}>
+                    <span>{action.icon}</span>
+                    <span>{action.label}</span>
+                  </button>
+                ))}
               </div>
-            ))}
+
+              <div className="tips-section">
+                <h3>💡 Tips for best results</h3>
+                <ul>
+                  <li>Upload screenshots — I can read and analyze them</li>
+                  <li>Include context — what happened before/after</li>
+                  <li>Be specific about what you need — response help, validation, strategy</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((msg) => (
+                <div key={msg.id} className={`message ${msg.role}`}>
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="message-images">
+                      {msg.images.map((img, idx) => (
+                        <img 
+                          key={idx} 
+                          src={img} 
+                          alt={`Screenshot ${idx + 1}`} 
+                          className="message-image"
+                          onClick={() => window.open(img, '_blank')}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className="message-content">{msg.content}</div>
+                  
+                  {msg.role === "assistant" && msg.patterns && msg.patterns.length > 0 && (
+                    <div className="patterns-detected">
+                      <span className="patterns-label">Patterns:</span>
+                      {msg.patterns.map((p, i) => (
+                        <span key={i} className="pattern-tag">{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {isLoading && messages[messages.length - 1]?.content === "" && (
+                <div className="typing-indicator">Reading and analyzing...</div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Pending images preview */}
+        {pendingPreviews.length > 0 && (
+          <div className="pending-images">
+            <div className="pending-label">
+              Ready to send ({pendingPreviews.length}):
+            </div>
+            <div className="pending-grid">
+              {pendingPreviews.map((preview, idx) => (
+                <div key={idx} className="pending-item">
+                  <img src={preview} alt={`Preview ${idx + 1}`} />
+                  <button 
+                    className="remove-btn"
+                    onClick={() => removePendingImage(idx)}
+                  >×</button>
+                </div>
+              ))}
+              <button 
+                className="add-more-btn"
+                onClick={() => fileInputRef.current?.click()}
+              >+ Add</button>
+            </div>
+          </div>
+        )}
+
+        {/* Input area */}
+        <div className="input-area">
+          <div className="input-container">
             <button 
-              className="add-more-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >+ Add</button>
+              onClick={() => fileInputRef.current?.click()} 
+              className="attach-btn"
+              title="Upload screenshot(s)"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              hidden 
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                if (e.target.files) handleFileSelect(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={pendingImages.length > 0 ? "Add context or just send..." : "What's happening?"}
+              rows={1}
+            />
+            <button 
+              onClick={() => sendMessage()} 
+              disabled={isLoading || (!input.trim() && pendingImages.length === 0)}
+              className="send-btn"
+            >
+              {isLoading ? "..." : "→"}
+            </button>
+          </div>
+          <div className="input-hint">
+            Everything is auto-saved to your evidence timeline
           </div>
         </div>
-      )}
-
-      <div className="input-area">
-        <div className="input-container">
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="attach-btn"
-            title="Upload screenshot(s)"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-            </svg>
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            hidden 
-            accept="image/*"
-            multiple
-            onChange={(e) => {
-              if (e.target.files) handleFileSelect(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={pendingImages.length > 0 ? "Add context or just send..." : "Paste a message or drop a screenshot..."}
-            rows={1}
-          />
-          <button 
-            onClick={() => sendMessage()} 
-            disabled={isLoading || (!input.trim() && pendingImages.length === 0)}
-            className="send-btn"
-          >
-            {isLoading ? "..." : "→"}
-          </button>
-        </div>
-        <div className="input-hint">
-          Everything is auto-saved to your evidence timeline
-        </div>
       </div>
+
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        <button className="nav-item" onClick={() => router.push('/dashboard')}>
+          <span>🏠</span>
+          <span>Home</span>
+        </button>
+        <button className="nav-item active">
+          <span>💬</span>
+          <span>Coach</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/evidence')}>
+          <span>📁</span>
+          <span>Docs</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/healing')}>
+          <span>🌿</span>
+          <span>Heal</span>
+        </button>
+        <button className="nav-item" onClick={() => router.push('/case-setup')}>
+          <span>⚙️</span>
+          <span>Settings</span>
+        </button>
+      </nav>
 
       <style jsx>{`
-        .coach-container {
+        .page-container {
+          min-height: 100vh;
+          background: #f5f7f6;
           display: flex;
           flex-direction: column;
-          height: 100vh;
+        }
+
+        /* Header */
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: #1a3a2f;
+          color: white;
+        }
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .back-btn {
+          background: none;
+          border: none;
+          color: rgba(255,255,255,0.8);
+          font-size: 18px;
+          cursor: pointer;
+          padding: 4px 8px;
+        }
+        .header-title h1 {
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0;
+        }
+        .header-subtitle {
+          font-size: 12px;
+          opacity: 0.7;
+        }
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .save-indicator {
+          font-size: 13px;
+          color: #86efac;
+        }
+        .save-indicator.saving {
+          color: #fde68a;
+        }
+        .evidence-btn {
+          background: rgba(255,255,255,0.15);
+          color: white;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 20px;
+          font-size: 13px;
+          cursor: pointer;
+        }
+
+        /* Coach Container */
+        .coach-container {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
           max-width: 800px;
+          width: 100%;
           margin: 0 auto;
           position: relative;
-          background: #fff;
-        }
-
-        .save-status {
-          padding: 8px 16px;
-          text-align: center;
-          font-size: 13px;
-          animation: fadeIn 0.3s ease;
-        }
-
-        .save-status.saving {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .save-status.saved {
-          background: #d1fae5;
-          color: #065f46;
-        }
-
-        .save-status.error {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          background: white;
+          margin-bottom: 70px;
         }
 
         .drag-overlay {
@@ -562,7 +635,6 @@ export default function CoachPage() {
           inset: 0;
           background: rgba(34, 197, 94, 0.1);
           border: 3px dashed #22c55e;
-          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -585,6 +657,7 @@ export default function CoachPage() {
           opacity: 0.8;
         }
 
+        /* Chat Area */
         .chat-area {
           flex: 1;
           overflow-y: auto;
@@ -594,6 +667,98 @@ export default function CoachPage() {
           gap: 16px;
         }
 
+        /* Welcome State */
+        .welcome-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 40px 20px;
+        }
+
+        .welcome-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+
+        .welcome-state h2 {
+          color: #1a3a2f;
+          margin: 0 0 12px 0;
+          font-size: 24px;
+        }
+
+        .welcome-state > p {
+          color: #666;
+          max-width: 400px;
+          line-height: 1.6;
+          margin-bottom: 32px;
+        }
+
+        .quick-actions {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          width: 100%;
+          max-width: 400px;
+          margin-bottom: 32px;
+        }
+
+        .quick-action {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 20px 16px;
+          background: #f0fdf4;
+          border: 2px solid #bbf7d0;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+          background: #dcfce7;
+          border-color: #22c55e;
+        }
+
+        .quick-action span:first-child {
+          font-size: 24px;
+        }
+
+        .quick-action span:last-child {
+          font-size: 13px;
+          color: #166534;
+          font-weight: 500;
+        }
+
+        .tips-section {
+          background: #f9fafb;
+          border-radius: 12px;
+          padding: 20px;
+          text-align: left;
+          width: 100%;
+          max-width: 400px;
+        }
+
+        .tips-section h3 {
+          font-size: 14px;
+          color: #1a3a2f;
+          margin: 0 0 12px 0;
+        }
+
+        .tips-section ul {
+          margin: 0;
+          padding-left: 20px;
+          color: #666;
+          font-size: 13px;
+        }
+
+        .tips-section li {
+          margin-bottom: 8px;
+          line-height: 1.5;
+        }
+
+        /* Messages */
         .message {
           max-width: 85%;
           padding: 14px 18px;
@@ -603,7 +768,7 @@ export default function CoachPage() {
 
         .message.user {
           align-self: flex-end;
-          background: #22c55e;
+          background: #1a3a2f;
           color: white;
           border-bottom-right-radius: 4px;
         }
@@ -664,36 +829,7 @@ export default function CoachPage() {
           padding: 10px 18px;
         }
 
-        .session-controls {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px 20px;
-          background: #f0fdf4;
-          border-top: 1px solid #bbf7d0;
-        }
-
-        .session-info {
-          font-size: 13px;
-          color: #166534;
-        }
-
-        .review-btn {
-          background: white;
-          border: 1px solid #22c55e;
-          color: #16a34a;
-          padding: 6px 14px;
-          border-radius: 6px;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .review-btn:hover {
-          background: #22c55e;
-          color: white;
-        }
-
+        /* Pending Images */
         .pending-images {
           padding: 12px 20px;
           background: #f9fafb;
@@ -758,6 +894,7 @@ export default function CoachPage() {
           color: #22c55e;
         }
 
+        /* Input Area */
         .input-area {
           padding: 16px 20px;
           border-top: 1px solid #e5e7eb;
@@ -782,7 +919,7 @@ export default function CoachPage() {
 
         .attach-btn:hover {
           background: #f3f4f6;
-          color: #22c55e;
+          color: #1a3a2f;
         }
 
         textarea {
@@ -798,11 +935,11 @@ export default function CoachPage() {
         }
 
         textarea:focus {
-          border-color: #22c55e;
+          border-color: #1a3a2f;
         }
 
         .send-btn {
-          background: #22c55e;
+          background: #1a3a2f;
           color: white;
           border: none;
           width: 44px;
@@ -813,7 +950,7 @@ export default function CoachPage() {
         }
 
         .send-btn:hover:not(:disabled) {
-          background: #16a34a;
+          background: #2d5a47;
         }
 
         .send-btn:disabled {
@@ -826,10 +963,57 @@ export default function CoachPage() {
           font-size: 12px;
           color: #22c55e;
           margin-top: 8px;
-          font-weight: 500;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: white;
+          display: flex;
+          justify-content: space-around;
+          padding: 10px 0 20px;
+          border-top: 1px solid #eee;
+        }
+
+        .nav-item {
+          background: none;
+          border: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          color: #666;
+          font-size: 11px;
+          cursor: pointer;
+          padding: 8px 16px;
+        }
+
+        .nav-item span:first-child {
+          font-size: 20px;
+        }
+
+        .nav-item.active {
+          color: #1a3a2f;
+        }
+
+        @media (max-width: 640px) {
+          .quick-actions {
+            grid-template-columns: 1fr 1fr;
+          }
+          
+          .header-actions {
+            gap: 8px;
+          }
+          
+          .evidence-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+          }
         }
       `}</style>
     </div>
   );
 }
-
