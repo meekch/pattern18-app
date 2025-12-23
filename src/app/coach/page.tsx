@@ -360,7 +360,7 @@ export default function CoachPage() {
     if (type === 'screenshot' && fullContent) {
       autoSaveToTimeline(file, fullContent, detectedPatterns);
     }
-  } catch (error) {
+ 
     } catch (error) {
       console.error('Upload error:', error);
       setMessages(prev => prev.map(m =>
