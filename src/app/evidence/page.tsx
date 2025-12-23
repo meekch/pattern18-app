@@ -13,6 +13,13 @@ interface Incident {
   category: string;
   source: string;
   created_at: string;
+  // New fields from evidence_timeline
+  screenshot_urls?: string[];
+  coaching_summary?: string;
+  needs_review?: boolean;
+  reviewed?: boolean;
+  include_in_exhibit?: boolean;
+  user_notes?: string;
 }
 
 const PATTERN_COLORS: { [key: string]: string } = {
@@ -28,6 +35,13 @@ const PATTERN_COLORS: { [key: string]: string } = {
   'Projection': '#6366f1',
   'Word Salad': '#14b8a6',
   'Silent Treatment': '#6b7280',
+  'intimidation': '#dc2626',
+  'false accusation': '#f97316',
+  'selective enforcement': '#8b5cf6',
+  'authority threat': '#ef4444',
+  'guilt trip': '#f59e0b',
+  'gaslighting': '#ef4444',
+  'baiting': '#eab308',
 };
 
 const CATEGORIES = [
@@ -48,8 +62,8 @@ export default function EvidencePage() {
   const [loading, setLoading] = useState(true);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   
-  // Filters
-  const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'patterns'>('all');
+  // Filters - added 'needs_review' and 'in_exhibit'
+  const [filter, setFilter] = useState<'all' | 'needs_review' | 'critical' | 'high' | 'patterns' | 'in_exhibit'>('all');
   const [patternFilter, setPatternFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'timeline'>('cards');
@@ -60,12 +74,18 @@ export default function EvidencePage() {
   const [captureCategory, setCaptureCategory] = useState('Communication');
   const [captureSaving, setCaptureSaving] = useState(false);
   
+  // Detail modal
+  const [selectedItem, setSelectedItem] = useState<Incident | null>(null);
+  const [editingNotes, setEditingNotes] = useState('');
+  
   // Stats
   const [stats, setStats] = useState({
     total: 0,
     critical: 0,
     high: 0,
     thisMonth: 0,
+    needsReview: 0,
+    inExhibit: 0,
     patterns: {} as { [key: string]: number },
   });
 
@@ -105,14 +125,21 @@ export default function EvidencePage() {
       .eq('user_id', userId)
       .order('date', { ascending: false });
     
-    // Load from evidence table
+    // Load from evidence table (old)
     const { data: evidenceData } = await supabase
       .from('evidence')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
-    // Combine and normalize both sources
+    // Load from evidence_timeline table (NEW - auto-saved from coach)
+    const { data: timelineData } = await supabase
+      .from('evidence_timeline')
+      .select('*')
+      .eq('user_id', userId)
+      .order('incident_date', { ascending: false });
+    
+    // Combine and normalize all sources
     const allItems: Incident[] = [];
     
     // Add incidents
@@ -131,7 +158,7 @@ export default function EvidencePage() {
       });
     }
     
-    // Add evidence items (from coach saves)
+    // Add old evidence items
     if (evidenceData) {
       evidenceData.forEach(ev => {
         allItems.push({
@@ -143,6 +170,29 @@ export default function EvidencePage() {
           category: 'Coach Analysis',
           source: 'coach',
           created_at: ev.created_at,
+        });
+      });
+    }
+    
+    // Add NEW evidence_timeline items (auto-saved)
+    if (timelineData) {
+      timelineData.forEach(item => {
+        allItems.push({
+          id: item.id,
+          date: item.incident_date || item.created_at,
+          description: item.coaching_summary?.slice(0, 300) || item.user_messages?.slice(0, 300) || 'Auto-saved from coach',
+          patterns: item.patterns_detected || [],
+          severity: item.patterns_detected?.length > 2 ? 'high' : item.patterns_detected?.length > 0 ? 'medium' : 'low',
+          category: 'Coach Session',
+          source: 'auto_save',
+          created_at: item.created_at,
+          // New fields
+          screenshot_urls: item.screenshot_urls,
+          coaching_summary: item.coaching_summary,
+          needs_review: item.needs_review,
+          reviewed: item.reviewed,
+          include_in_exhibit: item.include_in_exhibit,
+          user_notes: item.user_notes,
         });
       });
     }
@@ -173,6 +223,8 @@ export default function EvidencePage() {
       critical: allItems.filter(d => d.severity === 'critical').length,
       high: allItems.filter(d => d.severity === 'high' || d.severity === 'critical').length,
       thisMonth: thisMonth.length,
+      needsReview: allItems.filter(d => d.needs_review && !d.reviewed).length,
+      inExhibit: allItems.filter(d => d.include_in_exhibit).length,
       patterns,
     });
   };
@@ -182,7 +234,6 @@ export default function EvidencePage() {
     setCaptureSaving(true);
 
     try {
-      // Send to AI for analysis
       const response = await fetch('/api/analyze-incident', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,7 +249,6 @@ export default function EvidencePage() {
         severity = analysis.severity || 'low';
       }
 
-      // Save to database
       const { error } = await supabase.from('incidents').insert({
         user_id: user.id,
         date: new Date().toISOString(),
@@ -221,7 +271,48 @@ export default function EvidencePage() {
     }
   };
 
+  // Mark item as reviewed
+  const markReviewed = async (id: string) => {
+    await supabase
+      .from('evidence_timeline')
+      .update({ 
+        reviewed: true, 
+        needs_review: false,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', id);
+    
+    if (user) await loadAllDocumentation(user.id);
+    setSelectedItem(null);
+  };
+
+  // Toggle include in exhibit
+  const toggleExhibit = async (id: string, currentValue: boolean) => {
+    await supabase
+      .from('evidence_timeline')
+      .update({ include_in_exhibit: !currentValue })
+      .eq('id', id);
+    
+    if (user) await loadAllDocumentation(user.id);
+  };
+
+  // Save user notes
+  const saveNotes = async (id: string) => {
+    await supabase
+      .from('evidence_timeline')
+      .update({ user_notes: editingNotes })
+      .eq('id', id);
+    
+    if (user) await loadAllDocumentation(user.id);
+  };
+
   const filteredIncidents = incidents.filter(inc => {
+    // Filter by needs_review (NEW)
+    if (filter === 'needs_review' && (!inc.needs_review || inc.reviewed)) return false;
+    
+    // Filter by in_exhibit (NEW)
+    if (filter === 'in_exhibit' && !inc.include_in_exhibit) return false;
+    
     // Filter by severity
     if (filter === 'critical' && inc.severity !== 'critical') return false;
     if (filter === 'high' && inc.severity !== 'high' && inc.severity !== 'critical') return false;
@@ -263,7 +354,6 @@ export default function EvidencePage() {
     const groups: { [key: string]: Incident[] } = {};
     incidents.forEach(inc => {
       const date = new Date(inc.date);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
       const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       if (!groups[label]) groups[label] = [];
       groups[label].push(inc);
@@ -299,6 +389,9 @@ export default function EvidencePage() {
         <div className="header-left">
           <button onClick={() => router.push('/coach')} className="back-btn">←</button>
           <h1>My Evidence</h1>
+          {stats.needsReview > 0 && (
+            <span className="review-badge">{stats.needsReview} to review</span>
+          )}
         </div>
         <div className="header-actions">
           <button className="generate-btn" onClick={() => router.push('/court-docs')}>
@@ -317,6 +410,12 @@ export default function EvidencePage() {
             <span className="stat-num">{stats.total}</span>
             <span className="stat-label">Total</span>
           </div>
+          {stats.needsReview > 0 && (
+            <div className="stat-pill needs-review" onClick={() => setFilter('needs_review')}>
+              <span className="stat-num">{stats.needsReview}</span>
+              <span className="stat-label">To Review</span>
+            </div>
+          )}
           <div className="stat-pill critical">
             <span className="stat-num">{stats.critical}</span>
             <span className="stat-label">Critical</span>
@@ -325,10 +424,12 @@ export default function EvidencePage() {
             <span className="stat-num">{stats.high}</span>
             <span className="stat-label">High+</span>
           </div>
-          <div className="stat-pill">
-            <span className="stat-num">{stats.thisMonth}</span>
-            <span className="stat-label">This Month</span>
-          </div>
+          {stats.inExhibit > 0 && (
+            <div className="stat-pill exhibit" onClick={() => setFilter('in_exhibit')}>
+              <span className="stat-num">{stats.inExhibit}</span>
+              <span className="stat-label">In Exhibit</span>
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -340,17 +441,26 @@ export default function EvidencePage() {
             >
               All
             </button>
+            {stats.needsReview > 0 && (
+              <button 
+                className={`filter-tab needs-review-tab ${filter === 'needs_review' ? 'active' : ''}`}
+                onClick={() => { setFilter('needs_review'); setPatternFilter(null); }}
+              >
+                📌 Needs Review
+                <span className="tab-badge">{stats.needsReview}</span>
+              </button>
+            )}
+            <button 
+              className={`filter-tab ${filter === 'in_exhibit' ? 'active' : ''}`}
+              onClick={() => { setFilter('in_exhibit'); setPatternFilter(null); }}
+            >
+              ⚖️ In Exhibit
+            </button>
             <button 
               className={`filter-tab ${filter === 'critical' ? 'active' : ''}`}
               onClick={() => { setFilter('critical'); setPatternFilter(null); }}
             >
               Critical
-            </button>
-            <button 
-              className={`filter-tab ${filter === 'high' ? 'active' : ''}`}
-              onClick={() => { setFilter('high'); setPatternFilter(null); }}
-            >
-              High+
             </button>
             <button 
               className={`filter-tab ${filter === 'patterns' ? 'active' : ''}`}
@@ -385,7 +495,7 @@ export default function EvidencePage() {
           </div>
         </div>
 
-        {/* Pattern Pills (when filter === 'patterns') */}
+        {/* Pattern Pills */}
         {filter === 'patterns' && Object.keys(stats.patterns).length > 0 && (
           <div className="pattern-pills">
             {Object.entries(stats.patterns)
@@ -410,51 +520,84 @@ export default function EvidencePage() {
         {/* Content */}
         {filteredIncidents.length === 0 ? (
           <div className="empty-state">
-            <span>📭</span>
-            <h3>No incidents found</h3>
-            <p>Start documenting to build your case</p>
-            <button onClick={() => setShowQuickCapture(true)}>+ Quick Capture</button>
+            <span>{filter === 'needs_review' ? '✓' : '📭'}</span>
+            <h3>{filter === 'needs_review' ? 'All caught up!' : 'No incidents found'}</h3>
+            <p>{filter === 'needs_review' ? 'Nothing to review right now.' : 'Start documenting to build your case'}</p>
+            {filter !== 'needs_review' && (
+              <button onClick={() => setShowQuickCapture(true)}>+ Quick Capture</button>
+            )}
           </div>
         ) : viewMode === 'cards' ? (
           <div className="incidents-grid">
             {filteredIncidents.map(incident => (
-              <div key={incident.id} className="incident-card">
-                <div className="card-header">
-                  <span className="card-date">{formatDate(incident.date)}</span>
-                  <span 
-                    className="card-severity"
-                    style={{ background: getSeverityColor(incident.severity) }}
-                  >
-                    {incident.severity}
-                  </span>
-                </div>
-                
-                <div className="card-category">{incident.category}</div>
-                
-                <p className="card-description">
-                  {incident.description?.slice(0, 200)}
-                  {incident.description?.length > 200 ? '...' : ''}
-                </p>
-                
-                {incident.patterns && incident.patterns.length > 0 && (
-                  <div className="card-patterns">
-                    {incident.patterns.map(p => (
-                      <span 
-                        key={p} 
-                        className="pattern-tag"
-                        style={{ background: `${PATTERN_COLORS[p]}20`, color: PATTERN_COLORS[p] || '#666' }}
-                      >
-                        {p}
-                      </span>
-                    ))}
+              <div 
+                key={incident.id} 
+                className={`incident-card ${incident.needs_review && !incident.reviewed ? 'needs-review' : ''}`}
+                onClick={() => {
+                  setSelectedItem(incident);
+                  setEditingNotes(incident.user_notes || '');
+                }}
+              >
+                {/* Screenshot thumbnail if available */}
+                {incident.screenshot_urls && incident.screenshot_urls.length > 0 && (
+                  <div className="card-thumbnail">
+                    <img src={incident.screenshot_urls[0]} alt="Screenshot" />
+                    {incident.screenshot_urls.length > 1 && (
+                      <span className="more-images">+{incident.screenshot_urls.length - 1}</span>
+                    )}
                   </div>
                 )}
                 
-                <div className="card-source">
-                  {incident.source === 'quick_capture' && '✏️ Quick capture'}
-                  {incident.source === 'bulk_import' && '📱 Imported'}
-                  {incident.source === 'coach' && '💬 From coach'}
-                  {!incident.source && '📝 Manual entry'}
+                <div className="card-body">
+                  <div className="card-header">
+                    <span className="card-date">{formatDate(incident.date)}</span>
+                    <div className="card-badges">
+                      {incident.needs_review && !incident.reviewed && (
+                        <span className="badge review-badge-small">Review</span>
+                      )}
+                      {incident.include_in_exhibit && (
+                        <span className="badge exhibit-badge-small">Exhibit</span>
+                      )}
+                      <span 
+                        className="card-severity"
+                        style={{ background: getSeverityColor(incident.severity) }}
+                      >
+                        {incident.severity}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="card-category">{incident.category}</div>
+                  
+                  <p className="card-description">
+                    {incident.description?.slice(0, 200)}
+                    {incident.description?.length > 200 ? '...' : ''}
+                  </p>
+                  
+                  {incident.patterns && incident.patterns.length > 0 && (
+                    <div className="card-patterns">
+                      {incident.patterns.slice(0, 3).map(p => (
+                        <span 
+                          key={p} 
+                          className="pattern-tag"
+                          style={{ background: `${PATTERN_COLORS[p] || '#666'}20`, color: PATTERN_COLORS[p] || '#666' }}
+                        >
+                          {p}
+                        </span>
+                      ))}
+                      {incident.patterns.length > 3 && (
+                        <span className="pattern-more">+{incident.patterns.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="card-source">
+                    {incident.source === 'quick_capture' && '✏️ Quick capture'}
+                    {incident.source === 'bulk_import' && '📱 Imported'}
+                    {incident.source === 'coach' && '💬 From coach'}
+                    {incident.source === 'auto_save' && '🤖 Auto-saved'}
+                    {!incident.source && '📝 Manual entry'}
+                  </div>
                 </div>
               </div>
             ))}
@@ -466,10 +609,22 @@ export default function EvidencePage() {
                 <h3 className="month-header">{month}</h3>
                 <div className="timeline-items">
                   {incs.map(incident => (
-                    <div key={incident.id} className="timeline-item">
+                    <div 
+                      key={incident.id} 
+                      className="timeline-item"
+                      onClick={() => {
+                        setSelectedItem(incident);
+                        setEditingNotes(incident.user_notes || '');
+                      }}
+                    >
                       <div className="timeline-dot" style={{ background: getSeverityColor(incident.severity) }} />
                       <div className="timeline-content">
-                        <div className="timeline-date">{formatDate(incident.date)}</div>
+                        <div className="timeline-header">
+                          <span className="timeline-date">{formatDate(incident.date)}</span>
+                          {incident.needs_review && !incident.reviewed && (
+                            <span className="badge review-badge-small">Review</span>
+                          )}
+                        </div>
                         <div className="timeline-category">{incident.category}</div>
                         <p className="timeline-desc">
                           {incident.description?.slice(0, 150)}
@@ -498,13 +653,119 @@ export default function EvidencePage() {
               <span className="cta-icon">⚖️</span>
               <div>
                 <h4>Ready for Court?</h4>
-                <p>Export your evidence as a court-ready exhibit package</p>
+                <p>
+                  {stats.inExhibit > 0 
+                    ? `${stats.inExhibit} items ready for exhibit`
+                    : 'Mark items "In Exhibit" to build your court package'
+                  }
+                </p>
               </div>
             </div>
-            <button className="cta-btn">Coming Soon</button>
+            <button className="cta-btn" onClick={() => router.push('/court-docs')}>
+              {stats.inExhibit > 0 ? 'Generate Exhibit' : 'Coming Soon'}
+            </button>
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      {selectedItem && (
+        <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
+          <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{formatDate(selectedItem.date)}</h2>
+              <button className="modal-close" onClick={() => setSelectedItem(null)}>×</button>
+            </div>
+            
+            <div className="modal-content">
+              {/* Screenshots */}
+              {selectedItem.screenshot_urls && selectedItem.screenshot_urls.length > 0 && (
+                <div className="detail-screenshots">
+                  {selectedItem.screenshot_urls.map((url, i) => (
+                    <img 
+                      key={i} 
+                      src={url} 
+                      alt={`Screenshot ${i + 1}`}
+                      onClick={() => window.open(url, '_blank')}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              {/* Patterns */}
+              {selectedItem.patterns && selectedItem.patterns.length > 0 && (
+                <div className="detail-patterns">
+                  <label>Patterns Identified</label>
+                  <div className="patterns-list">
+                    {selectedItem.patterns.map(p => (
+                      <span 
+                        key={p} 
+                        className="pattern-tag"
+                        style={{ background: `${PATTERN_COLORS[p] || '#666'}20`, color: PATTERN_COLORS[p] || '#666' }}
+                      >
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Coaching Summary */}
+              {selectedItem.coaching_summary && (
+                <div className="detail-section">
+                  <label>Coach Analysis</label>
+                  <div className="coaching-summary">{selectedItem.coaching_summary}</div>
+                </div>
+              )}
+              
+              {/* Description */}
+              <div className="detail-section">
+                <label>Description</label>
+                <p>{selectedItem.description}</p>
+              </div>
+              
+              {/* Notes */}
+              {selectedItem.source === 'auto_save' && (
+                <div className="detail-section">
+                  <label>Your Notes (for attorney)</label>
+                  <textarea
+                    value={editingNotes}
+                    onChange={(e) => setEditingNotes(e.target.value)}
+                    placeholder="Add context, what happened before/after, how it made you feel..."
+                  />
+                  <button 
+                    className="save-notes-btn"
+                    onClick={() => saveNotes(selectedItem.id)}
+                  >
+                    Save Notes
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Actions */}
+            {selectedItem.source === 'auto_save' && (
+              <div className="modal-footer detail-actions">
+                <button 
+                  className={`exhibit-btn ${selectedItem.include_in_exhibit ? 'active' : ''}`}
+                  onClick={() => toggleExhibit(selectedItem.id, selectedItem.include_in_exhibit || false)}
+                >
+                  {selectedItem.include_in_exhibit ? '✓ In Exhibit' : '+ Add to Exhibit'}
+                </button>
+                
+                {selectedItem.needs_review && !selectedItem.reviewed && (
+                  <button 
+                    className="reviewed-btn"
+                    onClick={() => markReviewed(selectedItem.id)}
+                  >
+                    ✓ Mark Reviewed
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Capture Modal */}
       {showQuickCapture && (
@@ -574,6 +835,7 @@ export default function EvidencePage() {
         <button className="nav-item active">
           <span>📁</span>
           <span>Docs</span>
+          {stats.needsReview > 0 && <span className="nav-badge">{stats.needsReview}</span>}
         </button>
         <button className="nav-item" onClick={() => router.push('/healing')}>
           <span>🌿</span>
@@ -616,6 +878,14 @@ export default function EvidencePage() {
         }
         .header h1 {
           font-size: 18px;
+          font-weight: 600;
+        }
+        .review-badge {
+          background: #f59e0b;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
           font-weight: 600;
         }
         .header-actions {
@@ -665,13 +935,23 @@ export default function EvidencePage() {
           align-items: center;
           gap: 8px;
           white-space: nowrap;
+          cursor: pointer;
         }
+        .stat-pill.needs-review {
+          background: #fef3c7;
+          border: 2px solid #f59e0b;
+        }
+        .stat-pill.needs-review .stat-num { color: #d97706; }
         .stat-pill.critical {
           background: #fef2f2;
         }
         .stat-pill.high {
           background: #fff7ed;
         }
+        .stat-pill.exhibit {
+          background: #d1fae5;
+        }
+        .stat-pill.exhibit .stat-num { color: #059669; }
         .stat-num {
           font-size: 18px;
           font-weight: 700;
@@ -696,6 +976,7 @@ export default function EvidencePage() {
         .filter-tabs {
           display: flex;
           gap: 8px;
+          overflow-x: auto;
         }
         .filter-tab {
           padding: 8px 16px;
@@ -705,11 +986,28 @@ export default function EvidencePage() {
           font-size: 14px;
           cursor: pointer;
           transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
         }
         .filter-tab.active {
           background: #1a3a2f;
           color: white;
           border-color: #1a3a2f;
+        }
+        .filter-tab.needs-review-tab {
+          border-color: #f59e0b;
+        }
+        .filter-tab.needs-review-tab.active {
+          background: #f59e0b;
+          border-color: #f59e0b;
+        }
+        .tab-badge {
+          background: rgba(255,255,255,0.3);
+          padding: 2px 6px;
+          border-radius: 8px;
+          font-size: 11px;
         }
         .filter-right {
           display: flex;
@@ -798,21 +1096,70 @@ export default function EvidencePage() {
         .incident-card {
           background: white;
           border-radius: 12px;
-          padding: 16px;
+          overflow: hidden;
           transition: transform 0.2s;
+          cursor: pointer;
         }
         .incident-card:hover {
           transform: translateY(-2px);
         }
+        .incident-card.needs-review {
+          border-left: 4px solid #f59e0b;
+        }
+        .card-thumbnail {
+          position: relative;
+          height: 120px;
+          background: #f3f4f6;
+        }
+        .card-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .more-images {
+          position: absolute;
+          bottom: 8px;
+          right: 8px;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
+        .card-body {
+          padding: 14px;
+        }
         .card-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           margin-bottom: 8px;
+          gap: 8px;
         }
         .card-date {
           font-size: 12px;
           color: #666;
+        }
+        .card-badges {
+          display: flex;
+          gap: 4px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .badge {
+          font-size: 9px;
+          font-weight: 600;
+          padding: 3px 6px;
+          border-radius: 8px;
+          text-transform: uppercase;
+        }
+        .review-badge-small {
+          background: #fef3c7;
+          color: #d97706;
+        }
+        .exhibit-badge-small {
+          background: #d1fae5;
+          color: #059669;
         }
         .card-severity {
           font-size: 10px;
@@ -846,15 +1193,16 @@ export default function EvidencePage() {
           font-size: 11px;
           font-weight: 600;
         }
+        .pattern-more {
+          font-size: 11px;
+          color: #999;
+        }
         .card-source {
           font-size: 11px;
           color: #999;
         }
 
         /* Timeline View */
-        .timeline-view {
-          
-        }
         .timeline-month {
           margin-bottom: 32px;
         }
@@ -873,6 +1221,7 @@ export default function EvidencePage() {
         .timeline-item {
           display: flex;
           gap: 16px;
+          cursor: pointer;
         }
         .timeline-dot {
           width: 12px;
@@ -887,10 +1236,15 @@ export default function EvidencePage() {
           border-radius: 12px;
           padding: 16px;
         }
+        .timeline-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 4px;
+        }
         .timeline-date {
           font-size: 12px;
           color: #666;
-          margin-bottom: 4px;
         }
         .timeline-category {
           font-weight: 600;
@@ -953,7 +1307,112 @@ export default function EvidencePage() {
           cursor: pointer;
         }
 
-        /* Modal */
+        /* Detail Modal */
+        .detail-modal {
+          max-width: 600px;
+        }
+        .detail-screenshots {
+          display: flex;
+          gap: 8px;
+          padding: 0 20px;
+          overflow-x: auto;
+          margin-bottom: 16px;
+        }
+        .detail-screenshots img {
+          height: 200px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+        .detail-patterns {
+          padding: 0 20px;
+          margin-bottom: 16px;
+        }
+        .detail-patterns label {
+          display: block;
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 8px;
+        }
+        .patterns-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .detail-section {
+          padding: 0 20px;
+          margin-bottom: 16px;
+        }
+        .detail-section label {
+          display: block;
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 8px;
+        }
+        .coaching-summary {
+          font-size: 14px;
+          line-height: 1.6;
+          white-space: pre-wrap;
+          max-height: 200px;
+          overflow-y: auto;
+          background: #f9fafb;
+          padding: 12px;
+          border-radius: 8px;
+        }
+        .detail-section p {
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        .detail-section textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: vertical;
+          min-height: 80px;
+        }
+        .save-notes-btn {
+          margin-top: 8px;
+          padding: 8px 16px;
+          background: #f3f4f6;
+          border: none;
+          border-radius: 6px;
+          font-size: 13px;
+          cursor: pointer;
+        }
+        .detail-actions {
+          display: flex;
+          gap: 10px;
+          padding: 20px;
+          border-top: 1px solid #eee;
+        }
+        .exhibit-btn {
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: 2px solid #1a3a2f;
+          background: white;
+          color: #1a3a2f;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .exhibit-btn.active {
+          background: #1a3a2f;
+          color: white;
+        }
+        .reviewed-btn {
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: none;
+          background: #22c55e;
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        /* Modal Base */
         .modal-overlay {
           position: fixed;
           inset: 0;
@@ -1086,12 +1545,26 @@ export default function EvidencePage() {
           font-size: 11px;
           cursor: pointer;
           padding: 8px 16px;
+          position: relative;
         }
         .nav-item span:first-child {
           font-size: 20px;
         }
         .nav-item.active {
           color: #1a3a2f;
+        }
+        .nav-badge {
+          position: absolute;
+          top: 2px;
+          right: 8px;
+          background: #f59e0b;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 5px;
+          border-radius: 8px;
+          min-width: 16px;
+          text-align: center;
         }
 
         @media (max-width: 640px) {
@@ -1119,6 +1592,14 @@ export default function EvidencePage() {
           }
           .cta-content {
             flex-direction: column;
+          }
+          .header-actions {
+            flex-direction: column;
+            gap: 6px;
+          }
+          .generate-btn, .capture-btn {
+            padding: 8px 12px;
+            font-size: 13px;
           }
         }
       `}</style>
