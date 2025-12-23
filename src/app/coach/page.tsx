@@ -1069,9 +1069,9 @@ export default function CoachPage() {
           
           <div className="nav-divider" />
           
-          <button onClick={() => { router.push('/case-setup'); setShowSidebar(false); }} className="nav-item">
-            Settings
-          </button>
+          <button onClick={() => router.push('/case-setup')} className="nav-item">
+  📋 My Case
+</button>
           <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }} className="nav-item">
   How It Works
 </button>
