@@ -1,320 +1,513 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import AppLayout from "@/components/layout/AppLayout";
-
-interface CaseInfo {
-  id: string;
-  user_role: "petitioner" | "respondent";
-  case_number: string;
-  court_name: string;
-  county: string;
-  state: string;
-  judge_name: string;
-  filing_date: string;
-  user_legal_name: string;
-  coparent_legal_name: string;
-  children_names: string[];
-}
-
-const US_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function CaseSetupPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [mode, setMode] = useState<"view" | "edit">("view");
-  const [existingCase, setExistingCase] = useState<CaseInfo | null>(null);
   
-  const [formData, setFormData] = useState({
-    user_role: "" as "" | "petitioner" | "respondent",
-    case_number: "",
-    court_name: "",
-    county: "",
-    state: "",
-    judge_name: "",
-    filing_date: "",
-    user_legal_name: "",
-    coparent_legal_name: "",
-    children_names: [""]
-  });
+  // Essential fields only
+  const [userRole, setUserRole] = useState<'petitioner' | 'respondent' | null>(null);
+  const [coparentName, setCoparentName] = useState('');
+  const [nextCourtDate, setNextCourtDate] = useState('');
+  
+  // Auto-extracted fields (read-only, from court orders)
+  const [extractedData, setExtractedData] = useState<{
+    caseNumber?: string;
+    courtName?: string;
+    county?: string;
+    state?: string;
+    judgeName?: string;
+    petitionerName?: string;
+    respondentName?: string;
+  }>({});
 
   useEffect(() => {
-    const load = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
+      if (!session?.user) {
+        router.push('/login');
         return;
       }
-      setUserId(session.user.id);
+      setUser(session.user);
 
+      // Load existing case context
       const { data: caseData } = await supabase
-        .from("user_cases")
-        .select("*")
-        .eq("user_id", session.user.id)
+        .from('case_context')
+        .select('*')
+        .eq('user_id', session.user.id)
         .single();
 
       if (caseData) {
-        setExistingCase(caseData);
-        setFormData({
-          user_role: caseData.user_role || "",
-          case_number: caseData.case_number || "",
-          court_name: caseData.court_name || "",
-          county: caseData.county || "",
-          state: caseData.state || "",
-          judge_name: caseData.judge_name || "",
-          filing_date: caseData.filing_date || "",
-          user_legal_name: caseData.user_legal_name || "",
-          coparent_legal_name: caseData.coparent_legal_name || "",
-          children_names: caseData.children_names?.length ? caseData.children_names : [""]
+        setUserRole(caseData.user_role || null);
+        setCoparentName(caseData.coparent_name || '');
+        setNextCourtDate(caseData.next_court_date || '');
+        setExtractedData({
+          caseNumber: caseData.case_number,
+          courtName: caseData.court_name,
+          county: caseData.county,
+          state: caseData.state,
+          judgeName: caseData.judge_name,
+          petitionerName: caseData.petitioner_name,
+          respondentName: caseData.respondent_name,
         });
-        setMode("view");
-      } else {
-        setMode("edit");
       }
+
       setLoading(false);
     };
-    load();
+
+    init();
   }, [router]);
 
   const handleSave = async () => {
-    if (!userId) return;
+    if (!user) return;
     setSaving(true);
 
-    const caseData = {
-      user_id: userId,
-      user_role: formData.user_role,
-      case_number: formData.case_number,
-      court_name: formData.court_name,
-      county: formData.county,
-      state: formData.state,
-      judge_name: formData.judge_name,
-      filing_date: formData.filing_date || null,
-      user_legal_name: formData.user_legal_name,
-      coparent_legal_name: formData.coparent_legal_name,
-      children_names: formData.children_names.filter(n => n.trim())
-    };
+    try {
+      await supabase.from('case_context').upsert({
+        user_id: user.id,
+        user_role: userRole,
+        coparent_name: coparentName || null,
+        next_court_date: nextCourtDate || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
 
-    if (existingCase) {
-      const { error } = await supabase
-        .from("user_cases")
-        .update(caseData)
-        .eq("id", existingCase.id);
-      
-      if (!error) {
-        setExistingCase({ ...existingCase, ...caseData } as CaseInfo);
-        setMode("view");
-      }
-    } else {
-      const { data, error } = await supabase
-        .from("user_cases")
-        .insert(caseData)
-        .select()
-        .single();
-      
-      if (!error && data) {
-        setExistingCase(data);
-        setMode("view");
-      }
+      // Show success briefly then go to coach
+      setTimeout(() => router.push('/coach'), 500);
+    } catch (error) {
+      console.error('Failed to save:', error);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
-  const addChild = () => setFormData(prev => ({ ...prev, children_names: [...prev.children_names, ""] }));
-  const removeChild = (index: number) => setFormData(prev => ({ ...prev, children_names: prev.children_names.filter((_, i) => i !== index) }));
-  const updateChild = (index: number, value: string) => setFormData(prev => ({ ...prev, children_names: prev.children_names.map((n, i) => i === index ? value : n) }));
+  const daysUntilCourt = nextCourtDate 
+    ? Math.ceil((new Date(nextCourtDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
-  if (loading) return <AppLayout><div style={{textAlign:"center",padding:"80px"}}>Loading...</div></AppLayout>;
-
-  // VIEW MODE
-  if (mode === "view" && existingCase) {
+  if (loading) {
     return (
-      <AppLayout>
-        <div className="case-page">
-          <div className="page-header">
-            <h1>Case Information</h1>
-            <button className="edit-btn" onClick={() => setMode("edit")}>Edit</button>
-          </div>
-
-          <div className="info-card">
-            <div className="info-section">
-              <h3>Your Role</h3>
-              <div className="role-badge">{existingCase.user_role === "petitioner" ? "Petitioner" : "Respondent"}</div>
-              <p className="role-note">{existingCase.user_role === "petitioner" ? "You filed the original petition" : "The other party filed the original petition"}</p>
-            </div>
-
-            <div className="info-section">
-              <h3>Case Details</h3>
-              <div className="info-grid">
-                <div className="info-item"><label>Case Number</label><span>{existingCase.case_number || "—"}</span></div>
-                <div className="info-item"><label>Court</label><span>{existingCase.court_name || "—"}</span></div>
-                <div className="info-item"><label>County</label><span>{existingCase.county || "—"}</span></div>
-                <div className="info-item"><label>State</label><span>{existingCase.state || "—"}</span></div>
-                <div className="info-item"><label>Judge</label><span>{existingCase.judge_name || "—"}</span></div>
-                <div className="info-item"><label>Filing Date</label><span>{existingCase.filing_date ? new Date(existingCase.filing_date).toLocaleDateString() : "—"}</span></div>
-              </div>
-            </div>
-
-            <div className="info-section">
-              <h3>Parties</h3>
-              <div className="parties-display">
-                <div className="party">
-                  <label>Petitioner</label>
-                  <span className={existingCase.user_role === "petitioner" ? "you" : ""}>
-                    {existingCase.user_role === "petitioner" ? existingCase.user_legal_name : existingCase.coparent_legal_name}
-                    {existingCase.user_role === "petitioner" && <em> (You)</em>}
-                  </span>
-                </div>
-                <div className="vs">vs.</div>
-                <div className="party">
-                  <label>Respondent</label>
-                  <span className={existingCase.user_role === "respondent" ? "you" : ""}>
-                    {existingCase.user_role === "respondent" ? existingCase.user_legal_name : existingCase.coparent_legal_name}
-                    {existingCase.user_role === "respondent" && <em> (You)</em>}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="info-section">
-              <h3>Children</h3>
-              <div className="children-list">
-                {existingCase.children_names?.length > 0 
-                  ? existingCase.children_names.map((name, i) => <span key={i} className="child-name">{name}</span>)
-                  : <span className="none">No children listed</span>}
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="loading">
+        <div className="spinner">💚</div>
         <style jsx>{`
-          .case-page { max-width: 700px; margin: 0 auto; }
-          .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-          .page-header h1 { margin: 0; font-size: 28px; color: #1a3a2f; }
-          .edit-btn { background: #f0f9f6; border: 1px solid #2dd4a8; color: #1a3a2f; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-          .info-card { background: white; border-radius: 16px; padding: 24px; }
-          .info-section { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; }
-          .info-section:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-          .info-section h3 { margin: 0 0 12px; font-size: 14px; color: #666; font-weight: 500; }
-          .role-badge { display: inline-block; background: #1a3a2f; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600; margin-bottom: 8px; }
-          .role-note { margin: 0; font-size: 13px; color: #888; }
-          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-          .info-item label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
-          .info-item span { font-size: 15px; color: #333; }
-          .parties-display { display: flex; align-items: center; gap: 20px; }
-          .party { flex: 1; text-align: center; padding: 16px; background: #f8f9fa; border-radius: 10px; }
-          .party label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
-          .party span { font-size: 15px; color: #333; }
-          .party span.you { color: #1a3a2f; font-weight: 600; }
-          .party em { color: #2dd4a8; font-style: normal; font-size: 12px; }
-          .vs { color: #999; font-size: 14px; }
-          .children-list { display: flex; flex-wrap: wrap; gap: 8px; }
-          .child-name { background: #f0f9f6; padding: 6px 14px; border-radius: 15px; font-size: 14px; }
-          .none { color: #999; font-style: italic; }
+          .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #f5f7f6;
+          }
+          .spinner {
+            font-size: 48px;
+            animation: pulse 1.5s ease-in-out infinite;
+          }
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+          }
         `}</style>
-      </AppLayout>
+      </div>
     );
   }
 
-  // EDIT MODE
   return (
-    <AppLayout>
-      <div className="case-page">
-        <div className="page-header">
-          <h1>{existingCase ? "Edit" : "Set Up"} Case Information</h1>
-          {existingCase && <button className="cancel-btn" onClick={() => setMode("view")}>Cancel</button>}
+    <div className="container">
+      {/* Header */}
+      <header className="header">
+        <button onClick={() => router.push('/coach')} className="back-btn">
+          ← Back to Coach
+        </button>
+        <h1>Case Settings</h1>
+        <div className="spacer" />
+      </header>
+
+      <div className="content">
+        {/* Essential Info Card */}
+        <div className="card essential">
+          <h2>⚡ Essential Info</h2>
+          <p className="card-desc">This is all we need from you. Everything else can be extracted from your court orders.</p>
+
+          {/* Role Selection */}
+          <div className="field">
+            <label>Your Role in This Case *</label>
+            <p className="field-help">This is determined by who filed the original petition and never changes.</p>
+            <div className="role-buttons">
+              <button
+                className={`role-btn ${userRole === 'petitioner' ? 'selected' : ''}`}
+                onClick={() => setUserRole('petitioner')}
+              >
+                <strong>I am the PETITIONER</strong>
+                <span>I filed the original petition</span>
+              </button>
+              <button
+                className={`role-btn ${userRole === 'respondent' ? 'selected' : ''}`}
+                onClick={() => setUserRole('respondent')}
+              >
+                <strong>I am the RESPONDENT</strong>
+                <span>They filed the original petition</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Co-parent Name */}
+          <div className="field">
+            <label>What should I call your co-parent?</label>
+            <p className="field-help">This helps personalize our conversations. Use whatever feels right.</p>
+            <input
+              type="text"
+              value={coparentName}
+              onChange={(e) => setCoparentName(e.target.value)}
+              placeholder="e.g., Matt, their dad, my ex, etc."
+            />
+          </div>
+
+          {/* Next Court Date */}
+          <div className="field">
+            <label>Next Court Date</label>
+            <p className="field-help">We'll help you prepare and show a countdown.</p>
+            <input
+              type="date"
+              value={nextCourtDate}
+              onChange={(e) => setNextCourtDate(e.target.value)}
+            />
+            {daysUntilCourt && daysUntilCourt > 0 && (
+              <div className="court-countdown">
+                <span className="days">{daysUntilCourt}</span>
+                <span className="label">days until court</span>
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={handleSave} 
+            disabled={saving || !userRole}
+            className="save-btn"
+          >
+            {saving ? 'Saving...' : 'Save & Continue'}
+          </button>
         </div>
 
-        <div className="form-card">
-          <div className="form-section">
-            <h3>Your Role in This Case</h3>
-            <p className="section-desc">This is determined by who filed the original petition and never changes.</p>
-            <div className="role-options">
-              <button type="button" className={`role-option ${formData.user_role === "petitioner" ? "selected" : ""}`} onClick={() => setFormData(prev => ({ ...prev, user_role: "petitioner" }))}>
-                <strong>I am the PETITIONER</strong><span>I filed the original petition</span>
-              </button>
-              <button type="button" className={`role-option ${formData.user_role === "respondent" ? "selected" : ""}`} onClick={() => setFormData(prev => ({ ...prev, user_role: "respondent" }))}>
-                <strong>I am the RESPONDENT</strong><span>They filed the original petition</span>
-              </button>
-            </div>
-          </div>
+        {/* Extracted Info Card */}
+        {(extractedData.caseNumber || extractedData.courtName) && (
+          <div className="card extracted">
+            <h2>📋 Extracted from Your Court Orders</h2>
+            <p className="card-desc">This information was automatically extracted. Upload a court order to update it.</p>
 
-          <div className="form-section">
-            <h3>Case Details</h3>
-            <div className="form-grid">
-              <div className="form-group"><label>Case Number</label><input type="text" value={formData.case_number} onChange={e => setFormData(prev => ({ ...prev, case_number: e.target.value }))} placeholder="e.g., FC-2024-001234" /></div>
-              <div className="form-group"><label>Filing Date</label><input type="date" value={formData.filing_date} onChange={e => setFormData(prev => ({ ...prev, filing_date: e.target.value }))} /></div>
-              <div className="form-group full"><label>Court Name</label><input type="text" value={formData.court_name} onChange={e => setFormData(prev => ({ ...prev, court_name: e.target.value }))} placeholder="e.g., Superior Court of Arizona" /></div>
-              <div className="form-group"><label>County</label><input type="text" value={formData.county} onChange={e => setFormData(prev => ({ ...prev, county: e.target.value }))} placeholder="e.g., Maricopa" /></div>
-              <div className="form-group"><label>State</label><select value={formData.state} onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))}><option value="">Select state...</option>{US_STATES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-              <div className="form-group full"><label>Judge Name (optional)</label><input type="text" value={formData.judge_name} onChange={e => setFormData(prev => ({ ...prev, judge_name: e.target.value }))} placeholder="e.g., Hon. Jane Smith" /></div>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h3>Party Information</h3>
-            <div className="form-grid">
-              <div className="form-group full"><label>Your Legal Name</label><input type="text" value={formData.user_legal_name} onChange={e => setFormData(prev => ({ ...prev, user_legal_name: e.target.value }))} placeholder="As it appears on court documents" /></div>
-              <div className="form-group full"><label>Co-Parent's Legal Name</label><input type="text" value={formData.coparent_legal_name} onChange={e => setFormData(prev => ({ ...prev, coparent_legal_name: e.target.value }))} placeholder="As it appears on court documents" /></div>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h3>Children</h3>
-            <div className="children-inputs">
-              {formData.children_names.map((name, i) => (
-                <div key={i} className="child-input">
-                  <input type="text" value={name} onChange={e => updateChild(i, e.target.value)} placeholder={`Child ${i + 1} name`} />
-                  {formData.children_names.length > 1 && <button type="button" onClick={() => removeChild(i)} className="remove-btn">x</button>}
+            <div className="extracted-grid">
+              {extractedData.caseNumber && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Case Number</span>
+                  <span className="extracted-value">{extractedData.caseNumber}</span>
                 </div>
-              ))}
-              <button type="button" onClick={addChild} className="add-child-btn">+ Add Child</button>
+              )}
+              {extractedData.courtName && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Court</span>
+                  <span className="extracted-value">{extractedData.courtName}</span>
+                </div>
+              )}
+              {extractedData.county && extractedData.state && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Location</span>
+                  <span className="extracted-value">{extractedData.county}, {extractedData.state}</span>
+                </div>
+              )}
+              {extractedData.judgeName && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Judge</span>
+                  <span className="extracted-value">{extractedData.judgeName}</span>
+                </div>
+              )}
+              {extractedData.petitionerName && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Petitioner</span>
+                  <span className="extracted-value">{extractedData.petitionerName}</span>
+                </div>
+              )}
+              {extractedData.respondentName && (
+                <div className="extracted-item">
+                  <span className="extracted-label">Respondent</span>
+                  <span className="extracted-value">{extractedData.respondentName}</span>
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="form-actions">
-            <button className="save-btn" onClick={handleSave} disabled={!formData.user_role || saving}>
-              {saving ? "Saving..." : existingCase ? "Save Changes" : "Save Case Information"}
+            <button onClick={() => router.push('/evidence/upload')} className="upload-btn">
+              📄 Upload Court Order to Update
             </button>
           </div>
-        </div>
+        )}
+
+        {/* No extracted data yet */}
+        {!extractedData.caseNumber && !extractedData.courtName && (
+          <div className="card empty">
+            <div className="empty-icon">📄</div>
+            <h3>No Court Orders Uploaded Yet</h3>
+            <p>Upload a court order and we'll automatically extract your case details.</p>
+            <button onClick={() => router.push('/evidence/upload')} className="upload-btn">
+              Upload Court Order
+            </button>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
-        .case-page { max-width: 700px; margin: 0 auto; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .page-header h1 { margin: 0; font-size: 28px; color: #1a3a2f; }
-        .cancel-btn { background: none; border: 1px solid #ddd; color: #666; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-        .form-card { background: white; border-radius: 16px; padding: 24px; }
-        .form-section { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #eee; }
-        .form-section:last-child { border-bottom: none; }
-        .form-section h3 { margin: 0 0 8px; font-size: 16px; color: #1a3a2f; }
-        .section-desc { margin: 0 0 16px; font-size: 13px; color: #888; }
-        .role-options { display: flex; gap: 16px; }
-        .role-option { flex: 1; padding: 20px; border: 2px solid #eee; border-radius: 12px; background: white; cursor: pointer; text-align: left; }
-        .role-option:hover { border-color: #ccc; }
-        .role-option.selected { border-color: #2dd4a8; background: #f0f9f6; }
-        .role-option strong { display: block; color: #1a3a2f; margin-bottom: 4px; }
-        .role-option span { font-size: 13px; color: #666; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group.full { grid-column: span 2; }
-        .form-group label { font-size: 13px; color: #666; margin-bottom: 6px; }
-        .form-group input, .form-group select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2dd4a8; }
-        .children-inputs { display: flex; flex-direction: column; gap: 12px; }
-        .child-input { display: flex; gap: 8px; }
-        .child-input input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
-        .remove-btn { width: 40px; background: #fee; border: none; border-radius: 8px; color: #c00; font-size: 20px; cursor: pointer; }
-        .add-child-btn { background: none; border: 1px dashed #ccc; padding: 12px; border-radius: 8px; color: #666; cursor: pointer; }
-        .form-actions { padding-top: 24px; }
-        .save-btn { width: 100%; padding: 16px; background: #2dd4a8; border: none; border-radius: 10px; color: #1a3a2f; font-weight: 700; font-size: 16px; cursor: pointer; }
-        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        @media (max-width: 600px) { .role-options { flex-direction: column; } .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: span 1; } }
+        .container {
+          min-height: 100vh;
+          background: #f5f7f6;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 24px;
+          background: #1a3a2f;
+          color: white;
+        }
+
+        .header h1 {
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .back-btn {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 14px;
+          cursor: pointer;
+          padding: 8px 12px;
+          border-radius: 6px;
+        }
+
+        .back-btn:hover {
+          background: rgba(255,255,255,0.1);
+        }
+
+        .spacer {
+          width: 100px;
+        }
+
+        .content {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 24px;
+        }
+
+        .card {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+          font-size: 20px;
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+
+        .card-desc {
+          color: #666;
+          font-size: 14px;
+          margin-bottom: 24px;
+        }
+
+        .field {
+          margin-bottom: 24px;
+        }
+
+        .field label {
+          display: block;
+          font-weight: 600;
+          color: #1a3a2f;
+          margin-bottom: 4px;
+        }
+
+        .field-help {
+          color: #888;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+
+        .role-buttons {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .role-btn {
+          padding: 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          background: white;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+        }
+
+        .role-btn:hover {
+          border-color: #14b8a6;
+        }
+
+        .role-btn.selected {
+          border-color: #14b8a6;
+          background: #f0fdfa;
+        }
+
+        .role-btn strong {
+          display: block;
+          color: #1a3a2f;
+          margin-bottom: 4px;
+        }
+
+        .role-btn span {
+          font-size: 13px;
+          color: #666;
+        }
+
+        .field input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 16px;
+          transition: border-color 0.2s;
+        }
+
+        .field input:focus {
+          outline: none;
+          border-color: #14b8a6;
+        }
+
+        .court-countdown {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 12px;
+          padding: 8px 16px;
+          background: #fef3c7;
+          border-radius: 20px;
+        }
+
+        .court-countdown .days {
+          background: #f59e0b;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-weight: 700;
+        }
+
+        .court-countdown .label {
+          color: #92400e;
+          font-size: 14px;
+        }
+
+        .save-btn {
+          width: 100%;
+          padding: 16px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .save-btn:hover:not(:disabled) {
+          background: #2d5a4a;
+        }
+
+        .save-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .extracted-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+
+        .extracted-item {
+          padding: 12px;
+          background: #f9fafb;
+          border-radius: 8px;
+        }
+
+        .extracted-label {
+          display: block;
+          font-size: 12px;
+          color: #888;
+          margin-bottom: 4px;
+        }
+
+        .extracted-value {
+          font-weight: 500;
+          color: #1a3a2f;
+        }
+
+        .upload-btn {
+          width: 100%;
+          padding: 12px;
+          background: #f3f4f6;
+          border: 2px dashed #d1d5db;
+          border-radius: 10px;
+          color: #666;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+          border-color: #14b8a6;
+          color: #14b8a6;
+        }
+
+        .card.empty {
+          text-align: center;
+          padding: 40px 24px;
+        }
+
+        .empty-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+
+        .card.empty h3 {
+          color: #1a3a2f;
+          margin-bottom: 8px;
+        }
+
+        .card.empty p {
+          color: #666;
+          margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+          .role-buttons {
+            grid-template-columns: 1fr;
+          }
+
+          .extracted-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .header h1 {
+            font-size: 16px;
+          }
+        }
       `}</style>
-    </AppLayout>
+    </div>
   );
 }
