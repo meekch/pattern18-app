@@ -281,8 +281,7 @@ export default function CoachPage() {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('fileType', type);
-    formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content }))));
+    formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') })).filter(m => m.content)));
     if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
     
     // Set appropriate message based on type
@@ -827,7 +826,10 @@ export default function CoachPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
+          history: messages.map(m => ({ 
+            role: m.role, 
+            content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') 
+          })).filter(m => m.content),
           caseContext,
         }),
       });
@@ -1320,7 +1322,10 @@ export default function CoachPage() {
               const formData = new FormData();
               formData.append('file', file);
               formData.append('message', input || '');
-              formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content }))));
+              formData.append('history', JSON.stringify(messages.map(m => ({ 
+                role: m.role, 
+                content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') 
+              })).filter(m => m.content)));
               if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
               
               setIsLoading(true);
