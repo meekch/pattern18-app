@@ -308,7 +308,7 @@ export default function CoachPage() {
       const userMsg: Message = {
         id: Date.now().toString(),
         role: 'user',
-        content: '',  // Don't show the system prompt to user
+        content: '[Screenshot]',
         timestamp: new Date(),
         images: [imagePreview],
       };
