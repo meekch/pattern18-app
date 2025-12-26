@@ -1271,31 +1271,38 @@ export default function CoachPage() {
                         Copy
                       </button>
                       {msg.patterns && msg.patterns.length > 0 && (
-                        msg.savedToEvidence ? (
-                          <span className="saved-badge">✓ Saved</span>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
-                                const userMsg = idx > 0 ? messages[idx - 1] : undefined;
-                                handleQuickSave(msg, userMsg);
-                              }}
-                              disabled={savingEvidence === msg.id}
-                              className="action-btn save"
-                            >
-                              {savingEvidence === msg.id ? 'Saving...' : 'Quick Save'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                const userMsg = idx > 0 ? messages[idx - 1] : undefined;
-                                openSaveModal(msg, userMsg);
-                              }}
-                              className="action-btn details"
-                            >
-                              + Details
-                            </button>
-                          </>
-                        )
+                        <div className="pattern-section">
+                          <div className="pattern-tags">
+                            {msg.patterns.map((pattern, i) => (
+                              <span key={i} className="pattern-tag">{pattern}</span>
+                            ))}
+                          </div>
+                          {msg.savedToEvidence ? (
+                            <span className="saved-indicator">📌 Saved to evidence ({evidenceCount} total)</span>
+                          ) : (
+                            <div className="save-actions">
+                              <button
+                                onClick={() => {
+                                  const userMsg = idx > 0 ? messages[idx - 1] : undefined;
+                                  handleQuickSave(msg, userMsg);
+                                }}
+                                disabled={savingEvidence === msg.id}
+                                className="action-btn save"
+                              >
+                                {savingEvidence === msg.id ? 'Saving...' : 'Quick Save'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const userMsg = idx > 0 ? messages[idx - 1] : undefined;
+                                  openSaveModal(msg, userMsg);
+                                }}
+                                className="action-btn details"
+                              >
+                                + Details
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1421,21 +1428,12 @@ export default function CoachPage() {
             <button 
               className="help-respond-btn"
               onClick={() => {
-                sendMessage(`Help me respond to this calmly. Keep it brief - no JADE (Justify, Argue, Defend, Explain). Just the facts, no emotion.`);
+                sendMessage(`Help me respond`);
               }}
             >
               ✍️ Help me respond
             </button>
-            <button 
-              className="no-respond-btn"
-              onClick={() => {
-                const lastPattern = messages.filter(m => m.patterns && m.patterns.length > 0).pop();
-                const patternName = lastPattern?.patterns?.[0] || 'manipulation';
-                sendMessage(`I'm choosing not to respond to that ${patternName.toLowerCase()}. Silence is my power.`);
-              }}
-            >
-              🚫 I'm not responding
-            </button>
+            
           </div>
         )}
       </div>
@@ -2828,12 +2826,41 @@ export default function CoachPage() {
           background: #14b8a6;
           color: white;
         }
-        .saved-badge {
+       .saved-badge {
           color: #059669;
           font-size: 13px;
           font-weight: 500;
         }
-
+        .pattern-section {
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #e5e7eb;
+        }
+        .pattern-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-bottom: 8px;
+        }
+        .pattern-tag {
+          background: #fef3c7;
+          color: #92400e;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          text-transform: capitalize;
+        }
+        .saved-indicator {
+          display: block;
+          color: #059669;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .save-actions {
+          display: flex;
+          gap: 8px;
+        }
         /* Input Area */
         .input-area {
           padding: 16px 20px;
