@@ -183,6 +183,7 @@ export default function CoachPage() {
   // Case & evidence state
   const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
   const [evidenceCount, setEvidenceCount] = useState(0);
+  const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [daysUntilCourt, setDaysUntilCourt] = useState<number | null>(null);
   
   // Celebration state
@@ -523,18 +524,40 @@ export default function CoachPage() {
         }
       }
       
-      // Load evidence count - check both tables
+      // Load evidence count - check all tables
       const { count: evidenceTableCount } = await supabase
         .from('evidence')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
-      
+
       const { count: incidentsCount } = await supabase
         .from('incidents')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
-      
-      setEvidenceCount((evidenceTableCount || 0) + (incidentsCount || 0));
+
+      const { count: timelineCount } = await supabase
+        .from('evidence_timeline')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+
+      setEvidenceCount((evidenceTableCount || 0) + (incidentsCount || 0) + (timelineCount || 0));
+
+      // Load pattern counts from evidence_timeline
+      const { data: timelineData } = await supabase
+        .from('evidence_timeline')
+        .select('patterns_detected')
+        .eq('user_id', session.user.id);
+
+      if (timelineData) {
+        const counts: Record<string, number> = {};
+        timelineData.forEach(item => {
+          (item.patterns_detected || []).forEach((pattern: string) => {
+            const p = pattern.toLowerCase();
+            counts[p] = (counts[p] || 0) + 1;
+          });
+        });
+        setPatternCounts(counts);
+      }
       
       // Check if first time user (show onboarding)
       const hasSeenOnboarding = localStorage.getItem('p18_onboarding_complete');
@@ -1278,7 +1301,16 @@ export default function CoachPage() {
                             ))}
                           </div>
                           {msg.savedToEvidence ? (
-                            <span className="saved-indicator">📌 Saved to evidence ({evidenceCount} total)</span>
+                            <span className="saved-indicator">
+                            📌 Saved | {evidenceCount} incidents documented
+                            {Object.keys(patternCounts).length > 0 && ` | Top: ${
+                              Object.entries(patternCounts)
+                                .sort((a, b) => b[1] - a[1])
+                                .slice(0, 3)
+                                .map(([p, c]) => `${p} (${c})`)
+                                .join(', ')
+                            }`}
+                          </span>
                           ) : (
                             <div className="save-actions">
                               <button
