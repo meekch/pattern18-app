@@ -161,7 +161,7 @@ export default function CaseSetupPage() {
               type="text"
               value={coparentName}
               onChange={(e) => setCoparentName(e.target.value)}
-              placeholder="e.g., Matt, their dad, my ex, etc."
+              placeholder="e.g., their dad, my ex, co-parent"
             />
           </div>
 

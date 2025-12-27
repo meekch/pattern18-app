@@ -103,7 +103,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
               <label>What should I call your co-parent?</label>
               <input
                 type="text"
-                placeholder="e.g., Matt, their dad, ex"
+                placeholder="e.g., their dad, my ex, co-parent"
                 value={coparentName}
                 onChange={(e) => setCoparentName(e.target.value)}
               />
