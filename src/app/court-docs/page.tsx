@@ -18,7 +18,9 @@ interface Incident {
   exhibit_number?: string;
   source_platform?: string;
   sender?: string;
+  screenshot_urls?: string[];
 }
+
 
 interface CaseContext {
   caseNumber: string;
