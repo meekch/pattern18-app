@@ -1237,22 +1237,7 @@ export default function CoachPage() {
               </div>
             </div>
 
-            {pastConversations.length > 0 && (
-              <div className="recent-chats-welcome">
-                <span className="recent-label">Continue a conversation:</span>
-                <div className="recent-chips">
-                  {pastConversations.slice(0, 3).map(convo => (
-                    <button 
-                      key={convo.id}
-                      className="recent-chip"
-                      onClick={() => loadConversation(convo.id)}
-                    >
-                      {convo.title?.slice(0, 30) || 'Untitled'}...
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            
           </div>
         ) : (
           <div className="messages">
