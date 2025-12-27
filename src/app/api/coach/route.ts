@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
               encoder.encode(`data: ${JSON.stringify({ patterns: detectedPatterns })}\n\n`)
             );
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
           controller.close();
         });
 
