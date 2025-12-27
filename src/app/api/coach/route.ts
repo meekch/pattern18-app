@@ -215,8 +215,9 @@ export async function POST(request: NextRequest) {
     const conversationMessages: Anthropic.MessageParam[] = [];
 
     // Add history
+    // Add history - filter out empty messages
     for (const msg of history) {
-      if (msg.role === 'user' || msg.role === 'assistant') {
+      if ((msg.role === 'user' || msg.role === 'assistant') && msg.content && msg.content.trim()) {
         conversationMessages.push({
           role: msg.role,
           content: msg.content,
