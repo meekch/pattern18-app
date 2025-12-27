@@ -127,7 +127,17 @@ export default function DocumentGeneratorPage() {
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       
-      if (evError) console.log('Evidence query:', evError.message);
+        if (evError) console.log('Evidence query:', evError.message);
+
+        // Load from evidence_timeline table (auto-saved coach sessions)
+        const { data: timelineData, error: tlError } = await supabase
+          .from('evidence_timeline')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false });
+  
+        if (tlError) console.log('Timeline query:', tlError.message);
+  
       
       // Combine both sources
       const allIncidents: Incident[] = [];
@@ -181,6 +191,26 @@ export default function DocumentGeneratorPage() {
           });
         });
       }
+
+      // Add evidence_timeline data
+      if (timelineData) {
+        timelineData.forEach((tl, idx) => {
+          allIncidents.push({
+            id: tl.id,
+            date: tl.incident_date || tl.created_at,
+            description: tl.coaching_summary || 'Auto-saved from coach session',
+            patterns: tl.patterns_detected || [],
+            severity: (tl.patterns_detected?.length || 0) > 2 ? 'high' : (tl.patterns_detected?.length || 0) > 0 ? 'medium' : 'low',
+            category: 'Coach Session',
+            screenshot_urls: tl.screenshot_urls || [],
+            original_text: tl.user_messages || '',
+            source_platform: 'coach',
+            sender: tl.co_parent_name || '',
+          });
+        });
+      }
+
+      // Sort by date
       
       // Sort by date
       allIncidents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
