@@ -278,8 +278,33 @@ export default function CoachPage() {
     
     return 'unknown';
   };
-  
-  const handleUploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
+  // Format message content to highlight quoted responses
+  const formatMessageContent = (content: string) => {
+    if (!content) return content;
+    
+    // Split by quotes and wrap them in styled spans
+    const parts = content.split(/("[^"]+")|(\"[^\"]+\")/g);
+    return parts.map((part, i) => {
+      if (part && (part.startsWith('"') || part.startsWith('"'))) {
+        return <span key={i} className="suggested-response">{part}</span>;
+      }
+      return part;
+    });
+  };
+  // Format message content to highlight quoted responses
+  const formatMessageContent = (content: string) => {
+    if (!content) return content;
+    
+    // Split by quotes and wrap them in styled spans
+    const parts = content.split(/("[^"]+"|"[^"]+")/g);
+    return parts.map((part, i) => {
+      if (part && (part.startsWith('"') || part.startsWith('"'))) {
+        return <span key={i} className="suggested-response">{part}</span>;
+      }
+      return part;
+    });
+  };
+  UploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
     setShowUploadModal(false);
     setUploadMode('choose');
     setUploadedFile(null);
@@ -1272,7 +1297,7 @@ export default function CoachPage() {
                       ))}
                     </div>
                   )}
-                  {msg.content || (isLoading && msg.role === 'assistant' ? '...' : '')}
+                  {msg.role === 'assistant' ? formatMessageContent(msg.content) : msg.content || (isLoading && msg.role === 'assistant' ? '...' : '')}
                 </div>
                 {msg.role === 'assistant' && msg.content && (
                   <div className="message-actions">
@@ -2823,6 +2848,16 @@ export default function CoachPage() {
           white-space: pre-wrap;
           line-height: 1.5;
         }
+          .suggested-response {
+  display: block;
+  background: #e8f5e9;
+  border-left: 3px solid #2e7d32;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #1b5e20;
+}
         .message-actions {
           margin-top: 8px;
           padding-left: 4px;
