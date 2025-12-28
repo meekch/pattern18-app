@@ -240,6 +240,7 @@ export async function POST(request: NextRequest) {
       if (caseContext.coparentName) parts.push(`Co-parent's name: ${caseContext.coparentName}`);
       if (caseContext.childAge) parts.push(`Child's age: ${caseContext.childAge}`);
       if (caseContext.userRole) parts.push(`User is the: ${caseContext.userRole}`);
+      if (caseContext.state) parts.push(`State: ${caseContext.state} - consider state-specific family law`);
       if (parts.length > 0) {
         contextPrefix = `[Context: ${parts.join(', ')}]\n\n`;
       }
