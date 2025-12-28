@@ -404,8 +404,17 @@ export default function CoachPage() {
         }
       }
 
-    // Auto-save screenshots to evidence timeline
-    if (type === 'screenshot' && fullContent) {
+    }
+      
+    // Ensure patterns are attached to message after stream ends
+    if (detectedPatterns.length > 0) {
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, patterns: detectedPatterns } : m
+      ));
+    }
+    
+  // Auto-save screenshots to evidence timeline
+  if (type === 'screenshot' && fullContent) {
       autoSaveToTimeline(file, fullContent, detectedPatterns);
     }
  
