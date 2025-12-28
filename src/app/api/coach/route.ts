@@ -131,7 +131,6 @@ export async function POST(request: NextRequest) {
     let fileCount = 0;
     let history: any[] = [];
     let caseContext: any = null;
-    let caseContext: any = null;
     let patternCounts: Record<string, number> = {};
     let evidenceCount: number = 0;
     const imageContents: Anthropic.ImageBlockParam[] = [];
@@ -155,7 +154,6 @@ export async function POST(request: NextRequest) {
       
       const caseContextStr = formData.get("caseContext") as string;
       caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
-      const caseContextStr = formData.get("caseContext") as string;
       caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
       const patternCountsStr = formData.get("patternCounts") as string;
       patternCounts = patternCountsStr ? JSON.parse(patternCountsStr) : {};
