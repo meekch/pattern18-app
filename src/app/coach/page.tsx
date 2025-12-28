@@ -283,7 +283,7 @@ export default function CoachPage() {
     if (!content) return null;
     
     // Match text between curly or straight quotes
-    const regex = /[""]([^""]+)[""]/g;
+    const regex = /["""]([^"""]+)["""]/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
