@@ -20,15 +20,20 @@ interface Message {
     images?: string[];
   }
 
-interface CaseContext {
-  caseNumber: string;
-  court: string;
-  petitionerName: string;
-  respondentName: string;
-  userRole: string;
-  coparentName: string;
-  nextCourtDate: string | null;
-}
+  interface CaseContext {
+    caseNumber: string;
+    court: string;
+    petitionerName: string;
+    respondentName: string;
+    userRole: string;
+    coparentName: string;
+    coparent_name?: string;
+    nextCourtDate: string | null;
+    state?: string;
+    childAge?: string;
+    children_names?: string[];
+    children_ages?: string;
+  }
 
 // ============================================
 // CONSTANTS
@@ -287,7 +292,7 @@ export default function CoachPage() {
     if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
     formData.append('patternCounts', JSON.stringify(patternCounts));
     formData.append('evidenceCount', String(evidenceCount));
-    
+
     // Set appropriate message based on type
     let promptMessage = '';
     if (type === 'screenshot') {

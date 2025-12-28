@@ -250,10 +250,11 @@ export async function POST(request: NextRequest) {
     let contextPrefix = '';
     if (caseContext) {
       const parts = [];
-      if (caseContext.coparentName) parts.push(`Co-parent's name: ${caseContext.coparentName}`);
-      if (caseContext.childAge) parts.push(`Child's age: ${caseContext.childAge}`);
-      if (caseContext.userRole) parts.push(`User is the: ${caseContext.userRole}`);
+      if (caseContext.coparentName || caseContext.coparent_name) parts.push(`Co-parent's name: ${caseContext.coparentName || caseContext.coparent_name}`);
+      if (caseContext.childAge || caseContext.children_ages) parts.push(`Child's age: ${caseContext.childAge || caseContext.children_ages}`);
+      if (caseContext.userRole || caseContext.user_role) parts.push(`User is the: ${caseContext.userRole || caseContext.user_role}`);
       if (caseContext.state) parts.push(`State: ${caseContext.state} - consider state-specific family law`);
+      if (caseContext.children_names) parts.push(`Children: ${caseContext.children_names}`);
       if (parts.length > 0) {
         contextPrefix = `[Context: ${parts.join(', ')}]\n\n`;
       }
