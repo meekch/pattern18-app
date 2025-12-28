@@ -280,16 +280,34 @@ export default function CoachPage() {
   };
   // Format message content to highlight quoted responses
   const formatMessageContent = (content: string) => {
-    if (!content) return content;
+    if (!content) return null;
     
-    // Split by quotes and wrap them in styled spans
-    const parts = content.split(/("[^"]+")|(\"[^\"]+\")/g);
-    return parts.map((part, i) => {
-      if (part && (part.startsWith('"') || part.startsWith('"'))) {
-        return <span key={i} className="suggested-response">{part}</span>;
+    // Match text between curly or straight quotes
+    const regex = /[""]([^""]+)[""]/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      // Add text before the quote
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
       }
-      return part;
-    });
+      // Add the quoted text with styling
+      parts.push(
+        <span key={match.index} className="suggested-response">
+          "{match[1]}"
+        </span>
+      );
+      lastIndex = regex.lastIndex;
+    }
+    
+    // Add remaining text after last quote
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : content;
   };
   // Format message content to highlight quoted responses
   
