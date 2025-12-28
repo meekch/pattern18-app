@@ -363,8 +363,10 @@ export default function CoachPage() {
               }
               if (parsed.patterns) {
                 detectedPatterns = parsed.patterns;
+              }
+              if (parsed.done && detectedPatterns.length > 0) {
                 setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, patterns: parsed.patterns } : m
+                  m.id === assistantId ? { ...m, patterns: detectedPatterns } : m
                 ));
               }
             } catch {}
