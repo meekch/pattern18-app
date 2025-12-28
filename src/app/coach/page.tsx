@@ -292,18 +292,7 @@ export default function CoachPage() {
     });
   };
   // Format message content to highlight quoted responses
-  const formatMessageContent = (content: string) => {
-    if (!content) return content;
-    
-    // Split by quotes and wrap them in styled spans
-    const parts = content.split(/("[^"]+"|"[^"]+")/g);
-    return parts.map((part, i) => {
-      if (part && (part.startsWith('"') || part.startsWith('"'))) {
-        return <span key={i} className="suggested-response">{part}</span>;
-      }
-      return part;
-    });
-  };
+  
   UploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
     setShowUploadModal(false);
     setUploadMode('choose');
