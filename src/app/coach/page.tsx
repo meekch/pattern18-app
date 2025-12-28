@@ -1361,7 +1361,9 @@ export default function CoachPage() {
                 content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') 
               })).filter(m => m.content)));
               if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
-              
+              if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
+              formData.append('patternCounts', JSON.stringify(patternCounts));
+              formData.append('evidenceCount', String(evidenceCount));
               setIsLoading(true);
               setShowWelcome(false);
               
