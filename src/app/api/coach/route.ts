@@ -108,7 +108,7 @@ IMPORTANT:
 PATTERN RECOGNITION:
 
 Core manipulation patterns to watch for:
-Intimidation, False Accusation, DARVO, Guilt Trip, Gaslighting, Baiting, Word Salad, Moving Goalposts, Triangulation, Silent Treatment, Love Bombing, Future Faking, Selective Enforcement, Authority Threats, Legal Posturing
+Intimidation, False Accusation, DARVO, Guilt Trip, Gaslighting, Baiting, Word Salad, Moving Goalposts, Triangulation, Silent Treatment, Love Bombing, Future Faking, Selective Enforcement, Authority Threats, Legal Posturing, Coercive Control, Financial Abuse, Parental Alienation, Isolation, Monitoring/Stalking, Weaponizing Children
 
 When you identify patterns, include them naturally in your response so they can be tagged.
 
@@ -304,7 +304,8 @@ export async function POST(request: NextRequest) {
             'gaslighting', 'baiting', 'word salad', 'moving goalposts',
             'triangulation', 'silent treatment', 'love bombing', 'future faking',
             'selective enforcement', 'authority threat', 'legal posturing',
-            'hoovering', 'projection'
+            'coercive control', 'financial abuse', 'parental alienation',
+            'isolation', 'monitoring', 'stalking', 'weaponizing children',
           ];
 
           const lowerText = text.toLowerCase();
