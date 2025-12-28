@@ -284,6 +284,9 @@ export default function CoachPage() {
     formData.append('file', file);
     formData.append('history', JSON.stringify(messages.map(m => ({ role: m.role, content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') })).filter(m => m.content)));
     if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
+    if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
+    formData.append('patternCounts', JSON.stringify(patternCounts));
+    formData.append('evidenceCount', String(evidenceCount));
     
     // Set appropriate message based on type
     let promptMessage = '';
@@ -854,6 +857,8 @@ export default function CoachPage() {
             content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') 
           })).filter(m => m.content),
           caseContext,
+          patternCounts,
+          evidenceCount,
         }),
       });
 

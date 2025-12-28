@@ -131,6 +131,9 @@ export async function POST(request: NextRequest) {
     let fileCount = 0;
     let history: any[] = [];
     let caseContext: any = null;
+    let caseContext: any = null;
+    let patternCounts: Record<string, number> = {};
+    let evidenceCount: number = 0;
     const imageContents: Anthropic.ImageBlockParam[] = [];
 
     if (contentType.includes('application/json')) {
@@ -139,6 +142,8 @@ export async function POST(request: NextRequest) {
       message = body.message || '';
       history = body.history || [];
       caseContext = body.caseContext || null;
+      patternCounts = body.patternCounts || {};
+      evidenceCount = body.evidenceCount || 0;
     } else {
       // Handle FormData requests (file uploads)
       const formData = await request.formData();
@@ -150,7 +155,11 @@ export async function POST(request: NextRequest) {
       
       const caseContextStr = formData.get("caseContext") as string;
       caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
-
+      const caseContextStr = formData.get("caseContext") as string;
+      caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
+      const patternCountsStr = formData.get("patternCounts") as string;
+      patternCounts = patternCountsStr ? JSON.parse(patternCountsStr) : {};
+      evidenceCount = parseInt(formData.get("evidenceCount") as string) || 0;
       // Collect all images
       // Collect all images
       // Handle single file upload (named 'file') or multiple (named 'file0', 'file1', etc.)
@@ -247,6 +256,15 @@ export async function POST(request: NextRequest) {
       if (parts.length > 0) {
         contextPrefix = `[Context: ${parts.join(', ')}]\n\n`;
       }
+    }
+
+    // Add pattern history if available
+    if (Object.keys(patternCounts).length > 0) {
+      const patternList = Object.entries(patternCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([pattern, count]) => `${pattern}: ${count} times`)
+        .join(', ');
+      contextPrefix += `[Case History: ${evidenceCount} total incidents documented. Pattern breakdown: ${patternList}. When you identify a pattern, mention how many times you've seen it from this co-parent.]\n\n`;
     }
 
     // Add text message
