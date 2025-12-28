@@ -1286,7 +1286,7 @@ export default function CoachPage() {
                       ))}
                     </div>
                   )}
-                  {msg.role === 'assistant' ? formatMessageContent(msg.content) : msg.content || (isLoading && msg.role === 'assistant' ? '...' : '')}
+                  {msg.role === 'assistant' ? (formatMessageContent(msg.content) || (isLoading ? '...' : '')) : (msg.content || '')}
                 </div>
                 {msg.role === 'assistant' && msg.content && (
                   <div className="message-actions">
