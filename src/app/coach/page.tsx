@@ -1365,11 +1365,19 @@ export default function CoachPage() {
               setIsLoading(true);
               setShowWelcome(false);
               
+              // Convert file to base64 for display
+              const imagePreview = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+              });
+
               const userMsg: Message = {
                 id: Date.now().toString(),
                 role: 'user',
-                content: input || `[Uploaded: ${file.name}]`,
+                content: input || '[Screenshot]',
                 timestamp: new Date(),
+                images: [imagePreview],
               };
               setMessages(prev => [...prev, userMsg]);
               setInput('');
