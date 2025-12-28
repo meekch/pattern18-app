@@ -293,7 +293,7 @@ export default function CoachPage() {
   };
   // Format message content to highlight quoted responses
   
-  UploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
+  const handleUploadFile = async (file: File, type: 'screenshot' | 'court_order' | 'message_export') => {
     setShowUploadModal(false);
     setUploadMode('choose');
     setUploadedFile(null);
