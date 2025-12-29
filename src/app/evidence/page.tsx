@@ -834,16 +834,12 @@ export default function EvidencePage() {
         </button>
         <button className="nav-item active">
           <span>📁</span>
-          <span>Docs</span>
+          <span>Evidence</span>
           {stats.needsReview > 0 && <span className="nav-badge">{stats.needsReview}</span>}
         </button>
         <button className="nav-item" onClick={() => router.push('/healing')}>
           <span>🌿</span>
           <span>Heal</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/case-setup')}>
-          <span>⚙️</span>
-          <span>Settings</span>
         </button>
       </nav>
 
