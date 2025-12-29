@@ -1280,6 +1280,31 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               need help with a court document, or simply need a moment to breathe - I have got you.
             </p>
 
+
+            {/* Mini Case Dashboard */}
+            {evidenceCount > 0 && (
+              <div className="case-dashboard">
+                <div className="case-stat">
+                  <span className="stat-number">{evidenceCount}</span>
+                  <span className="stat-label">Documented</span>
+                </div>
+                <div className="case-stat">
+                  <span className="stat-number">{Object.keys(patternCounts).length}</span>
+                  <span className="stat-label">Patterns Found</span>
+                </div>
+                {Object.keys(patternCounts).length > 0 && (
+                  <div className="case-stat top-pattern">
+                    <span className="stat-number">
+                      {Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0]?.[0]}
+                    </span>
+                    <span className="stat-label">
+                      Top Pattern ({Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0]?.[1]}x)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="quick-actions">
               <h3>What can I help with?</h3>
               <div className="actions-grid">
@@ -2741,6 +2766,40 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           color: #666;
           line-height: 1.6;
           margin-bottom: 20px;
+        }
+          .case-dashboard {
+          display: flex;
+          justify-content: center;
+          gap: 24px;
+          margin: 24px 0;
+          padding: 20px;
+          background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+          border-radius: 16px;
+          border: 1px solid #a7f3d0;
+        }
+        .case-stat {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 0 16px;
+        }
+        .case-stat:not(:last-child) {
+          border-right: 1px solid #a7f3d0;
+        }
+        .stat-number {
+          font-size: 28px;
+          font-weight: 700;
+          color: #1a3a2f;
+        }
+        .stat-label {
+          font-size: 12px;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .top-pattern .stat-number {
+          font-size: 16px;
+          text-transform: capitalize;
         }
         .tagline {
           display: flex;
