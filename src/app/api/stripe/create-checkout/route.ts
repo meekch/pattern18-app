@@ -5,7 +5,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, promoCode } = await req.json();
     
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
     // Determine the base URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com';
 
-    const session = await stripe.checkout.sessions.create({
+    // Build checkout session options
+    const sessionOptions: any = {
       mode: 'subscription',
       payment_method_collection: 'if_required',
       customer_email: email,
@@ -75,8 +76,29 @@ export async function POST(req: NextRequest) {
       },
       success_url: `${baseUrl}/coach?success=true`,
       cancel_url: `${baseUrl}/login?canceled=true`,
-      allow_promotion_codes: true,
-    });
+    };
+
+    // If coupon code provided, apply it; otherwise allow manual entry
+   // If promo code provided, look it up and apply it
+   if (promoCode) {
+    try {
+      const promoCodes = await stripe.promotionCodes.list({
+        code: promoCode,
+        active: true,
+        limit: 1,
+      });
+      if (promoCodes.data.length > 0) {
+        sessionOptions.discounts = [{ promotion_code: promoCodes.data[0].id }];
+      } else {
+        sessionOptions.allow_promotion_codes = true;
+      }
+    } catch {
+      sessionOptions.allow_promotion_codes = true;
+    }
+  } else {
+    sessionOptions.allow_promotion_codes = true;
+  }
+    const session = await stripe.checkout.sessions.create(sessionOptions);
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
