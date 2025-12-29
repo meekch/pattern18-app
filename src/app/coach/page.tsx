@@ -141,9 +141,9 @@ const eveningReflections = [
 
 const quickActions = [
     { icon: '📤', title: 'Import message history', desc: 'Bulk analyze CSV export', action: '__BULK__' },
-  { icon: 'ðŸ“±', title: 'Analyze a screenshot', desc: 'Upload image of a message', action: '__UPLOAD__' },
-  { icon: 'ðŸ“‹', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
-  { icon: 'ðŸŒ¿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
+  { icon: '📷', title: 'Analyze a screenshot', desc: 'Upload image of a message', action: '__UPLOAD__' },
+  { icon: '📄', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
+  { icon: '🌱', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
 
 // ============================================
@@ -1596,7 +1596,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             
             {regulateMode === 'menu' && (
               <div className="regulate-menu">
-                <h2>ðŸŒ¿ Restore</h2>
+                <h2>🌿 Restore</h2>
                 <p>You can't pour from an empty cup</p>
                 <div className="regulate-options">
                   <button onClick={() => setRegulateMode('breathe')} className="regulate-option">
@@ -1949,7 +1949,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸŒ¿ Healing Journey</h4>
+                <h4>🌿 Healing Journey</h4>
                 <p>Morning intentions, evening releases, and weekly healing challenges. Set reminders to build healing habits.</p>
               </div>
               <div className="update-item">
@@ -1968,7 +1968,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showPauseModal && (
         <div className="modal-overlay">
           <div className="pause-modal">
-            <div className="pause-icon">ðŸŒ¿</div>
+            <div className="pause-icon">🌿</div>
             <h2>Before you respond...</h2>
             <p className="pause-message">
               I notice this message might have you activated. That's completely understandable given what you're dealing with.
@@ -2113,7 +2113,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   setRegulateMode('breathe');
                 }}
               >
-                ðŸŒ¿ Breathe First (60 sec)
+                🌿 Breathe First (60 sec)
               </button>
               <button 
                 className="pause-btn-continue"
@@ -4412,6 +4412,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
     </div>
   );
 }
+
+
 
 
 
