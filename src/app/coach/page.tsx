@@ -360,12 +360,13 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         reader.readAsDataURL(file);
       });
   
+      const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       const userMsg: Message = {
         id: Date.now().toString(),
         role: 'user',
-        content: '[Screenshot]',
+        content: isPdfFile ? `[PDF: ${file.name}]` : '[Screenshot]',
         timestamp: new Date(),
-        images: [imagePreview],
+        images: isPdfFile ? undefined : [imagePreview],
       };
     setMessages(prev => [...prev, userMsg]);
     
@@ -1420,7 +1421,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               
               let message = input || '';
               if (!message && isCourtOrder) {
-                message = `I'm uploading a court order. IMPORTANT: I am the one who filed this motion/order, not my co-parent. Please:
+                message = `I'm uploading a court order. Please:
 
 1. READ THE ENTIRE DOCUMENT carefully and extract the actual text/requirements
 2. Explain what this order means in plain English
