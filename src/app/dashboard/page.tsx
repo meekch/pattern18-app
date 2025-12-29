@@ -905,7 +905,7 @@ export default function CoachPage() {
               🌿 Take care of you first
             </button>
 
-            )}
+          
           </div>
         ) : (
           <div className="messages">
