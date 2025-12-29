@@ -142,6 +142,7 @@ const eveningReflections = [
 const quickActions = [
   { icon: '📱', title: 'Upload or paste', desc: 'Screenshot, message, or document', action: '__UPLOAD__' },
   { icon: '📋', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
+  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
 
 // ============================================
@@ -2770,18 +2771,19 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           .case-dashboard {
           display: flex;
           justify-content: center;
-          gap: 24px;
+          gap: 0;
           margin: 24px 0;
-          padding: 20px;
-          background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
-          border-radius: 16px;
-          border: 1px solid #a7f3d0;
+          padding: 16px 24px;
+          background: #f8fafc;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
         }
         .case-stat {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 0 16px;
+          padding: 0 24px;
+          min-width: 120px;
         }
         .case-stat:not(:last-child) {
           border-right: 1px solid #a7f3d0;
