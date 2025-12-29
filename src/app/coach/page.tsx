@@ -140,9 +140,8 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📱', title: 'Upload something', desc: 'Saved and analyzed for when you need it', action: '__UPLOAD__' },
-  { icon: '📄', title: 'Build a document', desc: 'Your orders + your documentation = court-ready', action: '__DOCUMENT__' },
-  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
+  { icon: '📱', title: 'Upload or paste', desc: 'Screenshot, message, or document', action: '__UPLOAD__' },
+  { icon: '📋', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
 ];
 
 // ============================================
@@ -1535,7 +1534,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="What's happening?"
+            placeholder="What's going on?"
             rows={1}
           />
           <button
