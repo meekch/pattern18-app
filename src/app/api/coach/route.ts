@@ -165,31 +165,44 @@ export async function POST(request: NextRequest) {
       // Collect all images
       // Handle single file upload (named 'file') or multiple (named 'file0', 'file1', etc.)
       const singleFile = formData.get('file') as File | null;
-      if (singleFile && singleFile.type.startsWith('image/')) {
+      if (singleFile) {
         const bytes = await singleFile.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
-
-        let mediaType = singleFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-        if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
-
-        const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-        if (!validTypes.includes(mediaType)) {
-          const ext = singleFile.name.split('.').pop()?.toLowerCase();
-          if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
-          else if (ext === 'png') mediaType = "image/png";
-          else if (ext === 'gif') mediaType = "image/gif";
-          else if (ext === 'webp') mediaType = "image/webp";
-          else mediaType = "image/jpeg";
+        const fileName = singleFile.name.toLowerCase();
+        const isPdf = singleFile.type === 'application/pdf' || fileName.endsWith('.pdf');
+        
+        if (isPdf) {
+          // Handle PDF as document
+          imageContents.push({
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: base64,
+            },
+          } as any);
+        } else if (singleFile.type.startsWith('image/')) {
+          // Handle images
+          let mediaType = singleFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+          if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
+          const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+          if (!validTypes.includes(mediaType)) {
+            const ext = fileName.split('.').pop();
+            if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
+            else if (ext === 'png') mediaType = "image/png";
+            else if (ext === 'gif') mediaType = "image/gif";
+            else if (ext === 'webp') mediaType = "image/webp";
+            else mediaType = "image/jpeg";
+          }
+          imageContents.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data: base64,
+            },
+          });
         }
-
-        imageContents.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: mediaType,
-            data: base64,
-          },
-        });
       }
 
       // Also check for numbered files (file0, file1, etc.)
