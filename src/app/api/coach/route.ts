@@ -108,7 +108,15 @@ IMPORTANT:
 PATTERN RECOGNITION:
 
 Core manipulation patterns to watch for:
-Intimidation, False Accusation, DARVO, Guilt Trip, Gaslighting, Baiting, Word Salad, Moving Goalposts, Triangulation, Silent Treatment, Love Bombing, Future Faking, Selective Enforcement, Authority Threats, Legal Posturing, Coercive Control, Financial Abuse, Parental Alienation, Isolation, Monitoring/Stalking, Weaponizing Children
+CRITICAL (flag immediately): Threats, Violence, Physical Harm, Death Wishes ("burn in hell"), Child Abuse, Kidnapping/Abduction threats
+
+HIGH SEVERITY: Coercive Control, Parental Alienation, Weaponizing Children, Stalking, Monitoring, Isolation, Financial Abuse, False Accusations, Intimidation, Verbal Abuse, Contempt
+
+MEDIUM SEVERITY: Gaslighting, DARVO, Guilt Trip, Manipulation, Triangulation, Silent Treatment, Love Bombing, Future Faking, Baiting, Word Salad
+
+LOW SEVERITY: Moving Goalposts, Selective Enforcement, Authority Threats, Legal Posturing, Boundary Testing, Passive Aggressive
+
+When you identify patterns, ALWAYS include the severity level. For critical patterns, express concern and offer safety resources.
 
 When you identify patterns, include them naturally in your response so they can be tagged.
 
@@ -414,19 +422,47 @@ export async function POST(request: NextRequest) {
           );
 
           // Detect patterns in the response
-          const patternKeywords = [
-            'intimidation', 'false accusation', 'darvo', 'guilt trip',
-            'gaslighting', 'baiting', 'word salad', 'moving goalposts',
-            'triangulation', 'silent treatment', 'love bombing', 'future faking',
-            'selective enforcement', 'authority threat', 'legal posturing',
-            'coercive control', 'financial abuse', 'parental alienation',
-            'isolation', 'monitoring', 'stalking', 'weaponizing children',
-          ];
-
+          // Detect patterns with severity levels
+          const patternsBySeverity: Record<string, { patterns: string[], severity: string }> = {
+            critical: {
+              severity: 'critical',
+              patterns: [
+                'threat', 'violence', 'harm', 'kill', 'hurt', 'burn in hell',
+                'physical abuse', 'sexual abuse', 'child abuse', 'suicide threat',
+                'kidnap', 'abduct', 'weapon'
+              ]
+            },
+            high: {
+              severity: 'high',
+              patterns: [
+                'coercive control', 'parental alienation', 'weaponizing children',
+                'stalking', 'monitoring', 'isolation', 'financial abuse',
+                'false accusation', 'intimidation', 'verbal abuse', 'contempt'
+              ]
+            },
+            medium: {
+              severity: 'medium',
+              patterns: [
+                'gaslighting', 'darvo', 'guilt trip', 'manipulation',
+                'triangulation', 'silent treatment', 'love bombing',
+                'future faking', 'baiting', 'word salad'
+              ]
+            },
+            low: {
+              severity: 'low',
+              patterns: [
+                'moving goalposts', 'selective enforcement', 'authority threat',
+                'legal posturing', 'boundary testing', 'passive aggressive'
+              ]
+            }
+          };
+          
           const lowerText = text.toLowerCase();
-          for (const pattern of patternKeywords) {
-            if (lowerText.includes(pattern) && !detectedPatterns.includes(pattern)) {
-              detectedPatterns.push(pattern);
+          for (const [severityLevel, { patterns }] of Object.entries(patternsBySeverity)) {
+            for (const pattern of patterns) {
+              if (lowerText.includes(pattern) && !detectedPatterns.includes(pattern)) {
+                detectedPatterns.push(pattern);
+              }
             }
           }
         });
