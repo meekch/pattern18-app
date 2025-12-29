@@ -6,14 +6,52 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
-
+    
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
 
+    // Check if customer already exists with active subscription
+    const existingCustomers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (existingCustomers.data.length > 0) {
+      const customerId = existingCustomers.data[0].id;
+      
+      // Check for active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'active',
+        limit: 1,
+      });
+
+      if (subscriptions.data.length > 0) {
+        // Already has active subscription - redirect to coach
+        return NextResponse.json({ 
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach`,
+          message: 'You already have an active subscription'
+        });
+      }
+
+      // Also check for trialing subscriptions
+      const trialingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'trialing',
+        limit: 1,
+      });
+
+      if (trialingSubs.data.length > 0) {
+        return NextResponse.json({ 
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach`,
+          message: 'You already have an active trial'
+        });
+      }
+    }
+
     // Get the price ID from environment
     const priceId = process.env.STRIPE_PRICE_ID;
-    
     if (!priceId) {
       console.error('STRIPE_PRICE_ID not configured');
       return NextResponse.json({ error: 'Payment not configured' }, { status: 500 });
@@ -21,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Determine the base URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com';
-    
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
