@@ -140,7 +140,8 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📱', title: 'Upload or paste', desc: 'Screenshot, message, or document', action: '__UPLOAD__' },
+    { icon: '??', title: 'Import message history', desc: 'Bulk analyze CSV export', action: '__BULK__' },
+  { icon: '📱', title: 'Analyze a screenshot', desc: 'Upload image of a message', action: '__UPLOAD__' },
   { icon: '📋', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
   { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
@@ -1065,7 +1066,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
   };
 
   const selectQuickAction = (action: string) => {
-    if (action === '__UPLOAD__') {
+    if (action === '__BULK__') {
+        router.push('/evidence/upload');
+        return;
+      }
+      if (action === '__UPLOAD__') {
       setShowUploadModal(true);
       setUploadMode('choose');
       return;
@@ -4407,6 +4412,9 @@ Be practical and specific. Don't ask me questions - give me the action plan base
     </div>
   );
 }
+
+
+
 
 
 
