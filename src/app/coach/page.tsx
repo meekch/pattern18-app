@@ -1423,7 +1423,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             type="file" 
             ref={fileInputRef} 
             hidden 
-            accept="image/*,.pdf" 
+            accept="image/*" 
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
@@ -4407,4 +4407,6 @@ Be practical and specific. Don't ask me questions - give me the action plan base
     </div>
   );
 }
+
+
 
