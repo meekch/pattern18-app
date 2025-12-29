@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Client initialized in handler
+
 
 const PATTERNS = [
   'Gaslighting',
@@ -20,7 +20,8 @@ const PATTERNS = [
 ];
 
 export async function POST(req: NextRequest) {
-  // Client initialized in handler
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  
   try {
     const { text, category } = await req.json();
     
@@ -83,6 +84,7 @@ Respond in JSON format only:
     return NextResponse.json({ patterns: [], severity: 'low' });
   }
 }
+
 
 
 

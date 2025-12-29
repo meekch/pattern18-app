@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
 
-// Client initialized in handler
+
 
 const SYSTEM_PROMPT = `You are Pattern 18 Coach, a calm, wise guide for parents navigating high-conflict co-parenting situations.
 
@@ -235,6 +235,7 @@ Want me to draft the exact affidavit text, the email template, and the text mess
 This is the level of detail and actionability required for court documents.`;
 
 export async function POST(request: NextRequest) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
     const contentType = request.headers.get('content-type') || '';
@@ -506,6 +507,7 @@ export async function GET() {
     { headers: { "Content-Type": "application/json" } }
   );
 }
+
 
 
 

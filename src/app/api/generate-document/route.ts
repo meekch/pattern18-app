@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-// Client initialized in handler
+
 
 interface FormattedIncident {
   num: number;
@@ -13,7 +13,8 @@ interface FormattedIncident {
 }
 
 export async function POST(req: NextRequest) {
-  // Client initialized in handler
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  
   try {
     const { documentType, incidents, caseContext, purpose } = await req.json();
 
@@ -292,6 +293,7 @@ Use the actual incident descriptions. Plain text only.`;
     return NextResponse.json({ error: 'Failed to generate document' }, { status: 500 });
   }
 }
+
 
 
 
