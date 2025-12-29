@@ -1407,7 +1407,39 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               
               const formData = new FormData();
               formData.append('file', file);
-              formData.append('message', input || '');
+              
+              // Detect court orders and use appropriate prompt
+              const fileName = file.name.toLowerCase();
+              const isPdf = file.type === 'application/pdf' || fileName.endsWith('.pdf');
+              const isCourtOrder = isPdf && (
+                fileName.includes('order') || fileName.includes('custody') || 
+                fileName.includes('court') || fileName.includes('decree') || 
+                fileName.includes('parenting') || fileName.includes('judgment') ||
+                fileName.includes('service') || fileName.includes('motion')
+              );
+              
+              let message = input || '';
+              if (!message && isCourtOrder) {
+                message = `I'm uploading a court order. Please:
+
+1. READ THE ENTIRE DOCUMENT carefully and extract the actual text/requirements
+2. Explain what this order means in plain English
+3. Give me a SPECIFIC step-by-step action plan:
+   - What exactly must I do?
+   - In what order?
+   - By what deadlines?
+   - What documents do I need to prepare?
+   - What proof do I need to collect?
+4. List any deadlines with actual dates (today is ${new Date().toISOString().split('T')[0]})
+5. Warn me about common mistakes to avoid
+6. Offer to draft any responses, affidavits, or documents I need
+
+Be practical and specific. Don't ask me questions - give me the action plan based on what the order says.`;
+              } else if (!message && isPdf) {
+                message = "I'm uploading a PDF document. Please read it carefully and help me understand what it says and what I need to do.";
+              }
+              
+              formData.append('message', message);
               formData.append('history', JSON.stringify(messages.map(m => ({ 
                 role: m.role, 
                 content: m.content || (m.images?.length ? '[Uploaded screenshot]' : '') 
