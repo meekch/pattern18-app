@@ -133,9 +133,9 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📱', title: 'Upload or paste', desc: 'Screenshot, message, or document', action: '__UPLOAD__' },
-  { icon: '📋', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
-  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
+  { icon: '📱', title: 'Analyze Something', desc: 'Screenshot, text, or paste what they sent', prompt: '__SCREENSHOT__', isScreenshot: true },
+  { icon: '📋', title: 'Court Documents', desc: 'Upload orders, motions, prepare for hearings', prompt: '__SCREENSHOT__', isScreenshot: true },
+  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', prompt: '__REGULATE__' },
 ];
 
 // ============================================
