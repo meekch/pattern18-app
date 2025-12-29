@@ -330,7 +330,21 @@ export default function CoachPage() {
     if (type === 'screenshot') {
       promptMessage = "I'm uploading a screenshot of a message. Please extract the text, identify any manipulation patterns, and tell me if I need to respond.";
     } else if (type === 'court_order') {
-      promptMessage = "I'm uploading a court order. Please extract and remember the key information: custody schedule, important rules, deadlines, and any provisions I should know about. This will help you reference the order in future conversations.";
+      promptMessage = `I'm uploading a court order. Please:
+
+1. READ THE ENTIRE DOCUMENT carefully and extract the actual text/requirements
+2. Explain what this order means in plain English
+3. Give me a SPECIFIC step-by-step action plan:
+   - What exactly must I do?
+   - In what order?
+   - By what deadlines?
+   - What documents do I need to prepare?
+   - What proof do I need to collect?
+4. List any deadlines with actual dates (today is ${new Date().toISOString().split('T')[0]})
+5. Warn me about common mistakes to avoid
+6. Offer to draft any responses, affidavits, or documents I need
+
+Be practical and specific. Don't ask me questions - give me the action plan based on what the order says.`;
     } else if (type === 'message_export') {
       promptMessage = "I'm uploading a message history export. Please analyze the messages for patterns of manipulation or coercive control, summarize what you find, and save any significant incidents to my evidence.";
     }
