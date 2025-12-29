@@ -1263,9 +1263,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               <span className="court-label">days to court</span>
             </div>
           )}
-          <div className="evidence-badge" onClick={() => router.push('/evidence')}>
-            <span className="evidence-count">{evidenceCount}</span>
-            <span>Documented</span>
+         <div className="evidence-badge" onClick={() => router.push('/evidence')} title="View Evidence">
+            📁 <span className="evidence-count">{evidenceCount}</span>
           </div>
         </div>
       </header>
