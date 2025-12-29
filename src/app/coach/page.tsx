@@ -1206,9 +1206,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         )}
         
         <nav className="nav">
-          <button className="nav-item active">
-            Coach
-          </button>
+        <button className="nav-item" onClick={() => router.push('/dashboard')}>
           <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
             My Evidence
           </button>
@@ -1243,7 +1241,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       <header className="header">
         <div className="header-left">
           <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
-          <div className="brand" onClick={() => router.push('/dashboard')} style={{cursor: 'pointer'}}>
+          <div className="brand" onClick={() => router.push('/coach')} style={{cursor: 'pointer'}}>
             <span className="logo">18</span>
             <div className="brand-text">
               <span className="brand-name">Pattern 18</span>
