@@ -403,21 +403,18 @@ export default function CoachPage() {
           }
         }
       }
-
-    }
       
-    // Ensure patterns are attached to message after stream ends
-    if (detectedPatterns.length > 0) {
-      setMessages(prev => prev.map(m =>
-        m.id === assistantId ? { ...m, patterns: detectedPatterns } : m
-      ));
-    }
-    
-  // Auto-save screenshots to evidence timeline
-  if (type === 'screenshot' && fullContent) {
-      autoSaveToTimeline(file, fullContent, detectedPatterns);
-    }
- 
+      // Ensure patterns are attached to message after stream ends
+      if (detectedPatterns.length > 0) {
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId ? { ...m, patterns: detectedPatterns } : m
+        ));
+      }
+      
+      // Auto-save screenshots to evidence timeline
+      if (type === 'screenshot' && fullContent) {
+        autoSaveToTimeline(file, fullContent, detectedPatterns);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       setMessages(prev => prev.map(m =>
