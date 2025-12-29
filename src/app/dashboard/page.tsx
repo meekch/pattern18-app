@@ -133,10 +133,8 @@ const eveningReflections = [
 ];
 
 const quickActions = [
-  { icon: '📸', title: 'Upload a screenshot', desc: 'I\'ll read it for you', prompt: '__SCREENSHOT__', isScreenshot: true },
-  { icon: '💬', title: 'Analyze a message', desc: 'Decode what they really mean', prompt: 'I just received this message and need help understanding what\'s really going on:\n\n[paste message here]' },
-  { icon: '✍️', title: 'Draft a response', desc: 'Help me reply calmly', prompt: 'I need to respond to this message. Help me reply calmly without JADE (Justify, Argue, Defend, Explain):\n\n[paste message here]' },
-  { icon: '📄', title: 'Prepare for court', desc: 'Documents, strategy, what to expect', prompt: 'I need help preparing for court. Here\'s my situation:\n\n' },
+  { icon: '📱', title: 'Analyze Something', desc: 'Screenshot, text, or paste what they sent', prompt: '__SCREENSHOT__', isScreenshot: true },
+  { icon: '📋', title: 'Court Documents', desc: 'Upload orders, motions, prepare for hearings', prompt: '__SCREENSHOT__', isScreenshot: true },
 ];
 
 // ============================================
