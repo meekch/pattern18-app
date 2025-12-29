@@ -13,7 +13,7 @@ interface FormattedIncident {
 }
 
 export async function POST(req: NextRequest) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // Client initialized in handler
   try {
     const { documentType, incidents, caseContext, purpose } = await req.json();
 
@@ -292,6 +292,7 @@ Use the actual incident descriptions. Plain text only.`;
     return NextResponse.json({ error: 'Failed to generate document' }, { status: 500 });
   }
 }
+
 
 
 

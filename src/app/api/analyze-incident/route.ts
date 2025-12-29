@@ -20,7 +20,7 @@ const PATTERNS = [
 ];
 
 export async function POST(req: NextRequest) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // Client initialized in handler
   try {
     const { text, category } = await req.json();
     
@@ -83,6 +83,7 @@ Respond in JSON format only:
     return NextResponse.json({ patterns: [], severity: 'low' });
   }
 }
+
 
 
 
