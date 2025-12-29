@@ -1206,8 +1206,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         )}
         
         <nav className="nav">
-        <button className="nav-item" onClick={() => router.push('/dashboard')}>
-          <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
+        <button className="nav-item" onClick={() => router.push('/dashboard')}>Dashboard</button>
+        <button onClick={() => { router.push('/evidence'); setShowSidebar(false); }} className="nav-item">
             My Evidence
           </button>
           <button onClick={() => { router.push('/filings'); setShowSidebar(false); }} className="nav-item">
@@ -4407,3 +4407,4 @@ Be practical and specific. Don't ask me questions - give me the action plan base
     </div>
   );
 }
+

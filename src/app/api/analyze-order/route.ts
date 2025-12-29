@@ -1,9 +1,11 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic();
+// Client initialized in handler
 
 export async function POST(req: NextRequest) {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -165,3 +167,8 @@ Respond with ONLY the JSON object, no other text.`
     );
   }
 }
+
+
+
+
+
