@@ -53,20 +53,20 @@ const affirmations = [
 ];
 
 const groundingSteps = [
-  { sense: 'SEE', instruction: 'Name 5 things you can see right now.', icon: 'ðŸ‘ï¸' },
+  { sense: 'SEE', instruction: 'Name 5 things you can see right now.', icon: '📁' },
   { sense: 'TOUCH', instruction: 'Name 4 things you can physically feel.', icon: 'âœ‹' },
-  { sense: 'HEAR', instruction: 'Name 3 things you can hear.', icon: 'ðŸ‘‚' },
-  { sense: 'SMELL', instruction: 'Name 2 things you can smell.', icon: 'ðŸ‘ƒ' },
-  { sense: 'TASTE', instruction: 'Name 1 thing you can taste.', icon: 'ðŸ‘…' },
+  { sense: 'HEAR', instruction: 'Name 3 things you can hear.', icon: '📁},
+  { sense: 'SMELL', instruction: 'Name 2 things you can smell.', icon: '📁},
+  { sense: 'TASTE', instruction: 'Name 1 thing you can taste.', icon: '📁},
 ];
 
 const bodyScanSteps = [
-  { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: 'ðŸ¦¶' },
-  { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: 'ðŸ¦µ' },
-  { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: 'ðŸ«' },
-  { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: 'ðŸ’š' },
-  { area: 'Shoulders', instruction: 'Drop your shoulders away from your ears. Roll them back. Release what you have been carrying.', icon: 'ðŸ’†' },
-  { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: 'ðŸ˜Œ' },
+  { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: '📁},
+  { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: '📁},
+  { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: '📁},
+  { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: '💚' },
+  { area: 'Shoulders', instruction: 'Drop your shoulders away from your ears. Roll them back. Release what you have been carrying.', icon: '📁},
+  { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: '📁},
   { area: 'Whole Body', instruction: 'Take one deep breath. You are here. You are whole. You are safe in this moment.', icon: 'âœ¨' },
 ];
 
@@ -197,14 +197,14 @@ export default function CoachPage() {
   const [celebrationMessage, setCelebrationMessage] = useState({ title: '', subtitle: '' });
   
   const milestones: Record<number, { title: string; subtitle: string }> = {
-    1: { title: 'ðŸŽ‰ First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
-    5: { title: 'ðŸ“Š 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
-    10: { title: 'ðŸ’ª 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
-    25: { title: 'ðŸ”¥ 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
+    1: { title: '📁irst evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
+    5: { title: '💚 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
+    10: { title: '📁0 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
+    25: { title: '📁5 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
     50: { title: 'â­ 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
-    100: { title: 'ðŸ† 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
-    150: { title: 'ðŸ‘‘ 150 and counting!', subtitle: 'Your documentation is undeniable.' },
-    200: { title: 'ðŸŽ¯ 200 documented!', subtitle: 'You are a documentation warrior.' },
+    100: { title: '📁00 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
+    150: { title: '📁50 and counting!', subtitle: 'Your documentation is undeniable.' },
+    200: { title: '📁00 documented!', subtitle: 'You are a documentation warrior.' },
   };
 
   const checkMilestone = (newCount: number) => {
@@ -1115,7 +1115,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
   if (authLoading) {
     return (
       <div className="loading-screen">
-        <div className="loading-heart">ðŸ’š</div>
+        <div className="loading-heart">💚</div>
         <p>Loading your safe space...</p>
         <style jsx>{`
           .loading-screen {
@@ -1161,7 +1161,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <span className="sidebar-logo">18</span>
             <span>Pattern 18</span>
           </div>
-          <button onClick={() => setShowSidebar(false)} className="close-btn">Ã—</button>
+          <button onClick={() => setShowSidebar(false)} className="close-btn">×</button>
         </div>
         
         {/* New Conversation Button */}
@@ -1176,7 +1176,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               className="history-toggle" 
               onClick={() => setShowHistory(!showHistory)}
             >
-              ðŸ• Recent Chats ({pastConversations.length})
+              📁ecent Chats ({pastConversations.length})
               <span className={`toggle-arrow ${showHistory ? 'open' : ''}`}>â€º</span>
             </button>
             
@@ -1201,7 +1201,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                       className="history-delete"
                       onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1222,7 +1222,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           <div className="nav-divider" />
           
           <button onClick={() => router.push('/case-setup')} className="nav-item">
-  ðŸ“‹ My Case
+  📁y Case
 </button>
           <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }} className="nav-item">
   How It Works
@@ -1245,7 +1245,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {/* Header */}
       <header className="header">
         <div className="header-left">
-          <button onClick={() => setShowSidebar(true)} className="menu-btn">â˜°</button>
+          <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
           <div className="brand" onClick={() => router.push('/coach')} style={{cursor: 'pointer'}}>
             <span className="logo">18</span>
             <div className="brand-text">
@@ -1267,7 +1267,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             </div>
           )}
          <div className="evidence-badge" onClick={() => router.push('/evidence')} title="View Evidence">
-            ðŸ“ <span className="evidence-count">{evidenceCount}</span>
+            📁span className="evidence-count">{evidenceCount}</span>
           </div>
         </div>
       </header>
@@ -1276,7 +1276,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       <div className="chat-area" ref={chatRef}>
         {showWelcome ? (
           <div className="welcome">
-            <div className="welcome-heart">ðŸ’š</div>
+            <div className="welcome-heart">💚</div>
             <h1 className="welcome-title">Hey, I am glad you are here.</h1>
             <p className="welcome-text">
               Whether you just got a message that made your stomach drop, 
@@ -1377,7 +1377,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                           </div>
                           {msg.savedToEvidence ? (
                             <span className="saved-indicator">
-                            ðŸ“Œ Saved | {evidenceCount} incidents documented
+                            📁aved | {evidenceCount} incidents documented
                             {Object.keys(patternCounts).length > 0 && ` | Top: ${
                               Object.entries(patternCounts)
                                 .sort((a, b) => b[1] - a[1])
@@ -1423,7 +1423,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {/* Input Area */}
       <div className="input-area">
         <div className="input-container">
-          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">ðŸ“Ž</button>
+          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">📁button>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -1592,7 +1592,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showRegulate && (
         <div className="regulate-overlay" onClick={() => setShowRegulate(false)}>
           <div className="regulate-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="regulate-close" onClick={() => setShowRegulate(false)}>Ã—</button>
+            <button className="regulate-close" onClick={() => setShowRegulate(false)}>×</button>
             
             {regulateMode === 'menu' && (
               <div className="regulate-menu">
@@ -1600,49 +1600,49 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                 <p>You can't pour from an empty cup</p>
                 <div className="regulate-options">
                   <button onClick={() => setRegulateMode('breathe')} className="regulate-option">
-                    <span>ðŸ«</span>
+                    <span>📁span>
                     <div>
                       <strong>Breathe</strong>
                       <p>Calm your nervous system</p>
                     </div>
                   </button>
                   <button onClick={() => { setBodyStep(0); setRegulateMode('body'); }} className="regulate-option">
-                    <span>ðŸ’†</span>
+                    <span>📁span>
                     <div>
                       <strong>Body Scan</strong>
                       <p>Release stored tension</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('ground')} className="regulate-option">
-                    <span>ðŸŒ³</span>
+                    <span>📁span>
                     <div>
                       <strong>Ground</strong>
                       <p>Come back to now</p>
                     </div>
                   </button>
                   <button onClick={() => { setShakeSeconds(30); setRegulateMode('shake'); }} className="regulate-option">
-                    <span>ðŸ¦‹</span>
+                    <span>📁span>
                     <div>
                       <strong>Shake It Out</strong>
                       <p>Release the energy</p>
                     </div>
                   </button>
                   <button onClick={() => { setReleaseText(''); setRegulateMode('release'); }} className="regulate-option">
-                    <span>ðŸ”¥</span>
+                    <span>📁span>
                     <div>
                       <strong>Write & Release</strong>
                       <p>Let it go</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('affirm')} className="regulate-option">
-                    <span>ðŸ’š</span>
+                    <span>💚</span>
                     <div>
                       <strong>Affirm</strong>
                       <p>Words of truth</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('kids')} className="regulate-option kids-option">
-                    <span>ðŸ’›</span>
+                    <span>📁span>
                     <div>
                       <strong>For Your Kids</strong>
                       <p>Ideas to make them smile</p>
@@ -1742,7 +1742,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   This releases the stress energy stored in your muscles.
                 </p>
                 <div className="shake-timer">
-                  <span className="shake-emoji">ðŸ¦‹</span>
+                  <span className="shake-emoji">📁span>
                   <span className="shake-seconds">{shakeSeconds}</span>
                   <span className="shake-label">seconds</span>
                 </div>
@@ -1777,7 +1777,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                       setReleaseText('');
                     }}
                   >
-                    ðŸ”¥ Release & Let Go
+                    📁elease & Let Go
                   </button>
                 )}
                 {releaseText === '' && releaseText !== undefined && (
@@ -1801,7 +1801,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {regulateMode === 'kids' && (
               <div className="kids-mode">
                 <div className="kids-card">
-                  <span className="kids-icon">ðŸ’›</span>
+                  <span className="kids-icon">📁span>
                   <span className="age-badge">{currentKidIdea.age}</span>
                   <h3>{currentKidIdea.idea}</h3>
                   <p>{currentKidIdea.desc}</p>
@@ -1843,7 +1843,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         <div className="healing-overlay">
           <div className="healing-modal morning">
             <div className="healing-header">
-              <span className="healing-time">ðŸŒ… Good Morning</span>
+              <span className="healing-time">📁ood Morning</span>
               <h2>Your Daily Intention</h2>
               <p>Take 30 seconds to set the tone for today</p>
             </div>
@@ -1858,11 +1858,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <div className="healing-education">
               <span className="edu-tag">Why this matters</span>
               <p>Morning intentions activate your prefrontal cortex - the rational brain - before stress can trigger your amygdala. You're literally choosing which neural pathways fire first today.</p>
-              <p className="for-kids">ðŸ’› Your kids feel your energy the moment they see you. Starting regulated means they start regulated too.</p>
+              <p className="for-kids">📁our kids feel your energy the moment they see you. Starting regulated means they start regulated too.</p>
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowMorningContent(false)} className="healing-btn primary">
-                I receive this ðŸ’š
+                I receive this 💚
               </button>
               <button onClick={() => { setShowMorningContent(false); setShowRegulate(true); setRegulateMode('breathe'); }} className="healing-btn secondary">
                 I need to breathe first
@@ -1880,7 +1880,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         <div className="healing-overlay">
           <div className="healing-modal evening">
             <div className="healing-header">
-              <span className="healing-time">ðŸŒ™ Good Evening</span>
+              <span className="healing-time">📁ood Evening</span>
               <h2>Release & Restore</h2>
               <p>Let go of what today held so tomorrow can be new</p>
             </div>
@@ -1895,11 +1895,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <div className="healing-education">
               <span className="edu-tag">Why this matters</span>
               <p>Unprocessed stress gets stored in your body overnight, keeping your nervous system activated even during sleep. This simple practice signals safety to your brain: "The day is done. We made it."</p>
-              <p className="for-kids">ðŸ’› Better sleep tonight means more patience tomorrow. The rested version of you is the parent your kids deserve.</p>
+              <p className="for-kids">📁etter sleep tonight means more patience tomorrow. The rested version of you is the parent your kids deserve.</p>
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowEveningContent(false)} className="healing-btn primary">
-                I release today ðŸ’š
+                I release today 💚
               </button>
               <button onClick={() => { setShowEveningContent(false); setShowRegulate(true); setRegulateMode('body'); }} className="healing-btn secondary">
                 Guide me through a body scan
@@ -1927,14 +1927,14 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showWhatsNew && (
         <div className="modal-overlay" onClick={() => setShowWhatsNew(false)}>
           <div className="whats-new-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowWhatsNew(false)}>Ã—</button>
+            <button className="modal-close" onClick={() => setShowWhatsNew(false)}>×</button>
             <h2>âœ¨ What's New</h2>
             <p className="whats-new-intro">We're constantly improving Pattern 18 based on your feedback.</p>
             
             <div className="update-list">
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ“‹ Case Filings & Order Reader</h4>
+                <h4>📁ase Filings & Order Reader</h4>
                 <p>Upload court orders and we'll extract deadlines, action items, and requirements automatically. Track all filings in one place.</p>
               </div>
               <div className="update-item">
@@ -1944,7 +1944,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ’¬ Conversation History</h4>
+                <h4>📁onversation History</h4>
                 <p>Your coaching sessions are now saved automatically. Pick up right where you left off.</p>
               </div>
               <div className="update-item">
@@ -1954,7 +1954,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ“± Bulk Message Analyzer</h4>
+                <h4>📁ulk Message Analyzer</h4>
                 <p>Upload months of text messages at once. We'll scan for all manipulation patterns and help you document.</p>
               </div>
             </div>
@@ -1987,7 +1987,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   setBreatheType('box');
                 }}
               >
-                ðŸŒ¬ï¸ Breathe First (60 sec)
+                📁 Breathe First (60 sec)
               </button>
               <button 
                 className="pause-continue-btn"
@@ -2014,11 +2014,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showFeedback && (
         <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
           <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowFeedback(false)}>Ã—</button>
+            <button className="modal-close" onClick={() => setShowFeedback(false)}>×</button>
             
             {feedbackSent ? (
               <div className="feedback-success">
-                <span className="success-icon">ðŸ’š</span>
+                <span className="success-icon">💚</span>
                 <h2>Thank You!</h2>
                 <p>Your feedback helps us build a better tool for survivors.</p>
                 <button onClick={() => { setShowFeedback(false); setFeedbackSent(false); setFeedbackText(''); }} className="feedback-done-btn">
@@ -2027,7 +2027,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
             ) : (
               <>
-                <h2>ðŸ’¬ We'd Love to Hear From You</h2>
+                <h2>📁e'd Love to Hear From You</h2>
                 <p className="feedback-intro">Your feedback shapes Pattern 18. What's on your mind?</p>
                 
                 <div className="feedback-types">
@@ -2035,7 +2035,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className={`feedback-type ${feedbackType === 'feedback' ? 'active' : ''}`}
                     onClick={() => setFeedbackType('feedback')}
                   >
-                    ðŸ’­ General Feedback
+                    📁eneral Feedback
                   </button>
                   <button 
                     className={`feedback-type ${feedbackType === 'feature' ? 'active' : ''}`}
@@ -2047,7 +2047,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className={`feedback-type ${feedbackType === 'bug' ? 'active' : ''}`}
                     onClick={() => setFeedbackType('bug')}
                   >
-                    ðŸ› Report a Bug
+                    📁eport a Bug
                   </button>
                 </div>
                 
@@ -2093,7 +2093,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showPauseModal && (
         <div className="modal-overlay">
           <div className="pause-modal">
-            <div className="pause-icon">ðŸ’š</div>
+            <div className="pause-icon">💚</div>
             <h3>Before you respond...</h3>
             <p className="pause-text">
               I notice this message might have you activated. That's completely understandable 
@@ -2140,12 +2140,12 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showUploadModal && (
         <div className="modal-overlay" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>
           <div className="upload-modal" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>Ã—</button>
+            <button className="modal-close" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>×</button>
             
             {uploadMode === 'choose' && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ“±</span>
+                  <span className="upload-emoji">📁span>
                   <h2>What do you have?</h2>
                   <p>I'll analyze it and remember what matters</p>
                 </div>
@@ -2163,7 +2163,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“¸</div>
+                    <div className="option-icon">📁div>
                     <div className="option-text">
                       <div className="option-title">Screenshot</div>
                       <div className="option-desc">Photo of a text or message</div>
@@ -2174,7 +2174,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className="upload-option"
                     onClick={() => setUploadMode('paste' as any)}
                   >
-                    <div className="option-icon">ðŸ“</div>
+                    <div className="option-icon">📁div>
                     <div className="option-text">
                       <div className="option-title">Paste text</div>
                       <div className="option-desc">Copy and paste a message</div>
@@ -2201,7 +2201,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“‹</div>
+                    <div className="option-icon">📁div>
                     <div className="option-text">
                       <div className="option-title">Court order / Legal doc</div>
                       <div className="option-desc">I'll learn your rules & schedule</div>
@@ -2220,7 +2220,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“¦</div>
+                    <div className="option-icon">📁div>
                     <div className="option-text">
                       <div className="option-title">Message history</div>
                       <div className="option-desc">CSV or text export from your phone</div>
@@ -2233,7 +2233,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === ('paste' as any) && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ“</span>
+                  <span className="upload-emoji">📁span>
                   <h2>Paste the message</h2>
                   <p>I'll analyze it and help you respond (or not)</p>
                 </div>
@@ -2268,7 +2268,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === ('clarify' as any) && uploadedFile && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ¤”</span>
+                  <span className="upload-emoji">📁span>
                   <h2>What is this?</h2>
                   <p>Help me understand so I process it correctly</p>
                 </div>
@@ -2280,21 +2280,21 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'court_order')}
                   >
-                    <span>ðŸ“‹</span>
+                    <span>📁span>
                     <span>Court Order / Legal Document</span>
                   </button>
                   <button 
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'message_export')}
                   >
-                    <span>ðŸ“¦</span>
+                    <span>📁span>
                     <span>Message History / Export</span>
                   </button>
                   <button 
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'screenshot')}
                   >
-                    <span>ðŸ“¸</span>
+                    <span>📁span>
                     <span>Screenshot / Other</span>
                   </button>
                 </div>
