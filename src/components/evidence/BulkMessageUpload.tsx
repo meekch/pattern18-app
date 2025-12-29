@@ -180,7 +180,7 @@ export default function BulkMessageUpload() {
       } else {
         setState(prev => ({
           ...prev,
-          error: 'Unsupported file format. Please upload a CSV or PDF from iMazing.',
+          error: 'Unsupported file format. Please upload a CSV or PDF file.',
           isProcessing: false
         }));
       }
@@ -198,7 +198,24 @@ export default function BulkMessageUpload() {
     setState(prev => ({ ...prev, step: 'analyzing', isProcessing: true }));
 
     try {
-      const content = await file.text();
+      let content: string;
+      
+      if (format === 'pdf') {
+        // Use server API to extract text from PDF
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/pdf/extract', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error('Failed to extract PDF text');
+        }
+        const data = await response.json();
+        content = data.text;
+      } else {
+        content = await file.text();
+      }
       
       let parseResult: ParseResult;
       if (format === 'csv') {
@@ -358,7 +375,7 @@ function UploadSection({
           Import Messages
         </h2>
         <p className="text-gray-600 text-sm mb-4">
-          Upload your iMazing export to detect patterns automatically
+          Upload your message export to detect patterns automatically
         </p>
         
         {/* Upload Area - Entire area is clickable */}
@@ -390,7 +407,7 @@ function UploadSection({
             {isProcessing ? 'Processing...' : 'Click to upload or drag & drop'}
           </p>
           <p className="text-sm text-gray-500">
-            CSV or PDF from iMazing
+            CSV or PDF file
           </p>
         </div>
 
@@ -476,7 +493,7 @@ function CoachingSection({
 
       {format === 'image' && (
         <div className="mt-8 p-6 bg-gray-50 rounded-lg max-w-lg mx-auto text-left">
-          <h3 className="font-medium mb-2">How to Export from iMazing:</h3>
+          <h3 className="font-medium mb-2">How to Export file:</h3>
           <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
             <li>Connect your iPhone to your computer</li>
             <li>Open iMazing and select Messages</li>
@@ -843,3 +860,5 @@ function StatCard({
     </div>
   );
 }
+
+
