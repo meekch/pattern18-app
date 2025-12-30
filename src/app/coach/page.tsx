@@ -141,9 +141,9 @@ const eveningReflections = [
 
 const quickActions = [
     { icon: '📥', title: 'Import message history', desc: 'Bulk analyze CSV export', action: '__BULK__' },
-  { icon: 'ðŸ“±', title: 'Analyze a screenshot', desc: 'Upload image of a message', action: '__UPLOAD__' },
-  { icon: 'ðŸ“‹', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
-  { icon: 'ðŸŒ¿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
+  { icon: '📸', title: 'Analyze a screenshot', desc: 'Upload image of a message', action: '__UPLOAD__' },
+  { icon: '📄', title: 'Court doc help', desc: 'Understand, respond, or prepare filings', action: '__DOCUMENT__' },
+  { icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support', action: '__REGULATE__' },
 ];
 
 // ============================================
