@@ -1644,7 +1644,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => { setReleaseText(''); setRegulateMode('release'); }} className="regulate-option">
-                    <span>🙏</span>
+                    <span>📝</span>
                     <div>
                       <strong>Write & Release</strong>
                       <p>Let it go</p>
