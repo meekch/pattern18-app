@@ -1,7 +1,7 @@
 ﻿const fs = require('fs');
 let c = fs.readFileSync('src/app/coach/page.tsx', 'utf8');
 
-const oldCode = // Load pattern counts from evidence_timeline
+const oldCode = `// Load pattern counts from evidence_timeline
         const { data: timelineData } = await supabase
           .from('evidence_timeline')
           .select('patterns_detected')
@@ -16,9 +16,9 @@ const oldCode = // Load pattern counts from evidence_timeline
             });
           });
           setPatternCounts(counts);
-        };
+        }`;
 
-const newCode = // Load pattern counts from evidence_timeline AND incidents
+const newCode = `// Load pattern counts from evidence_timeline AND incidents
         const { data: timelineData } = await supabase
           .from('evidence_timeline')
           .select('patterns_detected')
@@ -51,7 +51,7 @@ const newCode = // Load pattern counts from evidence_timeline AND incidents
           });
         }
         
-        setPatternCounts(counts);;
+        setPatternCounts(counts);`;
 
 c = c.replace(oldCode, newCode);
 fs.writeFileSync('src/app/coach/page.tsx', c, 'utf8');
