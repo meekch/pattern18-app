@@ -1189,8 +1189,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               className="history-toggle" 
               onClick={() => setShowHistory(!showHistory)}
             >
-              ðŸ• Recent Chats ({pastConversations.length})
-              <span className={`toggle-arrow ${showHistory ? 'open' : ''}`}>â€º</span>
+              💬 Recent Chats ({pastConversations.length})
+              <span className={`toggle-arrow ${showHistory ? 'open' : ''}`}>›</span>
             </button>
             
             {showHistory && (
