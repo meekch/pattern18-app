@@ -167,7 +167,7 @@ export default function CoachPage() {
   const [showHistory, setShowHistory] = useState(false);
   
   // UI state
-  const [showGettingStarted, setShowGettingStarted] = useState(true);
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
