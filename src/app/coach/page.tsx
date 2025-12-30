@@ -364,7 +364,7 @@ export default function CoachPage() {
         return;
       }
       
-      promptMessage = "I'm uploading a screenshot
+      promptMessage = "I'm uploading a screenshot"
     } else if (type === 'court_order') {
       promptMessage = `I'm uploading a court order. Please:
 
