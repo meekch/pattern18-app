@@ -1944,23 +1944,23 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         <div className="modal-overlay" onClick={() => setShowWhatsNew(false)}>
           <div className="whats-new-modal" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowWhatsNew(false)}>×</button>
-            <h2>âœ¨ What's New</h2>
+            <h2> ✨ What's New</h2>
             <p className="whats-new-intro">We're constantly improving Pattern 18 based on your feedback.</p>
             
             <div className="update-list">
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ“‹ Case Filings & Order Reader</h4>
+                <h4>📖 Case Filings & Order Reader</h4>
                 <p>Upload court orders and we'll extract deadlines, action items, and requirements automatically. Track all filings in one place.</p>
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>âš–ï¸ Court Document Generator</h4>
+                <h4>💭 Court Document Generator</h4>
                 <p>Generate declarations, exhibit lists, pattern summaries, and incident timelines. Court-ready in minutes.</p>
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ’¬ Conversation History</h4>
+                <h4>📝 Conversation History</h4>
                 <p>Your coaching sessions are now saved automatically. Pick up right where you left off.</p>
               </div>
               <div className="update-item">
@@ -1970,7 +1970,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸ“± Bulk Message Analyzer</h4>
+                <h4>📊 Bulk Message Analyzer</h4>
                 <p>Upload months of text messages at once. We'll scan for all manipulation patterns and help you document.</p>
               </div>
             </div>
