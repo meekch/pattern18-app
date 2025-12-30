@@ -2306,21 +2306,21 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'court_order')}
                   >
-                    <span>ðŸ“‹</span>
+                    <span>📝‹</span>
                     <span>Court Order / Legal Document</span>
                   </button>
                   <button 
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'message_export')}
                   >
-                    <span>ðŸ“¦</span>
+                    <span>📱</span>
                     <span>Message History / Export</span>
                   </button>
                   <button 
                     className="clarify-btn"
                     onClick={() => handleUploadFile(uploadedFile, 'screenshot')}
                   >
-                    <span>ðŸ“¸</span>
+                    <span>📸</span>
                     <span>Screenshot / Other</span>
                   </button>
                 </div>
