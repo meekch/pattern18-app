@@ -1239,7 +1239,9 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           <button onClick={() => router.push('/case-setup')} className="nav-item">
           📋 My Case
 </button>
-          
+<button onClick={() => setShowGettingStarted(true)} className="nav-item">
+  🚀 Getting Started
+</button> 
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
             Feedback
           </button>
@@ -1295,12 +1297,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               Whether you just got a message that made your stomach drop, 
               need help with a court document, or simply need a moment to breathe - I have got you.
             </p>
-            {user && showGettingStarted && (
-  <GettingStarted 
-    userId={user.id} 
-    onDismiss={() => setShowGettingStarted(false)} 
-  />
-)}
+            
 
 
             {/* Mini Case Dashboard */}
@@ -2030,7 +2027,17 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       )}
 
       {/* Feedback Modal */}
-      {showFeedback && (
+      {showGettingStarted && user && (
+  <div className="modal-overlay" onClick={() => setShowGettingStarted(false)}>
+    <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500, margin: '40px auto' }}>
+      <GettingStarted 
+        userId={user.id} 
+        onDismiss={() => setShowGettingStarted(false)} 
+      />
+    </div>
+  </div>
+)}
+{showFeedback && (
         <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
           <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowFeedback(false)}>×</button>
