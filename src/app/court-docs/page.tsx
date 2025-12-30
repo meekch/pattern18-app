@@ -76,7 +76,24 @@ export default function CourtDocsPage() {
         return;
       }
 
-      const { data, error } = await supabase
+      // Load case context
+      const { data: caseData } = await supabase
+        .from("case_context")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
+      
+      if (caseData) {
+        const courtFull = [caseData.court, caseData.county ? caseData.county + " County" : "", caseData.state].filter(Boolean).join(", ");
+        setCaseContext({
+          caseNumber: caseData.case_number || "",
+          courtName: courtFull || "",
+          petitionerName: caseData.petitioner_name || "",
+          respondentName: caseData.respondent_name || caseData.coparent_name || "",
+          filingPurpose: "",
+          userRole: caseData.user_role || "respondent"
+        });
+      }const { data, error } = await supabase
         .from("incidents")
         .select("*")
         .eq("user_id", session.user.id)
@@ -322,7 +339,7 @@ export default function CourtDocsPage() {
             </div>
 
             {/* Next Button */}
-            <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "white", padding: "16px 24px", display: "flex", justifyContent: "flex-end", borderTop: "1px solid #e5e7eb", boxShadow: "0 -2px 10px rgba(0,0,0,0.1)", zIndex: 100 }}>
               <button
                 onClick={() => setStep("configure")}
                 disabled={selectedCount === 0}

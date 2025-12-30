@@ -14,6 +14,12 @@ export default function CaseSetupPage() {
   const [userRole, setUserRole] = useState<'petitioner' | 'respondent' | null>(null);
   const [coparentName, setCoparentName] = useState('');
   const [nextCourtDate, setNextCourtDate] = useState('');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [courtName, setCourtName] = useState('');
+  const [county, setCounty] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [petitionerName, setPetitionerName] = useState('');
+  const [respondentName, setRespondentName] = useState('');
   
   // Auto-extracted fields (read-only, from court orders)
   const [extractedData, setExtractedData] = useState<{
