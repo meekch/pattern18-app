@@ -347,7 +347,24 @@ export default function CoachPage() {
     // Set appropriate message based on type
     let promptMessage = '';
     if (type === 'screenshot') {
-      promptMessage = "I'm uploading a screenshot of a message. Please extract the text, identify any manipulation patterns, and tell me if I need to respond.";
+      // Check for duplicate BEFORE calling AI
+      const imageHash = await generateImageHash(file);
+      const { data: existingDup } = await supabase
+        .from('evidence_timeline')
+        .select('id, coaching_summary')
+        .eq('user_id', user.id)
+        .eq('image_hash', imageHash)
+        .maybeSingle();
+      
+      if (existingDup) {
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId ? { ...m, content: "I've already analyzed this screenshot. It's saved in your evidence.", isLoading: false } : m
+        ));
+        setIsLoading(false);
+        return;
+      }
+      
+      promptMessage = "I'm uploading a screenshot
     } else if (type === 'court_order') {
       promptMessage = `I'm uploading a court order. Please:
 
