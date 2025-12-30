@@ -1267,7 +1267,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             </div>
           )}
          <div className="evidence-badge" onClick={() => router.push('/evidence')} title="View Evidence">
-            ðŸ“ <span className="evidence-count">{evidenceCount}</span>
+         📁<span className="evidence-count">{evidenceCount}</span>
           </div>
         </div>
       </header>
@@ -1423,7 +1423,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {/* Input Area */}
       <div className="input-area">
         <div className="input-container">
-          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">ðŸ“Ž</button>
+          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">📎</button>
           <input 
             type="file" 
             ref={fileInputRef} 
