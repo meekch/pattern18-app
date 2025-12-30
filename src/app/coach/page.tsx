@@ -490,8 +490,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         .select('id')
         .eq('user_id', user.id)
         .eq('image_hash', imageHash)
-        .single();
-      
+        .maybeSingle();      
       if (existing) {
         setAutoSaveStatus('idle');
         console.log('Duplicate screenshot detected');
