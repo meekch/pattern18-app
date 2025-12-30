@@ -1189,7 +1189,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               className="history-toggle" 
               onClick={() => setShowHistory(!showHistory)}
             >
-              💬 Recent Chats ({pastConversations.length})
+              💬 Recent Chats ({pastConversations.length})
               <span className={`toggle-arrow ${showHistory ? 'open' : ''}`}>›</span>
             </button>
             
@@ -1235,7 +1235,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           <div className="nav-divider" />
           
           <button onClick={() => router.push('/case-setup')} className="nav-item">
-  ðŸ“‹ My Case
+          📋‹ My Case
 </button>
           <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }} className="nav-item">
   How It Works
