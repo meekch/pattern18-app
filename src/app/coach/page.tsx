@@ -2171,7 +2171,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === 'choose' && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ“±</span>
+                  <span className="upload-emoji">💭</span>
                   <h2>What do you have?</h2>
                   <p>I'll analyze it and remember what matters</p>
                 </div>
@@ -2189,7 +2189,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“¸</div>
+                    <div className="option-icon">📸</div>
                     <div className="option-text">
                       <div className="option-title">Screenshot</div>
                       <div className="option-desc">Photo of a text or message</div>
@@ -2200,7 +2200,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className="upload-option"
                     onClick={() => setUploadMode('paste' as any)}
                   >
-                    <div className="option-icon">ðŸ“</div>
+                    <div className="option-icon">📋</div>
                     <div className="option-text">
                       <div className="option-title">Paste text</div>
                       <div className="option-desc">Copy and paste a message</div>
@@ -2227,7 +2227,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“‹</div>
+                    <div className="option-icon">📝</div>
                     <div className="option-text">
                       <div className="option-title">Court order / Legal doc</div>
                       <div className="option-desc">I'll learn your rules & schedule</div>
@@ -2246,7 +2246,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                         }
                       }}
                     />
-                    <div className="option-icon">ðŸ“¦</div>
+                    <div className="option-icon">📊</div>
                     <div className="option-text">
                       <div className="option-title">Message history</div>
                       <div className="option-desc">CSV or text export from your phone</div>
