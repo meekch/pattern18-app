@@ -197,14 +197,14 @@ export default function CoachPage() {
   const [celebrationMessage, setCelebrationMessage] = useState({ title: '', subtitle: '' });
   
   const milestones: Record<number, { title: string; subtitle: string }> = {
-    1: { title: '📎rst evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
+    1: { title: 'ðŸŽ‰ First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
     5: { title: 'ðŸ“Š 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
     10: { title: 'ðŸ’ª 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
     25: { title: 'ðŸ”¥ 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
     50: { title: 'â­ 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
     100: { title: 'ðŸ† 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
     150: { title: 'ðŸ‘‘ 150 and counting!', subtitle: 'Your documentation is undeniable.' },
-    200: { title: '📎0 documented!', subtitle: 'You are a documentation warrior.' },
+    200: { title: 'ðŸŽ¯ 200 documented!', subtitle: 'You are a documentation warrior.' },
   };
 
   const checkMilestone = (newCount: number) => {
@@ -1423,7 +1423,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {/* Input Area */}
       <div className="input-area">
         <div className="input-container">
-          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">📎utton>
+          <button onClick={() => fileInputRef.current?.click()} className="attach-btn">ðŸ“Ž</button>
           <input 
             type="file" 
             ref={fileInputRef} 
