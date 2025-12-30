@@ -1616,7 +1616,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                 <p>You can't pour from an empty cup</p>
                 <div className="regulate-options">
                   <button onClick={() => setRegulateMode('breathe')} className="regulate-option">
-                    <span>🫁</span>
+                    <span>🌬️</span>
                     <div>
                       <strong>Breathe</strong>
                       <p>Calm your nervous system</p>
