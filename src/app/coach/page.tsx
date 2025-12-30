@@ -2171,8 +2171,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === 'choose' && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">💭</span>
-                  <h2>What do you have?</h2>
+                  <span className="upload-emoji">➕</span>
+                    <h2>What do you have?</h2>
                   <p>I'll analyze it and remember what matters</p>
                 </div>
                 
