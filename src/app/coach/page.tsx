@@ -200,12 +200,12 @@ export default function CoachPage() {
   
   const milestones: Record<number, { title: string; subtitle: string }> = {
     1: { title: '🎉 First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
-    5: { title: 'ðŸ“Š 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
-    10: { title: 'ðŸ’ª 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
-    25: { title: 'ðŸ”¥ 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
-    50: { title: 'â­ 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
-    100: { title: 'ðŸ† 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
-    150: { title: 'ðŸ‘‘ 150 and counting!', subtitle: 'Your documentation is undeniable.' },
+    5: { title: '🎉 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
+    10: { title: '🎉 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
+    25: { title: '🎉 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
+    50: { title: '🎉 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
+    100: { title: '🎉 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
+    150: { title: '🎉 150 and counting!', subtitle: 'Your documentation is undeniable.' },
     200: { title: '🎯 200 documented!', subtitle: 'You are a documentation warrior.' },
   };
 
@@ -1623,7 +1623,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => { setBodyStep(0); setRegulateMode('body'); }} className="regulate-option">
-                    <span>ðŸ’†</span>
+                    <span>🧘</span>
                     <div>
                       <strong>Body Scan</strong>
                       <p>Release stored tension</p>
@@ -1644,7 +1644,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => { setReleaseText(''); setRegulateMode('release'); }} className="regulate-option">
-                    <span>ðŸ”¥</span>
+                    <span>🙏</span>
                     <div>
                       <strong>Write & Release</strong>
                       <p>Let it go</p>
@@ -1658,14 +1658,14 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('kids')} className="regulate-option kids-option">
-                    <span>ðŸ’›</span>
+                    <span>💛</span>
                     <div>
                       <strong>For Your Kids</strong>
                       <p>Ideas to make them smile</p>
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('gratitude')} className="regulate-option">
-                    <span>âœ¨</span>
+                    <span>🙏</span>
                     <div>
                       <strong>Gratitude</strong>
                       <p>Find the light</p>
