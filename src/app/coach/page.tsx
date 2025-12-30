@@ -54,11 +54,11 @@ const affirmations = [
 ];
 
 const groundingSteps = [
-  { sense: 'SEE', instruction: 'Name 5 things you can see right now.', icon: 'ðŸ‘ï¸' },
-  { sense: 'TOUCH', instruction: 'Name 4 things you can physically feel.', icon: 'âœ‹' },
-  { sense: 'HEAR', instruction: 'Name 3 things you can hear.', icon: 'ðŸ‘‚' },
-  { sense: 'SMELL', instruction: 'Name 2 things you can smell.', icon: 'ðŸ‘ƒ' },
-  { sense: 'TASTE', instruction: 'Name 1 thing you can taste.', icon: 'ðŸ‘…' },
+  { sense: 'SEE', instruction: 'Name 5 things you can see right now.', icon: '👁️' },
+  { sense: 'TOUCH', instruction: 'Name 4 things you can physically feel.', icon: '💛' },
+  { sense: 'HEAR', instruction: 'Name 3 things you can hear.', icon: '👂' },
+  { sense: 'SMELL', instruction: 'Name 2 things you can smell.', icon: '👃' },
+  { sense: 'TASTE', instruction: 'Name 1 thing you can taste.', icon: '👅' },
 ];
 
 const bodyScanSteps = [
