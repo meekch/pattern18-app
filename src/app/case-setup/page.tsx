@@ -223,7 +223,7 @@ export default function CaseSetupPage() {
             <div className="empty-state">
               <p className="card-desc">Add your case information for accurate court documents</p>
               <div className="action-buttons">
-                <button onClick={() => router.push('/evidence/upload')} className="upload-btn">
+                <button onClick={() => router.push('/filings')} className="upload-btn">
                   Upload Court Order
                 </button>
                 <button onClick={() => setShowManualEntry(true)} className="manual-btn">
