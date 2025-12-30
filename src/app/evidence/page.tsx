@@ -123,7 +123,7 @@ export default function EvidencePage() {
       .from('incidents')
       .select('*')
       .eq('user_id', userId)
-      .order('date', { ascending: false });
+      .order('incident_date', { ascending: false });
     
     // Load from evidence table (old)
     const { data: evidenceData } = await supabase
