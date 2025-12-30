@@ -64,7 +64,7 @@ const bodyScanSteps = [
   { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: 'ðŸ¦¶' },
   { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: 'ðŸ¦µ' },
   { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: 'ðŸ«' },
-  { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: 'ðŸ’š' },
+  { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: '💚' },
   { area: 'Shoulders', instruction: 'Drop your shoulders away from your ears. Roll them back. Release what you have been carrying.', icon: 'ðŸ’†' },
   { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: 'ðŸ˜Œ' },
   { area: 'Whole Body', instruction: 'Take one deep breath. You are here. You are whole. You are safe in this moment.', icon: 'âœ¨' },
@@ -1115,7 +1115,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
   if (authLoading) {
     return (
       <div className="loading-screen">
-        <div className="loading-heart">ðŸ’š</div>
+        <div className="loading-heart">💚</div>
         <p>Loading your safe space...</p>
         <style jsx>{`
           .loading-screen {
@@ -1161,7 +1161,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <span className="sidebar-logo">18</span>
             <span>Pattern 18</span>
           </div>
-          <button onClick={() => setShowSidebar(false)} className="close-btn">Ã—</button>
+          <button onClick={() => setShowSidebar(false)} className="close-btn">×</button>
         </div>
         
         {/* New Conversation Button */}
@@ -1201,7 +1201,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                       className="history-delete"
                       onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1245,7 +1245,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {/* Header */}
       <header className="header">
         <div className="header-left">
-          <button onClick={() => setShowSidebar(true)} className="menu-btn">â˜°</button>
+          <button onClick={() => setShowSidebar(true)} className="menu-btn">☰</button>
           <div className="brand" onClick={() => router.push('/coach')} style={{cursor: 'pointer'}}>
             <span className="logo">18</span>
             <div className="brand-text">
@@ -1276,7 +1276,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       <div className="chat-area" ref={chatRef}>
         {showWelcome ? (
           <div className="welcome">
-            <div className="welcome-heart">ðŸ’š</div>
+            <div className="welcome-heart">💚</div>
             <h1 className="welcome-title">Hey, I am glad you are here.</h1>
             <p className="welcome-text">
               Whether you just got a message that made your stomach drop, 
@@ -1570,7 +1570,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             disabled={isLoading || !input.trim()}
             className="send-btn"
           >
-            âž¤
+            ➤
           </button>
         </div>
         {messages.length > 0 && messages.some(m => m.patterns && m.patterns.length > 0) && (
@@ -1592,7 +1592,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showRegulate && (
         <div className="regulate-overlay" onClick={() => setShowRegulate(false)}>
           <div className="regulate-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="regulate-close" onClick={() => setShowRegulate(false)}>Ã—</button>
+            <button className="regulate-close" onClick={() => setShowRegulate(false)}>×</button>
             
             {regulateMode === 'menu' && (
               <div className="regulate-menu">
@@ -1635,7 +1635,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('affirm')} className="regulate-option">
-                    <span>ðŸ’š</span>
+                    <span>💚</span>
                     <div>
                       <strong>Affirm</strong>
                       <p>Words of truth</p>
@@ -1862,7 +1862,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowMorningContent(false)} className="healing-btn primary">
-                I receive this ðŸ’š
+                I receive this 💚
               </button>
               <button onClick={() => { setShowMorningContent(false); setShowRegulate(true); setRegulateMode('breathe'); }} className="healing-btn secondary">
                 I need to breathe first
@@ -1899,7 +1899,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowEveningContent(false)} className="healing-btn primary">
-                I release today ðŸ’š
+                I release today 💚
               </button>
               <button onClick={() => { setShowEveningContent(false); setShowRegulate(true); setRegulateMode('body'); }} className="healing-btn secondary">
                 Guide me through a body scan
@@ -1927,7 +1927,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showWhatsNew && (
         <div className="modal-overlay" onClick={() => setShowWhatsNew(false)}>
           <div className="whats-new-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowWhatsNew(false)}>Ã—</button>
+            <button className="modal-close" onClick={() => setShowWhatsNew(false)}>×</button>
             <h2>âœ¨ What's New</h2>
             <p className="whats-new-intro">We're constantly improving Pattern 18 based on your feedback.</p>
             
@@ -2014,11 +2014,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showFeedback && (
         <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
           <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowFeedback(false)}>Ã—</button>
+            <button className="modal-close" onClick={() => setShowFeedback(false)}>×</button>
             
             {feedbackSent ? (
               <div className="feedback-success">
-                <span className="success-icon">ðŸ’š</span>
+                <span className="success-icon">💚</span>
                 <h2>Thank You!</h2>
                 <p>Your feedback helps us build a better tool for survivors.</p>
                 <button onClick={() => { setShowFeedback(false); setFeedbackSent(false); setFeedbackText(''); }} className="feedback-done-btn">
@@ -2093,7 +2093,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showPauseModal && (
         <div className="modal-overlay">
           <div className="pause-modal">
-            <div className="pause-icon">ðŸ’š</div>
+            <div className="pause-icon">💚</div>
             <h3>Before you respond...</h3>
             <p className="pause-text">
               I notice this message might have you activated. That's completely understandable 
@@ -2140,7 +2140,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showUploadModal && (
         <div className="modal-overlay" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>
           <div className="upload-modal" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>Ã—</button>
+            <button className="modal-close" onClick={() => { setShowUploadModal(false); setUploadMode('choose'); setUploadedFile(null); setDetectedType(null); setPasteText(''); }}>×</button>
             
             {uploadMode === 'choose' && (
               <>
