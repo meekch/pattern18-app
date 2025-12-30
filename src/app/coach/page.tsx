@@ -2278,7 +2278,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className="paste-back"
                     onClick={() => { setUploadMode('choose'); setPasteText(''); }}
                   >
-                    â† Back
+                    📋 Back
                   </button>
                   <button 
                     className="paste-submit"
