@@ -463,7 +463,23 @@ Be practical and specific. Don't ask me questions - give me the action plan base
     if (!user) return;
     setAutoSaveStatus('saving');
     
-    try {
+    try { 
+      // Generate hash for duplicate detection
+      const imageHash = await generateImageHash(file);
+      
+      // Check for existing duplicate
+      const { data: existing } = await supabase
+        .from('evidence_timeline')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('image_hash', imageHash)
+        .single();
+      
+      if (existing) {
+        setAutoSaveStatus('idle');
+        console.log('Duplicate screenshot detected');
+        return;
+      }
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -492,7 +508,8 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         auto_saved: true,
         needs_review: true,
         reviewed: false,
-      });
+        image_hash: imageHash,
+        });
       
       setAutoSaveStatus('saved');
       setTimeout(() => setAutoSaveStatus('idle'), 3000);
