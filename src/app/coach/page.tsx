@@ -61,12 +61,12 @@ const groundingSteps = [
 ];
 
 const bodyScanSteps = [
-  { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: 'ðŸ¦¶' },
-  { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: 'ðŸ¦µ' },
-  { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: 'ðŸ«' },
+  { area: 'Feet', instruction: 'Feel your feet on the ground. Notice the weight, the temperature, the connection to the earth.', icon: '🦶' },
+  { area: 'Legs', instruction: 'Scan up through your legs. Release any tension in your calves, knees, thighs. Let them soften.', icon: '🦵' },
+  { area: 'Belly', instruction: 'Place a hand on your belly. Feel it rise and fall. This is your center. You are safe here.', icon: '🫁' },
   { area: 'Chest', instruction: 'Notice your heart. It has carried you through so much. Thank it for keeping you going.', icon: '💚' },
   { area: 'Shoulders', instruction: 'Drop your shoulders away from your ears. Roll them back. Release what you have been carrying.', icon: 'ðŸ’†' },
-  { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: 'ðŸ˜Œ' },
+  { area: 'Jaw', instruction: 'Unclench your jaw. Let your tongue rest. Soften the space between your eyebrows.', icon: '😌' },
   { area: 'Whole Body', instruction: 'Take one deep breath. You are here. You are whole. You are safe in this moment.', icon: 'âœ¨' },
 ];
 
@@ -197,14 +197,14 @@ export default function CoachPage() {
   const [celebrationMessage, setCelebrationMessage] = useState({ title: '', subtitle: '' });
   
   const milestones: Record<number, { title: string; subtitle: string }> = {
-    1: { title: 'ðŸŽ‰ First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
+    1: { title: '🎉 First evidence saved!', subtitle: 'You\'re building your case. Every piece matters.' },
     5: { title: 'ðŸ“Š 5 pieces documented!', subtitle: 'You\'re creating a paper trail they can\'t deny.' },
     10: { title: 'ðŸ’ª 10 documented!', subtitle: 'Double digits! Your case is getting stronger.' },
     25: { title: 'ðŸ”¥ 25 pieces of evidence!', subtitle: 'You\'re doing the hard work. It will pay off.' },
     50: { title: 'â­ 50 documented incidents!', subtitle: 'This is serious documentation. You\'re prepared.' },
     100: { title: 'ðŸ† 100 pieces of evidence!', subtitle: 'You have built an incredible case file.' },
     150: { title: 'ðŸ‘‘ 150 and counting!', subtitle: 'Your documentation is undeniable.' },
-    200: { title: 'ðŸŽ¯ 200 documented!', subtitle: 'You are a documentation warrior.' },
+    200: { title: '🎯 200 documented!', subtitle: 'You are a documentation warrior.' },
   };
 
   const checkMilestone = (newCount: number) => {
@@ -636,7 +636,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       
       // Check if first time user (show onboarding)
       const hasSeenOnboarding = localStorage.getItem('p18_onboarding_complete');
-      if (!hasSeenOnboarding) {
+      if (false && !hasSeenOnboarding) {
         setShowOnboarding(true);
       }
       
@@ -1237,7 +1237,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           <button onClick={() => router.push('/case-setup')} className="nav-item">
           📋 My Case
 </button>
-          <button onClick={() => { setShowOnboarding(true); setShowSidebar(false); }} className="nav-item">
+          <button onClick={() => { /* removed */ }} className="nav-item">
   How It Works
 </button>
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
@@ -1609,11 +1609,11 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             
             {regulateMode === 'menu' && (
               <div className="regulate-menu">
-                <h2>ðŸŒ¿ Restore</h2>
+                <h2>🌿 Restore</h2>
                 <p>You can't pour from an empty cup</p>
                 <div className="regulate-options">
                   <button onClick={() => setRegulateMode('breathe')} className="regulate-option">
-                    <span>ðŸ«</span>
+                    <span>🫁</span>
                     <div>
                       <strong>Breathe</strong>
                       <p>Calm your nervous system</p>
@@ -1627,14 +1627,14 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     </div>
                   </button>
                   <button onClick={() => setRegulateMode('ground')} className="regulate-option">
-                    <span>ðŸŒ³</span>
+                    <span>🌳</span>
                     <div>
                       <strong>Ground</strong>
                       <p>Come back to now</p>
                     </div>
                   </button>
                   <button onClick={() => { setShakeSeconds(30); setRegulateMode('shake'); }} className="regulate-option">
-                    <span>ðŸ¦‹</span>
+                    <span>🦋</span>
                     <div>
                       <strong>Shake It Out</strong>
                       <p>Release the energy</p>
@@ -1755,7 +1755,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   This releases the stress energy stored in your muscles.
                 </p>
                 <div className="shake-timer">
-                  <span className="shake-emoji">ðŸ¦‹</span>
+                  <span className="shake-emoji">🦋</span>
                   <span className="shake-seconds">{shakeSeconds}</span>
                   <span className="shake-label">seconds</span>
                 </div>
@@ -1856,7 +1856,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         <div className="healing-overlay">
           <div className="healing-modal morning">
             <div className="healing-header">
-              <span className="healing-time">ðŸŒ… Good Morning</span>
+              <span className="healing-time">🌅 Good Morning</span>
               <h2>Your Daily Intention</h2>
               <p>Take 30 seconds to set the tone for today</p>
             </div>
@@ -1893,7 +1893,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
         <div className="healing-overlay">
           <div className="healing-modal evening">
             <div className="healing-header">
-              <span className="healing-time">ðŸŒ™ Good Evening</span>
+              <span className="healing-time">🌙 Good Evening</span>
               <h2>Release & Restore</h2>
               <p>Let go of what today held so tomorrow can be new</p>
             </div>
@@ -1962,7 +1962,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
               <div className="update-item">
                 <span className="update-date">Dec 2024</span>
-                <h4>ðŸŒ¿ Healing Journey</h4>
+                <h4>🌿 Healing Journey</h4>
                 <p>Morning intentions, evening releases, and weekly healing challenges. Set reminders to build healing habits.</p>
               </div>
               <div className="update-item">
@@ -1981,7 +1981,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       {showPauseModal && (
         <div className="modal-overlay">
           <div className="pause-modal">
-            <div className="pause-icon">ðŸŒ¿</div>
+            <div className="pause-icon">🌿</div>
             <h2>Before you respond...</h2>
             <p className="pause-message">
               I notice this message might have you activated. That's completely understandable given what you're dealing with.
@@ -2000,7 +2000,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   setBreatheType('box');
                 }}
               >
-                ðŸŒ¬ï¸ Breathe First (60 sec)
+                🌬️ Breathe First (60 sec)
               </button>
               <button 
                 className="pause-continue-btn"
@@ -2126,7 +2126,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                   setRegulateMode('breathe');
                 }}
               >
-                ðŸŒ¿ Breathe First (60 sec)
+                🌿 Breathe First (60 sec)
               </button>
               <button 
                 className="pause-btn-continue"
