@@ -151,6 +151,15 @@ const quickActions = [
 // MAIN COMPONENT
 // ============================================
 
+
+// Generate simple hash for duplicate detection
+const generateImageHash = async (file: File): Promise<string> => {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export default function CoachPage() {
   const router = useRouter();
   
@@ -171,6 +180,13 @@ export default function CoachPage() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Show toast notification
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   
   // Safety state
   const [showSafetyResources, setShowSafetyResources] = useState(false);
@@ -1132,7 +1148,28 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       <div className="loading-screen">
         <div className="loading-heart">💚</div>
         <p>Loading your safe space...</p>
-        <style jsx>{`
+        
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: 100,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1a3a2f',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 1000,
+          fontSize: 14,
+          fontWeight: 500
+        }}>
+          {toastMessage}
+        </div>
+      )}
+
+      <style jsx>{`
           .loading-screen {
             display: flex;
             flex-direction: column;
