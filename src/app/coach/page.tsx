@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import SafetyResources, { detectCrisis } from '@/components/SafetyResources';
 import OnboardingWow from '@/components/OnboardingWow';
+import GettingStarted from "@/components/GettingStarted";
 
 // ============================================
 // TYPES
@@ -166,6 +167,7 @@ export default function CoachPage() {
   const [showHistory, setShowHistory] = useState(false);
   
   // UI state
+  const [showGettingStarted, setShowGettingStarted] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [savingEvidence, setSavingEvidence] = useState<string | null>(null);
@@ -1237,9 +1239,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
           <button onClick={() => router.push('/case-setup')} className="nav-item">
           📋 My Case
 </button>
-          <button onClick={() => { /* removed */ }} className="nav-item">
-  How It Works
-</button>
+          
           <button onClick={() => { setShowFeedback(true); setShowSidebar(false); }} className="nav-item">
             Feedback
           </button>
@@ -1295,6 +1295,12 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               Whether you just got a message that made your stomach drop, 
               need help with a court document, or simply need a moment to breathe - I have got you.
             </p>
+            {user && showGettingStarted && (
+  <GettingStarted 
+    userId={user.id} 
+    onDismiss={() => setShowGettingStarted(false)} 
+  />
+)}
 
 
             {/* Mini Case Dashboard */}
