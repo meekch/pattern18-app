@@ -84,6 +84,7 @@ export default function CourtDocsPage() {
 
       if (error) throw error;
       setIncidents(data || []);
+        console.log('Incidents data:', data?.[0]);
       
       // Auto-select incidents marked for exhibit
       const exhibitIds = (data || [])
