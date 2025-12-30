@@ -198,7 +198,7 @@ export default function EvidencePage() {
           <div style={{ width: 1, background: "#e5e7eb" }} />
           <div style={{ textAlign: "center", flex: 1 }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#ea580c" }}>{highPlusCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>High+</div>
+            <div style={{ fontSize: 13, color: "#6b7280" }}>High & Critical</div>
           </div>
           <div style={{ width: 1, background: "#e5e7eb" }} />
           <div style={{ textAlign: "center", flex: 1 }}>
@@ -218,7 +218,7 @@ export default function EvidencePage() {
           <div style={{ display: "flex", gap: 8 }}>
             {[
               { key: "all", label: "All" },
-              { key: "high+", label: "High+ Only" },
+              { key: "high+", label: "High & Critical" },
               { key: "critical", label: "Critical" },
               { key: "exhibit", label: "📋 In Exhibit" },
             ].map(f => (
