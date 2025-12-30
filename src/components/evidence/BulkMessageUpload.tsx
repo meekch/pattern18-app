@@ -270,12 +270,12 @@ export default function BulkMessageUpload() {
               {state.isProcessing ? 'Processing...' : 'Click to upload or drag & drop'}
             </p>
             <p style={{ fontSize: 14, color: '#9ca3af' }}>
-              CSV export from iMazing (PDF coming soon)
+              CSV or PDF message export
             </p>
           </div>
 
           <div style={{ marginTop: 24, display: 'flex', gap: 24, justifyContent: 'center', fontSize: 14, color: '#6b7280' }}>
-            <span>✓ Detects 18 manipulation patterns</span>
+            <span>✓ Detects manipulation patterns</span>
             <span>✓ Groups into incidents</span>
             <span>✓ Court-ready export</span>
           </div>
