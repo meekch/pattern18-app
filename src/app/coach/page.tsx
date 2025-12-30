@@ -1926,7 +1926,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
       )}
 
       {/* Onboarding - WOW Experience */}
-      {showOnboarding && user && (
+      {false && showOnboarding && user && (
         <OnboardingWow 
           userId={user.id}
           onComplete={() => {
