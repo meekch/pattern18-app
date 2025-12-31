@@ -175,7 +175,7 @@ export default function CoachPage() {
         router.push('/docs');
         break;
       case 'moment':
-        router.push('/heal');
+        router.push('/healing');
         break;
     }
   };
