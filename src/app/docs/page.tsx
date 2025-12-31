@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
@@ -22,7 +22,7 @@ interface GeneratedDocument {
   content: string;
 }
 
-export default function DocsPage() {
+function DocsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showCreate = searchParams.get('create') === 'true';
@@ -32,7 +32,6 @@ export default function DocsPage() {
   const [activeTab, setActiveTab] = useState<'court' | 'generated'>(showCreate ? 'generated' : 'court');
   const [courtDocs, setCourtDocs] = useState<CourtDocument[]>([]);
   const [generatedDocs, setGeneratedDocs] = useState<GeneratedDocument[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
@@ -541,5 +540,17 @@ export default function DocsPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function DocsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f7f6' }}>
+        <div style={{ fontSize: '48px', animation: 'pulse 1.5s infinite' }}>📄</div>
+      </div>
+    }>
+      <DocsContent />
+    </Suspense>
   );
 }
