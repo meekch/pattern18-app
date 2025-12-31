@@ -87,7 +87,7 @@ export default function BottomNav({ active }: BottomNavProps) {
                 </div>
               </button>
               
-              <button onClick={() => { setShowMenu(false); router.push('/safety'); }} className="menu-item">
+              <button onClick={() => { setShowMenu(false); router.push('/heal'); }} className="menu-item">
                 <span className="menu-icon">💚</span>
                 <div className="menu-text">
                   <span className="menu-title">Safety Resources</span>
