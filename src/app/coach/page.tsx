@@ -1463,7 +1463,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                           </div>
                           {msg.savedToEvidence ? (
                             <span className="saved-indicator">
-                            ðŸ“Œ Saved | {evidenceCount} incidents documented
+                            📌 Saved | {evidenceCount} incidents documented
                             {Object.keys(patternCounts).length > 0 && ` | Top: ${
                               Object.entries(patternCounts)
                                 .sort((a, b) => b[1] - a[1])
@@ -1863,7 +1863,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                       setReleaseText('');
                     }}
                   >
-                    ðŸ”¥ Release & Let Go
+                    🔥 Release & Let Go
                   </button>
                 )}
                 {releaseText === '' && releaseText !== undefined && (
@@ -1887,7 +1887,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {regulateMode === 'kids' && (
               <div className="kids-mode">
                 <div className="kids-card">
-                  <span className="kids-icon">ðŸ’›</span>
+                  <span className="kids-icon">💛</span>
                   <span className="age-badge">{currentKidIdea.age}</span>
                   <h3>{currentKidIdea.idea}</h3>
                   <p>{currentKidIdea.desc}</p>
@@ -1944,7 +1944,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <div className="healing-education">
               <span className="edu-tag">Why this matters</span>
               <p>Morning intentions activate your prefrontal cortex - the rational brain - before stress can trigger your amygdala. You're literally choosing which neural pathways fire first today.</p>
-              <p className="for-kids">ðŸ’› Your kids feel your energy the moment they see you. Starting regulated means they start regulated too.</p>
+              <p className="for-kids">💛 Your kids feel your energy the moment they see you. Starting regulated means they start regulated too.</p>
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowMorningContent(false)} className="healing-btn primary">
@@ -1981,7 +1981,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             <div className="healing-education">
               <span className="edu-tag">Why this matters</span>
               <p>Unprocessed stress gets stored in your body overnight, keeping your nervous system activated even during sleep. This simple practice signals safety to your brain: "The day is done. We made it."</p>
-              <p className="for-kids">ðŸ’› Better sleep tonight means more patience tomorrow. The rested version of you is the parent your kids deserve.</p>
+              <p className="for-kids">💛 Better sleep tonight means more patience tomorrow. The rested version of you is the parent your kids deserve.</p>
             </div>
             <div className="healing-actions">
               <button onClick={() => setShowEveningContent(false)} className="healing-btn primary">
@@ -2123,7 +2123,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
               </div>
             ) : (
               <>
-                <h2>ðŸ’¬ We'd Love to Hear From You</h2>
+                <h2>💬 We'd Love to Hear From You</h2>
                 <p className="feedback-intro">Your feedback shapes Pattern 18. What's on your mind?</p>
                 
                 <div className="feedback-types">
@@ -2131,7 +2131,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className={`feedback-type ${feedbackType === 'feedback' ? 'active' : ''}`}
                     onClick={() => setFeedbackType('feedback')}
                   >
-                    ðŸ’­ General Feedback
+                    💬­ General Feedback
                   </button>
                   <button 
                     className={`feedback-type ${feedbackType === 'feature' ? 'active' : ''}`}
@@ -2143,7 +2143,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                     className={`feedback-type ${feedbackType === 'bug' ? 'active' : ''}`}
                     onClick={() => setFeedbackType('bug')}
                   >
-                    ðŸ› Report a Bug
+                    🐛 Report a Bug
                   </button>
                 </div>
                 
@@ -2329,7 +2329,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === ('paste' as any) && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ“</span>
+                  <span className="upload-emoji">📝</span>
                   <h2>Paste the message</h2>
                   <p>I'll analyze it and help you respond (or not)</p>
                 </div>
@@ -2364,7 +2364,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
             {uploadMode === ('clarify' as any) && uploadedFile && (
               <>
                 <div className="upload-header">
-                  <span className="upload-emoji">ðŸ¤”</span>
+                  <span className="upload-emoji">🤔</span>
                   <h2>What is this?</h2>
                   <p>Help me understand so I process it correctly</p>
                 </div>
