@@ -477,6 +477,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
   };
   // Auto-save screenshot uploads to evidence timeline
   const autoSaveToTimeline = async (file: File, aiResponse: string, patterns: string[]) => {
+    console.log('autoSaveToTimeline called', { fileName: file.name, hasUser: !!user });
     if (!user) return;
     setAutoSaveStatus('saving');
     
@@ -1667,7 +1668,7 @@ Be practical and specific. Don't ask me questions - give me the action plan base
                 sendMessage(`Help me respond`);
               }}
             >
-              âœï¸ Help me respond
+              ✏️ Help me respond
             </button>
             
           </div>
