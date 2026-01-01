@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import BottomNav from "@/components/BottomNav";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import BottomNav from '@/components/BottomNav';
 
 interface Incident {
   id: string;
@@ -12,706 +12,489 @@ interface Incident {
   patterns: string[];
   severity: string;
   incident_date: string;
-  message_count?: number;
-  evidence_strength?: string;
   coparent_message?: string;
   messages_json?: any[];
-  source?: string;
   include_in_exhibit?: boolean;
 }
 
-interface GroupedIncidents {
-  [monthYear: string]: Incident[];
-}
+const DOC_TYPES = [
+  {
+    id: 'declaration',
+    name: 'Declaration',
+    icon: '📜',
+    description: 'Formal statement under penalty of perjury with numbered paragraphs. Use for declarations in support of motions.',
+    example: '"5. On July 15, 2024, Respondent sent me the following text message: \'You\'re a terrible mother.\' (See Exhibit A-5)"'
+  },
+  {
+    id: 'timeline',
+    name: 'Timeline',
+    icon: '📅',
+    description: 'Chronological list of all incidents with dates, quotes, and exhibit numbers. Great for showing a pattern over time.',
+    example: 'July 10, 2024 | A-1 | Text Message | "Just dropped at Tumbleweed"'
+  },
+  {
+    id: 'pattern_summary',
+    name: 'Pattern Summary',
+    icon: '🔍',
+    description: 'Incidents grouped by abuse pattern type with counts and examples. Shows the nature of the behavior.',
+    example: 'FINANCIAL MANIPULATION (12 occurrences) - Example: "We doing the 60/40 split?"'
+  },
+  {
+    id: 'exhibit_list',
+    name: 'Exhibit List',
+    icon: '📋',
+    description: 'Formal index of all exhibits with numbers, dates, and descriptions. Required for court submissions.',
+    example: 'Exhibit A-1 | July 10, 2024 | Text Message | Communication regarding pickup'
+  }
+];
 
-const categoryLabels: Record<string, string> = {
-  // Coercive Control Patterns
-  gaslighting: "Gaslighting",
-  darvo: "DARVO",
-  intimidation: "Intimidation",
-  threats: "Threats",
-  financial_abuse: "Financial Abuse",
-  financial_manipulation: "Financial Manipulation",
-  using_children_as_weapons: "Using Children as Weapons",
-  blame_shifting: "Blame-Shifting",
-  false_accusations: "False Accusations",
-  emotional_blackmail: "Emotional Blackmail",
-  stonewalling: "Stonewalling",
-  monitoring_stalking: "Monitoring/Stalking",
-  isolation_tactics: "Isolation Tactics",
-  minimizing_denying: "Minimizing/Denying",
-  word_salad: "Word Salad",
-  moving_goalposts: "Moving Goalposts",
-  projection: "Projection",
-  hoovering: "Hoovering",
-  gatekeeping: "Gatekeeping",
-  verbal_abuse: "Verbal Abuse",
-  legal_threats: "Legal Threats",
-  schedule_manipulation: "Schedule Manipulation",
-  none_detected: "Uncategorized",
-  
-  // Legacy mappings
-  revisionist_history: "Gaslighting",
-  triangulating_child: "Using Children as Weapons",
-  "name_calling/verbal_abuse": "Verbal Abuse",
-  "legal/court_threats": "Legal Threats",
-  information_gatekeeping: "Gatekeeping",
-  "surveillance/monitoring": "Monitoring/Stalking",
-  "minimizing/mocking": "Minimizing/Denying",
-  victim_positioning: "DARVO",
-  "deadline/urgency_pressure": "Intimidation",
-  weaponizing_flexibility: "Blame-Shifting",
-  threats_of_exposure: "Intimidation",
-  dismissing_without_engaging: "Stonewalling",
-};
-
-const severityColors: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
-  high: { bg: "#fff7ed", text: "#ea580c", border: "#fed7aa" },
-  medium: { bg: "#fefce8", text: "#ca8a04", border: "#fef08a" },
-  low: { bg: "#f9fafb", text: "#6b7280", border: "#e5e7eb" },
-};
-
-function EvidenceContent() {
+export default function GenerateDeclarationPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [user, setUser] = useState<any>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high+" | "exhibit">("all");
-  const [patternFilter, setPatternFilter] = useState<string>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [selectedType, setSelectedType] = useState('declaration');
+  const [useExhibitOnly, setUseExhibitOnly] = useState(true);
+  const [generatedDoc, setGeneratedDoc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Get unique patterns from all incidents
-  const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
-  
-  // Get unique categories
-  const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
+  // Case context
+  const [caseNumber, setCaseNumber] = useState('');
+  const [courtName, setCourtName] = useState('');
+  const [petitionerName, setPetitionerName] = useState('');
+  const [respondentName, setRespondentName] = useState('');
+  const [userRole, setUserRole] = useState<'petitioner' | 'respondent'>('petitioner');
 
   useEffect(() => {
-    // Check URL params for initial filter
-    const pattern = searchParams.get('pattern');
-    if (pattern) {
-      setPatternFilter(pattern);
-    }
-    loadEvidence();
+    loadData();
   }, []);
 
-  const loadEvidence = async () => {
+  const loadData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
+      if (!session?.user) {
+        router.push('/login');
         return;
       }
+      setUser(session.user);
 
-      const { data, error } = await supabase
-        .from("incidents")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("incident_date", { ascending: false });
+      // Load incidents
+      const { data } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('incident_date', { ascending: true });
 
-      if (error) throw error;
       setIncidents(data || []);
+
+      // Load case info if exists
+      const { data: caseInfo } = await supabase
+        .from('case_info')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (caseInfo) {
+        setCaseNumber(caseInfo.case_number || '');
+        setCourtName(caseInfo.court_name || '');
+        setPetitionerName(caseInfo.petitioner_name || '');
+        setRespondentName(caseInfo.respondent_name || '');
+        setUserRole(caseInfo.user_role || 'petitioner');
+      }
     } catch (err) {
-      console.error("Failed to load evidence:", err);
+      console.error('Load error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleExhibit = async (id: string, currentValue: boolean) => {
-    await supabase
-      .from("incidents")
-      .update({ include_in_exhibit: !currentValue })
-      .eq("id", id);
-    
-    setIncidents(prev => prev.map(inc => 
-      inc.id === id ? { ...inc, include_in_exhibit: !currentValue } : inc
-    ));
+  const selectedIncidents = useExhibitOnly 
+    ? incidents.filter(i => i.include_in_exhibit)
+    : incidents;
+
+  const handleGenerate = async () => {
+    if (selectedIncidents.length === 0) {
+      setError('No incidents selected. Go to Evidence and check the boxes next to incidents you want to include.');
+      return;
+    }
+
+    setGenerating(true);
+    setError(null);
+    setGeneratedDoc(null);
+
+    try {
+      const response = await fetch('/api/generate-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docType: selectedType,
+          incidents: selectedIncidents,
+          caseContext: {
+            caseNumber,
+            courtName,
+            petitionerName,
+            respondentName,
+            userRole
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate document');
+      }
+
+      setGeneratedDoc(data.document);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate document');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  // Filter incidents
-  const filteredIncidents = incidents.filter(inc => {
-    // Severity filter
-    if (severityFilter === "critical" && inc.severity !== "critical") return false;
-    if (severityFilter === "high+" && !["critical", "high"].includes(inc.severity)) return false;
-    if (severityFilter === "exhibit" && !inc.include_in_exhibit) return false;
-    
-    // Pattern filter
-    if (patternFilter !== "all") {
-      const hasPattern = inc.patterns?.some(p => 
-        p.toLowerCase().includes(patternFilter.toLowerCase())
-      ) || inc.category?.toLowerCase().includes(patternFilter.toLowerCase());
-      if (!hasPattern) return false;
+  const handleCopy = () => {
+    if (generatedDoc) {
+      navigator.clipboard.writeText(generatedDoc);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-    
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch = 
-        inc.title?.toLowerCase().includes(query) ||
-        inc.coparent_message?.toLowerCase().includes(query) ||
-        inc.patterns?.some(p => p.toLowerCase().includes(query)) ||
-        inc.category?.toLowerCase().includes(query);
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Group by month
-  const groupedIncidents: GroupedIncidents = filteredIncidents.reduce((acc, inc) => {
-    const date = new Date(inc.incident_date);
-    const monthYear = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-    if (!acc[monthYear]) acc[monthYear] = [];
-    acc[monthYear].push(inc);
-    return acc;
-  }, {} as GroupedIncidents);
-
-  // Stats
-  const totalCount = incidents.length;
-  const criticalCount = incidents.filter(i => i.severity === "critical").length;
-  const highPlusCount = incidents.filter(i => ["critical", "high"].includes(i.severity)).length;
-  const exhibitCount = incidents.filter(i => i.include_in_exhibit).length;
-
-  // Pattern stats for dropdown
-  const patternCounts: Record<string, number> = {};
-  incidents.forEach(inc => {
-    (inc.patterns || []).forEach(p => {
-      patternCounts[p] = (patternCounts[p] || 0) + 1;
-    });
-  });
+  };
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
-          <p style={{ color: "#6b7280" }}>Loading your evidence...</p>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8faf9' }}>
+        <p style={{ color: '#6b7280' }}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
-        padding: "16px 24px",
-        color: "white",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "sticky",
-        top: 0,
-        zIndex: 100
+        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+        padding: '16px 24px',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button 
-            onClick={() => router.push("/my-case")}
-            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
-          >
-            ←
-          </button>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
-        </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={() => router.push("/docs?tab=generate")}
-            style={{
-              background: "#059669",
-              color: "white",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 600,
-              cursor: "pointer"
-            }}
-          >
-            Create Document
-          </button>
+        <button 
+          onClick={() => router.push('/docs')}
+          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 18 }}
+        >
+          ←
+        </button>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>AI Declaration Writer</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.9 }}>Generate court documents from your evidence</p>
         </div>
       </header>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-        {/* Stats Bar */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-          marginBottom: 24,
-        }}>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#1f2937" }}>{totalCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>Total</div>
-          </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{criticalCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>Critical</div>
-          </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#ea580c" }}>{highPlusCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>High+</div>
-          </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#059669" }}>{exhibitCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>In Exhibit</div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 24,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
-        }}>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Severity Filter */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[
-                { key: "all", label: "All" },
-                { key: "high+", label: "High+" },
-                { key: "critical", label: "Critical" },
-                { key: "exhibit", label: "📋 Exhibit" },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => setSeverityFilter(f.key as any)}
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 20,
-                    border: "1px solid",
-                    borderColor: severityFilter === f.key ? "#059669" : "#e5e7eb",
-                    background: severityFilter === f.key ? "#d1fae5" : "white",
-                    color: severityFilter === f.key ? "#065f46" : "#6b7280",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 500
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+        {!generatedDoc ? (
+          <>
+            {/* Document Type Selection */}
+            <div style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#374151' }}>1. Choose Document Type</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {DOC_TYPES.map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedType(type.id)}
+                    style={{
+                      padding: 16,
+                      background: selectedType === type.id ? '#d1fae5' : '#f9fafb',
+                      border: selectedType === type.id ? '2px solid #059669' : '2px solid transparent',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 8 }}>{type.icon}</div>
+                    <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: 4 }}>{type.name}</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{type.description}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Pattern Dropdown */}
-            <select
-              value={patternFilter}
-              onChange={(e) => setPatternFilter(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                background: patternFilter !== "all" ? "#fef3c7" : "white",
-                fontSize: 13,
-                color: "#374151",
-                cursor: "pointer",
-                minWidth: 180
-              }}
-            >
-              <option value="all">All Patterns</option>
-              {allPatterns.map(pattern => (
-                <option key={pattern} value={pattern}>
-                  {pattern} ({patternCounts[pattern] || 0})
-                </option>
-              ))}
-            </select>
-            
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                fontSize: 13,
-                flex: 1,
-                minWidth: 150
-              }}
-            />
-
-            {/* Clear filters */}
-            {(severityFilter !== "all" || patternFilter !== "all" || searchQuery) && (
-              <button
-                onClick={() => {
-                  setSeverityFilter("all");
-                  setPatternFilter("all");
-                  setSearchQuery("");
-                }}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 500
-                }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Active filter indicator */}
-          {filteredIncidents.length !== incidents.length && (
-            <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
-              Showing {filteredIncidents.length} of {incidents.length} incidents
-            </div>
-          )}
-        </div>
-
-        {/* Grouped List */}
-        {Object.keys(groupedIncidents).length === 0 ? (
-          <div style={{
-            textAlign: "center",
-            padding: 64,
-            background: "white",
-            borderRadius: 12,
-            color: "#6b7280"
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-            <p>No incidents match your filter</p>
-            <button
-              onClick={() => {
-                setSeverityFilter("all");
-                setPatternFilter("all");
-                setSearchQuery("");
-              }}
-              style={{
-                marginTop: 16,
-                padding: "10px 20px",
-                background: "#1a3a2f",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                cursor: "pointer"
-              }}
-            >
-              Clear Filters
-            </button>
-          </div>
-        ) : (
-          Object.entries(groupedIncidents).map(([monthYear, monthIncidents]) => (
-            <div key={monthYear} style={{ marginBottom: 32 }}>
-              {/* Month Header */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
+            {/* Incident Selection */}
+            <div style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#374151' }}>2. Select Incidents</h2>
+              
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: 12,
+                padding: 16,
+                background: useExhibitOnly ? '#d1fae5' : '#f9fafb',
+                borderRadius: 10,
+                cursor: 'pointer',
                 marginBottom: 12
               }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
-                  📅 {monthYear}
-                </span>
-                <span style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  background: "#f3f4f6",
-                  padding: "2px 8px",
-                  borderRadius: 10
-                }}>
-                  {monthIncidents.length} incidents
-                </span>
-              </div>
+                <input
+                  type="checkbox"
+                  checked={useExhibitOnly}
+                  onChange={(e) => setUseExhibitOnly(e.target.checked)}
+                  style={{ width: 20, height: 20 }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, color: '#1f2937' }}>Only use incidents marked "In Exhibit"</div>
+                  <div style={{ fontSize: 13, color: '#6b7280' }}>
+                    {incidents.filter(i => i.include_in_exhibit).length} of {incidents.length} incidents selected
+                  </div>
+                </div>
+              </label>
 
-              {/* Incidents List */}
               <div style={{
-                background: "white",
-                borderRadius: 12,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                overflow: "hidden"
+                padding: 12,
+                background: '#fefce8',
+                borderRadius: 8,
+                fontSize: 13,
+                color: '#92400e'
               }}>
-                {monthIncidents.map((incident, idx) => {
-                  const isExpanded = expandedId === incident.id;
-                  const colors = severityColors[incident.severity] || severityColors.low;
-                  const preview = incident.coparent_message?.slice(0, 100) || 
-                                  incident.messages_json?.[0]?.text?.slice(0, 100) || "";
-                  
-                  return (
-                    <div
-                      key={incident.id}
-                      style={{
-                        borderBottom: idx < monthIncidents.length - 1 ? "1px solid #f3f4f6" : "none"
-                      }}
-                    >
-                      {/* Main Row */}
-                      <div
-                        onClick={() => setExpandedId(isExpanded ? null : incident.id)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "16px 20px",
-                          cursor: "pointer",
-                          gap: 12,
-                          transition: "background 0.15s",
-                          background: isExpanded ? "#f9fafb" : "white"
-                        }}
-                      >
-                        {/* Exhibit checkbox */}
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExhibit(incident.id, !!incident.include_in_exhibit);
-                          }}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: `2px solid ${incident.include_in_exhibit ? "#059669" : "#d1d5db"}`,
-                            background: incident.include_in_exhibit ? "#059669" : "white",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            flexShrink: 0
-                          }}
-                        >
-                          {incident.include_in_exhibit && (
-                            <span style={{ color: "white", fontSize: 12 }}>✓</span>
-                          )}
-                        </div>
-
-                        {/* Date */}
-                        <div style={{ width: 50, flexShrink: 0, fontSize: 13, color: "#6b7280" }}>
-                          {new Date(incident.incident_date).toLocaleDateString("en-US", { 
-                            month: "short", 
-                            day: "numeric" 
-                          })}
-                        </div>
-
-                        {/* Severity Badge */}
-                        <span style={{
-                          padding: "4px 10px",
-                          borderRadius: 12,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          background: colors.bg,
-                          color: colors.text,
-                          border: `1px solid ${colors.border}`,
-                          flexShrink: 0
-                        }}>
-                          {incident.severity}
-                        </span>
-
-                        {/* Category/Pattern */}
-                        <div style={{
-                          flexShrink: 0,
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: "#374151",
-                          maxWidth: 160,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}>
-                          {categoryLabels[incident.category] || incident.category || "—"}
-                        </div>
-
-                        {/* Preview */}
-                        <div style={{
-                          flex: 1,
-                          fontSize: 13,
-                          color: "#6b7280",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}>
-                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "—"}
-                        </div>
-
-                        {/* Patterns count */}
-                        {incident.patterns?.length > 0 && (
-                          <span style={{
-                            fontSize: 11,
-                            color: "#9ca3af",
-                            flexShrink: 0,
-                            background: "#f3f4f6",
-                            padding: "2px 8px",
-                            borderRadius: 10
-                          }}>
-                            {incident.patterns.length} pattern{incident.patterns.length > 1 ? "s" : ""}
-                          </span>
-                        )}
-
-                        {/* Expand arrow */}
-                        <span style={{
-                          color: "#9ca3af",
-                          transform: isExpanded ? "rotate(90deg)" : "none",
-                          transition: "transform 0.15s"
-                        }}>
-                          ›
-                        </span>
-                      </div>
-
-                      {/* Expanded Content */}
-                      {isExpanded && (
-                        <div style={{
-                          padding: "0 20px 20px 56px",
-                          background: "#f9fafb"
-                        }}>
-                          {/* Patterns */}
-                          {incident.patterns?.length > 0 && (
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                ⚠️ ABUSE PATTERNS DETECTED
-                              </div>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                {incident.patterns.map((pattern, i) => (
-                                  <span
-                                    key={i}
-                                    onClick={() => setPatternFilter(pattern)}
-                                    style={{
-                                      padding: "4px 12px",
-                                      background: "#fef3c7",
-                                      border: "1px solid #fcd34d",
-                                      borderRadius: 16,
-                                      fontSize: 12,
-                                      color: "#92400e",
-                                      cursor: "pointer"
-                                    }}
-                                  >
-                                    {pattern}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* All Messages */}
-                          <div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                              📨 MESSAGES ({incident.messages_json?.length || 1})
-                            </div>
-                            <div style={{
-                              background: "white",
-                              borderRadius: 8,
-                              border: "1px solid #e5e7eb",
-                              maxHeight: 400,
-                              overflowY: "auto"
-                            }}>
-                              {incident.messages_json && incident.messages_json.length > 0 ? (
-                                incident.messages_json.map((msg: any, idx: number) => (
-                                  <div 
-                                    key={idx}
-                                    style={{
-                                      padding: 12,
-                                      borderBottom: idx < incident.messages_json!.length - 1 ? "1px solid #f3f4f6" : "none",
-                                      background: msg.sender === 'coparent' ? "#fff" : "#f0fdf4"
-                                    }}
-                                  >
-                                    <div style={{ 
-                                      display: "flex", 
-                                      justifyContent: "space-between",
-                                      marginBottom: 4,
-                                      fontSize: 11,
-                                      color: "#9ca3af"
-                                    }}>
-                                      <span style={{ 
-                                        fontWeight: 600,
-                                        color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
-                                      }}>
-                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
-                                      </span>
-                                      <span>
-                                        {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          hour: 'numeric',
-                                          minute: '2-digit'
-                                        }) : ''}
-                                      </span>
-                                    </div>
-                                    <div style={{ 
-                                      fontSize: 14, 
-                                      color: "#374151",
-                                      lineHeight: 1.5
-                                    }}>
-                                      {msg.text}
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div style={{ padding: 16, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-                                  {incident.coparent_message || "No message content"}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                💡 Go to <button onClick={() => router.push('/evidence')} style={{ color: '#059669', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Evidence</button> to select which incidents to include
               </div>
             </div>
-          ))
+
+            {/* Case Information */}
+            <div style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#374151' }}>3. Case Information (Optional)</h2>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Case Number</label>
+                  <input
+                    type="text"
+                    value={caseNumber}
+                    onChange={(e) => setCaseNumber(e.target.value)}
+                    placeholder="FC2024-001234"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Court Name</label>
+                  <input
+                    type="text"
+                    value={courtName}
+                    onChange={(e) => setCourtName(e.target.value)}
+                    placeholder="Maricopa County Superior Court"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Your Name</label>
+                  <input
+                    type="text"
+                    value={petitionerName}
+                    onChange={(e) => setPetitionerName(e.target.value)}
+                    placeholder="Your full name"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Co-Parent Name</label>
+                  <input
+                    type="text"
+                    value={respondentName}
+                    onChange={(e) => setRespondentName(e.target.value)}
+                    placeholder="Co-parent's full name"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 14
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Your Role</label>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      checked={userRole === 'petitioner'}
+                      onChange={() => setUserRole('petitioner')}
+                    />
+                    <span style={{ fontSize: 14, color: '#374151' }}>Petitioner (filed the case)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      checked={userRole === 'respondent'}
+                      onChange={() => setUserRole('respondent')}
+                    />
+                    <span style={{ fontSize: 14, color: '#374151' }}>Respondent</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 20,
+                color: '#dc2626'
+              }}>
+                {error}
+              </div>
+            )}
+
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerate}
+              disabled={generating || selectedIncidents.length === 0}
+              style={{
+                width: '100%',
+                padding: 16,
+                background: generating || selectedIncidents.length === 0 ? '#9ca3af' : '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: generating || selectedIncidents.length === 0 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {generating ? '⏳ Generating...' : `✍️ Generate ${DOC_TYPES.find(t => t.id === selectedType)?.name}`}
+            </button>
+
+            {selectedIncidents.length === 0 && (
+              <p style={{ textAlign: 'center', color: '#dc2626', fontSize: 13, marginTop: 12 }}>
+                No incidents selected. Go to Evidence and check the boxes.
+              </p>
+            )}
+          </>
+        ) : (
+          /* Generated Document View */
+          <>
+            <div style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: '#1f2937' }}>
+                  {DOC_TYPES.find(t => t.id === selectedType)?.icon} Generated {DOC_TYPES.find(t => t.id === selectedType)?.name}
+                </h2>
+                <button
+                  onClick={handleCopy}
+                  style={{
+                    padding: '8px 16px',
+                    background: copied ? '#d1fae5' : '#f3f4f6',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    color: copied ? '#059669' : '#374151'
+                  }}
+                >
+                  {copied ? '✓ Copied!' : '📋 Copy All'}
+                </button>
+              </div>
+
+              <div style={{
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: 12,
+                padding: 20,
+                maxHeight: 500,
+                overflowY: 'auto',
+                fontFamily: 'Georgia, serif',
+                fontSize: 14,
+                lineHeight: 1.8,
+                whiteSpace: 'pre-wrap',
+                color: '#1f2937'
+              }}>
+                {generatedDoc}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setGeneratedDoc(null)}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  color: '#374151'
+                }}
+              >
+                ← Generate Another
+              </button>
+              <button
+                onClick={handleCopy}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: '#059669',
+                  border: 'none',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  color: 'white'
+                }}
+              >
+                📋 Copy to Clipboard
+              </button>
+            </div>
+          </>
         )}
       </main>
 
-      {/* Floating Action Bar - shows when incidents are selected for exhibit */}
-      {exhibitCount > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#1a3a2f',
-          borderRadius: 16,
-          padding: '12px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          zIndex: 90
-        }}>
-          <div style={{ color: 'white', fontSize: 14 }}>
-            <span style={{ fontWeight: 700 }}>{exhibitCount}</span> selected for exhibit
-          </div>
-          <button
-            onClick={() => router.push('/generate-exhibit')}
-            style={{
-              background: '#059669',
-              color: 'white',
-              border: 'none',
-              borderRadius: 10,
-              padding: '10px 20px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: 14,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Generate Exhibit →
-          </button>
-        </div>
-      )}
-
-      <BottomNav active="case" />
+      <BottomNav active="docs" />
     </div>
-  );
-}
-
-export default function EvidencePage() {
-  return (
-    <Suspense fallback={
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
-          <p style={{ color: "#6b7280" }}>Loading...</p>
-        </div>
-      </div>
-    }>
-      <EvidenceContent />
-    </Suspense>
   );
 }

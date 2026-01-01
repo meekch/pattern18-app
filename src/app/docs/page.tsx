@@ -226,7 +226,7 @@ export default function DocsPage() {
                 <div style={{
                   width: 56,
                   height: 56,
-                  background: '#ede9fe',
+                  background: '#e0f2e9',
                   borderRadius: 12,
                   display: 'flex',
                   alignItems: 'center',
@@ -282,7 +282,7 @@ export default function DocsPage() {
                     style={{
                       width: '100%',
                       padding: '14px 20px',
-                      background: '#7c3aed',
+                      background: '#1a3a2f',
                       color: 'white',
                       border: 'none',
                       borderRadius: 10,

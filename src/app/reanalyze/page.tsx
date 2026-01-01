@@ -85,7 +85,7 @@ export default function ReanalyzePage() {
       
       try {
         // Get messages for analysis
-        const messages = (incident.messages_json && incident.messages_json.length > 0)
+        const messages = incident.messages_json?.length > 0 
           ? incident.messages_json.map((m: any) => ({
               text: m.text,
               sender: m.sender || 'coparent',
@@ -167,7 +167,7 @@ export default function ReanalyzePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
       <header style={{
-        background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+        background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
         padding: '16px 24px',
         color: 'white',
         display: 'flex',
@@ -244,7 +244,7 @@ export default function ReanalyzePage() {
               style={{
                 width: '100%',
                 padding: 16,
-                background: incidents.length === 0 ? '#9ca3af' : '#7c3aed',
+                background: incidents.length === 0 ? '#9ca3af' : '#059669',
                 color: 'white',
                 border: 'none',
                 borderRadius: 12,
@@ -277,7 +277,7 @@ export default function ReanalyzePage() {
               marginBottom: 12
             }}>
               <div style={{
-                background: 'linear-gradient(90deg, #7c3aed, #a78bfa)',
+                background: 'linear-gradient(90deg, #059669, #34d399)',
                 height: '100%',
                 width: `${(progress.current / progress.total) * 100}%`,
                 transition: 'width 0.3s ease'
@@ -368,15 +368,15 @@ export default function ReanalyzePage() {
 
         {/* Info */}
         <div style={{
-          background: '#ede9fe',
-          border: '1px solid #c4b5fd',
+          background: '#d1fae5',
+          border: '1px solid #6ee7b7',
           borderRadius: 12,
           padding: 16
         }}>
-          <div style={{ fontWeight: 600, color: '#5b21b6', marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, color: '#065f46', marginBottom: 8 }}>
             🎯 Why AI Analysis?
           </div>
-          <p style={{ margin: 0, color: '#6b21a8', fontSize: 14, lineHeight: 1.5 }}>
+          <p style={{ margin: 0, color: '#047857', fontSize: 14, lineHeight: 1.5 }}>
             Keyword matching flagged "First cuts tonight?" as abuse because it saw "cuts." 
             AI understands this is about basketball tryouts, not self-harm or violence. 
             This accuracy is what makes Pattern 18 worth $89/month.
