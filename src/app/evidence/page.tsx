@@ -658,6 +658,44 @@ function EvidenceContent() {
         )}
       </main>
 
+      {/* Floating Action Bar - shows when incidents are selected for exhibit */}
+      {exhibitCount > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 100,
+          left: 20,
+          right: 20,
+          background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+          borderRadius: 16,
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          zIndex: 1000
+        }}>
+          <div style={{ color: 'white', fontSize: 15 }}>
+            ✓ <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
+          </div>
+          <button
+            onClick={() => router.push('/generate-exhibit')}
+            style={{
+              background: '#059669',
+              color: 'white',
+              border: 'none',
+              borderRadius: 10,
+              padding: '12px 24px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 15,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Generate Exhibit →
+          </button>
+        </div>
+      )}
+
       <BottomNav active="case" />
     </div>
   );
