@@ -85,7 +85,7 @@ export default function ReanalyzePage() {
       
       try {
         // Get messages for analysis
-        const messages = incident.messages_json?.length > 0 
+        const messages = (incident.messages_json && incident.messages_json.length > 0)
           ? incident.messages_json.map((m: any) => ({
               text: m.text,
               sender: m.sender || 'coparent',
