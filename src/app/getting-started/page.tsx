@@ -77,7 +77,7 @@ export default function GettingStartedPage() {
         <div className="help-card">
           <h3>Need Help?</h3>
           <p>Pattern 18 is in beta. Your feedback helps us improve!</p>
-          <p className="email">Questions? Email <a href="mailto:support@pattern18.com">support@pattern18.com</a></p>
+          <p className="email">Questions? Email <a href="mailto:hello@pattern18.com">support@pattern18.com</a></p>
         </div>
       </div>
 
