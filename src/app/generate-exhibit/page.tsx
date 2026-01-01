@@ -267,8 +267,8 @@ export default function GenerateExhibitPage() {
           </button>
         </div>
 
-       {/* Info Card */}
-       <div style={{
+        {/* Info Card */}
+        <div style={{
           background: '#d1fae5',
           border: '1px solid #6ee7b7',
           borderRadius: 12,
@@ -295,14 +295,6 @@ export default function GenerateExhibitPage() {
           >
             → Select Incidents in Evidence
           </button>
-        </div>
-          <div style={{ fontWeight: 600, color: '#065f46', marginBottom: 8 }}>
-            💡 Pro Tip
-          </div>
-          <p style={{ margin: 0, color: '#047857', fontSize: 14, lineHeight: 1.5 }}>
-            Before generating, go to <strong>Evidence</strong> and check the boxes next to incidents you want to highlight. 
-            Then select "Only include incidents marked 'In Exhibit'" above to create a focused document with your strongest evidence.
-          </p>
         </div>
       </main>
 
