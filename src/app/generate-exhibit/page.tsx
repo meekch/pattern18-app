@@ -267,13 +267,35 @@ export default function GenerateExhibitPage() {
           </button>
         </div>
 
-        {/* Info Card */}
-        <div style={{
+       {/* Info Card */}
+       <div style={{
           background: '#d1fae5',
           border: '1px solid #6ee7b7',
           borderRadius: 12,
           padding: 16
         }}>
+          <div style={{ fontWeight: 600, color: '#065f46', marginBottom: 8 }}>
+            💡 Pro Tip
+          </div>
+          <p style={{ margin: '0 0 12px', color: '#047857', fontSize: 14, lineHeight: 1.5 }}>
+            Select your strongest evidence first, then generate a focused exhibit.
+          </p>
+          <button
+            onClick={() => router.push('/evidence')}
+            style={{
+              background: '#059669',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              padding: '10px 16px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            → Select Incidents in Evidence
+          </button>
+        </div>
           <div style={{ fontWeight: 600, color: '#065f46', marginBottom: 8 }}>
             💡 Pro Tip
           </div>
