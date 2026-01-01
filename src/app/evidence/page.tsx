@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BottomNav from "@/components/BottomNav";
@@ -72,7 +72,7 @@ const severityColors: Record<string, { bg: string; text: string; border: string 
   low: { bg: "#f9fafb", text: "#6b7280", border: "#e5e7eb" },
 };
 
-export default function EvidencePage() {
+function EvidenceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -626,5 +626,20 @@ export default function EvidencePage() {
 
       <BottomNav active="case" />
     </div>
+  );
+}
+
+export default function EvidencePage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
+          <p style={{ color: "#6b7280" }}>Loading...</p>
+        </div>
+      </div>
+    }>
+      <EvidenceContent />
+    </Suspense>
   );
 }
