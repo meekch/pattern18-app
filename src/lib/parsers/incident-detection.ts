@@ -1,28 +1,38 @@
 /**
  * Incident Detection Module
- * Clusters messages into discrete incidents based on time + topic
- * 
- * An incident = a specific dispute, conversation, or event
- * that can be documented as a unit for court purposes
+ * Clusters messages into discrete incidents based on time
+ * Categories are based on PRIMARY COERCIVE CONTROL PATTERN, not topic
  */
 
-import { AnalyzedMessage, PatternMatch } from './pattern-detection';
+import { AnalyzedMessage, PatternMatch, PATTERNS } from './pattern-detection';
 
 // ============================================
-// INCIDENT TYPES
+// INCIDENT TYPES - COERCIVE CONTROL PATTERNS
 // ============================================
 
 export type IncidentCategory = 
-  | 'holiday_scheduling'
-  | 'regular_schedule'
-  | 'exchange_conflict'
-  | 'financial_dispute'
-  | 'child_activities'
-  | 'medical_decisions'
+  | 'gaslighting'
+  | 'darvo'
+  | 'intimidation'
+  | 'threats'
+  | 'financial_abuse'
+  | 'using_children_as_weapons'
+  | 'blame_shifting'
+  | 'false_accusations'
+  | 'emotional_blackmail'
+  | 'stonewalling'
+  | 'monitoring_stalking'
+  | 'isolation_tactics'
+  | 'minimizing_denying'
+  | 'word_salad'
+  | 'moving_goalposts'
+  | 'projection'
+  | 'hoovering'
+  | 'gatekeeping'
   | 'verbal_abuse'
   | 'legal_threats'
-  | 'communication_breakdown'
-  | 'other';
+  | 'schedule_manipulation'
+  | 'none_detected';
 
 export interface Incident {
   id: string;
@@ -64,7 +74,7 @@ export interface IncidentDetectionResult {
     totalIncidents: number;
     totalMessages: number;
     dateRange: { start: Date; end: Date } | null;
-    categoryBreakdown: Record<IncidentCategory, number>;
+    categoryBreakdown: Record<string, number>;
     evidenceIncidents: number;
     strongEvidenceCount: number;
   };
@@ -72,68 +82,53 @@ export interface IncidentDetectionResult {
 }
 
 // ============================================
-// TOPIC KEYWORDS
+// PATTERN TO CATEGORY MAPPING
 // ============================================
 
-const TOPIC_KEYWORDS: Record<IncidentCategory, string[]> = {
-  holiday_scheduling: [
-    'thanksgiving', 'christmas', 'xmas', 'new year', 'easter', 'holiday',
-    'spring break', 'summer break', 'winter break', 'fall break',
-    'memorial day', 'labor day', 'july 4', 'fourth of july',
-    'birthday', 'halloween', 'vacation'
-  ],
-  regular_schedule: [
-    'schedule', 'week on', 'week off', 'friday', 'pickup', 'drop off',
-    'dropoff', 'pick up', 'exchange day', 'parenting time', 'custody',
-    'rotation', 'switch', 'swap days', 'regular schedule'
-  ],
-  exchange_conflict: [
-    'pick him up', 'drop him off', 'exchange', 'meet at', 'waiting',
-    'late', 'no show', 'didn\'t show', 'where are you', 'on my way',
-    'be there', 'running late', 'exchange location'
-  ],
-  financial_dispute: [
-    'money', 'pay', 'paid', 'owe', 'cost', 'expense', 'bill', 'fee',
-    'reimburse', 'split', '50/50', '60/40', 'child support', 'support',
-    'afford', 'insurance', 'medical bill', 'tuition', 'registration'
-  ],
-  child_activities: [
-    'practice', 'game', 'tournament', 'school', 'homework', 'grades',
-    'teacher', 'coach', 'basketball', 'football', 'soccer', 'baseball',
-    'band', 'music', 'lesson', 'activity', 'club', 'team', 'sports',
-    'weight lifting', 'training', 'camp'
-  ],
-  medical_decisions: [
-    'doctor', 'appointment', 'sick', 'medicine', 'prescription', 'therapy',
-    'therapist', 'counselor', 'dentist', 'orthodontist', 'hospital',
-    'emergency', 'health', 'medical', 'diagnosis', 'treatment'
-  ],
-  verbal_abuse: [
-    'bitch', 'asshole', 'fuck', 'hate', 'stupid', 'crazy', 'insane',
-    'pathetic', 'loser', 'terrible', 'worst', 'disgusting'
-  ],
-  legal_threats: [
-    'court', 'lawyer', 'attorney', 'judge', 'petition', 'motion',
-    'custody', 'order', 'contempt', 'legal', 'sue', 'filing'
-  ],
-  communication_breakdown: [
-    'respond', 'answer', 'ignore', 'blocking', 'won\'t talk',
-    'communicate', 'co-parent', 'coparent', 'difficult', 'impossible'
-  ],
-  other: []
+const PATTERN_TO_CATEGORY: Record<string, IncidentCategory> = {
+  'Gaslighting': 'gaslighting',
+  'DARVO': 'darvo',
+  'Revisionist History': 'gaslighting', // Similar to gaslighting
+  'Legal/Court Threats': 'legal_threats',
+  'Financial Manipulation': 'financial_abuse',
+  'Triangulating Child': 'using_children_as_weapons',
+  'Dismissing Without Engaging': 'stonewalling',
+  'Name-Calling/Verbal Abuse': 'verbal_abuse',
+  'False Accusations': 'false_accusations',
+  'Emotional Blackmail': 'emotional_blackmail',
+  'Information Gatekeeping': 'gatekeeping',
+  'Schedule Manipulation': 'schedule_manipulation',
+  'Surveillance/Monitoring': 'monitoring_stalking',
+  'Weaponizing Flexibility': 'blame_shifting',
+  'Threats of Exposure': 'intimidation',
+  'Minimizing/Mocking': 'minimizing_denying',
+  'Victim Positioning': 'darvo', // Part of DARVO
+  'Deadline/Urgency Pressure': 'intimidation',
 };
 
 const CATEGORY_DISPLAY_NAMES: Record<IncidentCategory, string> = {
-  holiday_scheduling: 'Holiday/Vacation Scheduling',
-  regular_schedule: 'Regular Schedule Dispute',
-  exchange_conflict: 'Exchange Conflict',
-  financial_dispute: 'Financial/Expenses',
-  child_activities: 'Child Activities',
-  medical_decisions: 'Medical Decisions',
-  verbal_abuse: 'Verbal Abuse Episode',
+  gaslighting: 'Gaslighting',
+  darvo: 'DARVO',
+  intimidation: 'Intimidation',
+  threats: 'Threats',
+  financial_abuse: 'Financial Abuse',
+  using_children_as_weapons: 'Using Children as Weapons',
+  blame_shifting: 'Blame-Shifting',
+  false_accusations: 'False Accusations',
+  emotional_blackmail: 'Emotional Blackmail',
+  stonewalling: 'Stonewalling',
+  monitoring_stalking: 'Monitoring/Stalking',
+  isolation_tactics: 'Isolation Tactics',
+  minimizing_denying: 'Minimizing/Denying',
+  word_salad: 'Word Salad',
+  moving_goalposts: 'Moving Goalposts',
+  projection: 'Projection',
+  hoovering: 'Hoovering',
+  gatekeeping: 'Gatekeeping',
+  verbal_abuse: 'Verbal Abuse',
   legal_threats: 'Legal Threats',
-  communication_breakdown: 'Communication Breakdown',
-  other: 'Other'
+  schedule_manipulation: 'Schedule Manipulation',
+  none_detected: 'Uncategorized',
 };
 
 // ============================================
@@ -145,13 +140,11 @@ export function detectIncidents(
   options: {
     timeWindowHours?: number;
     minMessagesPerIncident?: number;
-    splitOnTopicChange?: boolean;
   } = {}
 ): IncidentDetectionResult {
   const {
     timeWindowHours = 24,
     minMessagesPerIncident = 2,
-    splitOnTopicChange = true
   } = options;
 
   // Sort messages by timestamp
@@ -166,7 +159,7 @@ export function detectIncidents(
         totalIncidents: 0,
         totalMessages: 0,
         dateRange: null,
-        categoryBreakdown: {} as Record<IncidentCategory, number>,
+        categoryBreakdown: {},
         evidenceIncidents: 0,
         strongEvidenceCount: 0
       },
@@ -174,20 +167,15 @@ export function detectIncidents(
     };
   }
 
-  // Step 1: Initial time-based clustering
+  // Step 1: Time-based clustering only (no topic splitting)
   const timeClusters = clusterByTime(sorted, timeWindowHours);
 
-  // Step 2: Split clusters by topic if enabled
-  const topicClusters = splitOnTopicChange 
-    ? timeClusters.flatMap(cluster => splitByTopic(cluster))
-    : timeClusters;
-
-  // Step 3: Filter out tiny clusters
-  const validClusters = topicClusters.filter(
+  // Step 2: Filter out tiny clusters
+  const validClusters = timeClusters.filter(
     cluster => cluster.length >= minMessagesPerIncident
   );
 
-  // Step 4: Convert clusters to incidents
+  // Step 3: Convert clusters to incidents (category = primary PATTERN)
   const incidents = validClusters.map((cluster, index) => 
     createIncident(cluster, index)
   );
@@ -199,7 +187,7 @@ export function detectIncidents(
   const unclusteredMessages = sorted.filter(m => !clusteredIds.has(m.id));
 
   // Build summary
-  const categoryBreakdown = {} as Record<IncidentCategory, number>;
+  const categoryBreakdown: Record<string, number> = {};
   for (const incident of incidents) {
     categoryBreakdown[incident.category] = 
       (categoryBreakdown[incident.category] || 0) + 1;
@@ -263,112 +251,8 @@ function clusterByTime(
   return clusters;
 }
 
-function splitByTopic(messages: AnalyzedMessage[]): AnalyzedMessage[][] {
-  if (messages.length <= 3) {
-    return [messages];
-  }
-
-  // Detect primary topic for the cluster
-  const primaryTopic = detectPrimaryTopic(messages);
-  
-  // Look for significant topic shifts
-  const clusters: AnalyzedMessage[][] = [];
-  let currentCluster: AnalyzedMessage[] = [];
-  let currentTopic = primaryTopic;
-
-  for (const message of messages) {
-    const messageTopic = detectMessageTopic(message);
-    
-    // If topic shifts significantly and we have enough messages
-    if (messageTopic !== currentTopic && 
-        messageTopic !== 'other' && 
-        currentCluster.length >= 3) {
-      clusters.push(currentCluster);
-      currentCluster = [message];
-      currentTopic = messageTopic;
-    } else {
-      currentCluster.push(message);
-    }
-  }
-
-  if (currentCluster.length > 0) {
-    clusters.push(currentCluster);
-  }
-
-  return clusters;
-}
-
-function detectPrimaryTopic(messages: AnalyzedMessage[]): IncidentCategory {
-  const topicScores: Record<IncidentCategory, number> = {
-    holiday_scheduling: 0,
-    regular_schedule: 0,
-    exchange_conflict: 0,
-    financial_dispute: 0,
-    child_activities: 0,
-    medical_decisions: 0,
-    verbal_abuse: 0,
-    legal_threats: 0,
-    communication_breakdown: 0,
-    other: 0
-  };
-
-  const allText = messages.map(m => m.text).join(' ').toLowerCase();
-
-  for (const [category, keywords] of Object.entries(TOPIC_KEYWORDS)) {
-    for (const keyword of keywords) {
-      const regex = new RegExp(keyword, 'gi');
-      const matches = allText.match(regex);
-      if (matches) {
-        topicScores[category as IncidentCategory] += matches.length;
-      }
-    }
-  }
-
-  // Also consider detected patterns
-  for (const message of messages) {
-    for (const pattern of message.patterns) {
-      if (pattern.patternName === 'Name-Calling/Verbal Abuse') {
-        topicScores.verbal_abuse += 3;
-      }
-      if (pattern.patternName === 'Legal/Court Threats') {
-        topicScores.legal_threats += 3;
-      }
-      if (pattern.patternName === 'Financial Manipulation') {
-        topicScores.financial_dispute += 2;
-      }
-    }
-  }
-
-  // Find highest scoring category
-  let maxScore = 0;
-  let primaryTopic: IncidentCategory = 'other';
-
-  for (const [category, score] of Object.entries(topicScores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      primaryTopic = category as IncidentCategory;
-    }
-  }
-
-  return primaryTopic;
-}
-
-function detectMessageTopic(message: AnalyzedMessage): IncidentCategory {
-  const textLower = message.text.toLowerCase();
-  
-  for (const [category, keywords] of Object.entries(TOPIC_KEYWORDS)) {
-    for (const keyword of keywords) {
-      if (textLower.includes(keyword)) {
-        return category as IncidentCategory;
-      }
-    }
-  }
-
-  return 'other';
-}
-
 // ============================================
-// INCIDENT CREATION
+// INCIDENT CREATION - PATTERN-BASED CATEGORY
 // ============================================
 
 function createIncident(
@@ -385,7 +269,7 @@ function createIncident(
     (endTime.getTime() - startTime.getTime()) / (1000 * 60)
   );
 
-  // Collect all patterns
+  // Collect all patterns from messages
   const allPatterns = sorted.flatMap(m => m.patterns);
   const uniquePatterns = [...new Set(allPatterns.map(p => p.patternName))];
 
@@ -411,11 +295,11 @@ function createIncident(
     ? Math.min(10, totalSeverity / allPatterns.length * 2)
     : 0;
 
-  // Detect category
-  const category = detectPrimaryTopic(messages);
+  // CATEGORY = PRIMARY PATTERN (not topic!)
+  const category = detectPrimaryPattern(allPatterns);
 
-  // Generate title
-  const title = generateIncidentTitle(category, startTime, messages);
+  // Generate title based on pattern
+  const title = generateIncidentTitle(category, startTime, uniquePatterns);
 
   // Assess evidence strength
   const { isEvidence, evidenceStrength, courtReadyNotes } = 
@@ -443,10 +327,46 @@ function createIncident(
   };
 }
 
+/**
+ * Detect the PRIMARY pattern from all matched patterns
+ * Priority: critical > high > medium > low, then by frequency
+ */
+function detectPrimaryPattern(patterns: PatternMatch[]): IncidentCategory {
+  if (patterns.length === 0) {
+    return 'none_detected';
+  }
+
+  // Count patterns by name
+  const patternCounts: Record<string, { count: number; severity: string }> = {};
+  
+  for (const pattern of patterns) {
+    if (!patternCounts[pattern.patternName]) {
+      patternCounts[pattern.patternName] = { count: 0, severity: pattern.severity };
+    }
+    patternCounts[pattern.patternName].count++;
+  }
+
+  // Sort by severity (critical > high > medium > low) then by count
+  const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+  
+  const sorted = Object.entries(patternCounts).sort((a, b) => {
+    const sevA = severityOrder[a[1].severity as keyof typeof severityOrder] || 0;
+    const sevB = severityOrder[b[1].severity as keyof typeof severityOrder] || 0;
+    
+    if (sevB !== sevA) return sevB - sevA; // Higher severity first
+    return b[1].count - a[1].count; // Then by count
+  });
+
+  const primaryPatternName = sorted[0][0];
+  
+  // Map to category
+  return PATTERN_TO_CATEGORY[primaryPatternName] || 'none_detected';
+}
+
 function generateIncidentTitle(
   category: IncidentCategory,
   date: Date,
-  messages: AnalyzedMessage[]
+  uniquePatterns: string[]
 ): string {
   const dateStr = date.toLocaleDateString('en-US', { 
     month: 'short', 
@@ -454,21 +374,14 @@ function generateIncidentTitle(
     year: 'numeric'
   });
 
-  // Try to extract specific topic from messages
-  const allText = messages.map(m => m.text).join(' ').toLowerCase();
-
-  // Check for specific holidays
-  if (category === 'holiday_scheduling') {
-    if (allText.includes('thanksgiving')) return `Thanksgiving ${date.getFullYear()} Dispute`;
-    if (allText.includes('christmas') || allText.includes('xmas')) return `Christmas ${date.getFullYear()} Dispute`;
-    if (allText.includes('new year')) return `New Year's ${date.getFullYear()} Dispute`;
-    if (allText.includes('spring break')) return `Spring Break ${date.getFullYear()} Dispute`;
-    if (allText.includes('summer')) return `Summer ${date.getFullYear()} Scheduling`;
-    return `Holiday Scheduling - ${dateStr}`;
+  const categoryName = CATEGORY_DISPLAY_NAMES[category] || 'Incident';
+  
+  // If multiple patterns, mention that
+  if (uniquePatterns.length > 2) {
+    return `${categoryName} + ${uniquePatterns.length - 1} more - ${dateStr}`;
   }
 
-  // Default to category name + date
-  return `${CATEGORY_DISPLAY_NAMES[category]} - ${dateStr}`;
+  return `${categoryName} - ${dateStr}`;
 }
 
 function assessEvidenceStrength(
@@ -489,18 +402,20 @@ function assessEvidenceStrength(
 
   if (criticalPatterns.length > 0) {
     strengthScore += 3;
-    notes.push(`${criticalPatterns.length} critical severity pattern(s) detected`);
+    const patternNames = [...new Set(criticalPatterns.map(p => p.patternName))];
+    notes.push(`Critical: ${patternNames.join(', ')}`);
   }
 
   if (highPatterns.length > 0) {
     strengthScore += 2;
-    notes.push(`${highPatterns.length} high severity pattern(s) detected`);
+    const patternNames = [...new Set(highPatterns.map(p => p.patternName))];
+    notes.push(`High severity: ${patternNames.join(', ')}`);
   }
 
   // Check message count (more = better documentation)
   if (messages.length >= 10) {
     strengthScore += 2;
-    notes.push('Extended exchange well-documented');
+    notes.push('Well-documented exchange');
   } else if (messages.length >= 5) {
     strengthScore += 1;
   }
@@ -509,13 +424,13 @@ function assessEvidenceStrength(
   const uniquePatternCount = new Set(patterns.map(p => p.patternName)).size;
   if (uniquePatternCount >= 3) {
     strengthScore += 2;
-    notes.push(`Multiple pattern types identified (${uniquePatternCount})`);
+    notes.push(`${uniquePatternCount} different manipulation tactics`);
   }
 
   // Check duration (sustained conflict vs quick exchange)
   if (durationMinutes >= 60) {
     strengthScore += 1;
-    notes.push('Sustained conflict over extended period');
+    notes.push('Sustained over extended period');
   }
 
   // Check if user responses are calm/appropriate
@@ -523,17 +438,13 @@ function assessEvidenceStrength(
   const userHasPatterns = userMessages.some(m => m.patterns.length > 0);
   if (!userHasPatterns && userMessages.length > 0) {
     strengthScore += 1;
-    notes.push('User maintained appropriate communication');
+    notes.push('Your responses remained appropriate');
   }
 
   const isEvidence = strengthScore >= 2 || patterns.length > 0;
   const evidenceStrength: 'weak' | 'moderate' | 'strong' = 
     strengthScore >= 5 ? 'strong' :
     strengthScore >= 3 ? 'moderate' : 'weak';
-
-  if (evidenceStrength === 'weak' && isEvidence) {
-    notes.push('Consider documenting additional incidents to strengthen case');
-  }
 
   return { isEvidence, evidenceStrength, courtReadyNotes: notes };
 }
@@ -587,7 +498,6 @@ export function updateIncident(
     userCategory: updates.category || incident.userCategory,
     userNotes: updates.notes || incident.userNotes,
     isManuallyEdited: true,
-    // Use user values for display if set
     title: updates.title || incident.title,
     category: updates.category || incident.category
   };
@@ -597,4 +507,4 @@ export function updateIncident(
 // EXPORTS
 // ============================================
 
-export { CATEGORY_DISPLAY_NAMES, TOPIC_KEYWORDS };
+export { CATEGORY_DISPLAY_NAMES };
