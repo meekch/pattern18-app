@@ -90,16 +90,8 @@ export default function BottomNav({ active }: BottomNavProps) {
               <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
                 <span className="menu-icon">💚</span>
                 <div className="menu-text">
-                  <span className="menu-title">Safety Resources</span>
+                  <span className="menu-title">I Need a Moment</span>
                   <span className="menu-desc">Breathing, grounding, support</span>
-                </div>
-              </button>
-              
-              <button onClick={() => { setShowMenu(false); router.push('/feedback'); }} className="menu-item">
-                <span className="menu-icon">💬</span>
-                <div className="menu-text">
-                  <span className="menu-title">Send Feedback</span>
-                  <span className="menu-desc">Help us improve</span>
                 </div>
               </button>
             </div>
@@ -107,14 +99,6 @@ export default function BottomNav({ active }: BottomNavProps) {
             <div className="menu-divider" />
 
             <div className="menu-section">
-              <button onClick={() => { setShowMenu(false); router.push('/account'); }} className="menu-item">
-                <span className="menu-icon">👤</span>
-                <div className="menu-text">
-                  <span className="menu-title">Account</span>
-                  <span className="menu-desc">Subscription and settings</span>
-                </div>
-              </button>
-              
               <button onClick={async () => { 
                 const { supabase } = await import('@/lib/supabase');
                 await supabase.auth.signOut(); 
