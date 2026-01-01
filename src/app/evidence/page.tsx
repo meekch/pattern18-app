@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import BottomNav from "@/components/BottomNav";
 
 interface Incident {
   id: string;
@@ -33,6 +34,7 @@ const categoryLabels: Record<string, string> = {
   communication: "Communication",
   boundary_violation: "Boundary Violation",
   parenting_decisions: "Parenting Decisions",
+  holiday_scheduling: "Holiday Scheduling",
   uncategorized: "General",
 };
 
@@ -135,7 +137,7 @@ export default function EvidencePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8faf9" }}>
+    <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 100 }}>
       {/* Header */}
       <header style={{
         background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
@@ -150,7 +152,7 @@ export default function EvidencePage() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button 
-            onClick={() => router.push("/coach")}
+            onClick={() => router.push("/my-case")}
             style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
           >
             ←
@@ -159,7 +161,7 @@ export default function EvidencePage() {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button
-            onClick={() => router.push("/court-docs")}
+            onClick={() => router.push("/docs?create=true")}
             style={{
               background: "#059669",
               color: "white",
@@ -213,9 +215,10 @@ export default function EvidencePage() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 24,
-          gap: 16
+          gap: 16,
+          flexWrap: "wrap"
         }}>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
               { key: "all", label: "All" },
               { key: "high+", label: "High & Critical" },
@@ -486,44 +489,7 @@ export default function EvidencePage() {
         )}
       </main>
 
-      {/* Bottom Nav */}
-      <nav style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: "white",
-        borderTop: "1px solid #e5e7eb",
-        display: "flex",
-        justifyContent: "space-around",
-        padding: "12px 0",
-        zIndex: 100
-      }}>
-        {[
-          { icon: "🏠", label: "Home", path: "/dashboard" },
-          { icon: "💬", label: "Coach", path: "/coach" },
-          { icon: "📁", label: "Evidence", path: "/evidence", active: true },
-          { icon: "🌿", label: "Heal", path: "/healing" },
-        ].map(item => (
-          <button
-            key={item.path}
-            onClick={() => router.push(item.path)}
-            style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 4,
-              cursor: "pointer",
-              color: item.active ? "#059669" : "#6b7280"
-            }}
-          >
-            <span style={{ fontSize: 20 }}>{item.icon}</span>
-            <span style={{ fontSize: 11, fontWeight: item.active ? 600 : 400 }}>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+      <BottomNav active="case" />
     </div>
   );
 }
