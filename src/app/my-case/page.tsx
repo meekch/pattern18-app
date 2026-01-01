@@ -5,6 +5,20 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
 
+const categoryLabels: Record<string, string> = {
+  child_activities: "Child Activities",
+  financial_dispute: "Financial Dispute",
+  regular_schedule: "Schedule",
+  exchange_conflict: "Exchange Conflict",
+  legal_threats: "Legal Threats",
+  medical_decisions: "Medical Decisions",
+  communication: "Communication",
+  boundary_violation: "Boundary Violation",
+  parenting_decisions: "Parenting Decisions",
+  holiday_scheduling: "Holiday Scheduling",
+  uncategorized: "General",
+};
+
 interface PatternCount {
   pattern: string;
   count: number;
@@ -198,7 +212,7 @@ export default function MyCasePage() {
               <div key={p.pattern} className="pattern-row" onClick={() => router.push(`/evidence?filter=${encodeURIComponent(p.pattern)}`)}>
                 <div className="pattern-rank">#{i + 1}</div>
                 <div className="pattern-info">
-                  <div className="pattern-name">{p.pattern}</div>
+                  <div className="pattern-name">{categoryLabels[p.pattern] || p.pattern}</div>
                   <div className="pattern-bar-container">
                     <div 
                       className="pattern-bar" 
