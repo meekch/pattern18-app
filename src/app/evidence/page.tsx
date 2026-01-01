@@ -25,7 +25,6 @@ interface GroupedIncidents {
 }
 
 const categoryLabels: Record<string, string> = {
-  // Coercive Control Patterns
   gaslighting: "Gaslighting",
   darvo: "DARVO",
   intimidation: "Intimidation",
@@ -49,21 +48,17 @@ const categoryLabels: Record<string, string> = {
   legal_threats: "Legal Threats",
   schedule_manipulation: "Schedule Manipulation",
   none_detected: "Uncategorized",
-  
-  // Legacy mappings
-  revisionist_history: "Gaslighting",
-  triangulating_child: "Using Children as Weapons",
-  "name_calling/verbal_abuse": "Verbal Abuse",
-  "legal/court_threats": "Legal Threats",
-  information_gatekeeping: "Gatekeeping",
-  "surveillance/monitoring": "Monitoring/Stalking",
-  "minimizing/mocking": "Minimizing/Denying",
-  victim_positioning: "DARVO",
-  "deadline/urgency_pressure": "Intimidation",
-  weaponizing_flexibility: "Blame-Shifting",
-  threats_of_exposure: "Intimidation",
-  dismissing_without_engaging: "Stonewalling",
+  not_abuse: "Not Abuse (Dismissed)",
 };
+
+const AVAILABLE_PATTERNS = [
+  "Gaslighting", "DARVO", "Intimidation", "Threats", "Financial Manipulation",
+  "Using Children as Weapons", "Blame-Shifting", "False Accusations", 
+  "Emotional Blackmail", "Stonewalling", "Monitoring/Stalking", "Isolation Tactics",
+  "Minimizing/Denying", "Word Salad", "Moving Goalposts", "Projection",
+  "Hoovering", "Gatekeeping", "Verbal Abuse", "Legal/Court Threats",
+  "Name-Calling/Verbal Abuse", "Triangulating Child", "Schedule Manipulation"
+];
 
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
@@ -81,15 +76,20 @@ function EvidenceContent() {
   const [patternFilter, setPatternFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Get unique patterns from all incidents
-  const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
   
-  // Get unique categories
+  // Edit modal state
+  const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
+  const [editSeverity, setEditSeverity] = useState("");
+  const [editPatterns, setEditPatterns] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
   const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
 
   useEffect(() => {
-    // Check URL params for initial filter
     const pattern = searchParams.get('pattern');
     if (pattern) {
       setPatternFilter(pattern);
@@ -121,24 +121,136 @@ function EvidenceContent() {
   };
 
   const toggleExhibit = async (id: string, currentValue: boolean) => {
-    await supabase
-      .from("incidents")
-      .update({ include_in_exhibit: !currentValue })
-      .eq("id", id);
-    
-    setIncidents(prev => prev.map(inc => 
-      inc.id === id ? { ...inc, include_in_exhibit: !currentValue } : inc
-    ));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from("incidents")
+        .update({ include_in_exhibit: !currentValue })
+        .eq("id", id)
+        .eq("user_id", session.user.id);
+      
+      if (error) {
+        console.error("Failed to update exhibit status:", error);
+        return;
+      }
+      
+      setIncidents(prev => prev.map(inc => 
+        inc.id === id ? { ...inc, include_in_exhibit: !currentValue } : inc
+      ));
+    } catch (err) {
+      console.error("Toggle exhibit error:", err);
+    }
+  };
+
+  const openEditModal = (incident: Incident) => {
+    setEditingIncident(incident);
+    setEditSeverity(incident.severity);
+    setEditPatterns(incident.patterns || []);
+  };
+
+  const saveEdit = async () => {
+    if (!editingIncident) return;
+    setSaving(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const category = editPatterns.length > 0 
+        ? editPatterns[0].toLowerCase().replace(/[\/\s]+/g, '_')
+        : 'none_detected';
+
+      const { error } = await supabase
+        .from("incidents")
+        .update({ 
+          severity: editSeverity,
+          patterns: editPatterns,
+          category: category
+        })
+        .eq("id", editingIncident.id)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      setIncidents(prev => prev.map(inc => 
+        inc.id === editingIncident.id 
+          ? { ...inc, severity: editSeverity, patterns: editPatterns, category }
+          : inc
+      ));
+      setEditingIncident(null);
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const dismissAsNotAbuse = async (id: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from("incidents")
+        .update({ 
+          severity: 'low',
+          patterns: [],
+          category: 'not_abuse',
+          include_in_exhibit: false
+        })
+        .eq("id", id)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      setIncidents(prev => prev.map(inc => 
+        inc.id === id 
+          ? { ...inc, severity: 'low', patterns: [], category: 'not_abuse', include_in_exhibit: false }
+          : inc
+      ));
+      setExpandedId(null);
+    } catch (err) {
+      console.error("Dismiss error:", err);
+    }
+  };
+
+  const deleteIncident = async (id: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from("incidents")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      setIncidents(prev => prev.filter(inc => inc.id !== id));
+      setDeleteConfirm(null);
+      setExpandedId(null);
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
+  };
+
+  const togglePattern = (pattern: string) => {
+    setEditPatterns(prev => 
+      prev.includes(pattern) 
+        ? prev.filter(p => p !== pattern)
+        : [...prev, pattern]
+    );
   };
 
   // Filter incidents
   const filteredIncidents = incidents.filter(inc => {
-    // Severity filter
     if (severityFilter === "critical" && inc.severity !== "critical") return false;
     if (severityFilter === "high+" && !["critical", "high"].includes(inc.severity)) return false;
     if (severityFilter === "exhibit" && !inc.include_in_exhibit) return false;
     
-    // Pattern filter
     if (patternFilter !== "all") {
       const hasPattern = inc.patterns?.some(p => 
         p.toLowerCase().includes(patternFilter.toLowerCase())
@@ -146,7 +258,6 @@ function EvidenceContent() {
       if (!hasPattern) return false;
     }
     
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -175,7 +286,6 @@ function EvidenceContent() {
   const highPlusCount = incidents.filter(i => ["critical", "high"].includes(i.severity)).length;
   const exhibitCount = incidents.filter(i => i.include_in_exhibit).length;
 
-  // Pattern stats for dropdown
   const patternCounts: Record<string, number> = {};
   incidents.forEach(inc => {
     (inc.patterns || []).forEach(p => {
@@ -217,22 +327,20 @@ function EvidenceContent() {
           </button>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
         </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={() => router.push("/docs?tab=generate")}
-            style={{
-              background: "#059669",
-              color: "white",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 600,
-              cursor: "pointer"
-            }}
-          >
-            Create Document
-          </button>
-        </div>
+        <button
+          onClick={() => router.push("/docs")}
+          style={{
+            background: "#059669",
+            color: "white",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 20px",
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          Create Document
+        </button>
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
@@ -270,7 +378,6 @@ function EvidenceContent() {
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
         }}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Severity Filter */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
                 { key: "all", label: "All" },
@@ -298,7 +405,6 @@ function EvidenceContent() {
               ))}
             </div>
 
-            {/* Pattern Dropdown */}
             <select
               value={patternFilter}
               onChange={(e) => setPatternFilter(e.target.value)}
@@ -321,7 +427,6 @@ function EvidenceContent() {
               ))}
             </select>
             
-            {/* Search */}
             <input
               type="text"
               placeholder="Search..."
@@ -337,7 +442,6 @@ function EvidenceContent() {
               }}
             />
 
-            {/* Clear filters */}
             {(severityFilter !== "all" || patternFilter !== "all" || searchQuery) && (
               <button
                 onClick={() => {
@@ -361,7 +465,6 @@ function EvidenceContent() {
             )}
           </div>
 
-          {/* Active filter indicator */}
           {filteredIncidents.length !== incidents.length && (
             <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
               Showing {filteredIncidents.length} of {incidents.length} incidents
@@ -380,29 +483,10 @@ function EvidenceContent() {
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
             <p>No incidents match your filter</p>
-            <button
-              onClick={() => {
-                setSeverityFilter("all");
-                setPatternFilter("all");
-                setSearchQuery("");
-              }}
-              style={{
-                marginTop: 16,
-                padding: "10px 20px",
-                background: "#1a3a2f",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                cursor: "pointer"
-              }}
-            >
-              Clear Filters
-            </button>
           </div>
         ) : (
           Object.entries(groupedIncidents).map(([monthYear, monthIncidents]) => (
             <div key={monthYear} style={{ marginBottom: 32 }}>
-              {/* Month Header */}
               <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -423,7 +507,6 @@ function EvidenceContent() {
                 </span>
               </div>
 
-              {/* Incidents List */}
               <div style={{
                 background: "white",
                 borderRadius: 12,
@@ -453,10 +536,10 @@ function EvidenceContent() {
                           cursor: "pointer",
                           gap: 12,
                           transition: "background 0.15s",
-                          background: isExpanded ? "#f9fafb" : "white"
+                          background: isExpanded ? "#f9fafb" : incident.category === 'not_abuse' ? "#f3f4f6" : "white",
+                          opacity: incident.category === 'not_abuse' ? 0.6 : 1
                         }}
                       >
-                        {/* Exhibit checkbox */}
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
@@ -480,7 +563,6 @@ function EvidenceContent() {
                           )}
                         </div>
 
-                        {/* Date */}
                         <div style={{ width: 50, flexShrink: 0, fontSize: 13, color: "#6b7280" }}>
                           {new Date(incident.incident_date).toLocaleDateString("en-US", { 
                             month: "short", 
@@ -488,7 +570,6 @@ function EvidenceContent() {
                           })}
                         </div>
 
-                        {/* Severity Badge */}
                         <span style={{
                           padding: "4px 10px",
                           borderRadius: 12,
@@ -503,12 +584,11 @@ function EvidenceContent() {
                           {incident.severity}
                         </span>
 
-                        {/* Category/Pattern */}
                         <div style={{
                           flexShrink: 0,
                           fontSize: 13,
                           fontWeight: 600,
-                          color: "#374151",
+                          color: incident.category === 'not_abuse' ? "#9ca3af" : "#374151",
                           maxWidth: 160,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -517,7 +597,6 @@ function EvidenceContent() {
                           {categoryLabels[incident.category] || incident.category || "—"}
                         </div>
 
-                        {/* Preview */}
                         <div style={{
                           flex: 1,
                           fontSize: 13,
@@ -529,21 +608,6 @@ function EvidenceContent() {
                           {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "—"}
                         </div>
 
-                        {/* Patterns count */}
-                        {incident.patterns?.length > 0 && (
-                          <span style={{
-                            fontSize: 11,
-                            color: "#9ca3af",
-                            flexShrink: 0,
-                            background: "#f3f4f6",
-                            padding: "2px 8px",
-                            borderRadius: 10
-                          }}>
-                            {incident.patterns.length} pattern{incident.patterns.length > 1 ? "s" : ""}
-                          </span>
-                        )}
-
-                        {/* Expand arrow */}
                         <span style={{
                           color: "#9ca3af",
                           transform: isExpanded ? "rotate(90deg)" : "none",
@@ -556,28 +620,124 @@ function EvidenceContent() {
                       {/* Expanded Content */}
                       {isExpanded && (
                         <div style={{
-                          padding: "0 20px 20px 56px",
+                          padding: "16px 20px 20px 56px",
                           background: "#f9fafb"
                         }}>
+                          {/* Action Buttons */}
+                          <div style={{
+                            display: "flex",
+                            gap: 8,
+                            marginBottom: 16,
+                            flexWrap: "wrap"
+                          }}>
+                            <button
+                              onClick={() => openEditModal(incident)}
+                              style={{
+                                padding: "8px 16px",
+                                background: "#3b82f6",
+                                color: "white",
+                                border: "none",
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: "pointer"
+                              }}
+                            >
+                              ✏️ Edit Severity/Patterns
+                            </button>
+                            <button
+                              onClick={() => dismissAsNotAbuse(incident.id)}
+                              style={{
+                                padding: "8px 16px",
+                                background: "#f3f4f6",
+                                color: "#6b7280",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: "pointer"
+                              }}
+                            >
+                              ❌ Not Abuse (Dismiss)
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(incident.id)}
+                              style={{
+                                padding: "8px 16px",
+                                background: "#fef2f2",
+                                color: "#dc2626",
+                                border: "1px solid #fecaca",
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: "pointer"
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+
+                          {/* Delete Confirmation */}
+                          {deleteConfirm === incident.id && (
+                            <div style={{
+                              background: "#fef2f2",
+                              border: "1px solid #fecaca",
+                              borderRadius: 8,
+                              padding: 16,
+                              marginBottom: 16
+                            }}>
+                              <p style={{ margin: "0 0 12px", color: "#dc2626", fontWeight: 500 }}>
+                                Delete this incident permanently?
+                              </p>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  onClick={() => deleteIncident(incident.id)}
+                                  style={{
+                                    padding: "8px 16px",
+                                    background: "#dc2626",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: 6,
+                                    cursor: "pointer",
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Yes, Delete
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm(null)}
+                                  style={{
+                                    padding: "8px 16px",
+                                    background: "white",
+                                    color: "#6b7280",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: 6,
+                                    cursor: "pointer"
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Patterns */}
                           {incident.patterns?.length > 0 && (
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                ⚠️ ABUSE PATTERNS DETECTED
+                                ⚠️ PATTERNS DETECTED
                               </div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                 {incident.patterns.map((pattern, i) => (
                                   <span
                                     key={i}
-                                    onClick={() => setPatternFilter(pattern)}
                                     style={{
                                       padding: "4px 12px",
                                       background: "#fef3c7",
                                       border: "1px solid #fcd34d",
                                       borderRadius: 16,
                                       fontSize: 12,
-                                      color: "#92400e",
-                                      cursor: "pointer"
+                                      color: "#92400e"
                                     }}
                                   >
                                     {pattern}
@@ -658,7 +818,7 @@ function EvidenceContent() {
         )}
       </main>
 
-      {/* Floating Action Bar - shows when incidents are selected for exhibit */}
+      {/* Floating Action Bar */}
       {exhibitCount > 0 && (
         <div style={{
           position: 'fixed',
@@ -693,6 +853,154 @@ function EvidenceContent() {
           >
             Generate Exhibit →
           </button>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingIncident && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2000,
+          padding: 20
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: 16,
+            width: "100%",
+            maxWidth: 500,
+            maxHeight: "90vh",
+            overflow: "auto"
+          }}>
+            <div style={{
+              padding: 20,
+              borderBottom: "1px solid #e5e7eb"
+            }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Edit Incident</h2>
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "#6b7280" }}>
+                {new Date(editingIncident.incident_date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+
+            <div style={{ padding: 20 }}>
+              {/* Severity */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+                  Severity
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {["critical", "high", "medium", "low"].map(sev => (
+                    <button
+                      key={sev}
+                      onClick={() => setEditSeverity(sev)}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        borderRadius: 8,
+                        border: editSeverity === sev ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
+                        background: severityColors[sev].bg,
+                        color: severityColors[sev].text,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        textTransform: "capitalize"
+                      }}
+                    >
+                      {sev}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Patterns */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+                  Patterns (click to toggle)
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {AVAILABLE_PATTERNS.map(pattern => (
+                    <button
+                      key={pattern}
+                      onClick={() => togglePattern(pattern)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 16,
+                        border: editPatterns.includes(pattern) ? "2px solid #f59e0b" : "1px solid #e5e7eb",
+                        background: editPatterns.includes(pattern) ? "#fef3c7" : "white",
+                        color: editPatterns.includes(pattern) ? "#92400e" : "#6b7280",
+                        fontSize: 12,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {pattern}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div style={{
+                background: "#f9fafb",
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 20
+              }}>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Preview:</div>
+                <div style={{ fontSize: 13, color: "#374151" }}>
+                  <strong>{editSeverity.toUpperCase()}</strong> | {editPatterns.join(", ") || "No patterns"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: 20,
+              borderTop: "1px solid #e5e7eb",
+              display: "flex",
+              gap: 12
+            }}>
+              <button
+                onClick={() => setEditingIncident(null)}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  fontWeight: 500
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={saving}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: saving ? "#9ca3af" : "#1a3a2f",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  cursor: saving ? "not-allowed" : "pointer",
+                  fontWeight: 600
+                }}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
