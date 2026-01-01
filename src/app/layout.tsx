@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import BetaFeedback from '@/components/BetaFeedback';
 
 export const metadata: Metadata = {
   title: "Pattern 18 Coach",
@@ -35,6 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body style={{ margin: 0, height: "100vh", overflow: "auto" }}>
         {children}
+        <BetaFeedback />
         <script
           dangerouslySetInnerHTML={{
             __html: `
