@@ -138,7 +138,8 @@ export async function POST(request: NextRequest) {
     const buffer = await Packer.toBuffer(doc);
 
     // Return as downloadable file
-    return new NextResponse(buffer, {
+    // Return as downloadable file
+    return new NextResponse(Buffer.from(buffer), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'Content-Disposition': `attachment; filename="Pattern18_Exhibit_${new Date().toISOString().split('T')[0]}.docx"`,
