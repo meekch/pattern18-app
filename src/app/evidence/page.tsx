@@ -563,7 +563,7 @@ function EvidenceContent() {
                           {incident.patterns?.length > 0 && (
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                PATTERNS DETECTED
+                                ⚠️ ABUSE PATTERNS DETECTED
                               </div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                 {incident.patterns.map((pattern, i) => (
@@ -587,32 +587,66 @@ function EvidenceContent() {
                             </div>
                           )}
 
-                          {/* Full message */}
-                          {(incident.coparent_message || incident.messages_json?.[0]?.text) && (
-                            <div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                MESSAGE
-                              </div>
-                              <div style={{
-                                padding: 16,
-                                background: "white",
-                                borderRadius: 8,
-                                border: "1px solid #e5e7eb",
-                                fontSize: 14,
-                                color: "#374151",
-                                lineHeight: 1.6
-                              }}>
-                                {incident.coparent_message || incident.messages_json?.[0]?.text}
-                              </div>
+                          {/* All Messages */}
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
+                              📨 MESSAGES ({incident.messages_json?.length || 1})
                             </div>
-                          )}
-
-                          {/* Message count */}
-                          {incident.message_count && incident.message_count > 1 && (
-                            <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
-                              📨 {incident.message_count} messages in this incident
+                            <div style={{
+                              background: "white",
+                              borderRadius: 8,
+                              border: "1px solid #e5e7eb",
+                              maxHeight: 400,
+                              overflowY: "auto"
+                            }}>
+                              {incident.messages_json && incident.messages_json.length > 0 ? (
+                                incident.messages_json.map((msg: any, idx: number) => (
+                                  <div 
+                                    key={idx}
+                                    style={{
+                                      padding: 12,
+                                      borderBottom: idx < incident.messages_json!.length - 1 ? "1px solid #f3f4f6" : "none",
+                                      background: msg.sender === 'coparent' ? "#fff" : "#f0fdf4"
+                                    }}
+                                  >
+                                    <div style={{ 
+                                      display: "flex", 
+                                      justifyContent: "space-between",
+                                      marginBottom: 4,
+                                      fontSize: 11,
+                                      color: "#9ca3af"
+                                    }}>
+                                      <span style={{ 
+                                        fontWeight: 600,
+                                        color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
+                                      }}>
+                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
+                                      </span>
+                                      <span>
+                                        {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: 'numeric',
+                                          minute: '2-digit'
+                                        }) : ''}
+                                      </span>
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: 14, 
+                                      color: "#374151",
+                                      lineHeight: 1.5
+                                    }}>
+                                      {msg.text}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div style={{ padding: 16, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                                  {incident.coparent_message || "No message content"}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       )}
                     </div>
