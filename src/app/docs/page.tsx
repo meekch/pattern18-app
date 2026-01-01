@@ -102,18 +102,14 @@ function DocsContent() {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('court-documents')
-        .getPublicUrl(fileName);
-
-      // Save document record
+      // Save document record with file path (not public URL)
       const { data: docData, error: docError } = await supabase
         .from('court_documents')
         .insert({
           user_id: user.id,
           title: extracted.title || file.name,
           type: extracted.type || 'other',
-          file_url: urlData.publicUrl,
+          file_url: fileName, // Store path, not public URL
           extracted_data: extracted,
           uploaded_at: new Date().toISOString(),
         })
@@ -174,6 +170,19 @@ function DocsContent() {
       day: 'numeric',
       year: 'numeric',
     });
+  };
+
+  const handleViewDocument = async (filePath: string) => {
+    // Generate a signed URL that expires in 1 hour
+    const { data, error } = await supabase.storage
+      .from('court-documents')
+      .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
+    
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+    } else {
+      alert('Could not load document. Please try again.');
+    }
   };
 
   const getDocIcon = (type: string) => {
@@ -273,9 +282,9 @@ function DocsContent() {
                         <div className="doc-summary">{doc.extracted_data.summary}</div>
                       )}
                     </div>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="view-btn">
+                    <button onClick={() => handleViewDocument(doc.file_url)} className="view-btn">
                       View
-                    </a>
+                    </button>
                   </div>
                 ))}
               </div>
