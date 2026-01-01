@@ -25,6 +25,33 @@ interface GroupedIncidents {
 }
 
 const categoryLabels: Record<string, string> = {
+  // Coercive Control Patterns (correct)
+  gaslighting: "Gaslighting",
+  darvo: "DARVO",
+  intimidation: "Intimidation",
+  threats: "Threats",
+  financial_abuse: "Financial Abuse",
+  financial_coercion: "Financial Abuse",
+  using_children_as_weapons: "Using Children as Weapons",
+  blame_shifting: "Blame-Shifting",
+  "blame-shifting": "Blame-Shifting",
+  false_accusations: "False Accusations",
+  emotional_blackmail: "Emotional Blackmail",
+  stonewalling: "Stonewalling",
+  monitoring: "Monitoring/Stalking",
+  stalking: "Monitoring/Stalking",
+  isolation: "Isolation Tactics",
+  minimizing: "Minimizing/Denying",
+  denying: "Minimizing/Denying",
+  word_salad: "Word Salad",
+  moving_goalposts: "Moving Goalposts",
+  projection: "Projection",
+  hoovering: "Hoovering",
+  gatekeeping: "Gatekeeping",
+  coercive_control: "Coercive Control",
+  manipulation: "Manipulation",
+  
+  // Legacy topic-based (for old data)
   child_activities: "Child Activities",
   financial_dispute: "Financial Dispute",
   regular_schedule: "Schedule",
@@ -35,7 +62,7 @@ const categoryLabels: Record<string, string> = {
   boundary_violation: "Boundary Violation",
   parenting_decisions: "Parenting Decisions",
   holiday_scheduling: "Holiday Scheduling",
-  uncategorized: "General",
+  uncategorized: "Uncategorized",
 };
 
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {

@@ -214,14 +214,18 @@ export default function CoachPage() {
     if (!lastUserMsg || !lastAssistantMsg) return;
 
     try {
+      // Get first detected pattern as category (already a coercive control pattern)
+      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
       await supabase.from('incidents').insert({
         user_id: user.id,
-        title: detectedPatterns[0] || 'Incident',
+        title: primaryPattern,
         coparent_message: lastUserMsg.content,
-        category: detectedPatterns[0]?.toLowerCase().replace(/\s+/g, '_') || 'uncategorized',
+        category: categoryKey,
         patterns: detectedPatterns,
         severity: detectedPatterns.some(p => 
-          ['threat', 'stalking', 'intimidation'].includes(p.toLowerCase())
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
         ) ? 'high' : 'medium',
         incident_date: new Date().toISOString(),
       });
