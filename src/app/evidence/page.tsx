@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BottomNav from "@/components/BottomNav";
 
@@ -25,44 +25,44 @@ interface GroupedIncidents {
 }
 
 const categoryLabels: Record<string, string> = {
-  // Coercive Control Patterns (correct)
+  // Coercive Control Patterns
   gaslighting: "Gaslighting",
   darvo: "DARVO",
   intimidation: "Intimidation",
   threats: "Threats",
   financial_abuse: "Financial Abuse",
-  financial_coercion: "Financial Abuse",
+  financial_manipulation: "Financial Manipulation",
   using_children_as_weapons: "Using Children as Weapons",
   blame_shifting: "Blame-Shifting",
-  "blame-shifting": "Blame-Shifting",
   false_accusations: "False Accusations",
   emotional_blackmail: "Emotional Blackmail",
   stonewalling: "Stonewalling",
-  monitoring: "Monitoring/Stalking",
-  stalking: "Monitoring/Stalking",
-  isolation: "Isolation Tactics",
-  minimizing: "Minimizing/Denying",
-  denying: "Minimizing/Denying",
+  monitoring_stalking: "Monitoring/Stalking",
+  isolation_tactics: "Isolation Tactics",
+  minimizing_denying: "Minimizing/Denying",
   word_salad: "Word Salad",
   moving_goalposts: "Moving Goalposts",
   projection: "Projection",
   hoovering: "Hoovering",
   gatekeeping: "Gatekeeping",
-  coercive_control: "Coercive Control",
-  manipulation: "Manipulation",
-  
-  // Legacy topic-based (for old data)
-  child_activities: "Child Activities",
-  financial_dispute: "Financial Dispute",
-  regular_schedule: "Schedule",
-  exchange_conflict: "Exchange Conflict",
+  verbal_abuse: "Verbal Abuse",
   legal_threats: "Legal Threats",
-  medical_decisions: "Medical Decisions",
-  communication: "Communication",
-  boundary_violation: "Boundary Violation",
-  parenting_decisions: "Parenting Decisions",
-  holiday_scheduling: "Holiday Scheduling",
-  uncategorized: "Uncategorized",
+  schedule_manipulation: "Schedule Manipulation",
+  none_detected: "Uncategorized",
+  
+  // Legacy mappings
+  revisionist_history: "Gaslighting",
+  triangulating_child: "Using Children as Weapons",
+  "name_calling/verbal_abuse": "Verbal Abuse",
+  "legal/court_threats": "Legal Threats",
+  information_gatekeeping: "Gatekeeping",
+  "surveillance/monitoring": "Monitoring/Stalking",
+  "minimizing/mocking": "Minimizing/Denying",
+  victim_positioning: "DARVO",
+  "deadline/urgency_pressure": "Intimidation",
+  weaponizing_flexibility: "Blame-Shifting",
+  threats_of_exposure: "Intimidation",
+  dismissing_without_engaging: "Stonewalling",
 };
 
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -74,13 +74,26 @@ const severityColors: Record<string, { bg: string; text: string; border: string 
 
 export default function EvidencePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "critical" | "high+" | "exhibit">("all");
+  const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high+" | "exhibit">("all");
+  const [patternFilter, setPatternFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get unique patterns from all incidents
+  const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
+  
+  // Get unique categories
+  const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
+
   useEffect(() => {
+    // Check URL params for initial filter
+    const pattern = searchParams.get('pattern');
+    if (pattern) {
+      setPatternFilter(pattern);
+    }
     loadEvidence();
   }, []);
 
@@ -120,10 +133,20 @@ export default function EvidencePage() {
 
   // Filter incidents
   const filteredIncidents = incidents.filter(inc => {
-    if (filter === "critical" && inc.severity !== "critical") return false;
-    if (filter === "high+" && !["critical", "high"].includes(inc.severity)) return false;
-    if (filter === "exhibit" && !inc.include_in_exhibit) return false;
+    // Severity filter
+    if (severityFilter === "critical" && inc.severity !== "critical") return false;
+    if (severityFilter === "high+" && !["critical", "high"].includes(inc.severity)) return false;
+    if (severityFilter === "exhibit" && !inc.include_in_exhibit) return false;
     
+    // Pattern filter
+    if (patternFilter !== "all") {
+      const hasPattern = inc.patterns?.some(p => 
+        p.toLowerCase().includes(patternFilter.toLowerCase())
+      ) || inc.category?.toLowerCase().includes(patternFilter.toLowerCase());
+      if (!hasPattern) return false;
+    }
+    
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -151,6 +174,14 @@ export default function EvidencePage() {
   const criticalCount = incidents.filter(i => i.severity === "critical").length;
   const highPlusCount = incidents.filter(i => ["critical", "high"].includes(i.severity)).length;
   const exhibitCount = incidents.filter(i => i.include_in_exhibit).length;
+
+  // Pattern stats for dropdown
+  const patternCounts: Record<string, number> = {};
+  incidents.forEach(inc => {
+    (inc.patterns || []).forEach(p => {
+      patternCounts[p] = (patternCounts[p] || 0) + 1;
+    });
+  });
 
   if (loading) {
     return (
@@ -188,7 +219,7 @@ export default function EvidencePage() {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button
-            onClick={() => router.push("/docs?create=true")}
+            onClick={() => router.push("/docs?tab=generate")}
             style={{
               background: "#059669",
               color: "white",
@@ -207,30 +238,24 @@ export default function EvidencePage() {
       <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
         {/* Stats Bar */}
         <div style={{
-          display: "flex",
-          gap: 24,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 16,
           marginBottom: 24,
-          padding: 20,
-          background: "white",
-          borderRadius: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
         }}>
-          <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#1f2937" }}>{totalCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>Total</div>
           </div>
-          <div style={{ width: 1, background: "#e5e7eb" }} />
-          <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{criticalCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>Critical</div>
           </div>
-          <div style={{ width: 1, background: "#e5e7eb" }} />
-          <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#ea580c" }}>{highPlusCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>High & Critical</div>
+            <div style={{ fontSize: 13, color: "#6b7280" }}>High+</div>
           </div>
-          <div style={{ width: 1, background: "#e5e7eb" }} />
-          <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#059669" }}>{exhibitCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>In Exhibit</div>
           </div>
@@ -238,53 +263,110 @@ export default function EvidencePage() {
 
         {/* Filters */}
         <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          background: "white",
+          borderRadius: 12,
+          padding: 16,
           marginBottom: 24,
-          gap: 16,
-          flexWrap: "wrap"
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
         }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[
-              { key: "all", label: "All" },
-              { key: "high+", label: "High & Critical" },
-              { key: "critical", label: "Critical" },
-              { key: "exhibit", label: "📋 In Exhibit" },
-            ].map(f => (
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+            {/* Severity Filter */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                { key: "all", label: "All" },
+                { key: "high+", label: "High+" },
+                { key: "critical", label: "Critical" },
+                { key: "exhibit", label: "📋 Exhibit" },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setSeverityFilter(f.key as any)}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 20,
+                    border: "1px solid",
+                    borderColor: severityFilter === f.key ? "#059669" : "#e5e7eb",
+                    background: severityFilter === f.key ? "#d1fae5" : "white",
+                    color: severityFilter === f.key ? "#065f46" : "#6b7280",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 500
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Pattern Dropdown */}
+            <select
+              value={patternFilter}
+              onChange={(e) => setPatternFilter(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                background: patternFilter !== "all" ? "#fef3c7" : "white",
+                fontSize: 13,
+                color: "#374151",
+                cursor: "pointer",
+                minWidth: 180
+              }}
+            >
+              <option value="all">All Patterns</option>
+              {allPatterns.map(pattern => (
+                <option key={pattern} value={pattern}>
+                  {pattern} ({patternCounts[pattern] || 0})
+                </option>
+              ))}
+            </select>
+            
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                fontSize: 13,
+                flex: 1,
+                minWidth: 150
+              }}
+            />
+
+            {/* Clear filters */}
+            {(severityFilter !== "all" || patternFilter !== "all" || searchQuery) && (
               <button
-                key={f.key}
-                onClick={() => setFilter(f.key as any)}
+                onClick={() => {
+                  setSeverityFilter("all");
+                  setPatternFilter("all");
+                  setSearchQuery("");
+                }}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                  border: "1px solid",
-                  borderColor: filter === f.key ? "#059669" : "#e5e7eb",
-                  background: filter === f.key ? "#d1fae5" : "white",
-                  color: filter === f.key ? "#065f46" : "#6b7280",
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#fee2e2",
+                  color: "#dc2626",
                   cursor: "pointer",
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: 500
                 }}
               >
-                {f.label}
+                Clear
               </button>
-            ))}
+            )}
           </div>
-          
-          <input
-            type="text"
-            placeholder="Search patterns, messages..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 8,
-              border: "1px solid #e5e7eb",
-              width: 250,
-              fontSize: 14
-            }}
-          />
+
+          {/* Active filter indicator */}
+          {filteredIncidents.length !== incidents.length && (
+            <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
+              Showing {filteredIncidents.length} of {incidents.length} incidents
+            </div>
+          )}
         </div>
 
         {/* Grouped List */}
@@ -298,6 +380,24 @@ export default function EvidencePage() {
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
             <p>No incidents match your filter</p>
+            <button
+              onClick={() => {
+                setSeverityFilter("all");
+                setPatternFilter("all");
+                setSearchQuery("");
+              }}
+              style={{
+                marginTop: 16,
+                padding: "10px 20px",
+                background: "#1a3a2f",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer"
+              }}
+            >
+              Clear Filters
+            </button>
           </div>
         ) : (
           Object.entries(groupedIncidents).map(([monthYear, monthIncidents]) => (
@@ -351,7 +451,7 @@ export default function EvidencePage() {
                           alignItems: "center",
                           padding: "16px 20px",
                           cursor: "pointer",
-                          gap: 16,
+                          gap: 12,
                           transition: "background 0.15s",
                           background: isExpanded ? "#f9fafb" : "white"
                         }}
@@ -403,15 +503,18 @@ export default function EvidencePage() {
                           {incident.severity}
                         </span>
 
-                        {/* Category */}
+                        {/* Category/Pattern */}
                         <div style={{
-                          width: 140,
                           flexShrink: 0,
-                          fontSize: 14,
-                          fontWeight: 500,
-                          color: "#374151"
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#374151",
+                          maxWidth: 160,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
                         }}>
-                          {categoryLabels[incident.category] || incident.category}
+                          {categoryLabels[incident.category] || incident.category || "—"}
                         </div>
 
                         {/* Preview */}
@@ -429,9 +532,12 @@ export default function EvidencePage() {
                         {/* Patterns count */}
                         {incident.patterns?.length > 0 && (
                           <span style={{
-                            fontSize: 12,
+                            fontSize: 11,
                             color: "#9ca3af",
-                            flexShrink: 0
+                            flexShrink: 0,
+                            background: "#f3f4f6",
+                            padding: "2px 8px",
+                            borderRadius: 10
                           }}>
                             {incident.patterns.length} pattern{incident.patterns.length > 1 ? "s" : ""}
                           </span>
@@ -463,13 +569,15 @@ export default function EvidencePage() {
                                 {incident.patterns.map((pattern, i) => (
                                   <span
                                     key={i}
+                                    onClick={() => setPatternFilter(pattern)}
                                     style={{
                                       padding: "4px 12px",
                                       background: "#fef3c7",
                                       border: "1px solid #fcd34d",
                                       borderRadius: 16,
                                       fontSize: 12,
-                                      color: "#92400e"
+                                      color: "#92400e",
+                                      cursor: "pointer"
                                     }}
                                   >
                                     {pattern}

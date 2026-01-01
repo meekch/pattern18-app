@@ -395,13 +395,38 @@ function ResultsView({
       {saved && (
         <div style={{
           marginBottom: 24,
-          padding: 16,
+          padding: 20,
           background: '#d1fae5',
           border: '1px solid #6ee7b7',
-          borderRadius: 8,
+          borderRadius: 12,
           color: '#065f46'
         }}>
-          ✓ {incidents?.incidents.length || 0} incidents saved to your Evidence Dashboard!
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
+                ✓ {incidents?.incidents.length || 0} incidents saved!
+              </div>
+              <div style={{ fontSize: 14, opacity: 0.9 }}>
+                View, filter by pattern, and build your case.
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.href = '/evidence'}
+              style={{
+                background: '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: 10,
+                padding: '12px 24px',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              View Evidence →
+            </button>
+          </div>
         </div>
       )}
 
