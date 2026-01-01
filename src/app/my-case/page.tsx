@@ -50,10 +50,10 @@ export default function MyCasePage() {
 
       // Load evidence for stats
       const { data: evidence } = await supabase
-        .from('evidence')
+        .from('incidents')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: true });
+        .order('incident_date', { ascending: true });
 
       if (evidence && evidence.length > 0) {
         setTotalIncidents(evidence.length);
@@ -65,7 +65,7 @@ export default function MyCasePage() {
         setCriticalCount(critical);
 
         // Calculate documenting days
-        const firstDate = new Date(evidence[0].created_at);
+        const firstDate = new Date(evidence[0].incident_date);
         const daysDiff = Math.ceil((Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
         setDocumentingDays(daysDiff);
 
@@ -73,8 +73,6 @@ export default function MyCasePage() {
         const patterns: Record<string, { total: number; recent: number }> = {};
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
         evidence.forEach((e: any) => {
           const category = e.category || 'Uncategorized';
@@ -83,7 +81,7 @@ export default function MyCasePage() {
           }
           patterns[category].total++;
           
-          const date = new Date(e.created_at);
+          const date = new Date(e.incident_date);
           if (date > thirtyDaysAgo) {
             patterns[category].recent++;
           }
@@ -104,7 +102,7 @@ export default function MyCasePage() {
         // Monthly data for chart
         const monthly: Record<string, number> = {};
         evidence.forEach((e: any) => {
-          const date = new Date(e.created_at);
+          const date = new Date(e.incident_date);
           const key = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
           monthly[key] = (monthly[key] || 0) + 1;
         });

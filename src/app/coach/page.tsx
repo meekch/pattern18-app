@@ -47,7 +47,7 @@ export default function CoachPage() {
 
       // Load evidence stats
       const { data: evidence } = await supabase
-        .from('evidence')
+        .from('incidents')
         .select('category')
         .eq('user_id', session.user.id);
 
@@ -214,16 +214,16 @@ export default function CoachPage() {
     if (!lastUserMsg || !lastAssistantMsg) return;
 
     try {
-      await supabase.from('evidence').insert({
+      await supabase.from('incidents').insert({
         user_id: user.id,
-        content: lastUserMsg.content,
-        analysis: lastAssistantMsg.content,
-        category: detectedPatterns[0] || 'Uncategorized',
+        title: detectedPatterns[0] || 'Incident',
+        coparent_message: lastUserMsg.content,
+        category: detectedPatterns[0]?.toLowerCase().replace(/\s+/g, '_') || 'uncategorized',
         patterns: detectedPatterns,
         severity: detectedPatterns.some(p => 
           ['threat', 'stalking', 'intimidation'].includes(p.toLowerCase())
         ) ? 'high' : 'medium',
-        created_at: new Date().toISOString(),
+        incident_date: new Date().toISOString(),
       });
 
       alert('Saved to evidence!');
