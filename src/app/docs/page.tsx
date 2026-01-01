@@ -79,7 +79,7 @@ function DocsContent() {
     setAnalyzing(true);
 
     try {
-      // Send to analyze-order API
+      // Step 1: Send to analyze-order API
       const formData = new FormData();
       formData.append('file', file);
 
@@ -88,11 +88,14 @@ function DocsContent() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Analysis failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Analysis failed (${response.status}): ${errorText}`);
+      }
 
       const extracted = await response.json();
 
-      // Upload file to storage
+      // Step 2: Upload file to storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
@@ -100,23 +103,27 @@ function DocsContent() {
         .from('court-documents')
         .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
 
-      // Save document record with file path (not public URL)
+      // Step 3: Save document record
       const { data: docData, error: docError } = await supabase
         .from('court_documents')
         .insert({
           user_id: user.id,
           title: extracted.title || file.name,
           type: extracted.type || 'other',
-          file_url: fileName, // Store path, not public URL
+          file_url: fileName,
           extracted_data: extracted,
           uploaded_at: new Date().toISOString(),
         })
         .select()
         .single();
 
-      if (docError) throw docError;
+      if (docError) {
+        throw new Error(`Database save failed: ${docError.message}`);
+      }
 
       // Update case_context with extracted info
       if (extracted.case_info) {
@@ -156,9 +163,9 @@ function DocsContent() {
 
       alert('Document uploaded and analyzed! Case info updated.');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to upload document:', error);
-      alert('Failed to upload document. Please try again.');
+      alert(`Upload failed: ${error?.message || error || 'Unknown error'}`);
     } finally {
       setAnalyzing(false);
     }
