@@ -118,7 +118,7 @@ export default function CaseSetupPage() {
   if (loading) {
     return (
       <div className="loading">
-        <div className="spinner">💚</div>
+        <div className="spinner">ðŸ’š</div>
         <style jsx>{`
           .loading {
             display: flex;
@@ -144,7 +144,7 @@ export default function CaseSetupPage() {
     <div className="container">
       <header className="header">
         <button onClick={() => router.push('/coach')} className="back-btn">
-          ← Back
+          â† Back
         </button>
         <h1>My Case</h1>
       </header>
@@ -158,21 +158,21 @@ export default function CaseSetupPage() {
           {/* Role Selection */}
           <div className="field">
             <label>Your Role in This Case *</label>
-            <p className="field-help">This is determined by who filed the original petition and never changes.</p>
+            <p className="field-help">Who filed the <strong>original</strong> case that started this custody matter? They are the Petitioner — their name appears first on all court documents. This stays the same even when you file motions later.</p>
             <div className="role-buttons">
               <button
                 className={`role-btn ${userRole === 'petitioner' ? 'selected' : ''}`}
                 onClick={() => setUserRole('petitioner')}
               >
                 <strong>I am the PETITIONER</strong>
-                <span>I filed the original petition</span>
+                <span>I filed the original case</span>
               </button>
               <button
                 className={`role-btn ${userRole === 'respondent' ? 'selected' : ''}`}
                 onClick={() => setUserRole('respondent')}
               >
                 <strong>I am the RESPONDENT</strong>
-                <span>They filed the original petition</span>
+                <span>They filed the original case</span>
               </button>
             </div>
           </div>
