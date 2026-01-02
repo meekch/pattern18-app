@@ -313,6 +313,34 @@ function CoachContent() {
               <h1>Hey, I'm glad you're here.</h1>
               <p>Paste a message, attach a screenshot, or just tell me what's going on.</p>
             </div>
+
+            <div className="prompts">
+              <p className="prompts-label">Try saying...</p>
+              <button 
+                className="prompt-btn"
+                onClick={() => setInput("He just sent me this message and I don't know how to respond...")}
+              >
+                "He just sent me this message..."
+              </button>
+              <button 
+                className="prompt-btn"
+                onClick={() => setInput("Help me respond to this without taking the bait")}
+              >
+                "Help me respond without taking the bait"
+              </button>
+              <button 
+                className="prompt-btn"
+                onClick={() => setInput("I need to document what just happened")}
+              >
+                "I need to document what happened"
+              </button>
+              <button 
+                className="prompt-btn attach"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                📎 Attach a screenshot
+              </button>
+            </div>
           </div>
         ) : (
           <div className="chat">
@@ -452,6 +480,40 @@ function CoachContent() {
           color: #4b5563;
           line-height: 1.5;
           margin: 0;
+        }
+        .prompts {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 32px;
+        }
+        .prompts-label {
+          font-size: 13px;
+          color: #9ca3af;
+          text-align: center;
+          margin: 0 0 4px 0;
+        }
+        .prompt-btn {
+          padding: 14px 18px;
+          background: white;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 15px;
+          color: #374151;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+        }
+        .prompt-btn:hover {
+          border-color: #1a3a2f;
+          background: #f0fdf4;
+        }
+        .prompt-btn.attach {
+          background: #f0fdf4;
+          border-color: #1a3a2f;
+          color: #1a3a2f;
+          font-weight: 600;
+          text-align: center;
         }
         .chat {
           max-width: 600px;
