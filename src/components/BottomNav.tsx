@@ -12,10 +12,10 @@ export default function BottomNav({ active }: BottomNavProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   const navItems = [
-    { id: 'coach', label: 'Coach', icon: 'ðŸ’¬', path: '/coach' },
-    { id: 'case', label: 'My Case', icon: 'ðŸ“Š', path: '/evidence' },
-    { id: 'docs', label: 'Docs', icon: 'ðŸ“„', path: '/docs' },
-    { id: 'menu', label: 'Menu', icon: 'â˜°', path: null },
+    { id: 'coach', label: 'Coach', icon: '💬', path: '/coach' },
+    { id: 'case', label: 'My Case', icon: '📊', path: '/evidence' },
+    { id: 'docs', label: 'Docs', icon: '📄', path: '/docs' },
+    { id: 'menu', label: 'Menu', icon: '☰', path: null },
   ];
 
   const handleNav = (item: typeof navItems[0]) => {
@@ -47,31 +47,31 @@ export default function BottomNav({ active }: BottomNavProps) {
           <div className="menu-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="menu-header">
               <h3>Menu</h3>
-              <button className="close-btn" onClick={() => setShowMenu(false)}>âœ•</button>
+              <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
             </div>
             
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/case-setup'); }} className="menu-item">
-                <span className="menu-icon">âš™ï¸</span>
+                <span className="menu-icon">⚙️</span>
                 <div className="menu-text">
                   <span className="menu-title">Case Settings</span>
-                  <span className="menu-desc">Names, case number, court info</span>
-                </div>
-              </button>
-              
-              <button onClick={() => { setShowMenu(false); router.push('/calendar'); }} className="menu-item">
-                <span className="menu-icon">ðŸ“…</span>
-                <div className="menu-text">
-                  <span className="menu-title">Court Calendar</span>
-                  <span className="menu-desc">Hearings and deadlines</span>
+                  <span className="menu-desc">Names, court date, case info</span>
                 </div>
               </button>
               
               <button onClick={() => { setShowMenu(false); router.push('/evidence/upload'); }} className="menu-item">
-                <span className="menu-icon">ðŸ“¤</span>
+                <span className="menu-icon">📤</span>
                 <div className="menu-text">
                   <span className="menu-title">Bulk Import</span>
                   <span className="menu-desc">Import message history (CSV)</span>
+                </div>
+              </button>
+
+              <button onClick={() => { setShowMenu(false); router.push('/faq'); }} className="menu-item">
+                <span className="menu-icon">❓</span>
+                <div className="menu-text">
+                  <span className="menu-title">Help & FAQ</span>
+                  <span className="menu-desc">Common questions answered</span>
                 </div>
               </button>
             </div>
@@ -79,21 +79,17 @@ export default function BottomNav({ active }: BottomNavProps) {
             <div className="menu-divider" />
 
             <div className="menu-section">
-              <button onClick={() => { setShowMenu(false); router.push('/getting-started'); }} className="menu-item">
-                <span className="menu-icon">ðŸš€</span>
-                <div className="menu-text">
-                  <span className="menu-title">Getting Started</span>
-                  <span className="menu-desc">How to use Pattern 18</span>
+              <div className="safety-item">
+                <div className="safety-header">
+                  <span className="menu-icon">🆘</span>
+                  <span className="safety-title">Crisis Resources</span>
                 </div>
-              </button>
-              
-              <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
-                <span className="menu-icon">ðŸ’š</span>
-                <div className="menu-text">
-                  <span className="menu-title">I Need a Moment</span>
-                  <span className="menu-desc">Breathing, grounding, support</span>
+                <p className="safety-note">If you're in immediate danger, call 911</p>
+                <div className="safety-links">
+                  <a href="tel:1-800-799-7233">📞 DV Hotline: 1-800-799-7233</a>
+                  <a href="sms:741741&body=HELLO">💬 Crisis Text: HELLO to 741741</a>
                 </div>
-              </button>
+              </div>
             </div>
 
             <div className="menu-divider" />
@@ -104,7 +100,7 @@ export default function BottomNav({ active }: BottomNavProps) {
                 await supabase.auth.signOut(); 
                 router.push('/login'); 
               }} className="menu-item logout">
-                <span className="menu-icon">ðŸšª</span>
+                <span className="menu-icon">🚪</span>
                 <div className="menu-text">
                   <span className="menu-title">Log Out</span>
                 </div>
@@ -242,6 +238,48 @@ export default function BottomNav({ active }: BottomNavProps) {
           height: 1px;
           background: #e5e7eb;
           margin: 12px 0;
+        }
+        
+        /* Safety Resources */
+        .safety-item {
+          padding: 14px 12px;
+          background: #fef2f2;
+          border-radius: 12px;
+          border: 1px solid #fecaca;
+        }
+        .safety-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+        .safety-title {
+          font-weight: 600;
+          color: #dc2626;
+          font-size: 15px;
+        }
+        .safety-note {
+          margin: 0 0 12px 0;
+          font-size: 13px;
+          color: #991b1b;
+        }
+        .safety-links {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .safety-links a {
+          color: #1a3a2f;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          padding: 8px 12px;
+          background: white;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+        .safety-links a:hover {
+          background: #f9fafb;
         }
       `}</style>
     </>
