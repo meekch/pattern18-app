@@ -151,7 +151,10 @@ export default function BulkMessageUpload() {
           method: 'POST',
           body: formData
         });
-        if (!response.ok) throw new Error('PDF parsing coming soon. Please use CSV export.');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to parse PDF. Try exporting as CSV instead.');
+        }
         const data = await response.json();
         content = data.text;
       } else {
