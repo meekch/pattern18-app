@@ -34,7 +34,6 @@ export default function DocsPage() {
       }
       setUser(session.user);
 
-      // Load court documents
       const { data: docs } = await supabase
         .from('court_documents')
         .select('*')
@@ -89,7 +88,7 @@ export default function DocsPage() {
             fontSize: 14
           }}
         >
-          âœ¨ Generate Documents
+          Generate Documents
         </button>
         <button
           onClick={() => setActiveTab('uploads')}
@@ -105,7 +104,7 @@ export default function DocsPage() {
             fontSize: 14
           }}
         >
-          ðŸ“ Court Orders ({courtDocs.length})
+          Court Orders ({courtDocs.length})
         </button>
       </div>
 
@@ -133,7 +132,7 @@ export default function DocsPage() {
                   fontSize: 28,
                   flexShrink: 0
                 }}>
-                  ðŸ“Š
+                  📊
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -180,10 +179,10 @@ export default function DocsPage() {
                     border: '1px solid #fef08a'
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      ðŸ’¡ HOW TO USE:
+                      HOW TO USE:
                     </div>
                     <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
-                      <li>Go to Evidence and check the boxes next to your strongest incidents</li>
+                      <li>Go to My Case and check the boxes next to your strongest incidents</li>
                       <li>Click "Generate Exhibit" below</li>
                       <li>Choose "Only include marked incidents" for a focused document</li>
                       <li>Download and attach to your court filing as an exhibit</li>
@@ -208,7 +207,7 @@ export default function DocsPage() {
                       gap: 8
                     }}
                   >
-                    ðŸ“¥ Generate Exhibit Packet
+                    Generate Exhibit Packet
                   </button>
                 </div>
               </div>
@@ -234,7 +233,7 @@ export default function DocsPage() {
                   fontSize: 28,
                   flexShrink: 0
                 }}>
-                  âœï¸
+                  ✏️
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ margin: '0 0 4px', fontSize: 18, color: '#1f2937' }}>AI Declaration Writer</h2>
@@ -252,10 +251,10 @@ export default function DocsPage() {
                       DOCUMENT TYPES:
                     </div>
                     <ul style={{ margin: 0, paddingLeft: 18, color: '#6b7280', fontSize: 13, lineHeight: 1.7 }}>
-                      <li><strong>Declaration</strong> â€“ Numbered paragraphs under penalty of perjury</li>
-                      <li><strong>Timeline</strong> â€“ Chronological list with exhibit numbers</li>
-                      <li><strong>Pattern Summary</strong> â€“ Analysis grouped by abuse type</li>
-                      <li><strong>Exhibit List</strong> â€“ Formal index of all exhibits</li>
+                      <li><strong>Declaration</strong> - Numbered paragraphs under penalty of perjury</li>
+                      <li><strong>Timeline</strong> - Chronological list with exhibit numbers</li>
+                      <li><strong>Pattern Summary</strong> - Analysis grouped by abuse type</li>
+                      <li><strong>Exhibit List</strong> - Formal index of all exhibits</li>
                     </ul>
                   </div>
 
@@ -267,10 +266,10 @@ export default function DocsPage() {
                     border: '1px solid #fef08a'
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      ðŸ’¡ HOW TO USE:
+                      HOW TO USE:
                     </div>
                     <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
-                      <li>Select incidents from Evidence (check the boxes)</li>
+                      <li>Select incidents from My Case (check the boxes)</li>
                       <li>Choose the document type you need</li>
                       <li>AI generates the text in proper legal format</li>
                       <li>Copy into your Word document or court form</li>
@@ -295,7 +294,7 @@ export default function DocsPage() {
                       gap: 8
                     }}
                   >
-                    âœï¸ Write Declaration
+                    Write Declaration
                   </button>
                 </div>
               </div>
@@ -308,40 +307,23 @@ export default function DocsPage() {
               padding: 16
             }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 12 }}>
-                QUICK ACTIONS
+                QUICK ACTION
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={() => router.push('/evidence')}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    color: '#374151'
-                  }}
-                >
-                  ðŸ“‹ Select Evidence
-                </button>
-                <button
-                  onClick={() => router.push('/evidence')}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    color: '#374151'
-                  }}
-                >
-                  ðŸ“Š View My Case
-                </button>
-              </div>
+              <button
+                onClick={() => router.push('/evidence')}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  color: '#374151'
+                }}
+              >
+                Go to My Case to Select Evidence
+              </button>
             </div>
           </>
         ) : (
@@ -382,7 +364,7 @@ export default function DocsPage() {
                 padding: 48,
                 color: '#6b7280'
               }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ“</div>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📁</div>
                 <p>No court documents uploaded yet</p>
                 <p style={{ fontSize: 13 }}>Upload orders, parenting plans, and custody agreements</p>
               </div>
@@ -399,11 +381,11 @@ export default function DocsPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <div style={{ fontSize: 24 }}>ðŸ“„</div>
+                      <div style={{ fontSize: 24 }}>📄</div>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ margin: 0, fontSize: 15, color: '#1f2937' }}>{doc.title}</h3>
                         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                          {doc.type} â€¢ Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                          {doc.type} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
                         </p>
                         {doc.summary && (
                           <p style={{ margin: '8px 0 0', fontSize: 13, color: '#374151', lineHeight: 1.5 }}>

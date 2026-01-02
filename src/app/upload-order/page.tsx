@@ -29,11 +29,11 @@ export default function UploadOrderPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'analyzing' | 'saving'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [fileName, setFileName] = useState<string>('');
 
   useEffect(() => {
     const init = async () => {
@@ -61,12 +61,14 @@ export default function UploadOrderPage() {
       return;
     }
 
+    setFileName(file.name);
     setUploading(true);
     setError(null);
-    setUploadProgress('Uploading document...');
+    setUploadStep('uploading');
 
     try {
-      setUploadProgress('Analyzing document with AI...');
+      await new Promise(r => setTimeout(r, 500));
+      setUploadStep('analyzing');
       
       const formData = new FormData();
       formData.append('file', file);
@@ -83,7 +85,9 @@ export default function UploadOrderPage() {
         throw new Error(result.error || 'Failed to process document');
       }
 
-      setUploadProgress('Document processed successfully!');
+      setUploadStep('saving');
+      await new Promise(r => setTimeout(r, 300));
+      
       setExtractedData(result.extracted);
       setSuccess(true);
 
@@ -92,28 +96,13 @@ export default function UploadOrderPage() {
       setError(err.message || 'Failed to upload document. Please try again.');
     } finally {
       setUploading(false);
+      setUploadStep('idle');
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleUpload(file);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleUpload(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setDragOver(false);
   };
 
   if (loading) {
@@ -153,205 +142,159 @@ export default function UploadOrderPage() {
         >
           ←
         </button>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Upload Court Order</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.8 }}>
-            AI extracts case info automatically
-          </p>
-        </div>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Upload Court Order</h1>
       </header>
 
-      <main style={{ maxWidth: 600, margin: '0 auto', padding: 24 }}>
+      <main style={{ maxWidth: 500, margin: '0 auto', padding: 24 }}>
         {!success ? (
           <>
-            {/* Upload Zone */}
-            <div
-              onClick={() => !uploading && fileInputRef.current?.click()}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              style={{
-                background: dragOver ? '#f0fdf4' : 'white',
-                border: `2px dashed ${dragOver ? '#059669' : '#e5e7eb'}`,
+            {/* Upload State */}
+            {uploading ? (
+              <div style={{
+                background: 'white',
                 borderRadius: 16,
-                padding: 48,
+                padding: 40,
                 textAlign: 'center',
-                cursor: uploading ? 'wait' : 'pointer',
-                transition: 'all 0.2s',
-                marginBottom: 24
-              }}
-            >
-              {uploading ? (
-                <>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-                  <p style={{ 
-                    fontSize: 16, 
-                    fontWeight: 600, 
-                    color: '#1a3a2f',
-                    margin: '0 0 8px' 
-                  }}>
-                    {uploadProgress}
-                  </p>
-                  <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
-                    This may take a moment...
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-                  <p style={{ 
-                    fontSize: 16, 
-                    fontWeight: 600, 
-                    color: '#1a3a2f',
-                    margin: '0 0 8px' 
-                  }}>
-                    Drop your PDF here or tap to browse
-                  </p>
-                  <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
-                    Custody orders, parenting plans, court orders
-                  </p>
-                </>
-              )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-
-            {/* Error Message */}
-            {error && (
-              <div style={{
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 24
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
               }}>
+                <div style={{ 
+                  width: 60, 
+                  height: 60, 
+                  margin: '0 auto 20px',
+                  border: '4px solid #e5e7eb',
+                  borderTopColor: '#059669',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
                 <p style={{ 
-                  margin: 0, 
-                  color: '#dc2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
+                  fontSize: 16, 
+                  fontWeight: 600, 
+                  color: '#1a3a2f',
+                  margin: '0 0 8px' 
                 }}>
-                  <span>⚠️</span> {error}
+                  {uploadStep === 'uploading' && 'Uploading...'}
+                  {uploadStep === 'analyzing' && 'AI is reading your document...'}
+                  {uploadStep === 'saving' && 'Saving to your case...'}
                 </p>
+                <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+                  {fileName}
+                </p>
+                <style jsx>{`
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `}</style>
               </div>
+            ) : (
+              <>
+                {/* Big Upload Button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 16,
+                    padding: '32px 24px',
+                    cursor: 'pointer',
+                    marginBottom: 16,
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>+</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+                    Tap to Select PDF
+                  </div>
+                  <div style={{ fontSize: 14, opacity: 0.9 }}>
+                    Custody orders, parenting plans, court filings
+                  </div>
+                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+
+                {/* Error Message */}
+                {error && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 16
+                  }}>
+                    <p style={{ margin: 0, color: '#dc2626', fontSize: 14 }}>
+                      {error}
+                    </p>
+                  </div>
+                )}
+
+                {/* What happens */}
+                <div style={{
+                  background: 'white',
+                  borderRadius: 12,
+                  padding: 20,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                }}>
+                  <h3 style={{ 
+                    margin: '0 0 12px', 
+                    fontSize: 14, 
+                    fontWeight: 600,
+                    color: '#374151'
+                  }}>
+                    What happens next:
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <Step num={1} text="AI reads your document" />
+                    <Step num={2} text="Extracts case number, parties, dates" />
+                    <Step num={3} text="Auto-fills your case details" />
+                  </div>
+                </div>
+              </>
             )}
-
-            {/* What Gets Extracted */}
-            <div style={{
-              background: 'white',
-              borderRadius: 16,
-              padding: 20,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <h3 style={{ 
-                margin: '0 0 16px', 
-                fontSize: 15, 
-                fontWeight: 600,
-                color: '#374151'
-              }}>
-                📋 What AI extracts:
-              </h3>
-              <ul style={{ 
-                margin: 0, 
-                paddingLeft: 20, 
-                color: '#6b7280',
-                fontSize: 14,
-                lineHeight: 1.8
-              }}>
-                <li>Case number & court info</li>
-                <li>Petitioner & respondent names</li>
-                <li>Key dates and deadlines</li>
-                <li>Custody & parenting time arrangements</li>
-                <li>Important provisions</li>
-              </ul>
-              <div style={{
-                marginTop: 16,
-                padding: 12,
-                background: '#fefce8',
-                borderRadius: 8,
-                border: '1px solid #fef08a'
-              }}>
-                <p style={{ 
-                  margin: 0, 
-                  fontSize: 13, 
-                  color: '#92400e' 
-                }}>
-                  💡 Extracted info auto-fills your case details for document generation
-                </p>
-              </div>
-            </div>
           </>
         ) : (
           <>
             {/* Success State */}
             <div style={{
-              background: '#f0fdf4',
-              border: '2px solid #059669',
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
               borderRadius: 16,
-              padding: 24,
+              padding: 32,
               textAlign: 'center',
-              marginBottom: 24
+              marginBottom: 20,
+              color: 'white'
             }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-              <h2 style={{ 
-                margin: '0 0 8px', 
-                fontSize: 20, 
-                color: '#1a3a2f' 
-              }}>
-                Document Uploaded!
-              </h2>
-              <p style={{ 
-                margin: 0, 
-                fontSize: 14, 
-                color: '#059669' 
-              }}>
-                AI successfully extracted your case information
-              </p>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
+              <h2 style={{ margin: '0 0 4px', fontSize: 20 }}>Document Saved!</h2>
+              <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{fileName}</p>
             </div>
 
-            {/* Extracted Data Display */}
+            {/* Extracted Data */}
             {extractedData && (
               <div style={{
                 background: 'white',
-                borderRadius: 16,
+                borderRadius: 12,
                 padding: 20,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                marginBottom: 24
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                marginBottom: 20
               }}>
-                <h3 style={{ 
-                  margin: '0 0 16px', 
-                  fontSize: 16, 
-                  fontWeight: 600,
-                  color: '#1a3a2f'
-                }}>
-                  Extracted Information
+                <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#1a3a2f' }}>
+                  Extracted Info
                 </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {extractedData.document_type && (
-                    <InfoRow label="Document Type" value={extractedData.document_type} />
+                    <InfoRow label="Type" value={extractedData.document_type} />
                   )}
                   {extractedData.case_number && (
-                    <InfoRow label="Case Number" value={extractedData.case_number} />
+                    <InfoRow label="Case #" value={extractedData.case_number} />
                   )}
                   {extractedData.court_name && (
                     <InfoRow label="Court" value={extractedData.court_name} />
-                  )}
-                  {(extractedData.county || extractedData.state) && (
-                    <InfoRow 
-                      label="Location" 
-                      value={[extractedData.county, extractedData.state].filter(Boolean).join(', ')} 
-                    />
-                  )}
-                  {extractedData.judge_name && (
-                    <InfoRow label="Judge" value={extractedData.judge_name} />
                   )}
                   {extractedData.petitioner_name && (
                     <InfoRow label="Petitioner" value={extractedData.petitioner_name} />
@@ -360,92 +303,157 @@ export default function UploadOrderPage() {
                     <InfoRow label="Respondent" value={extractedData.respondent_name} />
                   )}
                   {extractedData.filing_date && (
-                    <InfoRow label="Filing Date" value={formatDate(extractedData.filing_date)} />
-                  )}
-                  {extractedData.effective_date && (
-                    <InfoRow label="Effective Date" value={formatDate(extractedData.effective_date)} />
+                    <InfoRow label="Filed" value={formatDate(extractedData.filing_date)} />
                   )}
                 </div>
-
                 {extractedData.summary && (
-                  <div style={{ 
-                    marginTop: 16, 
-                    padding: 12, 
+                  <p style={{ 
+                    margin: '16px 0 0', 
+                    padding: 12,
                     background: '#f9fafb',
-                    borderRadius: 8
+                    borderRadius: 8,
+                    fontSize: 13, 
+                    color: '#374151',
+                    lineHeight: 1.5
                   }}>
-                    <p style={{ 
-                      margin: 0, 
-                      fontSize: 13, 
-                      color: '#374151',
-                      lineHeight: 1.6
-                    }}>
-                      <strong>Summary:</strong> {extractedData.summary}
-                    </p>
-                  </div>
-                )}
-
-                {extractedData.key_provisions && extractedData.key_provisions.length > 0 && (
-                  <div style={{ marginTop: 16 }}>
-                    <p style={{ 
-                      margin: '0 0 8px', 
-                      fontSize: 13, 
-                      fontWeight: 600,
-                      color: '#374151'
-                    }}>
-                      Key Provisions:
-                    </p>
-                    <ul style={{ 
-                      margin: 0, 
-                      paddingLeft: 18, 
-                      fontSize: 13,
-                      color: '#6b7280',
-                      lineHeight: 1.6
-                    }}>
-                      {extractedData.key_provisions.slice(0, 5).map((provision, i) => (
-                        <li key={i}>{provision}</li>
-                      ))}
-                    </ul>
-                  </div>
+                    {extractedData.summary}
+                  </p>
                 )}
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Smart Next Steps */}
+            <div style={{
+              background: 'white',
+              borderRadius: 12,
+              padding: 16,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              marginBottom: 20
+            }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                What would you like to do?
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  onClick={() => {
+                    const docType = extractedData?.document_type || 'court document';
+                    const prompt = `I just uploaded a "${docType}" to my case. What are my deadlines and what do I need to do next?`;
+                    sessionStorage.setItem('coachPrompt', prompt);
+                    router.push('/coach');
+                  }}
+                  style={{
+                    padding: '14px 16px',
+                    background: '#fefce8',
+                    border: '1px solid #fef08a',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>⏰</span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#92400e', fontSize: 14 }}>What do I need to do?</div>
+                    <div style={{ fontSize: 12, color: '#a16207' }}>Deadlines, requirements, next steps</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    const docType = extractedData?.document_type || 'this filing';
+                    const petitioner = extractedData?.petitioner_name || 'the petitioner';
+                    const prompt = `I need help responding to ${docType} filed by ${petitioner}. What are my options and how should I respond?`;
+                    sessionStorage.setItem('coachPrompt', prompt);
+                    router.push('/coach');
+                  }}
+                  style={{
+                    padding: '14px 16px',
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>💬</span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#1e40af', fontSize: 14 }}>Help me respond</div>
+                    <div style={{ fontSize: 12, color: '#3b82f6' }}>Get guidance on how to reply</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const summary = extractedData?.summary || '';
+                    const provisions = extractedData?.key_provisions?.join(', ') || '';
+                    const prompt = `Explain this court document to me in plain English: ${summary} ${provisions ? `Key provisions: ${provisions}` : ''}`;
+                    sessionStorage.setItem('coachPrompt', prompt);
+                    router.push('/coach');
+                  }}
+                  style={{
+                    padding: '14px 16px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>📖</span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#166534', fontSize: 14 }}>Explain this to me</div>
+                    <div style={{ fontSize: 12, color: '#22c55e' }}>Plain English translation</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Secondary Actions */}
+            <div style={{ display: 'flex', gap: 12 }}>
               <button
                 onClick={() => {
                   setSuccess(false);
                   setExtractedData(null);
                   setError(null);
+                  setFileName('');
                 }}
                 style={{
-                  padding: '14px 20px',
-                  background: '#1a3a2f',
-                  color: 'white',
-                  border: 'none',
+                  flex: 1,
+                  padding: '12px 16px',
+                  background: 'white',
+                  color: '#374151',
+                  border: '1px solid #e5e7eb',
                   borderRadius: 10,
-                  fontSize: 15,
-                  fontWeight: 600,
+                  fontSize: 14,
+                  fontWeight: 500,
                   cursor: 'pointer'
                 }}
               >
-                📄 Upload Another Document
+                Upload Another
               </button>
               <button
                 onClick={() => router.push('/docs')}
                 style={{
-                  padding: '14px 20px',
+                  flex: 1,
+                  padding: '12px 16px',
                   background: 'white',
-                  color: '#1a3a2f',
-                  border: '2px solid #1a3a2f',
+                  color: '#374151',
+                  border: '1px solid #e5e7eb',
                   borderRadius: 10,
-                  fontSize: 15,
-                  fontWeight: 600,
+                  fontSize: 14,
+                  fontWeight: 500,
                   cursor: 'pointer'
                 }}
               >
-                ← Back to Documents
+                Done
               </button>
             </div>
           </>
@@ -457,16 +465,38 @@ export default function UploadOrderPage() {
   );
 }
 
+function Step({ num, text }: { num: number; text: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        width: 24,
+        height: 24,
+        borderRadius: '50%',
+        background: '#e0f2e9',
+        color: '#059669',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 12,
+        fontWeight: 700
+      }}>
+        {num}
+      </div>
+      <span style={{ fontSize: 14, color: '#4b5563' }}>{text}</span>
+    </div>
+  );
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ 
       display: 'flex', 
       justifyContent: 'space-between',
-      padding: '8px 0',
+      padding: '6px 0',
       borderBottom: '1px solid #f3f4f6'
     }}>
       <span style={{ fontSize: 13, color: '#6b7280' }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3a2f' }}>{value}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: '#1a3a2f', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
     </div>
   );
 }
@@ -474,11 +504,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch {
     return dateStr;
   }

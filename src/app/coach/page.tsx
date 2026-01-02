@@ -80,6 +80,20 @@ function CoachContent() {
     init();
   }, [router]);
 
+  // Check for stored prompt from other pages (like upload-order)
+  useEffect(() => {
+    if (!loading && user) {
+      const storedPrompt = sessionStorage.getItem('coachPrompt');
+      if (storedPrompt) {
+        sessionStorage.removeItem('coachPrompt');
+        // Small delay to ensure UI is ready
+        setTimeout(() => {
+          handleSend(storedPrompt);
+        }, 300);
+      }
+    }
+  }, [loading, user]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
