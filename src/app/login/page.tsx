@@ -1,21 +1,45 @@
 "use client";
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [promoCode, setPromoCode] = useState('')
+  const [showPromoField, setShowPromoField] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingState, setLoadingState] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
 
+  // Handle URL params (canceled checkout, promo codes in URL)
+  useEffect(() => {
+    const canceled = searchParams.get('canceled')
+    const code = searchParams.get('code')
+    
+    if (canceled === 'true') {
+      setError('Checkout was canceled. Ready to try again when you are.')
+      setMode('signup')
+    }
+    
+    if (code) {
+      setPromoCode(code)
+      setShowPromoField(true)
+      setMode('signup')
+    }
+  }, [searchParams])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setLoadingState('Signing in...')
     setError(null)
     setMessage(null)
 
@@ -27,6 +51,7 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
+      setLoadingState('')
     } else if (data.session) {
       router.push('/coach')
     }
@@ -35,6 +60,7 @@ export default function LoginPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setLoadingState('Creating your account...')
     setError(null)
 
     // First create the auth user with password
@@ -46,28 +72,37 @@ export default function LoginPage() {
     if (authError) {
       setError(authError.message)
       setLoading(false)
+      setLoadingState('')
       return
     }
 
     // Then redirect to Stripe checkout
     try {
+      setLoadingState('Preparing secure checkout...')
+      
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email,
+          promoCode: promoCode.trim() || undefined
+        }),
       })
 
       const data = await response.json()
 
       if (data.url) {
+        setLoadingState('Redirecting to checkout...')
         window.location.href = data.url
       } else {
         setError(data.error || 'Something went wrong')
         setLoading(false)
+        setLoadingState('')
       }
     } catch (err) {
-      setError('Failed to start checkout')
+      setError('Failed to start checkout. Please try again.')
       setLoading(false)
+      setLoadingState('')
     }
   }
 
@@ -77,6 +112,7 @@ export default function LoginPage() {
       return
     }
     setLoading(true)
+    setLoadingState('Sending reset link...')
     setError(null)
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -89,6 +125,7 @@ export default function LoginPage() {
       setMessage('Check your email for password reset link')
     }
     setLoading(false)
+    setLoadingState('')
   }
 
   return (
@@ -170,6 +207,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
+            disabled={loading}
             style={{
               width: '100%',
               padding: '16px 20px',
@@ -178,28 +216,87 @@ export default function LoginPage() {
               borderRadius: '12px',
               marginBottom: '16px',
               boxSizing: 'border-box',
-              outline: 'none'
+              outline: 'none',
+              opacity: loading ? 0.7 : 1
             }}
           />
           
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            minLength={6}
-            style={{
-              width: '100%',
-              padding: '16px 20px',
-              fontSize: '16px',
-              border: '2px solid #e0e0e0',
-              borderRadius: '12px',
-              marginBottom: '16px',
-              boxSizing: 'border-box',
-              outline: 'none'
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              minLength={6}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                fontSize: '16px',
+                border: '2px solid #e0e0e0',
+                borderRadius: '12px',
+                marginBottom: '8px',
+                boxSizing: 'border-box',
+                outline: 'none',
+                opacity: loading ? 0.7 : 1
+              }}
+            />
+            {mode === 'signup' && (
+              <p style={{ 
+                fontSize: '12px', 
+                color: '#999', 
+                textAlign: 'left',
+                marginBottom: '16px',
+                marginTop: '0'
+              }}>
+                At least 6 characters
+              </p>
+            )}
+          </div>
+
+          {/* Promo Code Section - Signup Only */}
+          {mode === 'signup' && (
+            <div style={{ marginBottom: '16px' }}>
+              {!showPromoField ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPromoField(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2dd4a8',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: '8px 0'
+                  }}
+                >
+                  Have a promo code?
+                </button>
+              ) : (
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Enter promo code"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    padding: '14px 20px',
+                    fontSize: '16px',
+                    border: '2px solid #2dd4a8',
+                    borderRadius: '12px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    background: '#f0fdf4',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    opacity: loading ? 0.7 : 1
+                  }}
+                />
+              )}
+            </div>
+          )}
 
           <button
             type="submit"
@@ -217,7 +314,7 @@ export default function LoginPage() {
             }}
           >
             {loading
-              ? 'Loading...'
+              ? loadingState || 'Loading...'
               : mode === 'signup'
                 ? 'Start 7-Day Free Trial'
                 : 'Sign In'}
@@ -270,9 +367,27 @@ export default function LoginPage() {
         <p style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
           {mode === 'login'
             ? "Enter your email and password to sign in."
-            : "Create your account, then complete checkout. No charge for 7 days."}
+            : "You'll be redirected to secure checkout. No charge for 7 days."}
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%)',
+      }}>
+        <div style={{ fontSize: '48px' }}>💚</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

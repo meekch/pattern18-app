@@ -1,7 +1,7 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
 
@@ -12,20 +12,31 @@ interface Message {
   hasImage?: boolean;
 }
 
-export default function CoachPage() {
+function CoachContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [showHome, setShowHome] = useState(true);
+  const [showNewUserWelcome, setShowNewUserWelcome] = useState(false);
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check for new signup success
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setShowNewUserWelcome(true);
+      // Clean up the URL
+      window.history.replaceState({}, '', '/coach');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const init = async () => {
@@ -254,6 +265,28 @@ export default function CoachPage() {
 
   return (
     <div className="container">
+      {/* New User Welcome Modal */}
+      {showNewUserWelcome && (
+        <div className="welcome-modal-overlay">
+          <div className="welcome-modal">
+            <div className="welcome-modal-icon">🎉</div>
+            <h2>Welcome to Pattern 18!</h2>
+            <p>Your 7-day free trial has started. You now have a 24/7 strategic partner to help you document patterns and build your case.</p>
+            <div className="welcome-modal-tips">
+              <div className="tip">📸 Drop a screenshot to analyze</div>
+              <div className="tip">💬 Paste a message for response help</div>
+              <div className="tip">📄 Get help with court documents</div>
+            </div>
+            <button 
+              className="welcome-modal-btn"
+              onClick={() => setShowNewUserWelcome(false)}
+            >
+              Let's Get Started
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
@@ -669,7 +702,88 @@ export default function CoachPage() {
           opacity: 0.5;
           cursor: not-allowed;
         }
+        .welcome-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        .welcome-modal {
+          background: white;
+          border-radius: 24px;
+          padding: 40px;
+          max-width: 420px;
+          width: 100%;
+          text-align: center;
+          animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .welcome-modal-icon {
+          font-size: 56px;
+          margin-bottom: 16px;
+        }
+        .welcome-modal h2 {
+          color: #1a3a2f;
+          font-size: 24px;
+          margin: 0 0 12px 0;
+        }
+        .welcome-modal p {
+          color: #666;
+          line-height: 1.5;
+          margin: 0 0 24px 0;
+        }
+        .welcome-modal-tips {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 24px;
+          text-align: left;
+        }
+        .welcome-modal-tips .tip {
+          padding: 8px 0;
+          color: #1a3a2f;
+          font-size: 14px;
+        }
+        .welcome-modal-tips .tip:not(:last-child) {
+          border-bottom: 1px solid #d1fae5;
+        }
+        .welcome-modal-btn {
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 18px;
+          font-weight: 600;
+          cursor: pointer;
+        }
       `}</style>
     </div>
+  );
+}
+
+export default function CoachPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh', 
+        background: '#f5f7f6' 
+      }}>
+        <div style={{ fontSize: '48px', animation: 'pulse 1.5s infinite' }}>💚</div>
+      </div>
+    }>
+      <CoachContent />
+    </Suspense>
   );
 }
