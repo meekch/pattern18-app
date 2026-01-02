@@ -71,8 +71,8 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const topPattern = Object.entries(patternCounts)
-    .sort((a, b) => b[1] - a[1])[0];
+  // Filter out non-patterns for stats display
+  const excludeFromTop = ['not_abuse', 'uncategorized', 'none_detected', 'other'];
 
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
@@ -286,18 +286,9 @@ export default function CoachPage() {
                 </div>
                 <div className="stat-divider" />
                 <div className="stat">
-                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
+                  <span className="stat-num">{Object.keys(patternCounts).filter(k => !excludeFromTop.includes(k)).length}</span>
                   <span className="stat-label">PATTERNS FOUND</span>
                 </div>
-                {topPattern && (
-                  <>
-                    <div className="stat-divider" />
-                    <div className="stat">
-                      <span className="stat-pattern">{topPattern[0]}</span>
-                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
-                    </div>
-                  </>
-                )}
               </div>
             )}
 
