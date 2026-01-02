@@ -13,6 +13,37 @@ function LoginContent() {
   const [password, setPassword] = useState('')
   const [promoCode, setPromoCode] = useState('')
   const [showPromoField, setShowPromoField] = useState(false)
+  
+  // Dynamic pricing message based on promo code
+  const getPricingMessage = () => {
+    const code = promoCode.toUpperCase().trim();
+    if (code === 'HEALING') {
+      return 'Free access for beta testers 💚';
+    } else if (code === 'BETA50' || code === 'COUNTER') {
+      return '7 days free, then 50% off. Cancel anytime.';
+    } else if (promoCode.trim()) {
+      return 'Discount will be applied at checkout.';
+    }
+    return '7 days free, then $89/month. Cancel anytime.';
+  }
+  
+  // Dynamic headline
+  const getHeadline = () => {
+    const code = promoCode.toUpperCase().trim();
+    if (code === 'HEALING') {
+      return 'Welcome, Beta Tester';
+    }
+    return 'Start Your Free Trial';
+  }
+  
+  // Dynamic button text
+  const getButtonText = () => {
+    const code = promoCode.toUpperCase().trim();
+    if (code === 'HEALING') {
+      return 'Get Free Access';
+    }
+    return 'Start 7-Day Free Trial';
+  }
   const [loading, setLoading] = useState(false)
   const [loadingState, setLoadingState] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -148,12 +179,12 @@ function LoginContent() {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>💚</div>
         <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#1a3a2f' }}>
-          {mode === 'login' ? 'Welcome Back' : 'Start Your Free Trial'}
+          {mode === 'login' ? 'Welcome Back' : getHeadline()}
         </h1>
         <p style={{ color: '#666', marginBottom: '32px' }}>
           {mode === 'login'
             ? 'Sign in to access your coach'
-            : '7 days free, then $89/month. Cancel anytime.'}
+            : getPricingMessage()}
         </p>
 
         {/* Login/Signup Toggle */}
@@ -316,7 +347,7 @@ function LoginContent() {
             {loading
               ? loadingState || 'Loading...'
               : mode === 'signup'
-                ? 'Start 7-Day Free Trial'
+                ? getButtonText()
                 : 'Sign In'}
           </button>
         </form>
@@ -367,7 +398,9 @@ function LoginContent() {
         <p style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
           {mode === 'login'
             ? "Enter your email and password to sign in."
-            : "You'll be redirected to secure checkout. No charge for 7 days."}
+            : promoCode.toUpperCase().trim() === 'HEALING'
+              ? "Complete signup to activate your free beta access."
+              : "You'll be redirected to secure checkout. No charge for 7 days."}
         </p>
       </div>
     </div>
