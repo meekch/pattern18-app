@@ -83,6 +83,8 @@ function EvidenceContent() {
   const [editPatterns, setEditPatterns] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
   const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
@@ -227,9 +229,11 @@ function EvidenceContent() {
 
       if (error) throw error;
 
-      setIncidents(prev => prev.filter(inc => inc.id !== id));                      
+      setIncidents(prev => prev.filter(inc => inc.id !== id));
+      setDeleteConfirm(null);
       setExpandedId(null);
     } catch (err) {
+      console.error("Delete error:", err);
     }
   };
 
@@ -293,7 +297,7 @@ function EvidenceContent() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
+          <div style={{ fontSize: 32, marginBottom: 16 }}></div>
           <p style={{ color: "#6b7280" }}>Loading your evidence...</p>
         </div>
       </div>
@@ -319,7 +323,7 @@ function EvidenceContent() {
             onClick={() => router.push("/my-case")}
             style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
           >
-            â†
+            <-
           </button>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
         </div>
@@ -379,7 +383,7 @@ function EvidenceContent() {
                 { key: "all", label: "All" },
                 { key: "high+", label: "High+" },
                 { key: "critical", label: "Critical" },
-                { key: "exhibit", label: "📋 Exhibit" },
+                { key: "exhibit", label: " Exhibit" },
               ].map(f => (
                 <button
                   key={f.key}
@@ -477,12 +481,12 @@ function EvidenceContent() {
             borderRadius: 12,
             color: "#6b7280"
           }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔭</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}></div>
             <p>No incidents match your filter</p>
           </div>
         ) : (
           Object.entries(groupedIncidents).map(([monthYear, monthIncidents]) => (
-                  📅 {monthYear}
+            <div key={monthYear} style={{ marginBottom: 32 }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -490,7 +494,7 @@ function EvidenceContent() {
                 marginBottom: 12
               }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
-                  📅 {monthYear}
+                   {monthYear}
                 </span>
                 <span style={{
                   fontSize: 12,
@@ -555,7 +559,7 @@ function EvidenceContent() {
                           }}
                         >
                           {incident.include_in_exhibit && (
-                            <span style={{ color: "white", fontSize: 12 }}>✓</span>
+                            <span style={{ color: "white", fontSize: 12 }}>+ </span>
                           )}
                         </div>
 
@@ -590,7 +594,7 @@ function EvidenceContent() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {categoryLabels[incident.category] || incident.category || "—"}
+                          {categoryLabels[incident.category] || incident.category || "”"}
                         </div>
 
                         <div style={{
@@ -601,7 +605,7 @@ function EvidenceContent() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "—"}
+                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "”"}
                         </div>
 
                         <span style={{
@@ -609,7 +613,7 @@ function EvidenceContent() {
                           transform: isExpanded ? "rotate(90deg)" : "none",
                           transition: "transform 0.15s"
                         }}>
-                          ›
+                          >
                         </span>
                       </div>
 
@@ -639,7 +643,7 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                              ✏️ Edit Severity/Patterns
+                               Edit Severity/Patterns
                             </button>
                             <button
                               onClick={() => dismissAsNotAbuse(incident.id)}
@@ -654,7 +658,7 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                              âŒ Not Abuse (Dismiss)
+                              X Not Abuse (Dismiss)
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(incident.id)}
@@ -669,11 +673,11 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                              🗑️ Delete
+                               Delete
                             </button>
                           </div>
 
-                              🗑️ Delete
+                          {/* Delete Confirmation */}
                           {deleteConfirm === incident.id && (
                             <div style={{
                               background: "#fef2f2",
@@ -683,7 +687,7 @@ function EvidenceContent() {
                               marginBottom: 16
                             }}>
                               <p style={{ margin: "0 0 12px", color: "#dc2626", fontWeight: 500 }}>
-                              🗑️ Delete
+                                Delete this incident permanently?
                               </p>
                               <div style={{ display: "flex", gap: 8 }}>
                                 <button
@@ -698,7 +702,7 @@ function EvidenceContent() {
                                     fontWeight: 500
                                   }}
                                 >
-                              🗑️ Delete
+                                  Yes, Delete
                                 </button>
                                 <button
                                   onClick={() => setDeleteConfirm(null)}
@@ -721,7 +725,7 @@ function EvidenceContent() {
                           {incident.patterns?.length > 0 && (
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                ⚠️ PATTERNS DETECTED
+                                PATTERNS DETECTED
                               </div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                 {incident.patterns.map((pattern, i) => (
@@ -746,7 +750,7 @@ function EvidenceContent() {
                           {/* All Messages */}
                           <div>
                             <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                              📨 MESSAGES ({incident.messages_json?.length || 1})
+                               MESSAGES ({incident.messages_json?.length || 1})
                             </div>
                             <div style={{
                               background: "white",
@@ -776,7 +780,7 @@ function EvidenceContent() {
                                         fontWeight: 600,
                                         color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
                                       }}>
-                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
+                                        {msg.sender === 'coparent' ? '´ Co-parent' : '[+] You'}
                                       </span>
                                       <span>
                                         {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
@@ -831,7 +835,7 @@ function EvidenceContent() {
           zIndex: 1000
         }}>
           <div style={{ color: 'white', fontSize: 15 }}>
-            ✓ <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
+            +  <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
           </div>
           <button
             onClick={() => router.push('/generate-exhibit')}
@@ -847,7 +851,7 @@ function EvidenceContent() {
               whiteSpace: 'nowrap'
             }}
           >
-            Generate Exhibit â†’
+            Generate Exhibit <-’
           </button>
         </div>
       )}
@@ -1010,7 +1014,7 @@ export default function EvidencePage() {
     <Suspense fallback={
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
+          <div style={{ fontSize: 32, marginBottom: 16 }}></div>
           <p style={{ color: "#6b7280" }}>Loading...</p>
         </div>
       </div>
