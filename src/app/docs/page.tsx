@@ -116,220 +116,67 @@ export default function DocsPage() {
       <main style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
         {activeTab === 'generate' ? (
           <>
-            {/* Exhibit Packet - Primary */}
-            <div style={{
-              background: 'white',
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 20,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              border: '2px solid #059669'
+            {/* Simple intro */}
+            <p style={{ 
+              textAlign: 'center', 
+              color: '#6b7280', 
+              marginBottom: 24,
+              fontSize: 14
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                <div style={{
-                  width: 56,
-                  height: 56,
-                  background: '#d1fae5',
-                  borderRadius: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 28,
-                  flexShrink: 0
-                }}>
-                  📊
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <h2 style={{ margin: 0, fontSize: 18, color: '#1f2937' }}>Court Exhibit Packet</h2>
-                    <span style={{
-                      background: '#059669',
-                      color: 'white',
-                      fontSize: 11,
-                      padding: '2px 8px',
-                      borderRadius: 10,
-                      fontWeight: 600
-                    }}>
-                      RECOMMENDED
-                    </span>
-                  </div>
-                  <p style={{ margin: '8px 0 16px', color: '#6b7280', fontSize: 14, lineHeight: 1.5 }}>
-                    Downloads a professional Word document (.docx) with your evidence formatted for court submission.
-                  </p>
-                  
-                  <div style={{
-                    background: '#f9fafb',
-                    borderRadius: 10,
-                    padding: 14,
-                    marginBottom: 16
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                      WHAT'S INCLUDED:
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: 18, color: '#6b7280', fontSize: 13, lineHeight: 1.7 }}>
-                      <li>Cover page with case information</li>
-                      <li>Executive summary with statistics</li>
-                      <li>Pattern breakdown with frequency counts</li>
-                      <li>Monthly timeline showing escalation</li>
-                      <li>All incidents with exact quotes</li>
-                      <li>Appendix with pattern definitions & academic sources</li>
-                    </ul>
-                  </div>
+              Select incidents in My Case first, then generate your document.
+            </p>
 
-                  <div style={{
-                    background: '#fefce8',
-                    borderRadius: 10,
-                    padding: 14,
-                    marginBottom: 16,
-                    border: '1px solid #fef08a'
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      HOW TO USE:
-                    </div>
-                    <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
-                      <li>Go to My Case and check the boxes next to your strongest incidents</li>
-                      <li>Click "Generate Exhibit" below</li>
-                      <li>Choose "Only include marked incidents" for a focused document</li>
-                      <li>Download and attach to your court filing as an exhibit</li>
-                    </ol>
-                  </div>
-
-                  <button
-                    onClick={() => router.push('/generate-exhibit')}
-                    style={{
-                      width: '100%',
-                      padding: '14px 20px',
-                      background: '#059669',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: 10,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8
-                    }}
-                  >
-                    Generate Exhibit Packet
-                  </button>
-                </div>
-              </div>
+            {/* Document type grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 12,
+              marginBottom: 20
+            }}>
+              <DocTypeCard
+                icon="📊"
+                title="Evidence Packet"
+                desc="Professional .docx for court"
+                recommended
+                onClick={() => router.push('/generate-exhibit')}
+              />
+              <DocTypeCard
+                icon="✏️"
+                title="Declaration"
+                desc="Numbered paragraphs under penalty of perjury"
+                onClick={() => router.push('/generate-declaration')}
+              />
+              <DocTypeCard
+                icon="📅"
+                title="Timeline"
+                desc="Chronological list with exhibit numbers"
+                onClick={() => router.push('/generate-declaration?type=timeline')}
+              />
+              <DocTypeCard
+                icon="📋"
+                title="Exhibit List"
+                desc="Formal index of all exhibits"
+                onClick={() => router.push('/generate-declaration?type=exhibit_list')}
+              />
             </div>
 
-            {/* AI Document Writer */}
-            <div style={{
-              background: 'white',
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 20,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                <div style={{
-                  width: 56,
-                  height: 56,
-                  background: '#e0f2e9',
-                  borderRadius: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 28,
-                  flexShrink: 0
-                }}>
-                  ✏️
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h2 style={{ margin: '0 0 4px', fontSize: 18, color: '#1f2937' }}>AI Declaration Writer</h2>
-                  <p style={{ margin: '8px 0 16px', color: '#6b7280', fontSize: 14, lineHeight: 1.5 }}>
-                    AI writes a formal declaration in proper legal format. Great for declarations, motions, and responses.
-                  </p>
-                  
-                  <div style={{
-                    background: '#f9fafb',
-                    borderRadius: 10,
-                    padding: 14,
-                    marginBottom: 16
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                      DOCUMENT TYPES:
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: 18, color: '#6b7280', fontSize: 13, lineHeight: 1.7 }}>
-                      <li><strong>Declaration</strong> - Numbered paragraphs under penalty of perjury</li>
-                      <li><strong>Timeline</strong> - Chronological list with exhibit numbers</li>
-                      <li><strong>Pattern Summary</strong> - Analysis grouped by abuse type</li>
-                      <li><strong>Exhibit List</strong> - Formal index of all exhibits</li>
-                    </ul>
-                  </div>
-
-                  <div style={{
-                    background: '#fefce8',
-                    borderRadius: 10,
-                    padding: 14,
-                    marginBottom: 16,
-                    border: '1px solid #fef08a'
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      HOW TO USE:
-                    </div>
-                    <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
-                      <li>Select incidents from My Case (check the boxes)</li>
-                      <li>Choose the document type you need</li>
-                      <li>AI generates the text in proper legal format</li>
-                      <li>Copy into your Word document or court form</li>
-                    </ol>
-                  </div>
-
-                  <button
-                    onClick={() => router.push('/generate-declaration')}
-                    style={{
-                      width: '100%',
-                      padding: '14px 20px',
-                      background: '#1a3a2f',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: 10,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8
-                    }}
-                  >
-                    Write Declaration
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div style={{
-              background: '#f3f4f6',
-              borderRadius: 12,
-              padding: 16
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginBottom: 12 }}>
-                QUICK ACTION
-              </div>
-              <button
-                onClick={() => router.push('/evidence')}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  color: '#374151'
-                }}
-              >
-                Go to My Case to Select Evidence
-              </button>
-            </div>
+            {/* Go to My Case */}
+            <button
+              onClick={() => router.push('/evidence')}
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                background: '#1a3a2f',
+                color: 'white',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Go to My Case to Select Evidence →
+            </button>
           </>
         ) : (
           <>
@@ -534,5 +381,55 @@ function DocumentCard({ doc, router }: { doc: CourtDoc; router: any }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Simple document type card for generation grid
+function DocTypeCard({ 
+  icon, 
+  title, 
+  desc, 
+  recommended, 
+  onClick 
+}: { 
+  icon: string; 
+  title: string; 
+  desc: string; 
+  recommended?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'white',
+        border: recommended ? '2px solid #059669' : '1px solid #e5e7eb',
+        borderRadius: 12,
+        padding: 16,
+        cursor: 'pointer',
+        textAlign: 'left',
+        position: 'relative',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+      }}
+    >
+      {recommended && (
+        <span style={{
+          position: 'absolute',
+          top: -8,
+          right: 8,
+          background: '#059669',
+          color: 'white',
+          fontSize: 9,
+          padding: '2px 6px',
+          borderRadius: 6,
+          fontWeight: 700
+        }}>
+          RECOMMENDED
+        </span>
+      )}
+      <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 14, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{desc}</div>
+    </button>
   );
 }
