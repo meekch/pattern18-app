@@ -83,8 +83,6 @@ function EvidenceContent() {
   const [editPatterns, setEditPatterns] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
-                              🗑️ Delete
-                              🗑️ Delete
 
   const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
   const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
