@@ -323,7 +323,7 @@ function EvidenceContent() {
             onClick={() => router.push("/my-case")}
             style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
           >
-            <-
+            Back
           </button>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
         </div>
@@ -594,7 +594,7 @@ function EvidenceContent() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {categoryLabels[incident.category] || incident.category || "”"}
+                          {categoryLabels[incident.category] || incident.category || "-"}
                         </div>
 
                         <div style={{
@@ -605,7 +605,7 @@ function EvidenceContent() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "”"}
+                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "-"}
                         </div>
 
                         <span style={{
@@ -780,7 +780,7 @@ function EvidenceContent() {
                                         fontWeight: 600,
                                         color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
                                       }}>
-                                        {msg.sender === 'coparent' ? '´ Co-parent' : '[+] You'}
+                                        {msg.sender === 'coparent' ? 'Co-parent' : 'You'}
                                       </span>
                                       <span>
                                         {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
@@ -851,7 +851,7 @@ function EvidenceContent() {
               whiteSpace: 'nowrap'
             }}
           >
-            Generate Exhibit <-’
+            Generate Exhibit
           </button>
         </div>
       )}
