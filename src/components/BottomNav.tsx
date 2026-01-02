@@ -12,10 +12,10 @@ export default function BottomNav({ active }: BottomNavProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   const navItems = [
-    { id: 'coach', label: 'Coach', icon: '💬', path: '/coach' },
-    { id: 'case', label: 'My Case', icon: '📊', path: '/my-case' },
-    { id: 'docs', label: 'Docs', icon: '📄', path: '/docs' },
-    { id: 'menu', label: 'Menu', icon: '☰', path: null },
+    { id: 'coach', label: 'Coach', icon: 'ðŸ’¬', path: '/coach' },
+    { id: 'case', label: 'My Case', icon: 'ðŸ“Š', path: '/evidence' },
+    { id: 'docs', label: 'Docs', icon: 'ðŸ“„', path: '/docs' },
+    { id: 'menu', label: 'Menu', icon: 'â˜°', path: null },
   ];
 
   const handleNav = (item: typeof navItems[0]) => {
@@ -47,12 +47,12 @@ export default function BottomNav({ active }: BottomNavProps) {
           <div className="menu-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="menu-header">
               <h3>Menu</h3>
-              <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
+              <button className="close-btn" onClick={() => setShowMenu(false)}>âœ•</button>
             </div>
             
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/case-setup'); }} className="menu-item">
-                <span className="menu-icon">⚙️</span>
+                <span className="menu-icon">âš™ï¸</span>
                 <div className="menu-text">
                   <span className="menu-title">Case Settings</span>
                   <span className="menu-desc">Names, case number, court info</span>
@@ -60,7 +60,7 @@ export default function BottomNav({ active }: BottomNavProps) {
               </button>
               
               <button onClick={() => { setShowMenu(false); router.push('/calendar'); }} className="menu-item">
-                <span className="menu-icon">📅</span>
+                <span className="menu-icon">ðŸ“…</span>
                 <div className="menu-text">
                   <span className="menu-title">Court Calendar</span>
                   <span className="menu-desc">Hearings and deadlines</span>
@@ -68,7 +68,7 @@ export default function BottomNav({ active }: BottomNavProps) {
               </button>
               
               <button onClick={() => { setShowMenu(false); router.push('/evidence/upload'); }} className="menu-item">
-                <span className="menu-icon">📤</span>
+                <span className="menu-icon">ðŸ“¤</span>
                 <div className="menu-text">
                   <span className="menu-title">Bulk Import</span>
                   <span className="menu-desc">Import message history (CSV)</span>
@@ -80,7 +80,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/getting-started'); }} className="menu-item">
-                <span className="menu-icon">🚀</span>
+                <span className="menu-icon">ðŸš€</span>
                 <div className="menu-text">
                   <span className="menu-title">Getting Started</span>
                   <span className="menu-desc">How to use Pattern 18</span>
@@ -88,7 +88,7 @@ export default function BottomNav({ active }: BottomNavProps) {
               </button>
               
               <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
-                <span className="menu-icon">💚</span>
+                <span className="menu-icon">ðŸ’š</span>
                 <div className="menu-text">
                   <span className="menu-title">I Need a Moment</span>
                   <span className="menu-desc">Breathing, grounding, support</span>
@@ -104,7 +104,7 @@ export default function BottomNav({ active }: BottomNavProps) {
                 await supabase.auth.signOut(); 
                 router.push('/login'); 
               }} className="menu-item logout">
-                <span className="menu-icon">🚪</span>
+                <span className="menu-icon">ðŸšª</span>
                 <div className="menu-text">
                   <span className="menu-title">Log Out</span>
                 </div>
