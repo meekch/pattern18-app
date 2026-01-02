@@ -247,6 +247,14 @@ KEY PHRASES TO USE:
 - "You do not need to solve it perfectly today."
 - "You are not [fear]. You are [reframe]."
 
+USING CASE HISTORY (CRITICAL - THIS IS YOUR ADVANTAGE OVER GENERIC AI):
+When the user's case history is provided, USE IT:
+- "You've documented [X] incidents of [pattern]. This is number [X+1]."
+- "This fits the pattern we've been tracking. Gatekeeping - you've now seen this [count] times."
+- "Your documented history shows [pattern] is his most frequent tactic ([count] instances)."
+- Connect current message to their cumulative evidence
+- This is what makes Pattern 18 worth paying for - you KNOW their case
+
 CRITICAL RULES:
 - Validate fears FIRST, then pivot to strategy
 - Ground in what courts actually care about
@@ -260,7 +268,7 @@ CRITICAL RULES:
 - Child messages: reassurance only, super short
 - Summarize what they did right at the end
 - Stay available: "I'm here, send whatever comes next"
-- Reference Pattern 18's unique value
+- ALWAYS reference case history when provided - cumulative pattern counts matter
 - No JADEing in their messages
 - Write messages assuming judge could see them`;
 
@@ -278,23 +286,58 @@ export async function POST(req: NextRequest) {
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
-    // Build context string
+    // Pattern label mapping for readable names
+    const patternLabels: Record<string, string> = {
+      gaslighting: "Gaslighting",
+      darvo: "DARVO",
+      intimidation: "Intimidation",
+      threats: "Threats",
+      financial_abuse: "Financial Abuse",
+      financial_manipulation: "Financial Manipulation",
+      using_children_as_weapons: "Using Children as Weapons",
+      blame_shifting: "Blame-Shifting",
+      false_accusations: "False Accusations",
+      emotional_blackmail: "Emotional Blackmail",
+      stonewalling: "Stonewalling",
+      monitoring_stalking: "Monitoring/Stalking",
+      monitoring: "Monitoring/Stalking",
+      stalking: "Monitoring/Stalking",
+      isolation_tactics: "Isolation Tactics",
+      isolation: "Isolation Tactics",
+      minimizing_denying: "Minimizing/Denying",
+      word_salad: "Word Salad",
+      moving_goalposts: "Moving Goalposts",
+      projection: "Projection",
+      hoovering: "Hoovering",
+      gatekeeping: "Gatekeeping",
+      manipulation: "Manipulation",
+      legal_threats: "Legal/Court Threats",
+      schedule_manipulation: "Schedule Manipulation",
+    };
+
+    // Build context string with readable pattern names
     let contextString = '';
     if (Object.keys(patternCounts).length > 0 || parseInt(evidenceCount) > 0) {
-      const topPatterns = Object.entries(patternCounts)
+      const patternList = Object.entries(patternCounts)
         .sort((a: any, b: any) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([pattern, count]) => `${pattern}: ${count}`)
+        .slice(0, 6)
+        .map(([pattern, count]) => {
+          const label = patternLabels[pattern] || pattern.replace(/_/g, ' ');
+          return `${label} (${count}x)`;
+        })
         .join(', ');
       
-      contextString = `\n\n[CASE HISTORY: ${evidenceCount} incidents documented. Top patterns: ${topPatterns || 'None yet'}]`;
+      contextString = `\n\n[USER'S DOCUMENTED CASE HISTORY - REFERENCE THIS:
+Total incidents documented: ${evidenceCount}
+Patterns documented: ${patternList || 'None yet'}
+When you detect a pattern in this message, tell them how many times they've documented it. Example: "This is gatekeeping. You've now documented this ${patternCounts['gatekeeping'] ? patternCounts['gatekeeping'] + 1 : '1'} times."]`;
     }
 
     if (caseContext.coparent_name) {
       contextString += `\n[Co-parent name: ${caseContext.coparent_name}]`;
     }
     if (caseContext.state) {
-      contextString += `\n[State: ${caseContext.state}]`;
+      contextString += `\n[State: ${caseContext.state} - use state-specific guidance when relevant]`;
     }
     if (caseContext.user_name) {
       contextString += `\n[User's name: ${caseContext.user_name}]`;

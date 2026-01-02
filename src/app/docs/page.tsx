@@ -137,7 +137,6 @@ export default function DocsPage() {
                 icon="📊"
                 title="Evidence Packet"
                 desc="Professional .docx for court"
-                recommended
                 onClick={() => router.push('/generate-exhibit')}
               />
               <DocTypeCard
