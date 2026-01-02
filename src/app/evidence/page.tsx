@@ -613,7 +613,7 @@ function EvidenceContent() {
                           transform: isExpanded ? "rotate(90deg)" : "none",
                           transition: "transform 0.15s"
                         }}>
-                          >
+                          {'>'}
                         </span>
                       </div>
 
