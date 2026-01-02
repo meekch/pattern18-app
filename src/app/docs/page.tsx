@@ -12,6 +12,11 @@ interface CourtDoc {
   summary: string;
   uploaded_at: string;
   file_path: string;
+  case_number?: string;
+  court_name?: string;
+  petitioner_name?: string;
+  respondent_name?: string;
+  key_provisions?: string[];
 }
 
 export default function DocsPage() {
@@ -371,30 +376,7 @@ export default function DocsPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {courtDocs.map(doc => (
-                  <div
-                    key={doc.id}
-                    style={{
-                      background: 'white',
-                      borderRadius: 12,
-                      padding: 16,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <div style={{ fontSize: 24 }}>📄</div>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, fontSize: 15, color: '#1f2937' }}>{doc.title}</h3>
-                        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                          {doc.type} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
-                        </p>
-                        {doc.summary && (
-                          <p style={{ margin: '8px 0 0', fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-                            {doc.summary}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <DocumentCard key={doc.id} doc={doc} router={router} />
                 ))}
               </div>
             )}
@@ -403,6 +385,154 @@ export default function DocsPage() {
       </main>
 
       <BottomNav active="docs" />
+    </div>
+  );
+}
+
+// Expandable document card with action buttons
+function DocumentCard({ doc, router }: { doc: CourtDoc; router: any }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleAction = (action: 'deadlines' | 'respond' | 'explain') => {
+    let prompt = '';
+    
+    if (action === 'deadlines') {
+      prompt = `I have a "${doc.title}" in my case. What are my deadlines and what do I need to do next?`;
+    } else if (action === 'respond') {
+      const petitioner = doc.petitioner_name || 'the other party';
+      prompt = `I need help responding to "${doc.title}" filed by ${petitioner}. What are my options and how should I respond?`;
+    } else if (action === 'explain') {
+      const summary = doc.summary || '';
+      prompt = `Explain this court document to me in plain English: "${doc.title}". ${summary}`;
+    }
+    
+    sessionStorage.setItem('coachPrompt', prompt);
+    router.push('/coach');
+  };
+
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: 12,
+      overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+    }}>
+      {/* Main row - tappable */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          padding: 16,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12
+        }}
+      >
+        <div style={{ fontSize: 24 }}>📄</div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, fontSize: 15, color: '#1f2937' }}>{doc.title}</h3>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+            {doc.type} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+          </p>
+          {doc.summary && !expanded && (
+            <p style={{ 
+              margin: '8px 0 0', 
+              fontSize: 13, 
+              color: '#374151', 
+              lineHeight: 1.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {doc.summary}
+            </p>
+          )}
+        </div>
+        <div style={{ 
+          color: '#9ca3af', 
+          transform: expanded ? 'rotate(90deg)' : 'none',
+          transition: 'transform 0.2s'
+        }}>
+          ›
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div style={{ 
+          padding: '0 16px 16px',
+          borderTop: '1px solid #f3f4f6'
+        }}>
+          {doc.summary && (
+            <p style={{ 
+              margin: '12px 0', 
+              fontSize: 13, 
+              color: '#374151', 
+              lineHeight: 1.6 
+            }}>
+              {doc.summary}
+            </p>
+          )}
+          
+          {/* Action buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+            <button
+              onClick={() => handleAction('deadlines')}
+              style={{
+                padding: '10px 12px',
+                background: '#fefce8',
+                border: '1px solid #fef08a',
+                borderRadius: 8,
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}
+            >
+              <span>⏰</span>
+              <span style={{ fontWeight: 500, color: '#92400e', fontSize: 13 }}>What do I need to do?</span>
+            </button>
+            
+            <button
+              onClick={() => handleAction('respond')}
+              style={{
+                padding: '10px 12px',
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: 8,
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}
+            >
+              <span>💬</span>
+              <span style={{ fontWeight: 500, color: '#1e40af', fontSize: 13 }}>Help me respond</span>
+            </button>
+
+            <button
+              onClick={() => handleAction('explain')}
+              style={{
+                padding: '10px 12px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: 8,
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}
+            >
+              <span>📖</span>
+              <span style={{ fontWeight: 500, color: '#166534', fontSize: 13 }}>Explain this to me</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
