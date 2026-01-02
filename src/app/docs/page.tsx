@@ -89,7 +89,7 @@ export default function DocsPage() {
             fontSize: 14
           }}
         >
-          ✨ Generate Documents
+          âœ¨ Generate Documents
         </button>
         <button
           onClick={() => setActiveTab('uploads')}
@@ -105,7 +105,7 @@ export default function DocsPage() {
             fontSize: 14
           }}
         >
-          📁 Court Orders ({courtDocs.length})
+          ðŸ“ Court Orders ({courtDocs.length})
         </button>
       </div>
 
@@ -133,7 +133,7 @@ export default function DocsPage() {
                   fontSize: 28,
                   flexShrink: 0
                 }}>
-                  📊
+                  ðŸ“Š
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -180,7 +180,7 @@ export default function DocsPage() {
                     border: '1px solid #fef08a'
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      💡 HOW TO USE:
+                      ðŸ’¡ HOW TO USE:
                     </div>
                     <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
                       <li>Go to Evidence and check the boxes next to your strongest incidents</li>
@@ -208,7 +208,7 @@ export default function DocsPage() {
                       gap: 8
                     }}
                   >
-                    📥 Generate Exhibit Packet
+                    ðŸ“¥ Generate Exhibit Packet
                   </button>
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function DocsPage() {
                   fontSize: 28,
                   flexShrink: 0
                 }}>
-                  ✍️
+                  âœï¸
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ margin: '0 0 4px', fontSize: 18, color: '#1f2937' }}>AI Declaration Writer</h2>
@@ -252,10 +252,10 @@ export default function DocsPage() {
                       DOCUMENT TYPES:
                     </div>
                     <ul style={{ margin: 0, paddingLeft: 18, color: '#6b7280', fontSize: 13, lineHeight: 1.7 }}>
-                      <li><strong>Declaration</strong> – Numbered paragraphs under penalty of perjury</li>
-                      <li><strong>Timeline</strong> – Chronological list with exhibit numbers</li>
-                      <li><strong>Pattern Summary</strong> – Analysis grouped by abuse type</li>
-                      <li><strong>Exhibit List</strong> – Formal index of all exhibits</li>
+                      <li><strong>Declaration</strong> â€“ Numbered paragraphs under penalty of perjury</li>
+                      <li><strong>Timeline</strong> â€“ Chronological list with exhibit numbers</li>
+                      <li><strong>Pattern Summary</strong> â€“ Analysis grouped by abuse type</li>
+                      <li><strong>Exhibit List</strong> â€“ Formal index of all exhibits</li>
                     </ul>
                   </div>
 
@@ -267,7 +267,7 @@ export default function DocsPage() {
                     border: '1px solid #fef08a'
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
-                      💡 HOW TO USE:
+                      ðŸ’¡ HOW TO USE:
                     </div>
                     <ol style={{ margin: 0, paddingLeft: 18, color: '#a16207', fontSize: 13, lineHeight: 1.7 }}>
                       <li>Select incidents from Evidence (check the boxes)</li>
@@ -295,7 +295,7 @@ export default function DocsPage() {
                       gap: 8
                     }}
                   >
-                    ✍️ Write Declaration
+                    âœï¸ Write Declaration
                   </button>
                 </div>
               </div>
@@ -324,10 +324,10 @@ export default function DocsPage() {
                     color: '#374151'
                   }}
                 >
-                  📋 Select Evidence
+                  ðŸ“‹ Select Evidence
                 </button>
                 <button
-                  onClick={() => router.push('/my-case')}
+                  onClick={() => router.push('/evidence')}
                   style={{
                     flex: 1,
                     padding: '12px',
@@ -339,7 +339,7 @@ export default function DocsPage() {
                     color: '#374151'
                   }}
                 >
-                  📊 View Dashboard
+                  ðŸ“Š View My Case
                 </button>
               </div>
             </div>
@@ -382,7 +382,7 @@ export default function DocsPage() {
                 padding: 48,
                 color: '#6b7280'
               }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📁</div>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ“</div>
                 <p>No court documents uploaded yet</p>
                 <p style={{ fontSize: 13 }}>Upload orders, parenting plans, and custody agreements</p>
               </div>
@@ -399,11 +399,11 @@ export default function DocsPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <div style={{ fontSize: 24 }}>📄</div>
+                      <div style={{ fontSize: 24 }}>ðŸ“„</div>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ margin: 0, fontSize: 15, color: '#1f2937' }}>{doc.title}</h3>
                         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                          {doc.type} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                          {doc.type} â€¢ Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
                         </p>
                         {doc.summary && (
                           <p style={{ margin: '8px 0 0', fontSize: 13, color: '#374151', lineHeight: 1.5 }}>

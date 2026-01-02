@@ -300,7 +300,7 @@ function CoachContent() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+        <button className="evidence-badge" onClick={() => router.push('/evidence')}>
           📁 {evidenceCount}
         </button>
       </header>
