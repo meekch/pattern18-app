@@ -214,12 +214,20 @@ ${exactMessage || "[No message text available]"}
     const yourTitle = yourRole === "petitioner" ? "Petitioner" : "Respondent";
     const otherTitle = yourRole === "petitioner" ? "Respondent" : "Petitioner";
     
+    // Map names correctly based on user's role in the case
+    const yourName = yourRole === "petitioner" 
+      ? caseContext.petitionerName 
+      : caseContext.respondentName;
+    const otherPartyName = yourRole === "petitioner"
+      ? caseContext.respondentName
+      : caseContext.petitionerName;
+    
     const contextInfo = `
 CASE INFORMATION:
 Court: ${caseContext.courtName || "[COURT NAME]"}
 Case Number: ${caseContext.caseNumber || "[CASE NUMBER]"}
-${yourTitle} (You): ${caseContext.petitionerName || "[YOUR NAME]"}
-${otherTitle}: ${caseContext.respondentName || "[OTHER PARTY NAME]"}
+${yourTitle} (You): ${yourName || "[YOUR NAME]"}
+${otherTitle}: ${otherPartyName || "[OTHER PARTY NAME]"}
 Your Role in Case: ${yourTitle}
 Purpose of Document: ${caseContext.filingPurpose || "Documentation of communication patterns"}
 

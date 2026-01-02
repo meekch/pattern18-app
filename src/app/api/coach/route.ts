@@ -7,7 +7,7 @@ export const maxDuration = 60;
 const COERCIVE_CONTROL_PATTERNS = `
 PATTERN DETECTION - COERCIVE CONTROL & MANIPULATION TACTICS:
 
-You MUST identify which of these specific patterns are present in messages. These are the 18 patterns of coercive control that courts need to see documented:
+You MUST identify which of these specific patterns are present in messages. These are key patterns of coercive control that courts need to see documented:
 
 1. GASLIGHTING - Making someone question their reality, memory, or perception
    Examples: "That never happened", "You're imagining things", "You're crazy"
