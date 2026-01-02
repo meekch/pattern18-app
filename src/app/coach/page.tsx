@@ -9,7 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  hasImage?: boolean;
+  imageUrl?: string; // Store the image data URL for display
 }
 
 export default function CoachPage() {
@@ -71,8 +71,18 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Filter out non-patterns for stats display
-  const excludeFromTop = ['not_abuse', 'uncategorized', 'none_detected', 'other'];
+  const topPattern = Object.entries(patternCounts)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  // Convert file to data URL for display
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
@@ -83,10 +93,16 @@ export default function CoachPage() {
     setInput('');
     setDetectedPatterns([]);
 
+    // Get image URL for display if file is an image
+    let imageUrl: string | undefined;
+    if (file && file.type.startsWith('image/')) {
+      imageUrl = await fileToDataUrl(file);
+    }
+
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
-      hasImage: !!file
+      content: text || '',
+      imageUrl
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -165,12 +181,11 @@ export default function CoachPage() {
 
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case 'respond':
+      case 'screenshot':
         fileInputRef.current?.click();
         break;
-      case 'draft':
-        setShowHome(false);
-        setInput('I need to send a message about ');
+      case 'import':
+        router.push('/evidence/upload');
         break;
       case 'courtdoc':
         router.push('/docs');
@@ -286,9 +301,18 @@ export default function CoachPage() {
                 </div>
                 <div className="stat-divider" />
                 <div className="stat">
-                  <span className="stat-num">{Object.keys(patternCounts).filter(k => !excludeFromTop.includes(k)).length}</span>
+                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
                   <span className="stat-label">PATTERNS FOUND</span>
                 </div>
+                {topPattern && (
+                  <>
+                    <div className="stat-divider" />
+                    <div className="stat">
+                      <span className="stat-pattern">{topPattern[0]}</span>
+                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -296,27 +320,27 @@ export default function CoachPage() {
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
               
-              <button className="action-btn primary" onClick={() => handleQuickAction('respond')}>
-                <span className="action-icon">📱</span>
+              <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
+                <span className="action-icon">📸</span>
                 <div className="action-text">
-                  <span className="action-title">Help me respond</span>
-                  <span className="action-desc">Paste or screenshot a message</span>
-                </div>
-              </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('draft')}>
-                <span className="action-icon">✍️</span>
-                <div className="action-text">
-                  <span className="action-title">Draft a message</span>
-                  <span className="action-desc">I need to send something</span>
+                  <span className="action-title">Analyze a screenshot</span>
+                  <span className="action-desc">Upload image of a message</span>
                 </div>
               </button>
 
               <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
                 <span className="action-icon">📄</span>
                 <div className="action-text">
-                  <span className="action-title">Court document</span>
-                  <span className="action-desc">Upload, understand, or prep for court</span>
+                  <span className="action-title">Court doc help</span>
+                  <span className="action-desc">Understand, respond, or prepare filings</span>
+                </div>
+              </button>
+
+              <button className="action-btn" onClick={() => handleQuickAction('import')}>
+                <span className="action-icon">📤</span>
+                <div className="action-text">
+                  <span className="action-title">Import message history</span>
+                  <span className="action-desc">Bulk analyze CSV export</span>
                 </div>
               </button>
 
@@ -333,7 +357,16 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                <div className="message-content">{msg.content}</div>
+                {/* Show image if present */}
+                {msg.imageUrl && (
+                  <div className="message-image">
+                    <img src={msg.imageUrl} alt="Uploaded screenshot" />
+                  </div>
+                )}
+                {/* Show text content if present */}
+                {msg.content && (
+                  <div className="message-content">{msg.content}</div>
+                )}
                 {msg.patterns && msg.patterns.length > 0 && (
                   <div className="patterns-detected">
                     {msg.patterns.map((p, j) => (
@@ -565,6 +598,16 @@ export default function CoachPage() {
         }
         .message {
           margin-bottom: 16px;
+        }
+        .message.user .message-image {
+          margin-left: 40px;
+          margin-bottom: 8px;
+        }
+        .message.user .message-image img {
+          max-width: 100%;
+          max-height: 300px;
+          border-radius: 12px;
+          border: 2px solid #1a3a2f;
         }
         .message.user .message-content {
           background: #1a3a2f;
