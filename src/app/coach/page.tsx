@@ -1,7 +1,7 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
 
@@ -12,33 +12,20 @@ interface Message {
   hasImage?: boolean;
 }
 
-function CoachContent() {
+export default function CoachPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [showHome, setShowHome] = useState(true);
-  const [showNewUserWelcome, setShowNewUserWelcome] = useState(false);
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [lastSavedMessageIndex, setLastSavedMessageIndex] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Check for new signup success
-  useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      setShowNewUserWelcome(true);
-      // Clean up the URL
-      window.history.replaceState({}, '', '/coach');
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const init = async () => {
@@ -80,73 +67,12 @@ function CoachContent() {
     init();
   }, [router]);
 
-  // Check for stored prompt from other pages (like upload-order)
-  useEffect(() => {
-    if (!loading && user) {
-      const storedPrompt = sessionStorage.getItem('coachPrompt');
-      if (storedPrompt) {
-        sessionStorage.removeItem('coachPrompt');
-        // Small delay to ensure UI is ready
-        setTimeout(() => {
-          handleSend(storedPrompt);
-        }, 300);
-      }
-    }
-  }, [loading, user]);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Toast notification helper
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  // Auto-save evidence when patterns are detected
-  const autoSaveEvidence = async (userContent: string, patterns: string[], messageIndex: number) => {
-    if (!user || patterns.length === 0) return;
-    
-    // Don't save if we already saved this message
-    if (messageIndex <= lastSavedMessageIndex) return;
-
-    try {
-      const primaryPattern = patterns[0] || 'Uncategorized';
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      const { error } = await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: userContent,
-        category: categoryKey,
-        patterns: patterns,
-        severity: patterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-        ) ? 'high' : 'medium',
-        incident_date: new Date().toISOString(),
-      });
-
-      if (error) throw error;
-
-      setLastSavedMessageIndex(messageIndex);
-      setEvidenceCount(prev => prev + 1);
-      
-      // Update pattern counts locally
-      patterns.forEach(p => {
-        const key = p.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-        setPatternCounts(prev => ({
-          ...prev,
-          [key]: (prev[key] || 0) + 1
-        }));
-      });
-
-      showToast(`✓ Saved to evidence (${patterns.length} pattern${patterns.length > 1 ? 's' : ''} detected)`);
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      showToast('Failed to save evidence. Try again.', 'error');
-    }
-  };
+  const topPattern = Object.entries(patternCounts)
+    .sort((a, b) => b[1] - a[1])[0];
 
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
@@ -226,13 +152,6 @@ function CoachContent() {
         return newMessages;
       });
 
-      // Auto-save if patterns were detected
-      if (patterns.length > 0) {
-        const userContent = text || (file ? `[Uploaded: ${file.name}]` : '');
-        const currentMessageIndex = messages.length; // Index of the user message we just added
-        await autoSaveEvidence(userContent, patterns, currentMessageIndex);
-      }
-
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, { 
@@ -241,6 +160,24 @@ function CoachContent() {
       }]);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'respond':
+        fileInputRef.current?.click();
+        break;
+      case 'draft':
+        setShowHome(false);
+        setInput('I need to send a message about ');
+        break;
+      case 'courtdoc':
+        router.push('/docs');
+        break;
+      case 'moment':
+        router.push('/healing');
+        break;
     }
   };
 
@@ -269,6 +206,40 @@ function CoachContent() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleSaveEvidence = async () => {
+    if (messages.length < 2 || !detectedPatterns.length) return;
+
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+
+    if (!lastUserMsg || !lastAssistantMsg) return;
+
+    try {
+      // Get first detected pattern as category (already a coercive control pattern)
+      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: lastUserMsg.content,
+        category: categoryKey,
+        patterns: detectedPatterns,
+        severity: detectedPatterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
+        ) ? 'high' : 'medium',
+        incident_date: new Date().toISOString(),
+      });
+
+      alert('Saved to evidence!');
+      setDetectedPatterns([]);
+      setEvidenceCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -284,28 +255,6 @@ function CoachContent() {
 
   return (
     <div className="container">
-      {/* New User Welcome Modal */}
-      {showNewUserWelcome && (
-        <div className="welcome-modal-overlay">
-          <div className="welcome-modal">
-            <div className="welcome-modal-icon">🎉</div>
-            <h2>Welcome to Pattern 18!</h2>
-            <p>Your 7-day free trial has started. You now have a 24/7 strategic partner to help you document patterns and build your case.</p>
-            <div className="welcome-modal-tips">
-              <div className="tip">📸 Drop a screenshot to analyze</div>
-              <div className="tip">💬 Paste a message for response help</div>
-              <div className="tip">📄 Get help with court documents</div>
-            </div>
-            <button 
-              className="welcome-modal-btn"
-              onClick={() => setShowNewUserWelcome(false)}
-            >
-              Let's Get Started
-            </button>
-          </div>
-        </div>
-      )}
-
       <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
@@ -314,7 +263,7 @@ function CoachContent() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/evidence')}>
+        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
           📁 {evidenceCount}
         </button>
       </header>
@@ -324,38 +273,68 @@ function CoachContent() {
           <div className="home">
             <div className="welcome">
               <div className="heart">💚</div>
-              <h1>Hey, I'm glad you're here.</h1>
-              <p>Paste a message, attach a screenshot, or just tell me what's going on.</p>
+              <h1>Hey, I am glad you are here.</h1>
+              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
-            <div className="prompts-card">
-              <button 
-                className="prompt-btn"
-                onClick={() => setInput("I just got this message and I don't know how to respond...")}
-              >
-                <span className="prompt-icon">💬</span>
-                I just got this message...
+            {/* Stats Bar */}
+            {evidenceCount > 0 && (
+              <div className="stats-bar">
+                <div className="stat">
+                  <span className="stat-num">{evidenceCount}</span>
+                  <span className="stat-label">DOCUMENTED</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat">
+                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
+                  <span className="stat-label">PATTERNS FOUND</span>
+                </div>
+                {topPattern && (
+                  <>
+                    <div className="stat-divider" />
+                    <div className="stat">
+                      <span className="stat-pattern">{topPattern[0]}</span>
+                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="quick-actions">
+              <h3>WHAT CAN I HELP WITH?</h3>
+              
+              <button className="action-btn primary" onClick={() => handleQuickAction('respond')}>
+                <span className="action-icon">📱</span>
+                <div className="action-text">
+                  <span className="action-title">Help me respond</span>
+                  <span className="action-desc">Paste or screenshot a message</span>
+                </div>
               </button>
-              <button 
-                className="prompt-btn"
-                onClick={() => setInput("Help me respond to this without taking the bait")}
-              >
-                <span className="prompt-icon">🛡️</span>
-                Help me respond without taking the bait
+
+              <button className="action-btn" onClick={() => handleQuickAction('draft')}>
+                <span className="action-icon">✍️</span>
+                <div className="action-text">
+                  <span className="action-title">Draft a message</span>
+                  <span className="action-desc">I need to send something</span>
+                </div>
               </button>
-              <button 
-                className="prompt-btn"
-                onClick={() => setInput("I need to document what just happened")}
-              >
-                <span className="prompt-icon">📝</span>
-                I need to document what happened
+
+              <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
+                <span className="action-icon">📄</span>
+                <div className="action-text">
+                  <span className="action-title">Court document</span>
+                  <span className="action-desc">Upload, understand, or prep for court</span>
+                </div>
               </button>
-              <button 
-                className="prompt-btn attach"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <span className="prompt-icon">📎</span>
-                Attach a screenshot
+
+              <button className="action-btn" onClick={() => handleQuickAction('moment')}>
+                <span className="action-icon">🌿</span>
+                <div className="action-text">
+                  <span className="action-title">I need a moment</span>
+                  <span className="action-desc">Breathing, grounding, support</span>
+                </div>
               </button>
             </div>
           </div>
@@ -381,14 +360,14 @@ function CoachContent() {
             <div ref={messagesEndRef} />
           </div>
         )}
-      </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+        {/* Save Evidence Button */}
+        {detectedPatterns.length > 0 && !showHome && (
+          <button className="save-evidence-btn" onClick={handleSaveEvidence}>
+            💾 Save to Evidence ({detectedPatterns.length} patterns detected)
+          </button>
+        )}
+      </div>
 
       {/* Input Area */}
       <div className="input-area">
@@ -498,43 +477,95 @@ function CoachContent() {
           line-height: 1.5;
           margin: 0;
         }
-        .prompts-card {
+        .stats-bar {
           display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-top: 32px;
+          justify-content: center;
+          align-items: center;
+          gap: 16px;
+          background: white;
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stat {
+          text-align: center;
+        }
+        .stat-num {
+          display: block;
+          font-size: 24px;
+          font-weight: 800;
+          color: #1a3a2f;
+        }
+        .stat-pattern {
+          display: block;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1a3a2f;
+        }
+        .stat-label {
+          font-size: 10px;
+          color: #9ca3af;
+          letter-spacing: 0.5px;
+        }
+        .stat-divider {
+          width: 1px;
+          height: 40px;
+          background: #e5e7eb;
+        }
+        .quick-actions {
           background: white;
           border-radius: 16px;
-          padding: 16px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+          padding: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
-        .prompt-btn {
+        .quick-actions h3 {
+          text-align: center;
+          font-size: 12px;
+          letter-spacing: 1px;
+          color: #6b7280;
+          margin: 0 0 16px 0;
+        }
+        .action-btn {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          background: #f9fafb;
-          border: 2px solid transparent;
+          gap: 16px;
+          width: 100%;
+          padding: 16px;
+          background: white;
+          border: 2px solid #e5e7eb;
           border-radius: 12px;
-          font-size: 15px;
-          color: #374151;
           cursor: pointer;
           text-align: left;
+          margin-bottom: 12px;
           transition: all 0.2s;
         }
-        .prompt-btn:hover {
+        .action-btn:last-child {
+          margin-bottom: 0;
+        }
+        .action-btn:hover {
           border-color: #1a3a2f;
           background: #f0fdf4;
         }
-        .prompt-btn.attach {
+        .action-btn.primary {
           background: #f0fdf4;
           border-color: #1a3a2f;
-          color: #1a3a2f;
+        }
+        .action-icon {
+          font-size: 28px;
+        }
+        .action-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .action-title {
           font-weight: 600;
+          color: #1a3a2f;
         }
-        .prompt-icon {
-          font-size: 20px;
-          flex-shrink: 0;
+        .action-desc {
+          font-size: 13px;
+          color: #9ca3af;
         }
         .chat {
           max-width: 600px;
@@ -578,30 +609,20 @@ function CoachContent() {
           color: #9ca3af;
           font-style: italic;
         }
-        .toast {
+        .save-evidence-btn {
           position: fixed;
           bottom: 140px;
           left: 50%;
           transform: translateX(-50%);
-          padding: 14px 24px;
-          border-radius: 12px;
-          font-weight: 500;
-          font-size: 14px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-          z-index: 100;
-          animation: toastSlide 0.3s ease-out;
-        }
-        .toast.success {
           background: #1a3a2f;
           color: white;
-        }
-        .toast.error {
-          background: #dc2626;
-          color: white;
-        }
-        @keyframes toastSlide {
-          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          border: none;
+          padding: 12px 24px;
+          border-radius: 24px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          z-index: 50;
         }
         .input-area {
           position: fixed;
@@ -649,88 +670,7 @@ function CoachContent() {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        .welcome-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.7);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-        .welcome-modal {
-          background: white;
-          border-radius: 24px;
-          padding: 40px;
-          max-width: 420px;
-          width: 100%;
-          text-align: center;
-          animation: modalSlideIn 0.3s ease-out;
-        }
-        @keyframes modalSlideIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .welcome-modal-icon {
-          font-size: 56px;
-          margin-bottom: 16px;
-        }
-        .welcome-modal h2 {
-          color: #1a3a2f;
-          font-size: 24px;
-          margin: 0 0 12px 0;
-        }
-        .welcome-modal p {
-          color: #666;
-          line-height: 1.5;
-          margin: 0 0 24px 0;
-        }
-        .welcome-modal-tips {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 16px;
-          margin-bottom: 24px;
-          text-align: left;
-        }
-        .welcome-modal-tips .tip {
-          padding: 8px 0;
-          color: #1a3a2f;
-          font-size: 14px;
-        }
-        .welcome-modal-tips .tip:not(:last-child) {
-          border-bottom: 1px solid #d1fae5;
-        }
-        .welcome-modal-btn {
-          width: 100%;
-          padding: 16px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-size: 18px;
-          font-weight: 600;
-          cursor: pointer;
-        }
       `}</style>
     </div>
-  );
-}
-
-export default function CoachPage() {
-  return (
-    <Suspense fallback={
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '100vh', 
-        background: '#f5f7f6' 
-      }}>
-        <div style={{ fontSize: '48px', animation: 'pulse 1.5s infinite' }}>💚</div>
-      </div>
-    }>
-      <CoachContent />
-    </Suspense>
   );
 }
