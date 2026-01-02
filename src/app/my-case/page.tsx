@@ -128,7 +128,11 @@ export default function MyCasePage() {
           }
         });
 
+        // Filter out non-patterns
+        const excludePatterns = ['not_abuse', 'uncategorized', 'none_detected', 'other'];
+        
         const patternList: PatternCount[] = Object.entries(patterns)
+          .filter(([pattern]) => !excludePatterns.includes(pattern))
           .map(([pattern, data]) => ({
             pattern,
             count: data.total,
@@ -168,7 +172,7 @@ export default function MyCasePage() {
   if (loading) {
     return (
       <div className="loading">
-        <div className="spinner">📊</div>
+        <div className="spinner">ðŸ“Š</div>
         <style jsx>{`
           .loading {
             display: flex;
@@ -195,7 +199,7 @@ export default function MyCasePage() {
       <header className="header">
         <h1>My Case</h1>
         <button onClick={() => router.push('/case-setup')} className="settings-btn">
-          ⚙️
+          âš™ï¸
         </button>
       </header>
 
@@ -206,7 +210,7 @@ export default function MyCasePage() {
             <div className="court-days">{daysUntilCourt}</div>
             <div className="court-label">days until court</div>
             <button onClick={() => router.push('/docs')} className="prep-btn">
-              Prepare Documents →
+              Prepare Documents â†’
             </button>
           </div>
         )}
@@ -250,9 +254,9 @@ export default function MyCasePage() {
                 <div className="pattern-stats">
                   <div className="pattern-count">{p.count}</div>
                   <div className={`pattern-trend ${p.trend}`}>
-                    {p.trend === 'up' && '↑'}
-                    {p.trend === 'down' && '↓'}
-                    {p.trend === 'same' && '→'}
+                    {p.trend === 'up' && 'â†‘'}
+                    {p.trend === 'down' && 'â†“'}
+                    {p.trend === 'same' && 'â†’'}
                     <span>{p.recentCount} this month</span>
                   </div>
                 </div>
@@ -262,7 +266,7 @@ export default function MyCasePage() {
               <div className="empty-patterns">
                 <p>No patterns documented yet.</p>
                 <button onClick={() => router.push('/coach')} className="start-btn">
-                  Start Documenting →
+                  Start Documenting â†’
                 </button>
               </div>
             )}
@@ -293,19 +297,19 @@ export default function MyCasePage() {
           <h2>Quick Actions</h2>
           <div className="quick-actions">
             <button onClick={() => router.push('/evidence')} className="action-btn">
-              <span className="action-icon">📋</span>
+              <span className="action-icon">ðŸ“‹</span>
               <span>View Evidence</span>
             </button>
             <button onClick={() => router.push('/docs?create=true')} className="action-btn">
-              <span className="action-icon">📄</span>
+              <span className="action-icon">ðŸ“„</span>
               <span>Create Document</span>
             </button>
             <button onClick={() => router.push('/evidence/upload')} className="action-btn">
-              <span className="action-icon">📤</span>
+              <span className="action-icon">ðŸ“¤</span>
               <span>Bulk Import</span>
             </button>
             <button onClick={() => router.push('/calendar')} className="action-btn">
-              <span className="action-icon">📅</span>
+              <span className="action-icon">ðŸ“…</span>
               <span>Court Calendar</span>
             </button>
           </div>
@@ -325,7 +329,7 @@ export default function MyCasePage() {
               {!caseContext.case_number && !caseContext.court && (
                 <div className="case-info-empty">
                   <p>Add your case details for accurate document generation</p>
-                  <button onClick={() => router.push('/case-setup')}>Set Up Case →</button>
+                  <button onClick={() => router.push('/case-setup')}>Set Up Case â†’</button>
                 </div>
               )}
             </div>
