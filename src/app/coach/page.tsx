@@ -314,31 +314,34 @@ function CoachContent() {
               <p>Paste a message, attach a screenshot, or just tell me what's going on.</p>
             </div>
 
-            <div className="prompts">
-              <p className="prompts-label">Try saying...</p>
+            <div className="prompts-card">
               <button 
                 className="prompt-btn"
-                onClick={() => setInput("He just sent me this message and I don't know how to respond...")}
+                onClick={() => setInput("I just got this message and I don't know how to respond...")}
               >
-                "He just sent me this message..."
+                <span className="prompt-icon">💬</span>
+                I just got this message...
               </button>
               <button 
                 className="prompt-btn"
                 onClick={() => setInput("Help me respond to this without taking the bait")}
               >
-                "Help me respond without taking the bait"
+                <span className="prompt-icon">🛡️</span>
+                Help me respond without taking the bait
               </button>
               <button 
                 className="prompt-btn"
                 onClick={() => setInput("I need to document what just happened")}
               >
-                "I need to document what happened"
+                <span className="prompt-icon">📝</span>
+                I need to document what happened
               </button>
               <button 
                 className="prompt-btn attach"
                 onClick={() => fileInputRef.current?.click()}
               >
-                📎 Attach a screenshot
+                <span className="prompt-icon">📎</span>
+                Attach a screenshot
               </button>
             </div>
           </div>
@@ -481,22 +484,23 @@ function CoachContent() {
           line-height: 1.5;
           margin: 0;
         }
-        .prompts {
+        .prompts-card {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
           margin-top: 32px;
-        }
-        .prompts-label {
-          font-size: 13px;
-          color: #9ca3af;
-          text-align: center;
-          margin: 0 0 4px 0;
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
         .prompt-btn {
-          padding: 14px 18px;
-          background: white;
-          border: 2px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          background: #f9fafb;
+          border: 2px solid transparent;
           border-radius: 12px;
           font-size: 15px;
           color: #374151;
@@ -513,7 +517,10 @@ function CoachContent() {
           border-color: #1a3a2f;
           color: #1a3a2f;
           font-weight: 600;
-          text-align: center;
+        }
+        .prompt-icon {
+          font-size: 20px;
+          flex-shrink: 0;
         }
         .chat {
           max-width: 600px;
