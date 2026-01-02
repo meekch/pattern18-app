@@ -26,6 +26,8 @@ function CoachContent() {
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [lastSavedMessageIndex, setLastSavedMessageIndex] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,6 +86,56 @@ function CoachContent() {
 
   const topPattern = Object.entries(patternCounts)
     .sort((a, b) => b[1] - a[1])[0];
+
+  // Toast notification helper
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Auto-save evidence when patterns are detected
+  const autoSaveEvidence = async (userContent: string, patterns: string[], messageIndex: number) => {
+    if (!user || patterns.length === 0) return;
+    
+    // Don't save if we already saved this message
+    if (messageIndex <= lastSavedMessageIndex) return;
+
+    try {
+      const primaryPattern = patterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      const { error } = await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: userContent,
+        category: categoryKey,
+        patterns: patterns,
+        severity: patterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
+        ) ? 'high' : 'medium',
+        incident_date: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      setLastSavedMessageIndex(messageIndex);
+      setEvidenceCount(prev => prev + 1);
+      
+      // Update pattern counts locally
+      patterns.forEach(p => {
+        const key = p.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+        setPatternCounts(prev => ({
+          ...prev,
+          [key]: (prev[key] || 0) + 1
+        }));
+      });
+
+      showToast(`✓ Saved to evidence (${patterns.length} pattern${patterns.length > 1 ? 's' : ''} detected)`);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      showToast('Failed to save evidence. Try again.', 'error');
+    }
+  };
 
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
@@ -163,6 +215,13 @@ function CoachContent() {
         return newMessages;
       });
 
+      // Auto-save if patterns were detected
+      if (patterns.length > 0) {
+        const userContent = text || (file ? `[Uploaded: ${file.name}]` : '');
+        const currentMessageIndex = messages.length; // Index of the user message we just added
+        await autoSaveEvidence(userContent, patterns, currentMessageIndex);
+      }
+
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, { 
@@ -214,40 +273,6 @@ function CoachContent() {
 
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleSaveEvidence = async () => {
-    if (messages.length < 2 || !detectedPatterns.length) return;
-
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
-
-    if (!lastUserMsg || !lastAssistantMsg) return;
-
-    try {
-      // Get first detected pattern as category (already a coercive control pattern)
-      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: lastUserMsg.content,
-        category: categoryKey,
-        patterns: detectedPatterns,
-        severity: detectedPatterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-        ) ? 'high' : 'medium',
-        incident_date: new Date().toISOString(),
-      });
-
-      alert('Saved to evidence!');
-      setDetectedPatterns([]);
-      setEvidenceCount(prev => prev + 1);
-    } catch (error) {
-      console.error('Failed to save:', error);
-      alert('Failed to save. Please try again.');
-    }
   };
 
   if (loading) {
@@ -392,14 +417,14 @@ function CoachContent() {
             <div ref={messagesEndRef} />
           </div>
         )}
-
-        {/* Save Evidence Button */}
-        {detectedPatterns.length > 0 && !showHome && (
-          <button className="save-evidence-btn" onClick={handleSaveEvidence}>
-            💾 Save to Evidence ({detectedPatterns.length} patterns detected)
-          </button>
-        )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`toast ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="input-area">
@@ -641,20 +666,30 @@ function CoachContent() {
           color: #9ca3af;
           font-style: italic;
         }
-        .save-evidence-btn {
+        .toast {
           position: fixed;
           bottom: 140px;
           left: 50%;
           transform: translateX(-50%);
+          padding: 14px 24px;
+          border-radius: 12px;
+          font-weight: 500;
+          font-size: 14px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          z-index: 100;
+          animation: toastSlide 0.3s ease-out;
+        }
+        .toast.success {
           background: #1a3a2f;
           color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 24px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          z-index: 50;
+        }
+        .toast.error {
+          background: #dc2626;
+          color: white;
+        }
+        @keyframes toastSlide {
+          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         .input-area {
           position: fixed;
