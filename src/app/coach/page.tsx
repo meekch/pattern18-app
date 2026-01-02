@@ -84,9 +84,6 @@ function CoachContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const topPattern = Object.entries(patternCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-
   // Toast notification helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -233,23 +230,6 @@ function CoachContent() {
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'screenshot':
-        fileInputRef.current?.click();
-        break;
-      case 'import':
-        router.push('/evidence/upload');
-        break;
-      case 'courtdoc':
-        router.push('/docs');
-        break;
-      case 'moment':
-        router.push('/healing');
-        break;
-    }
-  };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -330,69 +310,8 @@ function CoachContent() {
           <div className="home">
             <div className="welcome">
               <div className="heart">💚</div>
-              <h1>Hey, I am glad you are here.</h1>
-              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
-            </div>
-
-            {/* Stats Bar */}
-            {evidenceCount > 0 && (
-              <div className="stats-bar">
-                <div className="stat">
-                  <span className="stat-num">{evidenceCount}</span>
-                  <span className="stat-label">DOCUMENTED</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat">
-                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
-                  <span className="stat-label">PATTERNS FOUND</span>
-                </div>
-                {topPattern && (
-                  <>
-                    <div className="stat-divider" />
-                    <div className="stat">
-                      <span className="stat-pattern">{topPattern[0]}</span>
-                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="quick-actions">
-              <h3>WHAT CAN I HELP WITH?</h3>
-              
-              <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
-                <span className="action-icon">📸</span>
-                <div className="action-text">
-                  <span className="action-title">Analyze a screenshot</span>
-                  <span className="action-desc">Upload image of a message</span>
-                </div>
-              </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
-                <span className="action-icon">📄</span>
-                <div className="action-text">
-                  <span className="action-title">Court doc help</span>
-                  <span className="action-desc">Understand, respond, or prepare filings</span>
-                </div>
-              </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('import')}>
-                <span className="action-icon">📤</span>
-                <div className="action-text">
-                  <span className="action-title">Import message history</span>
-                  <span className="action-desc">Bulk analyze CSV export</span>
-                </div>
-              </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('moment')}>
-                <span className="action-icon">🌿</span>
-                <div className="action-text">
-                  <span className="action-title">I need a moment</span>
-                  <span className="action-desc">Breathing, grounding, support</span>
-                </div>
-              </button>
+              <h1>Hey, I'm glad you're here.</h1>
+              <p>Paste a message, attach a screenshot, or just tell me what's going on.</p>
             </div>
           </div>
         ) : (
@@ -533,96 +452,6 @@ function CoachContent() {
           color: #4b5563;
           line-height: 1.5;
           margin: 0;
-        }
-        .stats-bar {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 16px;
-          background: white;
-          padding: 16px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .stat {
-          text-align: center;
-        }
-        .stat-num {
-          display: block;
-          font-size: 24px;
-          font-weight: 800;
-          color: #1a3a2f;
-        }
-        .stat-pattern {
-          display: block;
-          font-size: 14px;
-          font-weight: 700;
-          color: #1a3a2f;
-        }
-        .stat-label {
-          font-size: 10px;
-          color: #9ca3af;
-          letter-spacing: 0.5px;
-        }
-        .stat-divider {
-          width: 1px;
-          height: 40px;
-          background: #e5e7eb;
-        }
-        .quick-actions {
-          background: white;
-          border-radius: 16px;
-          padding: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .quick-actions h3 {
-          text-align: center;
-          font-size: 12px;
-          letter-spacing: 1px;
-          color: #6b7280;
-          margin: 0 0 16px 0;
-        }
-        .action-btn {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          width: 100%;
-          padding: 16px;
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          cursor: pointer;
-          text-align: left;
-          margin-bottom: 12px;
-          transition: all 0.2s;
-        }
-        .action-btn:last-child {
-          margin-bottom: 0;
-        }
-        .action-btn:hover {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
-        }
-        .action-btn.primary {
-          background: #f0fdf4;
-          border-color: #1a3a2f;
-        }
-        .action-icon {
-          font-size: 28px;
-        }
-        .action-text {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .action-title {
-          font-weight: 600;
-          color: #1a3a2f;
-        }
-        .action-desc {
-          font-size: 13px;
-          color: #9ca3af;
         }
         .chat {
           max-width: 600px;
