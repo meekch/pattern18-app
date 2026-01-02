@@ -241,16 +241,22 @@ function DocumentCard({ doc, router }: { doc: CourtDoc; router: any }) {
   const [expanded, setExpanded] = useState(false);
 
   const handleAction = (action: 'deadlines' | 'respond' | 'explain') => {
+    // Build rich context from document
+    const context = [
+      doc.summary ? `Summary: ${doc.summary}` : '',
+      doc.key_provisions?.length ? `Key provisions: ${doc.key_provisions.join('; ')}` : '',
+      doc.petitioner_name ? `Filed by: ${doc.petitioner_name}` : '',
+      doc.case_number ? `Case #: ${doc.case_number}` : ''
+    ].filter(Boolean).join('\n');
+
     let prompt = '';
     
     if (action === 'deadlines') {
-      prompt = `I have a "${doc.title}" in my case. What are my deadlines and what do I need to do next?`;
+      prompt = `I have this court document: "${doc.title}"\n\n${context}\n\nWhat are my deadlines and what do I need to do?`;
     } else if (action === 'respond') {
-      const petitioner = doc.petitioner_name || 'the other party';
-      prompt = `I need help responding to "${doc.title}" filed by ${petitioner}. What are my options and how should I respond?`;
+      prompt = `I need help responding to this filing: "${doc.title}"\n\n${context}\n\nWhat are my options and help me draft a response strategy.`;
     } else if (action === 'explain') {
-      const summary = doc.summary || '';
-      prompt = `Explain this court document to me in plain English: "${doc.title}". ${summary}`;
+      prompt = `Explain this in plain English: "${doc.title}"\n\n${context}`;
     }
     
     sessionStorage.setItem('coachPrompt', prompt);

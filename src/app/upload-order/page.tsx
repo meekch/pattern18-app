@@ -336,8 +336,13 @@ export default function UploadOrderPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button
                   onClick={() => {
-                    const docType = extractedData?.document_type || 'court document';
-                    const prompt = `I just uploaded a "${docType}" to my case. What are my deadlines and what do I need to do next?`;
+                    const context = [
+                      extractedData?.document_type ? `Document: ${extractedData.document_type}` : '',
+                      extractedData?.summary ? `Summary: ${extractedData.summary}` : '',
+                      extractedData?.key_provisions?.length ? `Key provisions: ${extractedData.key_provisions.join('; ')}` : '',
+                      extractedData?.petitioner_name ? `Filed by: ${extractedData.petitioner_name}` : ''
+                    ].filter(Boolean).join('\n');
+                    const prompt = `I just uploaded this court document:\n\n${context}\n\nWhat are my deadlines and what do I need to do?`;
                     sessionStorage.setItem('coachPrompt', prompt);
                     router.push('/coach');
                   }}
@@ -362,9 +367,13 @@ export default function UploadOrderPage() {
                 
                 <button
                   onClick={() => {
-                    const docType = extractedData?.document_type || 'this filing';
-                    const petitioner = extractedData?.petitioner_name || 'the petitioner';
-                    const prompt = `I need help responding to ${docType} filed by ${petitioner}. What are my options and how should I respond?`;
+                    const context = [
+                      extractedData?.document_type ? `Document: ${extractedData.document_type}` : '',
+                      extractedData?.summary ? `Summary: ${extractedData.summary}` : '',
+                      extractedData?.key_provisions?.length ? `Key provisions: ${extractedData.key_provisions.join('; ')}` : '',
+                      extractedData?.petitioner_name ? `Filed by: ${extractedData.petitioner_name}` : ''
+                    ].filter(Boolean).join('\n');
+                    const prompt = `I need help responding to this filing:\n\n${context}\n\nWhat are my options and help me with response strategy.`;
                     sessionStorage.setItem('coachPrompt', prompt);
                     router.push('/coach');
                   }}
@@ -389,9 +398,12 @@ export default function UploadOrderPage() {
 
                 <button
                   onClick={() => {
-                    const summary = extractedData?.summary || '';
-                    const provisions = extractedData?.key_provisions?.join(', ') || '';
-                    const prompt = `Explain this court document to me in plain English: ${summary} ${provisions ? `Key provisions: ${provisions}` : ''}`;
+                    const context = [
+                      extractedData?.document_type ? `Document: ${extractedData.document_type}` : '',
+                      extractedData?.summary ? `Summary: ${extractedData.summary}` : '',
+                      extractedData?.key_provisions?.length ? `Key provisions: ${extractedData.key_provisions.join('; ')}` : ''
+                    ].filter(Boolean).join('\n');
+                    const prompt = `Explain this in plain English:\n\n${context}`;
                     sessionStorage.setItem('coachPrompt', prompt);
                     router.push('/coach');
                   }}
