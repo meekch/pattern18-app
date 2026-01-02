@@ -21,8 +21,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Use pdf-parse to extract text
-    const pdfParse = (await import('pdf-parse')).default;
-    const data = await pdfParse(buffer);
+    // @ts-expect-error - pdf-parse is a CommonJS module
+    const pdfParse = (await import('pdf-parse')) as any;
+    const parser = pdfParse.default || pdfParse;
+    const data = await parser(buffer);
 
     return NextResponse.json({
       success: true,
