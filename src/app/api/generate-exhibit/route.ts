@@ -31,12 +31,32 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
     definition: 'Using money or financial resources as a tool of control. Includes withholding funds, demanding detailed accounting, threatening financial ruin, or using financial obligations to manipulate behavior.',
     source: 'National Network to End Domestic Violence (2019).'
   },
+  'Financial Abuse': {
+    name: 'Financial Abuse/Coercion',
+    definition: 'Using money or financial resources as a tool of control. Includes withholding funds, demanding detailed accounting, threatening financial ruin, or using financial obligations to manipulate behavior.',
+    source: 'National Network to End Domestic Violence (2019).'
+  },
+  'Triangulation': {
+    name: 'Triangulation',
+    definition: 'Involving a third party (often the child) in conflicts between two people. Using children as messengers, interrogating them about the other parent, or putting them in the middle of adult disputes.',
+    source: 'Warshak, R.A. (2010). Divorce Poison.'
+  },
   'Triangulating Child': {
     name: 'Using Children as Weapons',
     definition: 'Placing children in the middle of parental conflict, using them as messengers, interrogating them about the other parent, or attempting to damage the child\'s relationship with the other parent.',
     source: 'Warshak, R.A. (2010). Divorce Poison.'
   },
+  'Using Children as Weapons': {
+    name: 'Using Children as Weapons',
+    definition: 'Placing children in the middle of parental conflict, using them as messengers, interrogating them about the other parent, or attempting to damage the child\'s relationship with the other parent.',
+    source: 'Warshak, R.A. (2010). Divorce Poison.'
+  },
   'Name-Calling/Verbal Abuse': {
+    name: 'Verbal Abuse',
+    definition: 'Direct attacks on character through insults, demeaning language, profanity, or degrading comments designed to humiliate and diminish self-worth.',
+    source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
+  },
+  'Verbal Abuse': {
     name: 'Verbal Abuse',
     definition: 'Direct attacks on character through insults, demeaning language, profanity, or degrading comments designed to humiliate and diminish self-worth.',
     source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
@@ -56,15 +76,35 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
     definition: 'Using the legal system as a weapon to harass, control, or financially drain the other parent through excessive motions, false allegations, or threats of legal action.',
     source: 'Ward, D. & Harvey, J.C. (1993). Family Wars: The Alienation of Children.'
   },
+  'Threats': {
+    name: 'Threats',
+    definition: 'Direct or indirect statements intended to create fear of harm, loss, or negative consequences. May include threats to take children, damage reputation, or cause financial harm.',
+    source: 'Stark, E. (2007). Coercive Control.'
+  },
+  'Intimidation': {
+    name: 'Intimidation',
+    definition: 'Creating fear through looks, actions, gestures, or property destruction. Using size, voice, or aggressive behavior to frighten or control.',
+    source: 'Bancroft, L. (2002). Why Does He Do That?'
+  },
   'Minimizing/Mocking': {
     name: 'Minimizing and Denying',
     definition: 'Dismissing concerns as overreactions, denying problematic behavior occurred, or mocking the other person\'s experiences and feelings to avoid accountability.',
     source: 'Bancroft, L. (2002). Why Does He Do That?'
   },
-  'Revisionist History': {
-    name: 'Revisionist History',
-    definition: 'Rewriting past events, agreements, or conversations to favor one\'s narrative. Includes claiming agreements were never made or that events occurred differently.',
-    source: 'Related to gaslighting - Stern, R. (2018).'
+  'Blame-Shifting': {
+    name: 'Blame-Shifting',
+    definition: 'Refusing to take responsibility for one\'s actions by placing blame on the other person. Making everything their fault regardless of actual responsibility.',
+    source: 'Bancroft, L. (2002). Why Does He Do That?'
+  },
+  'Stonewalling': {
+    name: 'Stonewalling',
+    definition: 'Refusing to communicate, engage, or respond to legitimate requests. Using silence as a form of control or punishment.',
+    source: 'Gottman, J. (1999). The Seven Principles for Making Marriage Work.'
+  },
+  'Gatekeeping': {
+    name: 'Gatekeeping',
+    definition: 'Controlling access to children, information, or resources. Withholding school information, medical updates, or excluding from decisions that should be shared.',
+    source: 'Eddy, B. (2019). BIFF: Quick Responses to High-Conflict People.'
   },
   'Information Gatekeeping': {
     name: 'Information Gatekeeping',
@@ -76,20 +116,45 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
     definition: 'Unilaterally changing custody schedules, refusing exchanges, creating last-minute conflicts, or using scheduling as a tool of control and punishment.',
     source: 'Custody conflict literature - various sources.'
   },
+  'Monitoring/Stalking': {
+    name: 'Monitoring/Stalking Behavior',
+    definition: 'Excessive tracking, surveillance, or monitoring of the other parent. Includes using technology to track location, showing up unexpectedly, or knowing information they shouldn\'t.',
+    source: 'Stark, E. (2007). Coercive Control.'
+  },
   'Surveillance/Monitoring': {
     name: 'Monitoring/Stalking Behavior',
     definition: 'Excessive tracking, surveillance, or monitoring of the other parent. Includes using technology to track location, showing up unexpectedly, or knowing information they shouldn\'t.',
     source: 'Stark, E. (2007). Coercive Control.'
+  },
+  'Projection': {
+    name: 'Projection',
+    definition: 'Accusing others of behaviors or intentions that are actually one\'s own. The cheater accuses of cheating; the controller accuses of being controlling.',
+    source: 'Psychology literature on defense mechanisms.'
+  },
+  'Moving Goalposts': {
+    name: 'Moving Goalposts',
+    definition: 'Constantly changing expectations, requirements, or agreements. Nothing is ever good enough; the target keeps shifting to maintain control.',
+    source: 'Manipulation literature - various sources.'
+  },
+  'Hoovering': {
+    name: 'Hoovering',
+    definition: 'Attempting to suck someone back into a relationship or conflict after a period of distance. Sudden niceness, gifts, promises to change, or nostalgic appeals.',
+    source: 'Relationship abuse literature - various sources.'
+  },
+  'Creating Urgency': {
+    name: 'False Urgency',
+    definition: 'Creating artificial time pressure to force decisions without adequate consideration. A manipulation tactic to prevent thoughtful responses.',
+    source: 'Influence and manipulation literature - various sources.'
   },
   'Victim Positioning': {
     name: 'Victim Positioning',
     definition: 'Consistently portraying oneself as the victim regardless of circumstances. Part of DARVO pattern where the actual aggressor claims to be persecuted.',
     source: 'Freyd, J.J. (1997).'
   },
-  'Deadline/Urgency Pressure': {
-    name: 'False Urgency',
-    definition: 'Creating artificial time pressure to force decisions without adequate consideration. A manipulation tactic to prevent thoughtful responses.',
-    source: 'Influence and manipulation literature - various sources.'
+  'Revisionist History': {
+    name: 'Revisionist History',
+    definition: 'Rewriting past events, agreements, or conversations to favor one\'s narrative. Includes claiming agreements were never made or that events occurred differently.',
+    source: 'Related to gaslighting - Stern, R. (2018).'
   },
 };
 
@@ -119,9 +184,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No incidents found' }, { status: 404 });
     }
 
-    // Fetch case info
+    // Fetch case context (FIXED: was 'case_info')
     const { data: caseData } = await supabase
-      .from('case_info')
+      .from('case_context')
       .select('*')
       .eq('user_id', userId)
       .single();
@@ -131,13 +196,12 @@ export async function POST(request: NextRequest) {
     const patternCounts = countPatterns(incidents);
     const monthlyData = getMonthlyBreakdown(incidents);
 
-    // Generate document
+    // Generate document with correct case data
     const doc = createExhibitDocument(incidents, stats, patternCounts, monthlyData, caseData || caseInfo);
 
     // Convert to buffer
     const buffer = await Packer.toBuffer(doc);
 
-    // Return as downloadable file
     // Return as downloadable file
     return new NextResponse(Buffer.from(buffer), {
       headers: {
@@ -211,10 +275,39 @@ function createExhibitDocument(
   const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
   const cellBorders = { top: tableBorder, bottom: tableBorder, left: tableBorder, right: tableBorder };
 
-  const caseName = caseInfo?.case_name || 'Case Documentation';
+  // FIXED: Determine names based on user_role
+  const userRole = caseInfo?.user_role || 'petitioner';
+  const petitionerName = caseInfo?.petitioner_name || '';
+  const respondentName = caseInfo?.respondent_name || '';
+  const coparentName = caseInfo?.coparent_name || '';
+  
+  // Figure out who is who
+  let userName: string;
+  let otherPartyName: string;
+  
+  if (userRole === 'petitioner') {
+    userName = petitionerName || 'Petitioner';
+    otherPartyName = respondentName || coparentName || 'Respondent';
+  } else {
+    userName = respondentName || 'Respondent';
+    otherPartyName = petitionerName || coparentName || 'Petitioner';
+  }
+
+  // Case header info
   const caseNumber = caseInfo?.case_number || '';
-  const userName = caseInfo?.user_name || 'Petitioner';
-  const coparentName = caseInfo?.coparent_name || 'Respondent';
+  const courtName = caseInfo?.court || '';
+  const county = caseInfo?.county || '';
+  const state = caseInfo?.state || '';
+  
+  // Build case name for header
+  let caseName = '';
+  if (petitionerName && respondentName) {
+    caseName = `${petitionerName} v. ${respondentName}`;
+  } else if (userName && otherPartyName) {
+    caseName = `${userName} v. ${otherPartyName}`;
+  } else {
+    caseName = 'Case Documentation';
+  }
 
   return new Document({
     styles: {
@@ -287,8 +380,8 @@ function createExhibitDocument(
             new Paragraph({
               alignment: AlignmentType.RIGHT,
               children: [
-                new TextRun({ text: `${caseName}`, size: 18, color: '6b7280' }),
-                new TextRun({ text: caseNumber ? ` | ${caseNumber}` : '', size: 18, color: '6b7280' })
+                new TextRun({ text: caseName, size: 18, color: '6b7280' }),
+                new TextRun({ text: caseNumber ? ` | Case No. ${caseNumber}` : '', size: 18, color: '6b7280' })
               ]
             })
           ]
@@ -323,21 +416,31 @@ function createExhibitDocument(
           children: [new TextRun({ text: 'DOCUMENTED PATTERN OF COERCIVE CONTROL', size: 32, bold: true, color: '374151' })]
         }),
         new Paragraph({ spacing: { before: 600 } }),
-        new Paragraph({
+        
+        // Court info
+        courtName ? new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: caseName, size: 28, color: '4b5563' })]
-        }),
+          children: [new TextRun({ text: courtName, size: 24, color: '4b5563' })]
+        }) : new Paragraph({}),
+        (county || state) ? new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 50 },
+          children: [new TextRun({ text: [county, state].filter(Boolean).join(', '), size: 22, color: '6b7280' })]
+        }) : new Paragraph({}),
+        
         caseNumber ? new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 100 },
           children: [new TextRun({ text: `Case No. ${caseNumber}`, size: 24, color: '6b7280' })]
         }) : new Paragraph({}),
-        new Paragraph({ spacing: { before: 800 } }),
+        
+        new Paragraph({ spacing: { before: 400 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: `${userName} v. ${coparentName}`, size: 24, italics: true, color: '6b7280' })]
+          children: [new TextRun({ text: caseName, size: 28, bold: true, color: '1a3a2f' })]
         }),
-        new Paragraph({ spacing: { before: 1500 } }),
+        
+        new Paragraph({ spacing: { before: 1200 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
           children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} – ${formatDate(stats.endDate)}`, size: 22, color: '6b7280' })]
@@ -366,7 +469,9 @@ function createExhibitDocument(
           children: [
             new TextRun({ text: `This exhibit documents `, size: 22 }),
             new TextRun({ text: `${stats.total} incidents`, bold: true, size: 22 }),
-            new TextRun({ text: ` of concerning behavior by ${coparentName} over a period of `, size: 22 }),
+            new TextRun({ text: ` of concerning behavior by `, size: 22 }),
+            new TextRun({ text: otherPartyName, bold: true, size: 22 }),
+            new TextRun({ text: ` over a period of `, size: 22 }),
             new TextRun({ text: `${stats.daySpan} days`, bold: true, size: 22 }),
             new TextRun({ text: `. Analysis reveals `, size: 22 }),
             new TextRun({ text: `${stats.uniquePatterns} distinct patterns`, bold: true, size: 22 }),
