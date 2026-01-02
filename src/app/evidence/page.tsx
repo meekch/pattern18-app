@@ -227,11 +227,9 @@ function EvidenceContent() {
 
       if (error) throw error;
 
-      setIncidents(prev => prev.filter(inc => inc.id !== id));
-                              🗑️ Delete
+      setIncidents(prev => prev.filter(inc => inc.id !== id));                      
       setExpandedId(null);
     } catch (err) {
-                              🗑️ Delete
     }
   };
 
