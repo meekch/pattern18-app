@@ -844,7 +844,7 @@ export default function CoachPage() {
           display: flex;
           align-items: flex-end;
           gap: 12px;
-          padding: 12px 16px;
+          padding: 12px 100px 12px 16px;
           background: white;
           border-top: 1px solid #e5e7eb;
         }
