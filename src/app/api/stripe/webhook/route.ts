@@ -54,13 +54,14 @@ export async function POST(req: NextRequest) {
             .upsert({
               id: userId,
               stripe_customer_id: customerId,
+
               stripe_subscription_id: subscriptionId,
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: subscription.trial_end 
-                ? new Date(subscription.trial_end * 1000).toISOString() 
+              trial_ends_at: (subscription as any).trial_end 
+                ? new Date((subscription as any).trial_end * 1000).toISOString() 
                 : null,
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
             }, { onConflict: 'id' });
         }
         break;
@@ -94,10 +95,10 @@ export async function POST(req: NextRequest) {
             .update({
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: subscription.trial_end 
-                ? new Date(subscription.trial_end * 1000).toISOString() 
+              trial_ends_at: (subscription as any).trial_end 
+                ? new Date((subscription as any).trial_end * 1000).toISOString() 
                 : null,
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
             })
             .eq('id', profile.id);
         }
