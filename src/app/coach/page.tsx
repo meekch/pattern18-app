@@ -9,7 +9,15 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  imageUrl?: string; // Store the image data URL for display
+  imageUrl?: string;
+}
+
+interface SaveData {
+  coparentMessage: string;
+  userContext: string;
+  patterns: string[];
+  severity: string;
+  date: string;
 }
 
 export default function CoachPage() {
@@ -26,6 +34,17 @@ export default function CoachPage() {
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Save modal state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveData, setSaveData] = useState<SaveData>({
+    coparentMessage: '',
+    userContext: '',
+    patterns: [],
+    severity: 'medium',
+    date: new Date().toISOString().split('T')[0]
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -36,7 +55,6 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
-      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -45,7 +63,6 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
-      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -74,7 +91,6 @@ export default function CoachPage() {
   const topPattern = Object.entries(patternCounts)
     .sort((a, b) => b[1] - a[1])[0];
 
-  // Convert file to data URL for display
   const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -93,7 +109,6 @@ export default function CoachPage() {
     setInput('');
     setDetectedPatterns([]);
 
-    // Get image URL for display if file is an image
     let imageUrl: string | undefined;
     if (file && file.type.startsWith('image/')) {
       imageUrl = await fileToDataUrl(file);
@@ -161,7 +176,6 @@ export default function CoachPage() {
         }
       }
 
-      // Update final message with patterns
       setMessages(prev => {
         const newMessages = [...prev];
         newMessages[newMessages.length - 1].patterns = patterns;
@@ -200,59 +214,87 @@ export default function CoachPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check if PDF - redirect to docs
     if (file.type === 'application/pdf') {
       router.push('/docs');
       return;
     }
     
-    // Check if CSV - redirect to bulk import
     if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
       return;
     }
 
-    // Handle image
     if (file.type.startsWith('image/')) {
       await handleSend('Please analyze this screenshot and help me respond.', file);
     }
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSaveEvidence = async () => {
-    if (messages.length < 2 || !detectedPatterns.length) return;
-
+  // Open save modal with pre-filled data
+  const openSaveModal = () => {
+    // Try to extract what might be the co-parent's message from the conversation
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+    
+    setSaveData({
+      coparentMessage: '', // Start empty - user needs to paste HIS exact words
+      userContext: lastUserMsg?.content || '',
+      patterns: detectedPatterns,
+      severity: detectedPatterns.some(p => 
+        ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
+      ) ? 'high' : 'medium',
+      date: new Date().toISOString().split('T')[0]
+    });
+    setShowSaveModal(true);
+  };
 
-    if (!lastUserMsg || !lastAssistantMsg) return;
+  const handleSaveEvidence = async () => {
+    if (!saveData.coparentMessage.trim()) {
+      alert('Please paste the co-parent\'s exact message. This is what goes in court documents.');
+      return;
+    }
+
+    setSaving(true);
 
     try {
-      // Get first detected pattern as category (already a coercive control pattern)
-      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
+      const primaryPattern = saveData.patterns[0] || 'Uncategorized';
       const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
       
       await supabase.from('incidents').insert({
         user_id: user.id,
         title: primaryPattern,
-        coparent_message: lastUserMsg.content,
+        coparent_message: saveData.coparentMessage, // HIS exact words
+        user_context: saveData.userContext, // Your message for context (not used in exhibit)
         category: categoryKey,
-        patterns: detectedPatterns,
-        severity: detectedPatterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-        ) ? 'high' : 'medium',
-        incident_date: new Date().toISOString(),
+        patterns: saveData.patterns,
+        severity: saveData.severity,
+        incident_date: new Date(saveData.date).toISOString(),
       });
 
-      alert('Saved to evidence!');
+      setShowSaveModal(false);
       setDetectedPatterns([]);
       setEvidenceCount(prev => prev + 1);
+      
+      // Update pattern counts
+      const newCounts = { ...patternCounts };
+      newCounts[categoryKey] = (newCounts[categoryKey] || 0) + 1;
+      setPatternCounts(newCounts);
+
     } catch (error) {
       console.error('Failed to save:', error);
       alert('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const togglePattern = (pattern: string) => {
+    setSaveData(prev => ({
+      ...prev,
+      patterns: prev.patterns.includes(pattern)
+        ? prev.patterns.filter(p => p !== pattern)
+        : [...prev.patterns, pattern]
+    }));
   };
 
   if (loading) {
@@ -267,6 +309,8 @@ export default function CoachPage() {
       </div>
     );
   }
+
+  const coparentName = caseContext?.coparent_name || 'your co-parent';
 
   return (
     <div className="container">
@@ -292,7 +336,6 @@ export default function CoachPage() {
               <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
-            {/* Stats Bar */}
             {evidenceCount > 0 && (
               <div className="stats-bar">
                 <div className="stat">
@@ -316,7 +359,6 @@ export default function CoachPage() {
               </div>
             )}
 
-            {/* Quick Actions */}
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
               
@@ -357,13 +399,11 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                {/* Show image if present */}
                 {msg.imageUrl && (
                   <div className="message-image">
                     <img src={msg.imageUrl} alt="Uploaded screenshot" />
                   </div>
                 )}
-                {/* Show text content if present */}
                 {msg.content && (
                   <div className="message-content">{msg.content}</div>
                 )}
@@ -387,7 +427,7 @@ export default function CoachPage() {
 
         {/* Save Evidence Button */}
         {detectedPatterns.length > 0 && !showHome && (
-          <button className="save-evidence-btn" onClick={handleSaveEvidence}>
+          <button className="save-evidence-btn" onClick={openSaveModal}>
             💾 Save to Evidence ({detectedPatterns.length} patterns detected)
           </button>
         )}
@@ -421,6 +461,127 @@ export default function CoachPage() {
           hidden
         />
       </div>
+
+      {/* Save Evidence Modal */}
+      {showSaveModal && (
+        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Save to Evidence</h2>
+              <button className="close-btn" onClick={() => setShowSaveModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Co-parent's exact message */}
+              <div className="form-group">
+                <label>
+                  {coparentName}'s exact message <span className="required">*</span>
+                </label>
+                <p className="help-text">
+                  Paste their exact words. This is what appears in court documents.
+                </p>
+                <textarea
+                  value={saveData.coparentMessage}
+                  onChange={e => setSaveData(prev => ({ ...prev, coparentMessage: e.target.value }))}
+                  placeholder={`Paste ${coparentName}'s message here...`}
+                  rows={4}
+                />
+              </div>
+
+              {/* Context (optional) */}
+              <div className="form-group">
+                <label>Your message / context <span className="optional">(optional)</span></label>
+                <p className="help-text">
+                  What you said before this, or what prompted it. For your reference only - not included in exhibits.
+                </p>
+                <textarea
+                  value={saveData.userContext}
+                  onChange={e => setSaveData(prev => ({ ...prev, userContext: e.target.value }))}
+                  placeholder="What happened before this? What did you say?"
+                  rows={3}
+                />
+              </div>
+
+              {/* Date */}
+              <div className="form-group">
+                <label>Date this was sent</label>
+                <input
+                  type="date"
+                  value={saveData.date}
+                  onChange={e => setSaveData(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+
+              {/* Patterns */}
+              <div className="form-group">
+                <label>Patterns detected</label>
+                <p className="help-text">Tap to add or remove patterns.</p>
+                <div className="pattern-toggles">
+                  {detectedPatterns.map(p => (
+                    <button
+                      key={p}
+                      className={`pattern-toggle ${saveData.patterns.includes(p) ? 'active' : ''}`}
+                      onClick={() => togglePattern(p)}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {/* Add common patterns if not detected */}
+                <div className="add-pattern">
+                  <select onChange={e => {
+                    if (e.target.value && !saveData.patterns.includes(e.target.value)) {
+                      setSaveData(prev => ({ ...prev, patterns: [...prev.patterns, e.target.value] }));
+                    }
+                    e.target.value = '';
+                  }}>
+                    <option value="">+ Add pattern...</option>
+                    <option value="Gaslighting">Gaslighting</option>
+                    <option value="DARVO">DARVO</option>
+                    <option value="Triangulation">Triangulation</option>
+                    <option value="Blame-Shifting">Blame-Shifting</option>
+                    <option value="Financial Abuse">Financial Abuse</option>
+                    <option value="Threats">Threats</option>
+                    <option value="Intimidation">Intimidation</option>
+                    <option value="Gatekeeping">Gatekeeping</option>
+                    <option value="Stonewalling">Stonewalling</option>
+                    <option value="False Accusations">False Accusations</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Severity */}
+              <div className="form-group">
+                <label>Severity</label>
+                <div className="severity-buttons">
+                  {['low', 'medium', 'high', 'critical'].map(sev => (
+                    <button
+                      key={sev}
+                      className={`severity-btn ${sev} ${saveData.severity === sev ? 'active' : ''}`}
+                      onClick={() => setSaveData(prev => ({ ...prev, severity: sev }))}
+                    >
+                      {sev}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowSaveModal(false)}>
+                Cancel
+              </button>
+              <button 
+                className="save-btn" 
+                onClick={handleSaveEvidence}
+                disabled={saving || !saveData.coparentMessage.trim()}
+              >
+                {saving ? 'Saving...' : 'Save Evidence'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav active="coach" />
 
@@ -701,6 +862,175 @@ export default function CoachPage() {
           cursor: pointer;
         }
         .send-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        .modal {
+          background: white;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 500px;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-header h2 {
+          margin: 0;
+          font-size: 20px;
+          color: #1a3a2f;
+        }
+        .close-btn {
+          background: none;
+          border: none;
+          font-size: 28px;
+          color: #9ca3af;
+          cursor: pointer;
+          line-height: 1;
+        }
+        .modal-body {
+          padding: 20px;
+        }
+        .form-group {
+          margin-bottom: 20px;
+        }
+        .form-group label {
+          display: block;
+          font-weight: 600;
+          color: #1a3a2f;
+          margin-bottom: 4px;
+        }
+        .required {
+          color: #dc2626;
+        }
+        .optional {
+          font-weight: normal;
+          color: #9ca3af;
+        }
+        .help-text {
+          font-size: 13px;
+          color: #6b7280;
+          margin: 0 0 8px 0;
+        }
+        .form-group textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: vertical;
+        }
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #1a3a2f;
+        }
+        .form-group input[type="date"] {
+          padding: 10px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+        .pattern-toggles {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .pattern-toggle {
+          padding: 6px 14px;
+          border-radius: 16px;
+          font-size: 13px;
+          cursor: pointer;
+          border: 2px solid #e5e7eb;
+          background: white;
+          color: #6b7280;
+        }
+        .pattern-toggle.active {
+          background: #fef3c7;
+          border-color: #f59e0b;
+          color: #92400e;
+        }
+        .add-pattern select {
+          padding: 8px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #6b7280;
+          background: white;
+        }
+        .severity-buttons {
+          display: flex;
+          gap: 8px;
+        }
+        .severity-btn {
+          flex: 1;
+          padding: 10px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          cursor: pointer;
+          background: white;
+        }
+        .severity-btn.low { color: #6b7280; }
+        .severity-btn.medium { color: #ca8a04; }
+        .severity-btn.high { color: #ea580c; }
+        .severity-btn.critical { color: #dc2626; }
+        .severity-btn.active {
+          border-width: 3px;
+        }
+        .severity-btn.low.active { background: #f9fafb; border-color: #6b7280; }
+        .severity-btn.medium.active { background: #fefce8; border-color: #ca8a04; }
+        .severity-btn.high.active { background: #fff7ed; border-color: #ea580c; }
+        .severity-btn.critical.active { background: #fef2f2; border-color: #dc2626; }
+        .modal-footer {
+          display: flex;
+          gap: 12px;
+          padding: 20px;
+          border-top: 1px solid #e5e7eb;
+        }
+        .cancel-btn {
+          flex: 1;
+          padding: 14px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          background: white;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #6b7280;
+        }
+        .save-btn {
+          flex: 1;
+          padding: 14px;
+          border: none;
+          border-radius: 10px;
+          background: #1a3a2f;
+          color: white;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .save-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }

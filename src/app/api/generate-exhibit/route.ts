@@ -191,13 +191,22 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId)
       .single();
 
-    // Calculate statistics
-    const stats = calculateStats(incidents);
-    const patternCounts = countPatterns(incidents);
-    const monthlyData = getMonthlyBreakdown(incidents);
+    // Filter out incidents without a co-parent message (these can't be used as evidence)
+    const validIncidents = incidents.filter(i => i.coparent_message && i.coparent_message.trim());
+    
+    if (validIncidents.length === 0) {
+      return NextResponse.json({ 
+        error: 'No incidents with co-parent messages found. Make sure to include their exact words when saving evidence.' 
+      }, { status: 404 });
+    }
+
+    // Calculate statistics on valid incidents only
+    const stats = calculateStats(validIncidents);
+    const patternCounts = countPatterns(validIncidents);
+    const monthlyData = getMonthlyBreakdown(validIncidents);
 
     // Generate document with correct case data
-    const doc = createExhibitDocument(incidents, stats, patternCounts, monthlyData, caseData || caseInfo);
+    const doc = createExhibitDocument(validIncidents, stats, patternCounts, monthlyData, caseData || caseInfo);
 
     // Convert to buffer
     const buffer = await Packer.toBuffer(doc);
@@ -516,7 +525,7 @@ function createExhibitDocument(
         }),
 
         // All incidents
-        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, cellBorders)),
+        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, cellBorders, otherPartyName)),
 
         // PAGE BREAK
         new Paragraph({ children: [new PageBreak()] }),
@@ -716,7 +725,7 @@ function createMonthlyTable(monthlyData: Record<string, number>, cellBorders: an
   });
 }
 
-function createIncidentSection(incident: any, index: number, cellBorders: any) {
+function createIncidentSection(incident: any, index: number, cellBorders: any, otherPartyName: string) {
   const date = new Date(incident.incident_date);
   const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   
@@ -736,7 +745,12 @@ function createIncidentSection(incident: any, index: number, cellBorders: any) {
 
   const patterns = incident.patterns || [];
   const severity = incident.severity || 'medium';
-  const message = incident.coparent_message || incident.messages_json?.[0]?.text || 'No message content';
+  const coparentMessage = incident.coparent_message || '';
+  
+  // Skip if no co-parent message
+  if (!coparentMessage.trim()) {
+    return [];
+  }
 
   const elements: Paragraph[] = [
     // Incident header
@@ -761,18 +775,18 @@ function createIncidentSection(incident: any, index: number, cellBorders: any) {
       ]
     }),
 
-    // Message content
+    // Co-parent's exact words - clearly labeled
     new Paragraph({
       spacing: { before: 100 },
-      children: [new TextRun({ text: 'Message:', bold: true, size: 20, color: '6b7280' })]
+      children: [new TextRun({ text: `${otherPartyName}'s statement:`, bold: true, size: 20, color: '6b7280' })]
     }),
     new Paragraph({
       spacing: { after: 300 },
       indent: { left: 360 },
       children: [
-        new TextRun({ text: '"', size: 22, italics: true, color: '6b7280' }),
-        new TextRun({ text: message.substring(0, 500) + (message.length > 500 ? '...' : ''), size: 22, italics: true }),
-        new TextRun({ text: '"', size: 22, italics: true, color: '6b7280' }),
+        new TextRun({ text: '"', size: 22, color: '6b7280' }),
+        new TextRun({ text: coparentMessage, size: 22 }),
+        new TextRun({ text: '"', size: 22, color: '6b7280' }),
       ]
     }),
   ];
