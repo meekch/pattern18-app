@@ -61,6 +61,12 @@ export default function CoachPage() {
   const { subscription, checkLimit, usage, loading: subLoading } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState('');
+  
+  // Feedback state
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'other'>('bug');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -296,6 +302,31 @@ export default function CoachPage() {
     }
   };
 
+  const handleSubmitFeedback = async () => {
+    if (!feedbackText.trim()) return;
+    setSubmittingFeedback(true);
+    
+    try {
+      await supabase.from('feedback').insert({
+        user_id: user?.id,
+        type: feedbackType,
+        message: feedbackText,
+        page: 'coach',
+        user_agent: navigator.userAgent,
+      });
+      
+      setShowFeedback(false);
+      setFeedbackText('');
+      setFeedbackType('bug');
+      alert('Thanks for your feedback! 💚');
+    } catch (error) {
+      console.error('Feedback error:', error);
+      alert('Failed to submit. Please try again.');
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -458,9 +489,14 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-          📁 {evidenceCount}
-        </button>
+        <div className="header-right">
+          <button className="feedback-btn" onClick={() => setShowFeedback(true)}>
+            Feedback
+          </button>
+          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+            📁 {evidenceCount}
+          </button>
+        </div>
       </header>
 
       <div className="content">
@@ -774,6 +810,51 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
+          <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="feedback-header">
+              <h3>Send Feedback</h3>
+              <button className="close-btn" onClick={() => setShowFeedback(false)}>✕</button>
+            </div>
+            
+            <div className="feedback-types">
+              {(['bug', 'feature', 'other'] as const).map((type) => (
+                <button
+                  key={type}
+                  className={`type-btn ${feedbackType === type ? 'active' : ''}`}
+                  onClick={() => setFeedbackType(type)}
+                >
+                  {type === 'bug' ? '🐛 Bug' : type === 'feature' ? '✨ Feature' : '💬 Other'}
+                </button>
+              ))}
+            </div>
+            
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder={
+                feedbackType === 'bug' 
+                  ? "What happened? What did you expect?" 
+                  : feedbackType === 'feature'
+                  ? "What would help you?"
+                  : "What's on your mind?"
+              }
+              rows={4}
+            />
+            
+            <button 
+              className="submit-feedback-btn"
+              onClick={handleSubmitFeedback}
+              disabled={submittingFeedback || !feedbackText.trim()}
+            >
+              {submittingFeedback ? 'Sending...' : 'Send Feedback'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .container {
           min-height: 100vh;
@@ -824,6 +905,24 @@ export default function CoachPage() {
           color: white;
           font-size: 14px;
           cursor: pointer;
+        }
+        .header-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .feedback-btn {
+          background: rgba(255,255,255,0.15);
+          border: none;
+          padding: 6px 12px;
+          border-radius: 14px;
+          color: white;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .feedback-btn:hover {
+          background: rgba(255,255,255,0.25);
         }
         .content {
           flex: 1;
@@ -1312,6 +1411,92 @@ export default function CoachPage() {
         }
         .free-tier-banner a:hover {
           text-decoration: underline;
+        }
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .feedback-modal {
+          background: white;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 400px;
+          padding: 24px;
+        }
+        .feedback-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        .feedback-header h3 {
+          margin: 0;
+          font-size: 18px;
+          color: #1a3a2f;
+        }
+        .close-btn {
+          background: #f3f4f6;
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 16px;
+          cursor: pointer;
+          color: #6b7280;
+        }
+        .feedback-types {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+        .type-btn {
+          flex: 1;
+          padding: 10px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          background: white;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .type-btn.active {
+          border-color: #1a3a2f;
+          background: #f0fdf4;
+        }
+        .feedback-modal textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 15px;
+          font-family: inherit;
+          resize: none;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+        }
+        .feedback-modal textarea:focus {
+          outline: none;
+          border-color: #1a3a2f;
+        }
+        .submit-feedback-btn {
+          width: 100%;
+          padding: 14px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .submit-feedback-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
