@@ -155,7 +155,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Disable body parsing for webhook
-export const config = {
-  api: { bodyParser: false },
-};
