@@ -34,6 +34,7 @@ export default function CoachPage() {
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Save modal state
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -108,6 +109,11 @@ export default function CoachPage() {
     setSending(true);
     setInput('');
     setDetectedPatterns([]);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     let imageUrl: string | undefined;
     if (file && file.type.startsWith('image/')) {
@@ -438,13 +444,24 @@ export default function CoachPage() {
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
         </button>
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            // Auto-resize
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+          }}
           placeholder="What's going on?"
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           disabled={sending}
+          rows={1}
         />
         <button 
           className="send-btn" 
@@ -825,7 +842,7 @@ export default function CoachPage() {
           left: 0;
           right: 0;
           display: flex;
-          align-items: center;
+          align-items: flex-end;
           gap: 12px;
           padding: 12px 16px;
           background: white;
@@ -840,15 +857,20 @@ export default function CoachPage() {
           font-size: 20px;
           cursor: pointer;
         }
-        .input-area input[type="text"] {
+        .input-area textarea {
           flex: 1;
           padding: 12px 16px;
           border: 2px solid #e5e7eb;
-          border-radius: 24px;
+          border-radius: 20px;
           font-size: 16px;
           outline: none;
+          resize: none;
+          font-family: inherit;
+          line-height: 1.4;
+          max-height: 150px;
+          overflow-y: auto;
         }
-        .input-area input[type="text"]:focus {
+        .input-area textarea:focus {
           border-color: #1a3a2f;
         }
         .send-btn {
