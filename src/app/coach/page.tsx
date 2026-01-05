@@ -420,8 +420,14 @@ export default function CoachPage() {
   const coparentName = caseContext?.coparent_name || 'your co-parent';
 
   return (
-    <div className="container">
-      <header className="header">
+    <>
+      {/* Google Font */}
+      <link 
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
+        rel="stylesheet" 
+      />
+      <div className="container">
+        <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
           <div className="header-text">
@@ -746,6 +752,8 @@ export default function CoachPage() {
           background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
           display: flex;
           flex-direction: column;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          -webkit-font-smoothing: antialiased;
         }
         .header {
           display: flex;
@@ -935,14 +943,19 @@ export default function CoachPage() {
           padding: 14px 18px;
           border-radius: 18px 18px 4px 18px;
           margin-left: 40px;
+          line-height: 1.6;
+          font-size: 15px;
         }
         .message.assistant .message-content {
           background: white;
-          color: #1a3a2f;
-          padding: 14px 18px;
+          color: #374151;
+          padding: 16px 20px;
           border-radius: 18px 18px 18px 4px;
           margin-right: 40px;
           white-space: pre-wrap;
+          line-height: 1.7;
+          font-size: 15px;
+          letter-spacing: 0.01em;
         }
         .patterns-detected {
           display: flex;
@@ -1267,5 +1280,6 @@ export default function CoachPage() {
         }
       `}</style>
     </div>
+    </>
   );
 }
