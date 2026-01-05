@@ -9,7 +9,12 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  imageUrl?: string;
+  imageUrls?: string[];
+  document?: {
+    title: string;
+    filename: string;
+    content: string;
+  };
 }
 
 interface SaveData {
@@ -46,7 +51,10 @@ export default function CoachPage() {
     date: new Date().toISOString().split('T')[0]
   });
   const [saving, setSaving] = useState(false);
-
+  const [lastImageUrls, setLastImageUrls] = useState<string[]>([]);
+  const [extractedQuotes, setExtractedQuotes] = useState<string>('');
+  const [pendingDocument, setPendingDocument] = useState<{ title: string; filename: string; content: string } | null>(null);
+  const [downloadingDoc, setDownloadingDoc] = useState(false);
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -101,9 +109,9 @@ export default function CoachPage() {
     });
   };
 
-  const handleSend = async (messageText?: string, file?: File) => {
+  const handleSend = async (messageText?: string, files?: File[]) => {
     const text = messageText || input;
-    if (!text.trim() && !file) return;
+    if (!text.trim() && (!files || files.length === 0)) return;
 
     setShowHome(false);
     setSending(true);
@@ -115,15 +123,24 @@ export default function CoachPage() {
       textareaRef.current.style.height = 'auto';
     }
 
-    let imageUrl: string | undefined;
-    if (file && file.type.startsWith('image/')) {
-      imageUrl = await fileToDataUrl(file);
+    // Convert all image files to data URLs for display
+    const imageUrls: string[] = [];
+    if (files) {
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          const url = await fileToDataUrl(file);
+          imageUrls.push(url);
+        }
+      }
+      if (imageUrls.length > 0) {
+        setLastImageUrls(imageUrls); // Store for save modal
+      }
     }
 
     const userMessage: Message = { 
       role: 'user', 
       content: text || '',
-      imageUrl
+      imageUrls: imageUrls.length > 0 ? imageUrls : undefined
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -135,8 +152,12 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (file) {
-        formData.append('file', file);
+      // Append all files
+      if (files) {
+        files.forEach((file, index) => {
+          formData.append(`file${index}`, file);
+        });
+        formData.append('fileCount', String(files.length));
       }
 
       const response = await fetch('/api/coach', {
@@ -167,9 +188,14 @@ export default function CoachPage() {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
                 assistantContent += data.content;
+                // Don't show the ---QUOTES--- or ---DOCUMENT--- sections to user
+                let displayContent = assistantContent
+                  .replace(/---QUOTES---[\s\S]*?---END QUOTES---/g, '')
+                  .replace(/---DOCUMENT START---[\s\S]*?---DOCUMENT END---/g, '')
+                  .trim();
                 setMessages(prev => {
                   const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = assistantContent;
+                  newMessages[newMessages.length - 1].content = displayContent;
                   return newMessages;
                 });
               }
@@ -177,14 +203,48 @@ export default function CoachPage() {
                 patterns = data.patterns;
                 setDetectedPatterns(patterns);
               }
+              if (data.document) {
+                setPendingDocument(data.document);
+              }
             } catch (e) {}
           }
         }
       }
 
+      // Extract quotes from response
+      const quotesMatch = assistantContent.match(/---QUOTES---\n?([\s\S]*?)---END QUOTES---/);
+      if (quotesMatch) {
+        setExtractedQuotes(quotesMatch[1].trim());
+      } else {
+        setExtractedQuotes('');
+      }
+
+      // Extract document from response
+      const docMatch = assistantContent.match(/---DOCUMENT START---\n?([\s\S]*?)---DOCUMENT END---/);
+      let documentData: { title: string; filename: string; content: string } | undefined;
+      if (docMatch) {
+        const docContent = docMatch[1];
+        const titleMatch = docContent.match(/TITLE:\s*(.+?)(?:\n|$)/i);
+        const filenameMatch = docContent.match(/FILENAME:\s*(.+?)(?:\n|$)/i);
+        let content = docContent.replace(/TITLE:\s*.+?\n/i, '').replace(/FILENAME:\s*.+?\n/i, '').trim();
+        documentData = {
+          title: titleMatch ? titleMatch[1].trim() : 'Document',
+          filename: filenameMatch ? filenameMatch[1].trim() : 'document.docx',
+          content
+        };
+        setPendingDocument(documentData);
+      }
+
+      // Update final message without quotes/document sections
+      const finalDisplayContent = assistantContent
+        .replace(/---QUOTES---[\s\S]*?---END QUOTES---/g, '')
+        .replace(/---DOCUMENT START---[\s\S]*?---DOCUMENT END---/g, '')
+        .trim();
       setMessages(prev => {
         const newMessages = [...prev];
+        newMessages[newMessages.length - 1].content = finalDisplayContent;
         newMessages[newMessages.length - 1].patterns = patterns;
+        newMessages[newMessages.length - 1].document = documentData;
         return newMessages;
       });
 
@@ -217,34 +277,38 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
-    if (file.type === 'application/pdf') {
-      router.push('/docs');
-      return;
-    }
+    const fileArray = Array.from(files);
     
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+    // Check if any are CSV - redirect to bulk import
+    if (fileArray.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
       router.push('/evidence/upload');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
-    if (file.type.startsWith('image/')) {
-      await handleSend('Please analyze this screenshot and help me respond.', file);
-    }
+    // Build description of what's being uploaded
+    const pdfCount = fileArray.filter(f => f.type === 'application/pdf').length;
+    const imageCount = fileArray.filter(f => f.type.startsWith('image/')).length;
+    
+    let prompt = 'Please analyze ';
+    const parts = [];
+    if (pdfCount > 0) parts.push(`${pdfCount} PDF document${pdfCount > 1 ? 's' : ''}`);
+    if (imageCount > 0) parts.push(`${imageCount} screenshot${imageCount > 1 ? 's' : ''}`);
+    prompt += parts.join(' and ') + ' and help me understand what I need to do.';
+
+    await handleSend(prompt, fileArray);
 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // Open save modal with pre-filled data
   const openSaveModal = () => {
-    // Try to extract what might be the co-parent's message from the conversation
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    
     setSaveData({
-      coparentMessage: '', // Start empty - user needs to paste HIS exact words
-      userContext: lastUserMsg?.content || '',
+      coparentMessage: extractedQuotes, // Pre-fill with AI's transcription
+      userContext: '',
       patterns: detectedPatterns,
       severity: detectedPatterns.some(p => 
         ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
@@ -252,6 +316,40 @@ export default function CoachPage() {
       date: new Date().toISOString().split('T')[0]
     });
     setShowSaveModal(true);
+  };
+
+  // Download document as Word file
+  const downloadDocument = async (doc: { title: string; filename: string; content: string }) => {
+    setDownloadingDoc(true);
+    try {
+      const response = await fetch('/api/create-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: doc.title,
+          filename: doc.filename,
+          content: doc.content,
+          caseInfo: caseContext
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create document');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download document. Please try again.');
+    } finally {
+      setDownloadingDoc(false);
+    }
   };
 
   const handleSaveEvidence = async () => {
@@ -279,6 +377,8 @@ export default function CoachPage() {
 
       setShowSaveModal(false);
       setDetectedPatterns([]);
+      setExtractedQuotes('');
+      setLastImageUrl(null);
       setEvidenceCount(prev => prev + 1);
       
       // Update pattern counts
@@ -405,9 +505,11 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                {msg.imageUrl && (
-                  <div className="message-image">
-                    <img src={msg.imageUrl} alt="Uploaded screenshot" />
+                {msg.imageUrls && msg.imageUrls.length > 0 && (
+                  <div className="message-images">
+                    {msg.imageUrls.map((url, idx) => (
+                      <img key={idx} src={url} alt={`Uploaded file ${idx + 1}`} />
+                    ))}
                   </div>
                 )}
                 {msg.content && (
@@ -418,6 +520,17 @@ export default function CoachPage() {
                     {msg.patterns.map((p, j) => (
                       <span key={j} className="pattern-tag">{p}</span>
                     ))}
+                  </div>
+                )}
+                {msg.document && (
+                  <div className="document-download">
+                    <button 
+                      onClick={() => downloadDocument(msg.document!)}
+                      disabled={downloadingDoc}
+                      className="download-btn"
+                    >
+                      📄 {downloadingDoc ? 'Creating...' : `Download: ${msg.document.filename}`}
+                    </button>
                   </div>
                 )}
               </div>
@@ -435,6 +548,17 @@ export default function CoachPage() {
         {detectedPatterns.length > 0 && !showHome && (
           <button className="save-evidence-btn" onClick={openSaveModal}>
             💾 Save to Evidence ({detectedPatterns.length} patterns detected)
+          </button>
+        )}
+
+        {/* Download Document Button */}
+        {pendingDocument && !showHome && (
+          <button 
+            className="download-doc-btn" 
+            onClick={() => downloadDocument(pendingDocument)}
+            disabled={downloadingDoc}
+          >
+            📄 {downloadingDoc ? 'Creating...' : `Download: ${pendingDocument.filename}`}
           </button>
         )}
       </div>
@@ -475,6 +599,7 @@ export default function CoachPage() {
           type="file"
           accept="image/*,.pdf,.csv"
           onChange={handleFileSelect}
+          multiple
           hidden
         />
       </div>
@@ -489,13 +614,25 @@ export default function CoachPage() {
             </div>
             
             <div className="modal-body">
+              {/* Show uploaded screenshots if present */}
+              {lastImageUrls.length > 0 && (
+                <div className="form-group">
+                  <label>Screenshot{lastImageUrls.length > 1 ? 's' : ''} being documented</label>
+                  <div className="screenshot-preview">
+                    {lastImageUrls.map((url, idx) => (
+                      <img key={idx} src={url} alt={`Screenshot ${idx + 1}`} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Co-parent's exact message */}
               <div className="form-group">
                 <label>
                   {coparentName}'s exact message <span className="required">*</span>
                 </label>
                 <p className="help-text">
-                  Paste their exact words. This is what appears in court documents.
+                  {extractedQuotes ? 'Verify this transcription is correct. Edit if needed.' : 'Paste their exact words. This is what appears in court documents.'}
                 </p>
                 <textarea
                   value={saveData.coparentMessage}
@@ -777,15 +914,19 @@ export default function CoachPage() {
         .message {
           margin-bottom: 16px;
         }
-        .message.user .message-image {
+        .message.user .message-images {
           margin-left: 40px;
           margin-bottom: 8px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
         }
-        .message.user .message-image img {
-          max-width: 100%;
-          max-height: 300px;
+        .message.user .message-images img {
+          max-width: 200px;
+          max-height: 200px;
           border-radius: 12px;
           border: 2px solid #1a3a2f;
+          object-fit: cover;
         }
         .message.user .message-content {
           background: #1a3a2f;
@@ -817,6 +958,33 @@ export default function CoachPage() {
           font-size: 12px;
           font-weight: 600;
         }
+        .document-download {
+          margin-top: 12px;
+          margin-right: 40px;
+        }
+        .download-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 20px;
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+          transition: all 0.2s;
+        }
+        .download-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+        .download-btn:disabled {
+          opacity: 0.7;
+          cursor: wait;
+        }
         .typing {
           color: #9ca3af;
           font-style: italic;
@@ -835,6 +1003,30 @@ export default function CoachPage() {
           cursor: pointer;
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
           z-index: 50;
+        }
+        .download-doc-btn {
+          position: fixed;
+          bottom: 190px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 24px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+          z-index: 50;
+          white-space: nowrap;
+        }
+        .download-doc-btn:hover {
+          transform: translateX(-50%) translateY(-2px);
+          box-shadow: 0 6px 16px rgba(5, 150, 105, 0.5);
+        }
+        .download-doc-btn:disabled {
+          opacity: 0.7;
+          cursor: wait;
         }
         .input-area {
           position: fixed;
@@ -950,6 +1142,22 @@ export default function CoachPage() {
           font-size: 13px;
           color: #6b7280;
           margin: 0 0 8px 0;
+        }
+        .screenshot-preview {
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 8px;
+          max-height: 200px;
+          overflow-y: auto;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .screenshot-preview img {
+          max-width: 150px;
+          max-height: 150px;
+          border-radius: 8px;
+          object-fit: cover;
         }
         .form-group textarea {
           width: 100%;
