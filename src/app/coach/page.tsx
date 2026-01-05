@@ -38,6 +38,7 @@ export default function CoachPage() {
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -355,6 +356,49 @@ export default function CoachPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set false if we're leaving the container entirely
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    
+    // Check if any are CSV - redirect to bulk import
+    if (files.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
+      router.push('/evidence/upload');
+      return;
+    }
+
+    // Build description of what's being uploaded
+    const pdfCount = files.filter(f => f.type === 'application/pdf').length;
+    const imageCount = files.filter(f => f.type.startsWith('image/')).length;
+    
+    let prompt = 'Please analyze ';
+    const parts = [];
+    if (pdfCount > 0) parts.push(`${pdfCount} PDF document${pdfCount > 1 ? 's' : ''}`);
+    if (imageCount > 0) parts.push(`${imageCount} screenshot${imageCount > 1 ? 's' : ''}`);
+    prompt += parts.join(' and ') + ' and help me understand what I need to do.';
+
+    await handleSend(prompt, files);
+  };
+
   // Open save modal with pre-filled data
   const openSaveModal = () => {
     setSaveData({
@@ -480,7 +524,22 @@ export default function CoachPage() {
   const coparentName = caseContext?.coparent_name || 'your co-parent';
 
   return (
-    <div className="container">
+    <div 
+      className="container"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="drag-overlay">
+          <div className="drag-content">
+            <span className="drag-icon">📸</span>
+            <span className="drag-text">Drop to analyze</span>
+          </div>
+        </div>
+      )}
+
       <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
@@ -863,6 +922,28 @@ export default function CoachPage() {
           flex-direction: column;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           -webkit-font-smoothing: antialiased;
+        }
+        .drag-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(26, 58, 47, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        .drag-content {
+          text-align: center;
+          color: white;
+        }
+        .drag-icon {
+          font-size: 64px;
+          display: block;
+          margin-bottom: 16px;
+        }
+        .drag-text {
+          font-size: 24px;
+          font-weight: 600;
         }
         .header {
           display: flex;
