@@ -420,14 +420,8 @@ export default function CoachPage() {
   const coparentName = caseContext?.coparent_name || 'your co-parent';
 
   return (
-    <>
-      {/* Google Font */}
-      <link 
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
-        rel="stylesheet" 
-      />
-      <div className="container">
-        <header className="header">
+    <div className="container">
+      <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
           <div className="header-text">
@@ -555,17 +549,6 @@ export default function CoachPage() {
         {detectedPatterns.length > 0 && !showHome && (
           <button className="save-evidence-btn" onClick={openSaveModal}>
             💾 Save to Evidence ({detectedPatterns.length} patterns detected)
-          </button>
-        )}
-
-        {/* Download Document Button */}
-        {pendingDocument && !showHome && (
-          <button 
-            className="download-doc-btn" 
-            onClick={() => downloadDocument(pendingDocument)}
-            disabled={downloadingDoc}
-          >
-            📄 {downloadingDoc ? 'Creating...' : `Download: ${pendingDocument.filename}`}
           </button>
         )}
       </div>
@@ -1018,30 +1001,6 @@ export default function CoachPage() {
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
           z-index: 50;
         }
-        .download-doc-btn {
-          position: fixed;
-          bottom: 190px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 24px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-          z-index: 50;
-          white-space: nowrap;
-        }
-        .download-doc-btn:hover {
-          transform: translateX(-50%) translateY(-2px);
-          box-shadow: 0 6px 16px rgba(5, 150, 105, 0.5);
-        }
-        .download-doc-btn:disabled {
-          opacity: 0.7;
-          cursor: wait;
-        }
         .input-area {
           position: fixed;
           bottom: 70px;
@@ -1050,9 +1009,17 @@ export default function CoachPage() {
           display: flex;
           align-items: flex-end;
           gap: 12px;
-          padding: 12px 100px 12px 16px;
+          padding: 12px 16px;
           background: white;
           border-top: 1px solid #e5e7eb;
+        }
+        @media (max-width: 640px) {
+          .input-area {
+            padding-right: 16px;
+          }
+          .input-area .send-btn {
+            margin-right: 0;
+          }
         }
         .attach-btn {
           background: #f3f4f6;
@@ -1280,6 +1247,5 @@ export default function CoachPage() {
         }
       `}</style>
     </div>
-    </>
   );
 }
