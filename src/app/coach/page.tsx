@@ -378,7 +378,8 @@ export default function CoachPage() {
       setShowSaveModal(false);
       setDetectedPatterns([]);
       setExtractedQuotes('');
-      setLastImageUrl(null);
+      setLastImageUrls([]);
+      setPendingDocument(null);
       setEvidenceCount(prev => prev + 1);
       
       // Update pattern counts
