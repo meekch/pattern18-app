@@ -441,6 +441,20 @@ export default function CoachPage() {
       return;
     }
 
+    // Check for duplicate before saving
+    const { data: existing } = await supabase
+      .from('incidents')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('coparent_message', saveData.coparentMessage)
+      .single();
+
+    if (existing) {
+      alert('You already saved this message. Duplicate not added.');
+      setShowSaveModal(false);
+      return;
+    }
+
     setSaving(true);
 
     try {
