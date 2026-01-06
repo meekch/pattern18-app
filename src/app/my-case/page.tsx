@@ -31,7 +31,7 @@ const categoryLabels: Record<string, string> = {
   gatekeeping: "Gatekeeping",
   coercive_control: "Coercive Control",
   manipulation: "Manipulation",
-  
+
   // Legacy topic-based (for old data)
   child_activities: "Child Activities",
   financial_dispute: "Financial Dispute",
@@ -63,7 +63,7 @@ export default function MyCasePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [caseContext, setCaseContext] = useState<any>(null);
-  
+
   // Stats
   const [totalIncidents, setTotalIncidents] = useState(0);
   const [criticalCount, setCriticalCount] = useState(0);
@@ -86,7 +86,7 @@ export default function MyCasePage() {
         .select('*')
         .eq('user_id', session.user.id)
         .single();
-      
+
       if (caseData) setCaseContext(caseData);
 
       // Load evidence for stats
@@ -98,16 +98,16 @@ export default function MyCasePage() {
 
       if (evidence && evidence.length > 0) {
         setTotalIncidents(evidence.length);
-        
+
         // Critical count
-        const critical = evidence.filter((e: any) => 
+        const critical = evidence.filter((e: any) =>
           e.severity === 'critical' || e.severity === 'high'
         ).length;
         setCriticalCount(critical);
 
         // Calculate documenting days
         const firstDate = new Date(evidence[0].incident_date);
-        const daysDiff = Math.ceil((Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.ceil((Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24));      
         setDocumentingDays(daysDiff);
 
         // Pattern counts with trends
@@ -121,7 +121,7 @@ export default function MyCasePage() {
             patterns[category] = { total: 0, recent: 0 };
           }
           patterns[category].total++;
-          
+
           const date = new Date(e.incident_date);
           if (date > thirtyDaysAgo) {
             patterns[category].recent++;
@@ -130,7 +130,7 @@ export default function MyCasePage() {
 
         // Filter out non-patterns
         const excludePatterns = ['not_abuse', 'uncategorized', 'none_detected', 'other'];
-        
+
         const patternList: PatternCount[] = Object.entries(patterns)
           .filter(([pattern]) => !excludePatterns.includes(pattern))
           .map(([pattern, data]) => ({
@@ -172,7 +172,7 @@ export default function MyCasePage() {
   if (loading) {
     return (
       <div className="loading">
-        <div className="spinner">ðŸ“Š</div>
+        <div className="spinner">📊</div>
         <style jsx>{`
           .loading {
             display: flex;
@@ -199,7 +199,7 @@ export default function MyCasePage() {
       <header className="header">
         <h1>My Case</h1>
         <button onClick={() => router.push('/case-setup')} className="settings-btn">
-          âš™ï¸
+          ⚙️
         </button>
       </header>
 
@@ -210,7 +210,7 @@ export default function MyCasePage() {
             <div className="court-days">{daysUntilCourt}</div>
             <div className="court-label">days until court</div>
             <button onClick={() => router.push('/docs')} className="prep-btn">
-              Prepare Documents â†’
+              Prepare Documents →
             </button>
           </div>
         )}
@@ -243,10 +243,10 @@ export default function MyCasePage() {
               <div key={p.pattern} className="pattern-row" onClick={() => router.push(`/evidence?filter=${encodeURIComponent(p.pattern)}`)}>
                 <div className="pattern-rank">#{i + 1}</div>
                 <div className="pattern-info">
-                  <div className="pattern-name">{categoryLabels[p.pattern] || p.pattern}</div>
+                  <div className="pattern-name">{categoryLabels[p.pattern] || p.pattern}</div>       
                   <div className="pattern-bar-container">
-                    <div 
-                      className="pattern-bar" 
+                    <div
+                      className="pattern-bar"
                       style={{ width: `${(p.count / patternCounts[0]?.count) * 100}%` }}
                     />
                   </div>
@@ -254,9 +254,9 @@ export default function MyCasePage() {
                 <div className="pattern-stats">
                   <div className="pattern-count">{p.count}</div>
                   <div className={`pattern-trend ${p.trend}`}>
-                    {p.trend === 'up' && 'â†‘'}
-                    {p.trend === 'down' && 'â†“'}
-                    {p.trend === 'same' && 'â†’'}
+                    {p.trend === 'up' && '↑'}
+                    {p.trend === 'down' && '↓'}
+                    {p.trend === 'same' && '→'}
                     <span>{p.recentCount} this month</span>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function MyCasePage() {
               <div className="empty-patterns">
                 <p>No patterns documented yet.</p>
                 <button onClick={() => router.push('/coach')} className="start-btn">
-                  Start Documenting â†’
+                  Start Documenting →
                 </button>
               </div>
             )}
@@ -281,8 +281,8 @@ export default function MyCasePage() {
               {monthlyData.map((m) => (
                 <div key={m.month} className="chart-bar-container">
                   <div className="chart-count">{m.count}</div>
-                  <div 
-                    className="chart-bar" 
+                  <div
+                    className="chart-bar"
                     style={{ height: `${(m.count / maxMonthlyCount) * 100}%` }}
                   />
                   <div className="chart-label">{m.month}</div>
@@ -297,19 +297,19 @@ export default function MyCasePage() {
           <h2>Quick Actions</h2>
           <div className="quick-actions">
             <button onClick={() => router.push('/evidence')} className="action-btn">
-              <span className="action-icon">ðŸ“‹</span>
+              <span className="action-icon">📋</span>
               <span>View Evidence</span>
             </button>
             <button onClick={() => router.push('/docs?create=true')} className="action-btn">
-              <span className="action-icon">ðŸ“„</span>
+              <span className="action-icon">📄</span>
               <span>Create Document</span>
             </button>
             <button onClick={() => router.push('/evidence/upload')} className="action-btn">
-              <span className="action-icon">ðŸ“¤</span>
+              <span className="action-icon">📤</span>
               <span>Bulk Import</span>
             </button>
             <button onClick={() => router.push('/calendar')} className="action-btn">
-              <span className="action-icon">ðŸ“…</span>
+              <span className="action-icon">📅</span>
               <span>Court Calendar</span>
             </button>
           </div>
@@ -329,7 +329,7 @@ export default function MyCasePage() {
               {!caseContext.case_number && !caseContext.court && (
                 <div className="case-info-empty">
                   <p>Add your case details for accurate document generation</p>
-                  <button onClick={() => router.push('/case-setup')}>Set Up Case â†’</button>
+                  <button onClick={() => router.push('/case-setup')}>Set Up Case →</button>   
                 </div>
               )}
             </div>
