@@ -13,7 +13,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
   const navItems = [
     { id: 'coach', label: 'Coach', icon: '💬', path: '/coach' },
-    { id: 'case', label: 'My Case', icon: '📊', path: '/evidence' },
+    { id: 'case', label: 'My Case', icon: '📊', path: '/my-case' },
     { id: 'docs', label: 'Docs', icon: '📄', path: '/docs' },
     { id: 'menu', label: 'Menu', icon: '☰', path: null },
   ];
@@ -50,6 +50,28 @@ export default function BottomNav({ active }: BottomNavProps) {
               <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
             </div>
             
+            {/* Quick Actions */}
+            <div className="menu-section">
+              <button onClick={() => { setShowMenu(false); router.push('/court-prep'); }} className="menu-item featured">
+                <span className="menu-icon">⚖️</span>
+                <div className="menu-text">
+                  <span className="menu-title">Court Prep</span>
+                  <span className="menu-desc">Prepare for your hearing</span>
+                </div>
+              </button>
+              
+              <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item featured">
+                <span className="menu-icon">🌿</span>
+                <div className="menu-text">
+                  <span className="menu-title">Healing Space</span>
+                  <span className="menu-desc">Breathing, grounding, support</span>
+                </div>
+              </button>
+            </div>
+
+            <div className="menu-divider" />
+
+            {/* Settings & Tools */}
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/case-setup'); }} className="menu-item">
                 <span className="menu-icon">⚙️</span>
@@ -78,6 +100,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             <div className="menu-divider" />
 
+            {/* Crisis Resources */}
             <div className="menu-section">
               <div className="safety-item">
                 <div className="safety-header">
@@ -94,7 +117,16 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             <div className="menu-divider" />
 
+            {/* Account */}
             <div className="menu-section">
+              <button onClick={() => { setShowMenu(false); router.push('/pricing'); }} className="menu-item">
+                <span className="menu-icon">💳</span>
+                <div className="menu-text">
+                  <span className="menu-title">Subscription</span>
+                  <span className="menu-desc">Manage your plan</span>
+                </div>
+              </button>
+              
               <button onClick={async () => { 
                 const { supabase } = await import('@/lib/supabase');
                 await supabase.auth.signOut(); 
@@ -157,7 +189,7 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .menu-sheet {
           width: 100%;
-          max-height: 80vh;
+          max-height: 85vh;
           background: white;
           border-radius: 20px 20px 0 0;
           padding: 20px;
@@ -210,6 +242,13 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .menu-item:hover {
           background: #f3f4f6;
+        }
+        .menu-item.featured {
+          background: #f0fdf4;
+          border: 1px solid #a7f3d0;
+        }
+        .menu-item.featured:hover {
+          background: #dcfce7;
         }
         .menu-item.logout {
           color: #dc2626;
