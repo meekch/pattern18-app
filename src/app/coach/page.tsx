@@ -656,8 +656,8 @@ export default function CoachPage() {
             {sending && (
               <div className="message assistant">
                 <div className="analyzing">
-                  <span className="analyzing-icon">🔍</span>
-                  <span>Analyzing...</span>
+                  <span className="analyzing-icon">🎯</span>
+                  <span>Identifying patterns...</span>
                 </div>
               </div>
             )}
