@@ -672,7 +672,7 @@ export default function CoachPage() {
         {/* Save Evidence Button */}
         {detectedPatterns.length > 0 && !showHome && (
           <button className="save-evidence-btn" onClick={openSaveModal}>
-            💾 Save to Evidence ({detectedPatterns.length} patterns detected)
+            💾 Save
           </button>
         )}
       </div>
@@ -1214,16 +1214,16 @@ export default function CoachPage() {
         .save-evidence-btn {
           position: fixed;
           bottom: 140px;
-          left: 50%;
-          transform: translateX(-50%);
+          left: 16px;
           background: #1a3a2f;
           color: white;
           border: none;
-          padding: 12px 24px;
-          border-radius: 24px;
+          padding: 8px 14px;
+          border-radius: 16px;
+          font-size: 12px;
           font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
           z-index: 50;
         }
         .input-area {
