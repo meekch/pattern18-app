@@ -541,9 +541,6 @@ export default function CoachPage() {
           </div>
         </div>
         <div className="header-right">
-          <button className="feedback-btn" onClick={() => setShowFeedback(true)}>
-            Feedback
-          </button>
           <button className="evidence-badge" onClick={() => router.push('/my-case')}>
             📁 {evidenceCount}
           </button>
@@ -846,6 +843,11 @@ export default function CoachPage() {
         </div>
       )}
 
+      {/* Floating Feedback Button */}
+      <button className="floating-feedback" onClick={() => setShowFeedback(true)}>
+        💬
+      </button>
+
       <BottomNav active="coach" />
 
       {/* Upgrade prompt removed - free trial approach */}
@@ -975,18 +977,26 @@ export default function CoachPage() {
           align-items: center;
           gap: 8px;
         }
-        .feedback-btn {
-          background: rgba(255,255,255,0.15);
-          border: none;
-          padding: 6px 12px;
-          border-radius: 14px;
+        .floating-feedback {
+          position: fixed;
+          bottom: 145px;
+          right: 16px;
+          width: 48px;
+          height: 48px;
+          border-radius: 24px;
+          background: #1a3a2f;
           color: white;
-          font-size: 12px;
-          font-weight: 500;
+          border: none;
+          font-size: 22px;
           cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .feedback-btn:hover {
-          background: rgba(255,255,255,0.25);
+        .floating-feedback:active {
+          transform: scale(0.95);
         }
         .content {
           flex: 1;
