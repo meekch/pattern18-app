@@ -24,7 +24,7 @@ function LoginContent() {
     } else if (promoCode.trim()) {
       return 'Discount will be applied at checkout.';
     }
-    return '7 days free, then $89/month. Cancel anytime.';
+    return '7 days free, then billed monthly. Cancel anytime.';
   }
   
   // Dynamic headline
