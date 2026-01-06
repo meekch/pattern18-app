@@ -107,10 +107,9 @@ export default function BottomNav({ active }: BottomNavProps) {
                   <span className="menu-icon">🆘</span>
                   <span className="safety-title">Crisis Resources</span>
                 </div>
-                <p className="safety-note">If you're in immediate danger, call 911</p>
                 <div className="safety-links">
-                  <a href="tel:1-800-799-7233">📞 DV Hotline: 1-800-799-7233</a>
-                  <a href="sms:741741&body=HELLO">💬 Crisis Text: HELLO to 741741</a>
+                  <a href="tel:1-800-799-7233">DV Hotline: 1-800-799-7233</a>
+                  <a href="sms:741741&body=HELLO">Crisis Text: HELLO to 741741</a>
                 </div>
               </div>
             </div>
@@ -282,9 +281,9 @@ export default function BottomNav({ active }: BottomNavProps) {
         /* Safety Resources */
         .safety-item {
           padding: 14px 12px;
-          background: #fef2f2;
+          background: #f9fafb;
           border-radius: 12px;
-          border: 1px solid #fecaca;
+          border: 1px solid #e5e7eb;
         }
         .safety-header {
           display: flex;
@@ -294,31 +293,22 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .safety-title {
           font-weight: 600;
-          color: #dc2626;
-          font-size: 15px;
-        }
-        .safety-note {
-          margin: 0 0 12px 0;
-          font-size: 13px;
-          color: #991b1b;
+          color: #6b7280;
+          font-size: 14px;
         }
         .safety-links {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
         }
         .safety-links a {
-          color: #1a3a2f;
+          color: #4b5563;
           text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          padding: 8px 12px;
-          background: white;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
+          font-size: 13px;
+          padding: 6px 0;
         }
         .safety-links a:hover {
-          background: #f9fafb;
+          color: #1a3a2f;
         }
       `}</style>
     </>
