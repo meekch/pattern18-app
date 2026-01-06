@@ -4,32 +4,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export interface Subscription {
-  tier: 'free' | 'pro' | 'litigation';
+  tier: 'free' | 'paid';
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete';
-  trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   isActive: boolean;
-  canUseFeature: (feature: Feature) => boolean;
 }
-
-export type Feature = 
-  | 'unlimited_evidence'
-  | 'unlimited_messages'
-  | 'document_generation'
-  | 'exhibit_packets'
-  | 'bulk_import'
-  | 'priority_support'
-  | 'attorney_export';
-
-const FEATURE_ACCESS: Record<Feature, ('free' | 'pro' | 'litigation')[]> = {
-  unlimited_evidence: ['pro', 'litigation'],
-  unlimited_messages: ['pro', 'litigation'],
-  document_generation: ['pro', 'litigation'],
-  exhibit_packets: ['pro', 'litigation'],
-  bulk_import: ['pro', 'litigation'],
-  priority_support: ['litigation'],
-  attorney_export: ['litigation'],
-};
 
 const FREE_LIMITS = {
   evidence_saves: 3,
@@ -54,11 +33,11 @@ export function useSubscription() {
         return;
       }
 
-      // Get profile with subscription info
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_tier, subscription_status, trial_ends_at, current_period_end')
-        .eq('id', session.user.id)
+      // Get subscription from subscriptions table
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('status, current_period_end')
+        .eq('user_id', session.user.id)
         .single();
 
       // Get usage stats
@@ -67,7 +46,7 @@ export function useSubscription() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
 
-      // Get messages sent today (you'd need to track this)
+      // Get messages sent today
       const today = new Date().toISOString().split('T')[0];
       const { count: messagesToday } = await supabase
         .from('coach_messages')
@@ -80,50 +59,52 @@ export function useSubscription() {
         messagesToday: messagesToday || 0,
       });
 
-      const tier = (profile?.subscription_tier || 'free') as 'free' | 'pro' | 'litigation';
-      const status = (profile?.subscription_status || 'active') as Subscription['status'];
-      
-      const isActive = ['active', 'trialing'].includes(status);
-
-      const canUseFeature = (feature: Feature): boolean => {
-        if (!isActive && tier !== 'free') return false;
-        return FEATURE_ACCESS[feature].includes(tier);
-      };
+      // If they have an active subscription, they're paid
+      const isActive = subData?.status === 'active';
+      const tier = isActive ? 'paid' : 'free';
 
       setSubscription({
         tier,
-        status,
-        trialEndsAt: profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null,
-        currentPeriodEnd: profile?.current_period_end ? new Date(profile.current_period_end) : null,
+        status: (subData?.status || 'incomplete') as Subscription['status'],
+        currentPeriodEnd: subData?.current_period_end ? new Date(subData.current_period_end) : null,
         isActive,
-        canUseFeature,
       });
 
     } catch (error) {
       console.error('Failed to load subscription:', error);
+      // Default to free on error
+      setSubscription({
+        tier: 'free',
+        status: 'incomplete',
+        currentPeriodEnd: null,
+        isActive: false,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const checkLimit = (type: 'evidence' | 'messages'): { allowed: boolean; remaining: number; limit: number } => {
-    // While loading or for paid users, allow everything
+    // While loading, allow everything
     if (loading) {
       return { allowed: true, remaining: Infinity, limit: Infinity };
     }
-    
-    if (!subscription || subscription.tier === 'free') {
-      if (type === 'evidence') {
-        const limit = FREE_LIMITS.evidence_saves;
-        const remaining = Math.max(0, limit - usage.evidenceCount);
-        return { allowed: remaining > 0, remaining, limit };
-      } else {
-        const limit = FREE_LIMITS.messages_per_day;
-        const remaining = Math.max(0, limit - usage.messagesToday);
-        return { allowed: remaining > 0, remaining, limit };
-      }
+
+    // Paid users get unlimited
+    if (subscription?.tier === 'paid' && subscription?.isActive) {
+      return { allowed: true, remaining: Infinity, limit: Infinity };
     }
-    return { allowed: true, remaining: Infinity, limit: Infinity };
+
+    // Free tier limits
+    if (type === 'evidence') {
+      const limit = FREE_LIMITS.evidence_saves;
+      const remaining = Math.max(0, limit - usage.evidenceCount);
+      return { allowed: remaining > 0, remaining, limit };
+    } else {
+      const limit = FREE_LIMITS.messages_per_day;
+      const remaining = Math.max(0, limit - usage.messagesToday);
+      return { allowed: remaining > 0, remaining, limit };
+    }
   };
 
   const openBillingPortal = async () => {
@@ -148,11 +129,11 @@ export function useSubscription() {
 }
 
 // Simple component to show upgrade prompt
-export function UpgradePrompt({ 
-  feature, 
-  onClose 
-}: { 
-  feature: string; 
+export function UpgradePrompt({
+  feature,
+  onClose
+}: {
+  feature: string;
   onClose: () => void;
 }) {
   return (
