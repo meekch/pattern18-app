@@ -8,7 +8,6 @@ export default function PricingPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
     const checkUser = async () => {
@@ -19,15 +18,6 @@ export default function PricingPage() {
   }, []);
 
   const handleSelectPlan = async (priceId: string, tier: string) => {
-    if (tier === 'free') {
-      if (user) {
-        router.push('/coach');
-      } else {
-        router.push('/signup?plan=free');
-      }
-      return;
-    }
-
     if (!user) {
       router.push(`/signup?plan=${tier}`);
       return;
@@ -53,17 +43,6 @@ export default function PricingPage() {
     }
   };
 
-  const prices = {
-    pro: {
-      monthly: { amount: 29, priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY },
-      annual: { amount: 199, priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL },
-    },
-    litigation: {
-      monthly: { amount: 149, priceId: process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY },
-      annual: { amount: 999, priceId: process.env.NEXT_PUBLIC_STRIPE_LITIGATION_ANNUAL },
-    },
-  };
-
   return (
     <div className="container">
       <header className="header">
@@ -79,69 +58,19 @@ export default function PricingPage() {
           <p>Family attorneys charge $300-400/hour. Pattern 18 gives you court-ready documentation for less than a single consultation.</p>
         </div>
 
-        {/* Billing Toggle */}
-        <div className="billing-toggle">
-          <button 
-            className={billingCycle === 'monthly' ? 'active' : ''}
-            onClick={() => setBillingCycle('monthly')}
-          >
-            Monthly
-          </button>
-          <button 
-            className={billingCycle === 'annual' ? 'active' : ''}
-            onClick={() => setBillingCycle('annual')}
-          >
-            Annual
-            <span className="save-badge">Save 40%+</span>
-          </button>
-        </div>
-
         {/* Pricing Cards */}
         <div className="pricing-grid">
           
-          {/* Free Tier */}
-          <div className="pricing-card free">
+          {/* Survivor Tier */}
+          <div className="pricing-card survivor">
             <div className="card-header">
-              <h2>Free</h2>
+              <h2>Survivor</h2>
               <div className="price">
-                <span className="amount">$0</span>
-                <span className="period">forever</span>
-              </div>
-            </div>
-            <p className="card-desc">Start documenting immediately. No credit card required.</p>
-            <ul className="features">
-              <li>✓ 3 evidence saves</li>
-              <li>✓ 10 coach messages per day</li>
-              <li>✓ Pattern detection</li>
-              <li>✓ Basic case dashboard</li>
-              <li className="limited">✗ Document generation</li>
-              <li className="limited">✗ Exhibit packets</li>
-              <li className="limited">✗ Bulk import</li>
-            </ul>
-            <button 
-              className="cta-btn secondary"
-              onClick={() => handleSelectPlan('', 'free')}
-            >
-              Get Started Free
-            </button>
-          </div>
-
-          {/* Pro Tier - Most Popular */}
-          <div className="pricing-card pro popular">
-            <div className="popular-badge">MOST POPULAR</div>
-            <div className="card-header">
-              <h2>Pro</h2>
-              <div className="price">
-                <span className="amount">
-                  ${billingCycle === 'monthly' ? prices.pro.monthly.amount : Math.round(prices.pro.annual.amount / 12)}
-                </span>
+                <span className="amount">$29</span>
                 <span className="period">/month</span>
               </div>
-              {billingCycle === 'annual' && (
-                <div className="annual-note">Billed ${prices.pro.annual.amount}/year</div>
-              )}
             </div>
-            <p className="card-desc">Everything you need to build an undeniable case.</p>
+            <p className="card-desc">Everything you need to document patterns and build your case.</p>
             <ul className="features">
               <li>✓ <strong>Unlimited</strong> evidence saves</li>
               <li>✓ <strong>Unlimited</strong> coach messages</li>
@@ -151,14 +80,12 @@ export default function PricingPage() {
               <li>✓ Declaration generator</li>
               <li>✓ Timeline documents</li>
               <li>✓ Bulk message import</li>
-              <li>✓ 7-day free trial</li>
+              <li>✓ Court Prep Mode</li>
+              <li>✓ Healing Space</li>
             </ul>
             <button 
               className="cta-btn primary"
-              onClick={() => handleSelectPlan(
-                billingCycle === 'monthly' ? prices.pro.monthly.priceId! : prices.pro.annual.priceId!,
-                'pro'
-              )}
+              onClick={() => handleSelectPlan(process.env.NEXT_PUBLIC_STRIPE_SURVIVOR_MONTHLY!, 'survivor')}
               disabled={loading}
             >
               {loading ? 'Loading...' : 'Start 7-Day Free Trial'}
@@ -166,55 +93,85 @@ export default function PricingPage() {
             <p className="trial-note">Cancel anytime. No charge for 7 days.</p>
           </div>
 
-          {/* Litigation Support - Anchor */}
-          <div className="pricing-card litigation">
+          {/* Litigation Tier - Most Popular */}
+          <div className="pricing-card litigation popular">
+            <div className="popular-badge">MOST POPULAR</div>
             <div className="card-header">
-              <h2>Litigation Support</h2>
+              <h2>Litigation</h2>
               <div className="price">
-                <span className="amount">
-                  ${billingCycle === 'monthly' ? prices.litigation.monthly.amount : Math.round(prices.litigation.annual.amount / 12)}
-                </span>
+                <span className="amount">$99</span>
                 <span className="period">/month</span>
               </div>
-              {billingCycle === 'annual' && (
-                <div className="annual-note">Billed ${prices.litigation.annual.amount}/year</div>
-              )}
             </div>
-            <p className="card-desc">For active litigation with upcoming court dates.</p>
+            <p className="card-desc">For active court cases. Priority support when you need it most.</p>
             <ul className="features">
-              <li>✓ Everything in Pro</li>
-              <li>✓ <strong>Priority</strong> AI responses</li>
+              <li>✓ Everything in Survivor</li>
+              <li className="highlight">✓ <strong>Priority</strong> AI responses</li>
               <li>✓ Attorney export package</li>
+              <li>✓ Case summary generator</li>
               <li>✓ Court-formatted filings</li>
               <li>✓ Deposition prep guides</li>
               <li>✓ Pattern expert summary</li>
-              <li>✓ Email support within 24hrs</li>
-              <li>✓ Monthly case review call</li>
+              <li>✓ Email support</li>
+              <li>✓ Exclusive video library</li>
             </ul>
             <button 
-              className="cta-btn secondary"
-              onClick={() => handleSelectPlan(
-                billingCycle === 'monthly' ? prices.litigation.monthly.priceId! : prices.litigation.annual.priceId!,
-                'litigation'
-              )}
+              className="cta-btn primary"
+              onClick={() => handleSelectPlan(process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY!, 'litigation')}
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Get Litigation Support'}
+              {loading ? 'Loading...' : 'Start 7-Day Free Trial'}
+            </button>
+            <p className="trial-note">Cancel anytime. No charge for 7 days.</p>
+          </div>
+
+          {/* Law Firms */}
+          <div className="pricing-card firms">
+            <div className="card-header">
+              <h2>Law Firms</h2>
+              <div className="price">
+                <span className="amount-small">Custom</span>
+              </div>
+            </div>
+            <p className="card-desc">Become a Pattern 18 Certified Firm. Your clients arrive prepared.</p>
+            <ul className="features">
+              <li>✓ Multi-attorney dashboard</li>
+              <li>✓ Client account management</li>
+              <li>✓ <strong>Sponsor survivor accounts</strong></li>
+              <li>✓ White-label reports</li>
+              <li>✓ "Pattern 18 Certified" badge</li>
+              <li>✓ Listed as trusted referral</li>
+              <li>✓ Staff training session</li>
+              <li>✓ Priority support</li>
+            </ul>
+            <div className="firm-tiers">
+              <div className="firm-tier">
+                <span className="tier-name">Solo</span>
+                <span className="tier-price">$299/mo</span>
+              </div>
+              <div className="firm-tier">
+                <span className="tier-name">Small Firm</span>
+                <span className="tier-price">$799/mo</span>
+              </div>
+              <div className="firm-tier">
+                <span className="tier-name">Full Firm</span>
+                <span className="tier-price">$1,999/mo</span>
+              </div>
+            </div>
+            <button 
+              className="cta-btn secondary"
+              onClick={() => window.location.href = 'mailto:hello@pattern18.com?subject=Law Firm Inquiry'}
+            >
+              Contact Us
             </button>
           </div>
 
         </div>
 
-        {/* Social Proof */}
-        <div className="social-proof">
-          <div className="stat">
-            <span className="stat-number">2,847</span>
-            <span className="stat-label">patterns documented this month</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">94%</span>
-            <span className="stat-label">of users say they feel more prepared for court</span>
-          </div>
+        {/* The Mission */}
+        <div className="mission-block">
+          <h3>Our Mission</h3>
+          <p>Every law firm subscription sponsors free access for survivors who can't afford it. When firms pay, victims get helped. That's how we change the system together.</p>
         </div>
 
         {/* Comparison to Attorney */}
@@ -228,7 +185,7 @@ export default function PricingPage() {
             </div>
             <div className="comparison-vs">vs</div>
             <div className="comparison-item pattern18">
-              <div className="comparison-label">Pattern 18 Pro</div>
+              <div className="comparison-label">Pattern 18</div>
               <div className="comparison-price">$29/mo</div>
               <div className="comparison-note">Unlimited documentation & court docs</div>
             </div>
@@ -256,7 +213,7 @@ export default function PricingPage() {
 
           <div className="faq-item">
             <h4>What if I can't afford this?</h4>
-            <p>We understand. Start with our free tier - it's not a trial, it's free forever. If you're in crisis, reach out to us.</p>
+            <p>Start with the 7-day free trial. If you're in financial hardship, reach out to us - we have sponsored accounts available through our law firm partners.</p>
           </div>
         </div>
 
@@ -290,7 +247,7 @@ export default function PricingPage() {
         }
         .hero {
           text-align: center;
-          margin-bottom: 40px;
+          margin-bottom: 48px;
         }
         .hero h1 {
           font-size: 36px;
@@ -305,55 +262,19 @@ export default function PricingPage() {
           margin: 0 auto;
           line-height: 1.6;
         }
-        .billing-toggle {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 40px;
-        }
-        .billing-toggle button {
-          padding: 12px 24px;
-          border: 2px solid #e5e7eb;
-          background: white;
-          border-radius: 30px;
-          font-size: 15px;
-          font-weight: 600;
-          color: #6b7280;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s;
-        }
-        .billing-toggle button.active {
-          border-color: #1a3a2f;
-          background: #1a3a2f;
-          color: white;
-        }
-        .save-badge {
-          background: #fef3c7;
-          color: #92400e;
-          font-size: 11px;
-          padding: 2px 8px;
-          border-radius: 10px;
-        }
-        .billing-toggle button.active .save-badge {
-          background: #22c55e;
-          color: white;
-        }
         .pricing-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
-          margin-bottom: 60px;
+          margin-bottom: 48px;
         }
         @media (max-width: 900px) {
           .pricing-grid {
             grid-template-columns: 1fr;
-            max-width: 400px;
-            margin: 0 auto 60px;
+            max-width: 420px;
+            margin: 0 auto 48px;
           }
-          .pricing-card.pro {
+          .pricing-card.popular {
             order: -1;
           }
         }
@@ -368,7 +289,7 @@ export default function PricingPage() {
         }
         .pricing-card.popular {
           border: 3px solid #059669;
-          transform: scale(1.05);
+          transform: scale(1.02);
         }
         @media (max-width: 900px) {
           .pricing-card.popular {
@@ -406,14 +327,14 @@ export default function PricingPage() {
           font-weight: 800;
           color: #1a3a2f;
         }
+        .amount-small {
+          font-size: 36px;
+          font-weight: 800;
+          color: #1a3a2f;
+        }
         .period {
           font-size: 16px;
           color: #6b7280;
-        }
-        .annual-note {
-          font-size: 13px;
-          color: #059669;
-          margin-top: 4px;
         }
         .card-desc {
           color: #6b7280;
@@ -436,11 +357,36 @@ export default function PricingPage() {
         .features li:last-child {
           border-bottom: none;
         }
-        .features li.limited {
-          color: #9ca3af;
+        .features li.highlight {
+          background: #fef3c7;
+          margin: 0 -12px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          border-bottom: none;
         }
         .features li strong {
           color: #059669;
+        }
+        .firm-tiers {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 24px;
+          background: #f9fafb;
+          padding: 16px;
+          border-radius: 12px;
+        }
+        .firm-tier {
+          display: flex;
+          justify-content: space-between;
+          font-size: 14px;
+        }
+        .tier-name {
+          color: #6b7280;
+        }
+        .tier-price {
+          font-weight: 700;
+          color: #1a3a2f;
         }
         .cta-btn {
           width: 100%;
@@ -477,42 +423,37 @@ export default function PricingPage() {
           color: #6b7280;
           margin-top: 12px;
         }
-        .social-proof {
-          display: flex;
-          justify-content: center;
-          gap: 60px;
-          padding: 40px;
-          background: white;
-          border-radius: 16px;
-          margin-bottom: 40px;
-        }
-        @media (max-width: 600px) {
-          .social-proof {
-            flex-direction: column;
-            gap: 24px;
-            text-align: center;
-          }
-        }
-        .stat-number {
-          display: block;
-          font-size: 36px;
-          font-weight: 800;
-          color: #059669;
-        }
-        .stat-label {
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .comparison {
+        .mission-block {
           background: #1a3a2f;
-          border-radius: 16px;
-          padding: 40px;
           color: white;
+          border-radius: 16px;
+          padding: 32px 40px;
           text-align: center;
           margin-bottom: 40px;
         }
+        .mission-block h3 {
+          font-size: 20px;
+          margin: 0 0 12px;
+        }
+        .mission-block p {
+          font-size: 16px;
+          margin: 0;
+          opacity: 0.9;
+          line-height: 1.6;
+          max-width: 600px;
+          margin: 0 auto;
+        }
+        .comparison {
+          background: white;
+          border-radius: 16px;
+          padding: 40px;
+          text-align: center;
+          margin-bottom: 40px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
         .comparison h3 {
           font-size: 24px;
+          color: #1a3a2f;
           margin: 0 0 32px;
         }
         .comparison-grid {
@@ -532,29 +473,32 @@ export default function PricingPage() {
           border-radius: 12px;
         }
         .comparison-item.attorney {
-          background: rgba(255,255,255,0.1);
+          background: #fef2f2;
+          border: 2px solid #fecaca;
         }
         .comparison-item.pattern18 {
-          background: #059669;
+          background: #f0fdf4;
+          border: 2px solid #059669;
         }
         .comparison-label {
           font-size: 14px;
-          opacity: 0.9;
+          color: #6b7280;
           margin-bottom: 8px;
         }
         .comparison-price {
           font-size: 32px;
           font-weight: 800;
+          color: #1a3a2f;
         }
         .comparison-note {
           font-size: 12px;
-          opacity: 0.8;
+          color: #6b7280;
           margin-top: 4px;
         }
         .comparison-vs {
           font-size: 18px;
           font-weight: 600;
-          opacity: 0.6;
+          color: #9ca3af;
         }
         .faq {
           max-width: 600px;
@@ -571,6 +515,7 @@ export default function PricingPage() {
           border-radius: 12px;
           padding: 20px 24px;
           margin-bottom: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .faq-item h4 {
           font-size: 16px;
