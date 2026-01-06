@@ -845,7 +845,7 @@ export default function CoachPage() {
 
       {/* Floating Feedback Button */}
       <button className="floating-feedback" onClick={() => setShowFeedback(true)}>
-        💬
+        💡
       </button>
 
       <BottomNav active="coach" />
