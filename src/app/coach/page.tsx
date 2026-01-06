@@ -446,10 +446,9 @@ export default function CoachPage() {
       .from('incidents')
       .select('id')
       .eq('user_id', user.id)
-      .eq('coparent_message', saveData.coparentMessage)
-      .single();
+      .eq('coparent_message', saveData.coparentMessage.trim());
 
-    if (existing) {
+    if (existing && existing.length > 0) {
       alert('You already saved this message. Duplicate not added.');
       setShowSaveModal(false);
       return;
