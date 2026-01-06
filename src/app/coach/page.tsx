@@ -521,7 +521,7 @@ export default function CoachPage() {
     );
   }
 
-  const coparentName = caseContext?.coparent_name || 'your co-parent';
+  const coparentName = 'your co-parent';
 
   return (
     <div 
