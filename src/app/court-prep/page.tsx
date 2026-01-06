@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
 
-type HearingType = 'rmc' | 'evidentiary' | 'mediation' | 'status' | null;
+type HearingType = 'rmc' | 'evidentiary' | 'modifyParenting' | 'modifySupport' | 'mediation' | 'emergency' | 'status' | null;
 type PrepStep = 'type' | 'basics' | 'checklist' | 'opening' | 'scenarios' | 'grounding' | 'ready';
 
 export default function CourtPrepPage() {
@@ -38,7 +38,6 @@ export default function CourtPrepPage() {
     loadContext();
   }, []);
 
-  // Breathing exercise
   useEffect(() => {
     if (!breathingActive) return;
     
@@ -84,6 +83,26 @@ export default function CourtPrepPage() {
         'Answer only the question asked'
       ]
     },
+    modifyParenting: {
+      name: 'Petition to Modify Parenting Time',
+      description: 'Requesting changes to the current custody or parenting schedule.',
+      tips: [
+        'You must show "substantial and continuing change in circumstances"',
+        'Focus on the child\'s best interests, not your convenience',
+        'Document specific incidents that support the change',
+        'Have a clear, specific proposal ready'
+      ]
+    },
+    modifySupport: {
+      name: 'Petition to Modify Child Support',
+      description: 'Requesting changes to the current child support order.',
+      tips: [
+        'Bring current income documentation',
+        'Know both parties\' incomes if possible',
+        'Understand your state\'s child support guidelines',
+        'Changes usually require 15%+ income change or major life event'
+      ]
+    },
     mediation: {
       name: 'Mediation',
       description: 'A facilitated negotiation to reach agreement. Mediator cannot force decisions.',
@@ -92,6 +111,16 @@ export default function CourtPrepPage() {
         'Focus on proposals, not blame',
         '"I can agree to X if Y" is powerful',
         'You can walk away if it\'s not working'
+      ]
+    },
+    emergency: {
+      name: 'Emergency Motion / Order of Protection',
+      description: 'Urgent hearing for immediate safety concerns or time-sensitive issues.',
+      tips: [
+        'Focus only on the emergency - not history',
+        'Bring specific evidence of immediate harm or risk',
+        'Be prepared to explain why this can\'t wait',
+        'Have a specific, temporary request ready'
       ]
     },
     status: {
@@ -138,18 +167,6 @@ export default function CourtPrepPage() {
       note: 'Don\'t describe the conflict. State the conclusion.'
     },
     {
-      id: 'details',
-      question: 'If judge asks for details you don\'t want to share',
-      answer: '"Your Honor, I\'d prefer to keep this focused on the structural solution rather than relitigating specific incidents."',
-      note: 'You can redirect. You don\'t have to answer everything.'
-    },
-    {
-      id: 'compromise',
-      question: '"Can you compromise on this?"',
-      answer: '"I am open to alternatives that maintain predictability and reduce conflict. I am not able to agree to [specific thing] because [brief child-focused reason]."',
-      note: 'Show flexibility on method, firmness on boundaries.'
-    },
-    {
       id: 'silence',
       question: 'When you don\'t know what to say',
       answer: 'Pause. Breathe. Say: "I need a moment to consider that, Your Honor."',
@@ -166,7 +183,7 @@ export default function CourtPrepPage() {
     { id: 'doc-order', label: 'Proposed order open and ready', category: 'docs' },
     { id: 'doc-statement', label: 'Opening statement visible', category: 'docs' },
     { id: 'doc-scenarios', label: 'Scenario responses accessible', category: 'docs' },
-    { id: 'setup-bg', label: 'Neutral background (light blur or plain wall)', category: 'setup' },
+    { id: 'setup-bg', label: 'Neutral background (blur or plain wall)', category: 'setup' },
     { id: 'setup-camera', label: 'Camera at eye level', category: 'setup' },
     { id: 'setup-light', label: 'Light in front of face (not behind)', category: 'setup' },
     { id: 'setup-clothes', label: 'Solid color top (navy, gray, cream)', category: 'setup' },
@@ -179,7 +196,6 @@ export default function CourtPrepPage() {
     { id: 'doc-copies', label: 'Extra copies of proposed order (3)', category: 'docs' },
     { id: 'doc-statement', label: 'Opening statement printed', category: 'docs' },
     { id: 'doc-scenarios', label: 'Scenario card in folder', category: 'docs' },
-    { id: 'doc-evidence', label: 'Evidence organized if needed', category: 'docs' },
     { id: 'setup-arrive', label: 'Arrive 20 minutes early', category: 'setup' },
     { id: 'setup-courtroom', label: 'Find correct courtroom', category: 'setup' },
     { id: 'setup-phone', label: 'Phone completely off', category: 'setup' },
@@ -195,36 +211,54 @@ export default function CourtPrepPage() {
     switch (prepStep) {
       case 'type':
         return (
-          <div className="step-content">
-            <h2>What type of hearing?</h2>
-            <p className="step-desc">This changes how you prepare and what to expect.</p>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>What type of hearing?</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>This changes how you prepare and what to expect.</p>
             
-            <div className="hearing-types">
-              {Object.entries(hearingTypeInfo).map(([key, info]) => (
-                <button
-                  key={key}
-                  className={`type-btn ${hearingType === key ? 'selected' : ''}`}
-                  onClick={() => setHearingType(key as HearingType)}
-                >
-                  <strong>{info.name}</strong>
-                  <span>{info.description}</span>
-                </button>
-              ))}
-            </div>
+            {Object.entries(hearingTypeInfo).map(([key, info]) => (
+              <button
+                key={key}
+                style={{
+                  textAlign: 'left',
+                  padding: '16px',
+                  border: `2px solid ${hearingType === key ? '#059669' : '#e5e7eb'}`,
+                  borderRadius: '12px',
+                  background: hearingType === key ? '#f0fdf4' : 'white',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginBottom: '12px',
+                }}
+                onClick={() => setHearingType(key as HearingType)}
+              >
+                <span style={{ display: 'block', color: '#1a3a2f', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>{info.name}</span>
+                <span style={{ fontSize: '13px', color: '#6b7280' }}>{info.description}</span>
+              </button>
+            ))}
             
             {hearingType && (
-              <div className="type-tips">
-                <h4>Key things to know:</h4>
-                <ul>
+              <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                <h4 style={{ color: '#1a3a2f', margin: '0 0 12px 0', fontSize: '15px' }}>Key things to know:</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#4b5563', fontSize: '14px' }}>
                   {hearingTypeInfo[hearingType].tips.map((tip, i) => (
-                    <li key={i}>{tip}</li>
+                    <li key={i} style={{ marginBottom: '8px' }}>{tip}</li>
                   ))}
                 </ul>
               </div>
             )}
             
             <button 
-              className="next-btn"
+              style={{
+                width: '100%',
+                padding: '16px',
+                border: 'none',
+                borderRadius: '12px',
+                background: !hearingType ? '#9ca3af' : '#1a3a2f',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: !hearingType ? 'not-allowed' : 'pointer',
+                marginTop: '16px',
+              }}
               onClick={() => setPrepStep('basics')}
               disabled={!hearingType}
             >
@@ -235,36 +269,38 @@ export default function CourtPrepPage() {
 
       case 'basics':
         return (
-          <div className="step-content">
-            <h2>Hearing details</h2>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>Hearing details</h2>
             
-            <div className="form-group">
-              <label>When is it?</label>
-              <div className="date-time-row">
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 600, color: '#1a3a2f', marginBottom: '8px' }}>When is it?</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <input 
                   type="date" 
+                  style={{ flex: 1, padding: '12px', border: '2px solid #e5e7eb', borderRadius: '10px', fontSize: '16px' }}
                   value={hearingDate}
                   onChange={(e) => setHearingDate(e.target.value)}
                 />
                 <input 
                   type="time" 
+                  style={{ flex: 1, padding: '12px', border: '2px solid #e5e7eb', borderRadius: '10px', fontSize: '16px' }}
                   value={hearingTime}
                   onChange={(e) => setHearingTime(e.target.value)}
                 />
               </div>
             </div>
             
-            <div className="form-group">
-              <label>Format</label>
-              <div className="toggle-row">
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 600, color: '#1a3a2f', marginBottom: '8px' }}>Format</label>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
-                  className={`toggle-btn ${isVirtual ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '14px', border: `2px solid ${isVirtual ? '#059669' : '#e5e7eb'}`, borderRadius: '10px', background: isVirtual ? '#f0fdf4' : 'white', fontSize: '15px', cursor: 'pointer' }}
                   onClick={() => setIsVirtual(true)}
                 >
                   💻 Virtual
                 </button>
                 <button 
-                  className={`toggle-btn ${!isVirtual ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '14px', border: `2px solid ${!isVirtual ? '#059669' : '#e5e7eb'}`, borderRadius: '10px', background: !isVirtual ? '#f0fdf4' : 'white', fontSize: '15px', cursor: 'pointer' }}
                   onClick={() => setIsVirtual(false)}
                 >
                   🏛️ In-Person
@@ -272,21 +308,24 @@ export default function CourtPrepPage() {
               </div>
             </div>
             
-            <div className="form-group">
-              <label>What are you asking for? (one sentence)</label>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 600, color: '#1a3a2f', marginBottom: '8px' }}>What are you asking for? (one sentence)</label>
               <textarea
+                style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '10px', fontSize: '15px', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
                 value={mainRequest}
                 onChange={(e) => setMainRequest(e.target.value)}
                 placeholder="Example: A week-on-week-off schedule with no holiday overrides"
                 rows={3}
               />
-              <p className="help-text">Keep it simple. This becomes your anchor.</p>
+              <p style={{ fontSize: '13px', color: '#9ca3af', margin: '8px 0 0 0' }}>
+                Keep it simple. This becomes your anchor.
+              </p>
             </div>
             
-            <div className="btn-row">
-              <button className="back-btn" onClick={() => setPrepStep('type')}>Back</button>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button style={{ flex: 1, padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#6b7280' }} onClick={() => setPrepStep('type')}>Back</button>
               <button 
-                className="next-btn"
+                style={{ flex: 2, padding: '16px', border: 'none', borderRadius: '12px', background: '#1a3a2f', color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}
                 onClick={() => setPrepStep('checklist')}
               >
                 Continue
@@ -296,33 +335,40 @@ export default function CourtPrepPage() {
         );
 
       case 'checklist':
+        const categories: Record<string, string> = {
+          tech: '🔌 Tech Setup',
+          docs: '📄 Documents',
+          setup: '🪑 Your Setup',
+          mental: '🧠 Mental Prep'
+        };
+        
         return (
-          <div className="step-content">
-            <h2>{isVirtual ? '💻' : '🏛️'} Pre-Hearing Checklist</h2>
-            <p className="step-desc">Go through this 20 minutes before your hearing.</p>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>{isVirtual ? '💻' : '🏛️'} Pre-Hearing Checklist</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>Go through this 20 minutes before your hearing.</p>
             
-            {['tech', 'docs', 'setup', 'mental'].map(category => {
-              const items = checklist.filter(c => c.category === category);
+            {Object.keys(categories).map(cat => {
+              const items = checklist.filter(c => c.category === cat);
               if (items.length === 0) return null;
               
-              const labels: Record<string, string> = {
-                tech: '🔌 Tech Setup',
-                docs: '📄 Documents',
-                setup: '🪑 Your Setup',
-                mental: '🧠 Mental Prep'
-              };
-              
               return (
-                <div key={category} className="checklist-section">
-                  <h4>{labels[category]}</h4>
+                <div key={cat} style={{ marginBottom: '20px' }}>
+                  <h4 style={{ color: '#1a3a2f', margin: '0 0 12px 0', fontSize: '15px' }}>
+                    {categories[cat]}
+                  </h4>
                   {items.map(item => (
-                    <label key={item.id} className="check-item">
+                    <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
                       <input 
                         type="checkbox"
+                        style={{ width: '22px', height: '22px', accentColor: '#059669' }}
                         checked={checkedItems.has(item.id)}
                         onChange={() => toggleCheck(item.id)}
                       />
-                      <span className={checkedItems.has(item.id) ? 'checked' : ''}>
+                      <span style={{ 
+                        color: checkedItems.has(item.id) ? '#9ca3af' : '#4b5563',
+                        textDecoration: checkedItems.has(item.id) ? 'line-through' : 'none',
+                        fontSize: '15px'
+                      }}>
                         {item.label}
                       </span>
                     </label>
@@ -331,13 +377,13 @@ export default function CourtPrepPage() {
               );
             })}
             
-            <div className="checklist-progress">
+            <div style={{ textAlign: 'center', padding: '16px', background: '#f0fdf4', borderRadius: '10px', fontWeight: 600, color: '#059669' }}>
               {checkedItems.size} of {checklist.length} complete
             </div>
             
-            <div className="btn-row">
-              <button className="back-btn" onClick={() => setPrepStep('basics')}>Back</button>
-              <button className="next-btn" onClick={() => setPrepStep('opening')}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button style={{ flex: 1, padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#6b7280' }} onClick={() => setPrepStep('basics')}>Back</button>
+              <button style={{ flex: 2, padding: '16px', border: 'none', borderRadius: '12px', background: '#1a3a2f', color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }} onClick={() => setPrepStep('opening')}>
                 Continue
               </button>
             </div>
@@ -346,43 +392,46 @@ export default function CourtPrepPage() {
 
       case 'opening':
         return (
-          <div className="step-content">
-            <h2>Your Opening Statement</h2>
-            <p className="step-desc">Say this when the judge asks your position. Then stop.</p>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>Your Opening Statement</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>Say this when the judge asks your position. Then stop.</p>
             
-            <div className="opening-template">
-              <div className="template-label">Template:</div>
-              <p className="template-text">
-                "Your Honor, I am requesting <span className="highlight">{mainRequest || '[your request]'}</span> to reduce conflict and provide stability for {caseContext?.children_names || 'my child'}."
+            <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #059669' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#059669', marginBottom: '8px' }}>
+                Template:
+              </div>
+              <p style={{ color: '#1a3a2f', fontSize: '17px', lineHeight: 1.6, margin: 0 }}>
+                "Your Honor, I am requesting <span style={{ background: 'linear-gradient(180deg, transparent 60%, #a7f3d0 60%)' }}>
+                  {mainRequest || '[your request]'}
+                </span> to reduce conflict and provide stability for {caseContext?.children_names || 'my child'}."
               </p>
             </div>
             
-            <div className="opening-rules">
-              <h4>Rules for your opening:</h4>
-              <ul>
-                <li><strong>One paragraph max.</strong> Not your life story.</li>
-                <li><strong>Child-focused.</strong> Not about punishing them.</li>
-                <li><strong>Solution-oriented.</strong> Not problem-focused.</li>
-                <li><strong>Stop when done.</strong> Silence is fine.</li>
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ color: '#1a3a2f', margin: '0 0 12px 0' }}>Rules for your opening:</h4>
+              <ul style={{ margin: 0, paddingLeft: '20px', color: '#4b5563' }}>
+                <li style={{ marginBottom: '8px' }}><strong>One paragraph max.</strong> Not your life story.</li>
+                <li style={{ marginBottom: '8px' }}><strong>Child-focused.</strong> Not about punishing them.</li>
+                <li style={{ marginBottom: '8px' }}><strong>Solution-oriented.</strong> Not problem-focused.</li>
+                <li style={{ marginBottom: '8px' }}><strong>Stop when done.</strong> Silence is fine.</li>
               </ul>
             </div>
             
-            <div className="avoid-box">
-              <h4>❌ Avoid these words:</h4>
-              <div className="avoid-words">
-                <span>abusive</span>
-                <span>narcissist</span>
-                <span>toxic</span>
-                <span>controlling</span>
-                <span>always</span>
-                <span>never</span>
+            <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '16px', border: '1px solid #fecaca' }}>
+              <h4 style={{ color: '#dc2626', margin: '0 0 12px 0' }}>❌ Avoid these words:</h4>
+              <div style={{ marginBottom: '12px' }}>
+                {['abusive', 'narcissist', 'toxic', 'controlling', 'always', 'never'].map(word => (
+                  <span key={word} style={{ background: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', color: '#dc2626', border: '1px solid #fecaca', marginRight: '8px', marginBottom: '8px', display: 'inline-block' }}>{word}</span>
+                ))}
               </div>
-              <p>Emotional language undermines credibility. Let the facts speak.</p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
+                Emotional language undermines credibility. Let the facts speak.
+              </p>
             </div>
             
-            <div className="btn-row">
-              <button className="back-btn" onClick={() => setPrepStep('checklist')}>Back</button>
-              <button className="next-btn" onClick={() => setPrepStep('scenarios')}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button style={{ flex: 1, padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#6b7280' }} onClick={() => setPrepStep('checklist')}>Back</button>
+              <button style={{ flex: 2, padding: '16px', border: 'none', borderRadius: '12px', background: '#1a3a2f', color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }} onClick={() => setPrepStep('scenarios')}>
                 Continue
               </button>
             </div>
@@ -391,42 +440,40 @@ export default function CourtPrepPage() {
 
       case 'scenarios':
         return (
-          <div className="step-content">
-            <h2>What to Say When...</h2>
-            <p className="step-desc">Tap each scenario to see your response.</p>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>What to Say When...</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>Tap each scenario to see your response.</p>
             
-            <div className="scenarios">
-              {scenarios.map(scenario => (
-                <div 
-                  key={scenario.id}
-                  className={`scenario-card ${expandedScenario === scenario.id ? 'expanded' : ''}`}
-                  onClick={() => setExpandedScenario(
-                    expandedScenario === scenario.id ? null : scenario.id
-                  )}
-                >
-                  <div className="scenario-question">
-                    <span className="scenario-icon">💬</span>
-                    {scenario.question}
-                    <span className="expand-icon">{expandedScenario === scenario.id ? '−' : '+'}</span>
-                  </div>
-                  {expandedScenario === scenario.id && (
-                    <div className="scenario-answer">
-                      <div className="say-this">
-                        <strong>Say this:</strong>
-                        <p>{scenario.answer}</p>
-                      </div>
-                      <div className="scenario-note">
-                        <strong>Remember:</strong> {scenario.note}
-                      </div>
-                    </div>
-                  )}
+            {scenarios.map(scenario => (
+              <div 
+                key={scenario.id}
+                style={{ border: `2px solid ${expandedScenario === scenario.id ? '#059669' : '#e5e7eb'}`, borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', marginBottom: '12px' }}
+                onClick={() => setExpandedScenario(expandedScenario === scenario.id ? null : scenario.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', fontWeight: 500, color: '#1a3a2f' }}>
+                  <span>💬</span>
+                  <span style={{ flex: 1 }}>{scenario.question}</span>
+                  <span style={{ color: '#9ca3af' }}>{expandedScenario === scenario.id ? '−' : '+'}</span>
                 </div>
-              ))}
-            </div>
+                {expandedScenario === scenario.id && (
+                  <div style={{ padding: '0 16px 16px', borderTop: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                    <div style={{ padding: '16px 0' }}>
+                      <strong style={{ color: '#059669', fontSize: '13px' }}>Say this:</strong>
+                      <p style={{ margin: '8px 0 0 0', color: '#1a3a2f', fontSize: '15px', lineHeight: 1.5 }}>
+                        {scenario.answer}
+                      </p>
+                    </div>
+                    <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', fontSize: '13px', color: '#4b5563' }}>
+                      <strong style={{ color: '#1a3a2f' }}>Remember:</strong> {scenario.note}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
             
-            <div className="btn-row">
-              <button className="back-btn" onClick={() => setPrepStep('opening')}>Back</button>
-              <button className="next-btn" onClick={() => setPrepStep('grounding')}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button style={{ flex: 1, padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#6b7280' }} onClick={() => setPrepStep('opening')}>Back</button>
+              <button style={{ flex: 2, padding: '16px', border: 'none', borderRadius: '12px', background: '#1a3a2f', color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }} onClick={() => setPrepStep('grounding')}>
                 Continue
               </button>
             </div>
@@ -435,54 +482,85 @@ export default function CourtPrepPage() {
 
       case 'grounding':
         return (
-          <div className="step-content">
-            <h2>Ground Yourself</h2>
-            <p className="step-desc">Take 2 minutes before your hearing. You've prepared. Now settle your body.</p>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>Ground Yourself</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>Take 2 minutes before your hearing. You've prepared. Now settle your body.</p>
             
-            <div className={`breath-circle ${breathingActive ? breathPhase : ''}`}>
-              {breathingActive ? (
-                <span className="breath-text">
-                  {breathPhase === 'in' && 'Breathe in...'}
-                  {breathPhase === 'hold' && 'Hold...'}
-                  {breathPhase === 'out' && 'Breathe out...'}
-                </span>
-              ) : (
-                <span className="breath-text">Tap to start</span>
-              )}
+            <div 
+              style={{
+                width: '180px',
+                height: '180px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '24px auto',
+                transform: breathingActive && breathPhase !== 'out' ? 'scale(1.15)' : 'scale(1)',
+                transition: 'transform 4s ease-in-out',
+                cursor: 'pointer',
+              }}
+              onClick={() => setBreathingActive(!breathingActive)}
+            >
+              <span style={{ color: '#1a3a2f', fontWeight: 600, fontSize: '16px' }}>
+                {breathingActive ? (
+                  <>
+                    {breathPhase === 'in' && 'Breathe in...'}
+                    {breathPhase === 'hold' && 'Hold...'}
+                    {breathPhase === 'out' && 'Breathe out...'}
+                  </>
+                ) : 'Tap to start'}
+              </span>
             </div>
             
             <button 
-              className={`breath-btn ${breathingActive ? 'stop' : ''}`}
+              style={{ 
+                width: '100%',
+                padding: '16px',
+                border: 'none',
+                borderRadius: '12px',
+                background: breathingActive ? '#dc2626' : '#1a3a2f',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: '24px'
+              }}
               onClick={() => setBreathingActive(!breathingActive)}
             >
               {breathingActive ? 'Stop' : 'Start Breathing'}
             </button>
             
-            <div className="grounding-reminders">
-              <h4>Hold in your mind:</h4>
-              <div className="reminder-card">
-                <p>"I am asking for structure that protects my child."</p>
-              </div>
-              
-              <h4>If you feel triggered:</h4>
-              <ul>
-                <li>Press your feet into the floor</li>
-                <li>Take one slow breath</li>
-                <li>Say: "I'd like to stay focused on the proposal."</li>
-              </ul>
-              
-              <h4>Final reminders:</h4>
-              <ul>
-                <li>Speak slowly</li>
-                <li>Answer only what's asked</li>
-                <li>Stop when finished</li>
-                <li>Their chaos is not your emergency</li>
-              </ul>
+            <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '24px' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#059669', fontWeight: 600 }}>
+                Hold in your mind:
+              </p>
+              <p style={{ fontSize: '18px', color: '#1a3a2f', margin: 0, fontStyle: 'italic' }}>
+                "I am asking for structure that protects my child."
+              </p>
             </div>
             
-            <div className="btn-row">
-              <button className="back-btn" onClick={() => setPrepStep('scenarios')}>Back</button>
-              <button className="next-btn ready" onClick={() => setPrepStep('ready')}>
+            <h4 style={{ color: '#1a3a2f', margin: '0 0 12px 0' }}>If you feel triggered:</h4>
+            <ul style={{ margin: '0 0 20px 0', paddingLeft: '20px', color: '#4b5563' }}>
+              <li style={{ marginBottom: '8px' }}>Press your feet into the floor</li>
+              <li style={{ marginBottom: '8px' }}>Take one slow breath</li>
+              <li style={{ marginBottom: '8px' }}>Say: "I'd like to stay focused on the proposal."</li>
+            </ul>
+            
+            <h4 style={{ color: '#1a3a2f', margin: '0 0 12px 0' }}>Final reminders:</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', color: '#4b5563' }}>
+              <li style={{ marginBottom: '8px' }}>Speak slowly</li>
+              <li style={{ marginBottom: '8px' }}>Answer only what's asked</li>
+              <li style={{ marginBottom: '8px' }}>Stop when finished</li>
+              <li style={{ marginBottom: '8px' }}>Their chaos is not your emergency</li>
+            </ul>
+            
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button style={{ flex: 1, padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 600, cursor: 'pointer', color: '#6b7280' }} onClick={() => setPrepStep('scenarios')}>Back</button>
+              <button 
+                style={{ flex: 2, padding: '16px', border: 'none', borderRadius: '12px', background: '#059669', color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }} 
+                onClick={() => setPrepStep('ready')}
+              >
                 I'm Ready
               </button>
             </div>
@@ -491,49 +569,62 @@ export default function CourtPrepPage() {
 
       case 'ready':
         return (
-          <div className="step-content ready-screen">
-            <div className="ready-icon">💚</div>
-            <h2>You're Ready</h2>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>💚</div>
+            <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>You're Ready</h2>
             
-            <div className="ready-summary">
-              <div className="summary-item">
-                <span className="summary-label">Hearing</span>
-                <span className="summary-value">{hearingType ? hearingTypeInfo[hearingType].name : ''}</span>
+            <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '20px', margin: '24px 0', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e5e7eb' }}>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>Hearing</span>
+                <span style={{ color: '#1a3a2f', fontWeight: 500, fontSize: '14px' }}>{hearingType ? hearingTypeInfo[hearingType].name : ''}</span>
               </div>
               {hearingDate && (
-                <div className="summary-item">
-                  <span className="summary-label">When</span>
-                  <span className="summary-value">
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e5e7eb' }}>
+                  <span style={{ color: '#6b7280', fontSize: '14px' }}>When</span>
+                  <span style={{ color: '#1a3a2f', fontWeight: 500 }}>
                     {new Date(hearingDate).toLocaleDateString()} {hearingTime && `at ${hearingTime}`}
                   </span>
                 </div>
               )}
-              <div className="summary-item">
-                <span className="summary-label">Your Request</span>
-                <span className="summary-value">{mainRequest || 'Not specified'}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0' }}>
+                <span style={{ color: '#6b7280', fontSize: '14px' }}>Your Request</span>
+                <span style={{ color: '#1a3a2f', fontWeight: 500, textAlign: 'right', maxWidth: '60%', fontSize: '14px' }}>
+                  {mainRequest || 'Not specified'}
+                </span>
               </div>
             </div>
             
-            <div className="ready-reminder">
-              <p><strong>One sentence to hold:</strong></p>
-              <p className="anchor-sentence">
+            <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '24px' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#059669', fontWeight: 600 }}>
+                One sentence to hold:
+              </p>
+              <p style={{ fontSize: '18px', color: '#1a3a2f', margin: 0, fontStyle: 'italic' }}>
                 "I am asking for structure that reduces conflict and protects my child."
               </p>
             </div>
             
-            <div className="ready-actions">
-              <button className="action-btn" onClick={() => setPrepStep('scenarios')}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <button 
+                style={{ padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 500, cursor: 'pointer', color: '#1a3a2f' }}
+                onClick={() => setPrepStep('scenarios')}
+              >
                 📋 Review Scenarios
               </button>
-              <button className="action-btn" onClick={() => setPrepStep('grounding')}>
+              <button 
+                style={{ padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 500, cursor: 'pointer', color: '#1a3a2f' }}
+                onClick={() => setPrepStep('grounding')}
+              >
                 🌿 Ground Again
               </button>
-              <button className="action-btn" onClick={() => router.push('/coach')}>
+              <button 
+                style={{ padding: '14px', border: '2px solid #e5e7eb', borderRadius: '10px', background: 'white', fontSize: '15px', fontWeight: 500, cursor: 'pointer', color: '#1a3a2f' }}
+                onClick={() => router.push('/coach')}
+              >
                 💬 Back to Coach
               </button>
             </div>
             
-            <p className="final-message">
+            <p style={{ color: '#6b7280', fontStyle: 'italic', margin: 0 }}>
               You showed up. You prepared. That's what good parents do.
             </p>
           </div>
@@ -542,533 +633,22 @@ export default function CourtPrepPage() {
   };
 
   return (
-    <div className="container">
-      <header className="header">
-        <button onClick={() => router.back()} className="back-arrow">←</button>
-        <h1>Court Prep</h1>
-        <div className="step-indicator">
-          {prepStep !== 'type' && prepStep !== 'ready' && (
-            <span>{['type', 'basics', 'checklist', 'opening', 'scenarios', 'grounding'].indexOf(prepStep)}/5</span>
-          )}
-        </div>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%)', paddingBottom: '100px' }}>
+      <header style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px', background: '#1a3a2f', color: 'white' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer', padding: 0 }}>←</button>
+        <h1 style={{ flex: 1, fontSize: '20px', margin: 0, fontWeight: 600 }}>Court Prep</h1>
+        {prepStep !== 'type' && prepStep !== 'ready' && (
+          <span style={{ fontSize: '14px', opacity: 0.8 }}>
+            {['type', 'basics', 'checklist', 'opening', 'scenarios', 'grounding'].indexOf(prepStep)}/5
+          </span>
+        )}
       </header>
 
-      <div className="content">
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
         {renderStep()}
       </div>
 
       <BottomNav active="menu" />
-
-      <style jsx>{`
-        .container {
-          min-height: 100vh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
-          padding-bottom: 100px;
-        }
-        .header {
-          padding: 20px 24px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          background: #1a3a2f;
-          color: white;
-        }
-        .back-arrow {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 24px;
-          cursor: pointer;
-          padding: 0;
-        }
-        .header h1 {
-          flex: 1;
-          font-size: 20px;
-          margin: 0;
-        }
-        .step-indicator {
-          font-size: 14px;
-          opacity: 0.8;
-        }
-        .content {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-        .step-content {
-          background: white;
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        .step-content h2 {
-          color: #1a3a2f;
-          margin: 0 0 8px 0;
-          font-size: 22px;
-        }
-        .step-desc {
-          color: #6b7280;
-          margin: 0 0 24px 0;
-          font-size: 15px;
-        }
-        
-        /* Hearing Types */
-        .hearing-types {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-        .type-btn {
-          text-align: left;
-          padding: 16px;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          background: white;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .type-btn:hover {
-          border-color: #1a3a2f;
-        }
-        .type-btn.selected {
-          border-color: #059669;
-          background: #f0fdf4;
-        }
-        .type-btn strong {
-          display: block;
-          color: #1a3a2f;
-          font-size: 15px;
-          margin-bottom: 4px;
-        }
-        .type-btn span {
-          font-size: 13px;
-          color: #6b7280;
-        }
-        .type-tips {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 16px;
-          margin-bottom: 20px;
-        }
-        .type-tips h4 {
-          color: #1a3a2f;
-          margin: 0 0 12px 0;
-          font-size: 15px;
-        }
-        .type-tips ul {
-          margin: 0;
-          padding-left: 20px;
-          color: #4b5563;
-          font-size: 14px;
-        }
-        .type-tips li {
-          margin-bottom: 8px;
-        }
-        
-        /* Form */
-        .form-group {
-          margin-bottom: 20px;
-        }
-        .form-group label {
-          display: block;
-          font-weight: 600;
-          color: #1a3a2f;
-          margin-bottom: 8px;
-        }
-        .date-time-row {
-          display: flex;
-          gap: 12px;
-        }
-        .date-time-row input {
-          flex: 1;
-          padding: 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 16px;
-        }
-        .toggle-row {
-          display: flex;
-          gap: 12px;
-        }
-        .toggle-btn {
-          flex: 1;
-          padding: 14px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          background: white;
-          font-size: 15px;
-          cursor: pointer;
-        }
-        .toggle-btn.active {
-          border-color: #059669;
-          background: #f0fdf4;
-        }
-        .form-group textarea {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 15px;
-          font-family: inherit;
-          resize: none;
-          box-sizing: border-box;
-        }
-        .help-text {
-          font-size: 13px;
-          color: #9ca3af;
-          margin: 8px 0 0 0;
-        }
-        
-        /* Buttons */
-        .btn-row {
-          display: flex;
-          gap: 12px;
-          margin-top: 24px;
-        }
-        .back-btn {
-          flex: 1;
-          padding: 14px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          background: white;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          color: #6b7280;
-        }
-        .next-btn {
-          flex: 2;
-          padding: 14px;
-          border: none;
-          border-radius: 10px;
-          background: #1a3a2f;
-          color: white;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .next-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .next-btn.ready {
-          background: #059669;
-        }
-        
-        /* Checklist */
-        .checklist-section {
-          margin-bottom: 20px;
-        }
-        .checklist-section h4 {
-          color: #1a3a2f;
-          margin: 0 0 12px 0;
-          font-size: 15px;
-        }
-        .check-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid #f3f4f6;
-          cursor: pointer;
-        }
-        .check-item input {
-          width: 22px;
-          height: 22px;
-          accent-color: #059669;
-        }
-        .check-item span {
-          color: #4b5563;
-          font-size: 15px;
-        }
-        .check-item span.checked {
-          text-decoration: line-through;
-          color: #9ca3af;
-        }
-        .checklist-progress {
-          text-align: center;
-          padding: 16px;
-          background: #f0fdf4;
-          border-radius: 10px;
-          font-weight: 600;
-          color: #059669;
-        }
-        
-        /* Opening */
-        .opening-template {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 20px;
-          border-left: 4px solid #059669;
-        }
-        .template-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #059669;
-          margin-bottom: 8px;
-        }
-        .template-text {
-          color: #1a3a2f;
-          font-size: 17px;
-          line-height: 1.6;
-          margin: 0;
-        }
-        .highlight {
-          background: linear-gradient(180deg, transparent 60%, #a7f3d0 60%);
-        }
-        .opening-rules {
-          margin-bottom: 20px;
-        }
-        .opening-rules h4 {
-          color: #1a3a2f;
-          margin: 0 0 12px 0;
-        }
-        .opening-rules ul {
-          margin: 0;
-          padding-left: 20px;
-          color: #4b5563;
-        }
-        .opening-rules li {
-          margin-bottom: 8px;
-        }
-        .avoid-box {
-          background: #fef2f2;
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid #fecaca;
-        }
-        .avoid-box h4 {
-          color: #dc2626;
-          margin: 0 0 12px 0;
-        }
-        .avoid-words {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 12px;
-        }
-        .avoid-words span {
-          background: white;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 13px;
-          color: #dc2626;
-          border: 1px solid #fecaca;
-        }
-        .avoid-box p {
-          margin: 0;
-          font-size: 13px;
-          color: #6b7280;
-        }
-        
-        /* Scenarios */
-        .scenarios {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .scenario-card {
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          overflow: hidden;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .scenario-card.expanded {
-          border-color: #059669;
-        }
-        .scenario-question {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 16px;
-          font-weight: 500;
-          color: #1a3a2f;
-        }
-        .scenario-icon {
-          font-size: 20px;
-        }
-        .expand-icon {
-          margin-left: auto;
-          font-size: 20px;
-          color: #9ca3af;
-        }
-        .scenario-answer {
-          padding: 0 16px 16px;
-          border-top: 1px solid #e5e7eb;
-          background: #f9fafb;
-        }
-        .say-this {
-          padding: 16px 0;
-        }
-        .say-this strong {
-          color: #059669;
-          font-size: 13px;
-        }
-        .say-this p {
-          margin: 8px 0 0 0;
-          color: #1a3a2f;
-          font-size: 15px;
-          line-height: 1.5;
-        }
-        .scenario-note {
-          background: #f0fdf4;
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 13px;
-          color: #4b5563;
-        }
-        .scenario-note strong {
-          color: #1a3a2f;
-        }
-        
-        /* Grounding */
-        .breath-circle {
-          width: 180px;
-          height: 180px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 24px auto;
-          transition: transform 4s ease-in-out;
-          cursor: pointer;
-        }
-        .breath-circle.in {
-          transform: scale(1.15);
-        }
-        .breath-circle.hold {
-          transform: scale(1.15);
-        }
-        .breath-circle.out {
-          transform: scale(1);
-        }
-        .breath-text {
-          color: #1a3a2f;
-          font-weight: 600;
-          font-size: 16px;
-        }
-        .breath-btn {
-          display: block;
-          width: 100%;
-          padding: 14px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 24px;
-        }
-        .breath-btn.stop {
-          background: #dc2626;
-        }
-        .grounding-reminders h4 {
-          color: #1a3a2f;
-          margin: 20px 0 12px 0;
-          font-size: 15px;
-        }
-        .grounding-reminders ul {
-          margin: 0;
-          padding-left: 20px;
-          color: #4b5563;
-        }
-        .grounding-reminders li {
-          margin-bottom: 8px;
-        }
-        .reminder-card {
-          background: #f0fdf4;
-          padding: 16px;
-          border-radius: 12px;
-          text-align: center;
-        }
-        .reminder-card p {
-          margin: 0;
-          font-size: 17px;
-          color: #1a3a2f;
-          font-weight: 500;
-          font-style: italic;
-        }
-        
-        /* Ready Screen */
-        .ready-screen {
-          text-align: center;
-        }
-        .ready-icon {
-          font-size: 64px;
-          margin-bottom: 16px;
-        }
-        .ready-summary {
-          background: #f9fafb;
-          border-radius: 12px;
-          padding: 20px;
-          margin: 24px 0;
-          text-align: left;
-        }
-        .summary-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 12px 0;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        .summary-item:last-child {
-          border-bottom: none;
-        }
-        .summary-label {
-          color: #6b7280;
-          font-size: 14px;
-        }
-        .summary-value {
-          color: #1a3a2f;
-          font-weight: 500;
-          text-align: right;
-          max-width: 60%;
-        }
-        .ready-reminder {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 24px;
-        }
-        .ready-reminder p:first-child {
-          margin: 0 0 8px 0;
-          font-size: 14px;
-          color: #059669;
-        }
-        .anchor-sentence {
-          font-size: 18px;
-          color: #1a3a2f;
-          margin: 0;
-          font-style: italic;
-        }
-        .ready-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 24px;
-        }
-        .action-btn {
-          padding: 14px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          background: white;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          color: #1a3a2f;
-        }
-        .action-btn:hover {
-          border-color: #1a3a2f;
-        }
-        .final-message {
-          color: #6b7280;
-          font-style: italic;
-          margin: 0;
-        }
-      `}</style>
     </div>
   );
 }
