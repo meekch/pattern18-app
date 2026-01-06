@@ -486,6 +486,20 @@ export default function CourtPrepPage() {
             <h2 style={{ color: '#1a3a2f', margin: '0 0 8px 0', fontSize: '22px' }}>Ground Yourself</h2>
             <p style={{ color: '#6b7280', margin: '0 0 24px 0', fontSize: '15px' }}>Take 2 minutes before your hearing. You've prepared. Now settle your body.</p>
             
+            {/* Why This Feels Wrong */}
+            <div style={{ background: '#fefce8', borderRadius: '12px', padding: '20px', marginBottom: '24px', borderLeft: '4px solid #ca8a04' }}>
+              <h4 style={{ color: '#854d0e', margin: '0 0 12px 0', fontSize: '16px' }}>💛 Why This Feels Wrong</h4>
+              <p style={{ color: '#713f12', fontSize: '14px', lineHeight: 1.6, margin: '0 0 12px 0' }}>
+                You may feel like you're being forced to stay silent about what's really happening. That's not your imagination. Courts reward restraint, not truth. They measure structure, not harm.
+              </p>
+              <p style={{ color: '#713f12', fontSize: '14px', lineHeight: 1.6, margin: '0 0 12px 0' }}>
+                <strong>You are not lying. You are translating.</strong> You're converting lived reality into the only language the system accepts. That's not betrayal - it's strategy.
+              </p>
+              <p style={{ color: '#713f12', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
+                The truth will show itself through patterns, timelines, and documentation - not forbidden words. You are protecting your child by playing the long game.
+              </p>
+            </div>
+            
             <div 
               style={{
                 width: '180px',

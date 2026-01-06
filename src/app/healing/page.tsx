@@ -181,6 +181,54 @@ export default function HealingPage() {
           </div>
         </div>
 
+        {/* The Hardest Part - Moral Injury */}
+        <div className="section moral-injury">
+          <h2>💔 The Hardest Part</h2>
+          <div className="moral-content">
+            <p className="intro">
+              If you feel like the system is forcing you to stay silent about what's really happening - you're not imagining it.
+            </p>
+            
+            <div className="reality-box">
+              <h3>The Unfair Truth</h3>
+              <p>
+                Courts reward restraint, not honesty. They measure structure, not harm. The person who creates chaos often benefits. The person who protects their child gets muted.
+              </p>
+              <p>
+                You're told: don't say "abusive." Don't say "narcissist." Don't say what your child actually feels. But that IS what's happening.
+              </p>
+              <p className="key-line">
+                <strong>This creates moral injury</strong> - the pain of being forced to act against your own values to survive.
+              </p>
+            </div>
+            
+            <div className="reframe-box">
+              <h3>The Reframe</h3>
+              <p className="big-truth">
+                You are not lying. You are translating.
+              </p>
+              <p>
+                You're converting lived reality into the only language the system accepts. That's not betrayal - it's strategy. It's the long game.
+              </p>
+              <p>
+                The truth will show itself through patterns, timelines, and documentation - not forbidden words. That's what Pattern 18 is for.
+              </p>
+            </div>
+            
+            <div className="validation-box">
+              <p>
+                You are not complicit. You are constrained.
+              </p>
+              <p>
+                You are choosing your child over validation. You are choosing outcomes over recognition. That's an ethical burden few people understand.
+              </p>
+              <p className="final-line">
+                <strong>Both things can be true:</strong> The system is wrong AND you are doing what you must to protect your child within it.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Box Breathing Exercise */}
         <div className="section breathing">
           <h2>🌿 Box Breathing</h2>
@@ -517,6 +565,76 @@ export default function HealingPage() {
           display: inline;
           font-weight: 600;
           color: #1a3a2f;
+        }
+        
+        /* Moral Injury Section */
+        .moral-injury {
+          background: #fffbeb;
+          border: 2px solid #fcd34d;
+        }
+        .moral-content p {
+          color: #4b5563;
+          line-height: 1.7;
+          margin: 0 0 16px 0;
+        }
+        .moral-content .intro {
+          font-size: 16px;
+          color: #92400e;
+          font-weight: 500;
+        }
+        .reality-box {
+          background: white;
+          border-radius: 12px;
+          padding: 20px;
+          margin: 20px 0;
+          border-left: 4px solid #f59e0b;
+        }
+        .reality-box h3 {
+          color: #92400e;
+          font-size: 17px;
+          margin: 0 0 12px 0;
+        }
+        .reality-box .key-line {
+          color: #92400e;
+          font-size: 15px;
+        }
+        .reframe-box {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 20px;
+          margin: 20px 0;
+          border-left: 4px solid #059669;
+        }
+        .reframe-box h3 {
+          color: #1a3a2f;
+          font-size: 17px;
+          margin: 0 0 12px 0;
+        }
+        .reframe-box .big-truth {
+          font-size: 20px;
+          font-weight: 700;
+          color: #1a3a2f;
+          text-align: center;
+          padding: 16px;
+          background: white;
+          border-radius: 8px;
+          margin: 16px 0;
+        }
+        .validation-box {
+          background: white;
+          border-radius: 12px;
+          padding: 20px;
+          margin-top: 20px;
+          text-align: center;
+        }
+        .validation-box p {
+          color: #1a3a2f;
+          font-weight: 500;
+        }
+        .validation-box .final-line {
+          font-size: 15px;
+          color: #4b5563;
+          margin-bottom: 0;
         }
         
         /* Breathing */
