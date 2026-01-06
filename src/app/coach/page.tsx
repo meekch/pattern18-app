@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
-import { useSubscription, UpgradePrompt } from '@/hooks/useSubscription';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -58,10 +57,7 @@ export default function CoachPage() {
   const [pendingDocument, setPendingDocument] = useState<{ title: string; filename: string; content: string } | null>(null);
   const [downloadingDoc, setDownloadingDoc] = useState(false);
   
-  // Subscription state
-  const { subscription, checkLimit, usage, loading: subLoading } = useSubscription();
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState('');
+  // Subscription check removed - 7 day free trial, no limits
   
   // Feedback state
   const [showFeedback, setShowFeedback] = useState(false);
@@ -126,14 +122,6 @@ export default function CoachPage() {
   const handleSend = async (messageText?: string, files?: File[]) => {
     const text = messageText || input;
     if (!text.trim() && (!files || files.length === 0)) return;
-
-    // Check message limit for free users
-    const messageLimit = checkLimit('messages');
-    if (!messageLimit.allowed) {
-      setUpgradeFeature('coach messages');
-      setShowUpgradePrompt(true);
-      return;
-    }
 
     setShowHome(false);
     setSending(true);
@@ -450,15 +438,6 @@ export default function CoachPage() {
   const handleSaveEvidence = async () => {
     if (!saveData.coparentMessage.trim()) {
       alert('Please paste the co-parent\'s exact message. This is what goes in court documents.');
-      return;
-    }
-
-    // Check evidence limit for free users
-    const evidenceLimit = checkLimit('evidence');
-    if (!evidenceLimit.allowed) {
-      setShowSaveModal(false);
-      setUpgradeFeature('evidence saves');
-      setShowUpgradePrompt(true);
       return;
     }
 
@@ -853,21 +832,9 @@ export default function CoachPage() {
 
       <BottomNav active="coach" />
 
-      {/* Upgrade Prompt Modal */}
-      {showUpgradePrompt && (
-        <UpgradePrompt 
-          feature={upgradeFeature} 
-          onClose={() => setShowUpgradePrompt(false)} 
-        />
-      )}
+      {/* Upgrade prompt removed - free trial approach */}
 
-      {/* Free Tier Indicator */}
-      {subscription?.tier === 'free' && !showHome && (
-        <div className="free-tier-banner">
-          <span>Free tier: {checkLimit('messages').remaining} messages left today</span>
-          <a href="/pricing">Upgrade →</a>
-        </div>
-      )}
+      {/* Free tier banner removed - let users try freely */}
 
       {/* Feedback Modal */}
       {showFeedback && (
@@ -1470,29 +1437,7 @@ export default function CoachPage() {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        .free-tier-banner {
-          position: fixed;
-          top: 70px;
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 16px;
-          padding: 8px 16px;
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          font-size: 13px;
-          color: #92400e;
-          z-index: 90;
-        }
-        .free-tier-banner a {
-          color: #1a3a2f;
-          font-weight: 600;
-          text-decoration: none;
-        }
-        .free-tier-banner a:hover {
-          text-decoration: underline;
-        }
+        
         .modal-overlay {
           position: fixed;
           inset: 0;

@@ -53,7 +53,7 @@ You MUST identify which of these specific patterns are present. These are coerci
    Examples: Badmouthing, using kids as messengers, interfering with parenting time, putting child in the middle
 
 7. TRIANGULATION - Using the child as a go-between or messenger
-   Examples: "Tell your mom...", making child relay schedule decisions, putting child in adult conflicts
+   Examples: "Tell your mom...", making child relay schedule decisions, putting child in adult conflicts  
 
 8. BLAME-SHIFTING - Never taking responsibility, everything is your fault
    Examples: "If you hadn't...", "You made me do this", "This is because of you"
@@ -114,6 +114,9 @@ When in doubt, DON'T flag it. False positives destroy court credibility.
 
 const SYSTEM_PROMPT = `You are Pattern 18 Coach - a calm, strategic partner for parents in high-conflict custody situations. You help them see manipulation clearly, respond without taking the bait, and build evidence.
 
+PRIVACY RULE - CRITICAL:
+NEVER use the co-parent's actual name in your responses. Always say "your co-parent" or "he" or "she" based on context. This protects the user's privacy in screenshots. Even if you know the name from case context, never write it.
+
 ${COERCIVE_CONTROL_PATTERNS}
 
 YOUR VOICE:
@@ -130,13 +133,13 @@ Write like a calm, smart friend who happens to have legal expertise. Not a syste
 FORMATTING RULES:
 
 Do NOT use:
-- **bold** or *italics* 
+- **bold** or *italics*
 - Headers like "What to do:" or "Key points:"
 - Bullet lists for everything
 - Numbered lists unless giving step-by-step instructions they'll follow in order
 
 Instead, write naturally. If you have three things to say, weave them into sentences:
-"The main thing here is X. You'll also want to think about Y. And if Z happens, here's how to handle it."
+"The main thing here is X. You'll also want to think about Y. And if Z happens, here's how to handle it." 
 
 The goal is to feel like a text from a trusted friend, not a legal memo.
 
@@ -151,7 +154,7 @@ Do NOT analyze a message until you understand the full context. Ask clarifying q
 
 If they paste a message without context, ASK. Don't guess who sent it. Don't assume what happened before. Don't project patterns onto something you don't fully understand.
 
-One wrong assumption can make them feel unseen - or worse, like the app is minimizing their experience.
+One wrong assumption can make them feel unseen - or worse, like the app is minimizing their experience.   
 
 Get 99% clear on the situation before you coach.
 
@@ -178,7 +181,7 @@ DO say "If you respond, keep it short:" or just "Copy and send:" or "You could s
 
 Keep it practical, not advisory. You're not telling them what to do. You're giving them options.
 
-Don't cheerleader documentation like "This is excellent evidence!" That sounds like you're encouraging them to build a case or create drama. The goal is de-escalation and protection, not ammunition-gathering.
+Don't cheerleader documentation like "This is excellent evidence!" That sounds like you're encouraging them to build a case or create drama. The goal is de-escalation and protection, not ammunition-gathering.    
 
 Instead of: "Document this message - it's excellent evidence of his pattern"
 Say: "This speaks for itself. Save it and move on."
@@ -379,7 +382,7 @@ export async function POST(req: NextRequest) {
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
     const fileCount = parseInt(formData.get('fileCount') as string || '0');
-    
+
     // Collect all files
     const files: File[] = [];
     for (let i = 0; i < fileCount; i++) {
@@ -405,15 +408,16 @@ export async function POST(req: NextRequest) {
           return `${label} (${count}x)`;
         })
         .join(', ');
-      
+
       contextString = `\n\n[USER'S DOCUMENTED CASE HISTORY - REFERENCE THIS:
 Total incidents documented: ${evidenceCount}
 Patterns documented: ${topPatterns || 'None yet'}
 Use this information to say things like "This is the Xth time you've documented [pattern]"]`;
     }
 
+    // Pass co-parent name for context but Claude will never use it in responses (per system prompt)
     if (caseContext.coparent_name) {
-      contextString += `\n[Co-parent name: ${caseContext.coparent_name}]`;
+      contextString += `\n[Co-parent name for context only - DO NOT USE IN RESPONSE: ${caseContext.coparent_name}]`;
     }
     if (caseContext.children_names) {
       contextString += `\n[Child/children: ${caseContext.children_names}]`;
@@ -445,7 +449,7 @@ Use this information to say things like "This is the Xth time you've documented 
     if (caseContext.next_court_date) {
       const courtDate = new Date(caseContext.next_court_date);
       const daysUntil = Math.ceil((courtDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      contextString += `\n[Next court date: ${courtDate.toLocaleDateString()} (${daysUntil} days)]`;
+      contextString += `\n[Next court date: ${courtDate.toLocaleDateString()} (${daysUntil} days)]`;      
     }
 
     // Build messages array
@@ -456,13 +460,13 @@ Use this information to say things like "This is the Xth time you've documented 
 
     // Handle file uploads (multiple files supported)
     let userContent: any[] = [];
-    
+
     for (const file of files) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
-      
+
       const isPdf = file.type === 'application/pdf';
-      
+
       if (isPdf) {
         userContent.push({
           type: 'document',
@@ -500,7 +504,7 @@ Use this information to say things like "This is the Xth time you've documented 
 
     // Call Claude
     const client = new Anthropic();
-    
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -514,12 +518,12 @@ Use this information to say things like "This is the Xth time you've documented 
           });
 
           let fullResponse = '';
-          
+
           for await (const event of response) {
             if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
               const text = event.delta.text;
               fullResponse += text;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`));
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`));       
             }
           }
 
@@ -611,7 +615,7 @@ function extractPatterns(text: string): string[] {
       if (pattern === 'Financial Coercion') normalizedPattern = 'Financial Abuse';
       if (pattern === 'Child as Messenger') normalizedPattern = 'Using Children as Weapons';
       if (pattern === 'Manufactured Urgency') normalizedPattern = 'Creating Urgency';
-      
+
       if (!found.includes(normalizedPattern)) {
         found.push(normalizedPattern);
       }
@@ -630,7 +634,7 @@ function extractQuotes(text: string): string | null {
   return null;
 }
 
-function extractDocument(text: string): { title: string; filename: string; content: string } | null {
+function extractDocument(text: string): { title: string; filename: string; content: string } | null {     
   // Look for ---DOCUMENT START--- section in the response
   const docMatch = text.match(/---DOCUMENT START---\s*([\s\S]*?)\s*---DOCUMENT END---/i);
   if (!docMatch || !docMatch[1]) {
@@ -638,22 +642,22 @@ function extractDocument(text: string): { title: string; filename: string; conte
   }
 
   const docContent = docMatch[1];
-  
+
   // Extract title
   const titleMatch = docContent.match(/TITLE:\s*(.+?)(?:\n|$)/i);
   const title = titleMatch ? titleMatch[1].trim() : 'Document';
-  
+
   // Extract filename
   const filenameMatch = docContent.match(/FILENAME:\s*(.+?)(?:\n|$)/i);
   const filename = filenameMatch ? filenameMatch[1].trim() : 'document.docx';
-  
+
   // Get content (everything after the metadata)
   let content = docContent;
-  
+
   // Remove TITLE and FILENAME lines from content
   content = content.replace(/TITLE:\s*.+?\n/i, '');
   content = content.replace(/FILENAME:\s*.+?\n/i, '');
   content = content.trim();
-  
+
   return { title, filename, content };
 }
