@@ -655,7 +655,10 @@ export default function CoachPage() {
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="typing">Thinking...</div>
+                <div className="analyzing">
+                  <span className="analyzing-icon">🔍</span>
+                  <span>Analyzing...</span>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -1191,6 +1194,22 @@ export default function CoachPage() {
         .typing {
           color: #9ca3af;
           font-style: italic;
+        }
+        .analyzing {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #1a3a2f;
+          font-weight: 500;
+          padding: 8px 0;
+        }
+        .analyzing-icon {
+          font-size: 24px;
+          animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
         }
         .save-evidence-btn {
           position: fixed;
