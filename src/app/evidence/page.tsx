@@ -18,6 +18,8 @@ interface Incident {
   messages_json?: any[];
   source?: string;
   include_in_exhibit?: boolean;
+  source_type?: 'coparent' | 'child' | 'third_party' | 'user';
+  source_name?: string;
 }
 
 interface GroupedIncidents {
@@ -60,6 +62,13 @@ const AVAILABLE_PATTERNS = [
   "Name-Calling/Verbal Abuse", "Triangulating Child", "Schedule Manipulation"
 ];
 
+const SOURCE_TYPES = [
+  { value: 'coparent', label: 'Co-parent message', description: 'Message FROM your co-parent' },
+  { value: 'child', label: 'Child statement', description: 'Statement from child about co-parent behavior' },
+  { value: 'third_party', label: 'Third party', description: 'Witness, teacher, therapist, etc.' },
+  { value: 'user', label: 'Your message', description: 'Your own message (for context)' },
+];
+
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
   high: { bg: "#fff7ed", text: "#ea580c", border: "#fed7aa" },
@@ -81,13 +90,14 @@ function EvidenceContent() {
   const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
   const [editSeverity, setEditSeverity] = useState("");
   const [editPatterns, setEditPatterns] = useState<string[]>([]);
+  const [editSourceType, setEditSourceType] = useState<string>("coparent");
+  const [editSourceName, setEditSourceName] = useState("");
   const [saving, setSaving] = useState(false);
   
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
-  const allCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))].sort();
 
   useEffect(() => {
     const pattern = searchParams.get('pattern');
@@ -148,6 +158,8 @@ function EvidenceContent() {
     setEditingIncident(incident);
     setEditSeverity(incident.severity);
     setEditPatterns(incident.patterns || []);
+    setEditSourceType(incident.source_type || 'coparent');
+    setEditSourceName(incident.source_name || '');
   };
 
   const saveEdit = async () => {
@@ -167,7 +179,9 @@ function EvidenceContent() {
         .update({ 
           severity: editSeverity,
           patterns: editPatterns,
-          category: category
+          category: category,
+          source_type: editSourceType,
+          source_name: editSourceName || null
         })
         .eq("id", editingIncident.id)
         .eq("user_id", session.user.id);
@@ -176,7 +190,7 @@ function EvidenceContent() {
 
       setIncidents(prev => prev.map(inc => 
         inc.id === editingIncident.id 
-          ? { ...inc, severity: editSeverity, patterns: editPatterns, category }
+          ? { ...inc, severity: editSeverity, patterns: editPatterns, category, source_type: editSourceType as any, source_name: editSourceName }
           : inc
       ));
       setEditingIncident(null);
@@ -293,11 +307,17 @@ function EvidenceContent() {
     });
   });
 
+  // Get source type label for display
+  const getSourceTypeLabel = (sourceType?: string) => {
+    const found = SOURCE_TYPES.find(s => s.value === sourceType);
+    return found ? found.label : 'Co-parent';
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}></div>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
           <p style={{ color: "#6b7280" }}>Loading your evidence...</p>
         </div>
       </div>
@@ -323,7 +343,7 @@ function EvidenceContent() {
             onClick={() => router.push("/my-case")}
             style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
           >
-            Back
+            ←
           </button>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
         </div>
@@ -383,7 +403,7 @@ function EvidenceContent() {
                 { key: "all", label: "All" },
                 { key: "high+", label: "High+" },
                 { key: "critical", label: "Critical" },
-                { key: "exhibit", label: " Exhibit" },
+                { key: "exhibit", label: "📋 Exhibit" },
               ].map(f => (
                 <button
                   key={f.key}
@@ -481,7 +501,7 @@ function EvidenceContent() {
             borderRadius: 12,
             color: "#6b7280"
           }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}></div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔭</div>
             <p>No incidents match your filter</p>
           </div>
         ) : (
@@ -494,7 +514,7 @@ function EvidenceContent() {
                 marginBottom: 12
               }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
-                   {monthYear}
+                  📅 {monthYear}
                 </span>
                 <span style={{
                   fontSize: 12,
@@ -559,7 +579,7 @@ function EvidenceContent() {
                           }}
                         >
                           {incident.include_in_exhibit && (
-                            <span style={{ color: "white", fontSize: 12 }}>+ </span>
+                            <span style={{ color: "white", fontSize: 12 }}>✓</span>
                           )}
                         </div>
 
@@ -584,17 +604,32 @@ function EvidenceContent() {
                           {incident.severity}
                         </span>
 
+                        {/* Source type indicator */}
+                        {incident.source_type && incident.source_type !== 'coparent' && (
+                          <span style={{
+                            padding: "4px 8px",
+                            borderRadius: 8,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            background: "#e0e7ff",
+                            color: "#3730a3",
+                            flexShrink: 0
+                          }}>
+                            {getSourceTypeLabel(incident.source_type)}
+                          </span>
+                        )}
+
                         <div style={{
                           flexShrink: 0,
                           fontSize: 13,
                           fontWeight: 600,
                           color: incident.category === 'not_abuse' ? "#9ca3af" : "#374151",
-                          maxWidth: 160,
+                          maxWidth: 140,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {categoryLabels[incident.category] || incident.category || "-"}
+                          {categoryLabels[incident.category] || incident.category || "—"}
                         </div>
 
                         <div style={{
@@ -605,7 +640,7 @@ function EvidenceContent() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap"
                         }}>
-                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "-"}
+                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "—"}
                         </div>
 
                         <span style={{
@@ -613,7 +648,7 @@ function EvidenceContent() {
                           transform: isExpanded ? "rotate(90deg)" : "none",
                           transition: "transform 0.15s"
                         }}>
-                          {'>'}
+                          ›
                         </span>
                       </div>
 
@@ -643,7 +678,7 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                               Edit Severity/Patterns
+                              ✏️ Edit
                             </button>
                             <button
                               onClick={() => dismissAsNotAbuse(incident.id)}
@@ -658,7 +693,7 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                              X Not Abuse (Dismiss)
+                              ❌ Not Abuse
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(incident.id)}
@@ -673,7 +708,7 @@ function EvidenceContent() {
                                 cursor: "pointer"
                               }}
                             >
-                               Delete
+                              🗑️ Delete
                             </button>
                           </div>
 
@@ -721,11 +756,21 @@ function EvidenceContent() {
                             </div>
                           )}
 
+                          {/* Source Info */}
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>
+                              📌 SOURCE
+                            </div>
+                            <div style={{ fontSize: 14, color: "#374151" }}>
+                              {incident.source_name || getSourceTypeLabel(incident.source_type)}
+                            </div>
+                          </div>
+
                           {/* Patterns */}
                           {incident.patterns?.length > 0 && (
                             <div style={{ marginBottom: 16 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                PATTERNS DETECTED
+                                ⚠️ PATTERNS DETECTED
                               </div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                 {incident.patterns.map((pattern, i) => (
@@ -750,7 +795,7 @@ function EvidenceContent() {
                           {/* All Messages */}
                           <div>
                             <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                               MESSAGES ({incident.messages_json?.length || 1})
+                              📨 MESSAGES ({incident.messages_json?.length || 1})
                             </div>
                             <div style={{
                               background: "white",
@@ -780,7 +825,7 @@ function EvidenceContent() {
                                         fontWeight: 600,
                                         color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
                                       }}>
-                                        {msg.sender === 'coparent' ? 'Co-parent' : 'You'}
+                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
                                       </span>
                                       <span>
                                         {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
@@ -835,7 +880,7 @@ function EvidenceContent() {
           zIndex: 1000
         }}>
           <div style={{ color: 'white', fontSize: 15 }}>
-            +  <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
+            ✓ <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
           </div>
           <button
             onClick={() => router.push('/generate-exhibit')}
@@ -851,7 +896,7 @@ function EvidenceContent() {
               whiteSpace: 'nowrap'
             }}
           >
-            Generate Exhibit
+            Generate Exhibit →
           </button>
         </div>
       )}
@@ -895,6 +940,56 @@ function EvidenceContent() {
             </div>
 
             <div style={{ padding: 20 }}>
+              {/* Source Type */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+                  Source Type
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {SOURCE_TYPES.map(st => (
+                    <button
+                      key={st.value}
+                      onClick={() => setEditSourceType(st.value)}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        border: editSourceType === st.value ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
+                        background: editSourceType === st.value ? "#f0fdf4" : "white",
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: 13, color: "#374151" }}>{st.label}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>{st.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Source Name */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+                  Custom Source Label (optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSourceName}
+                  onChange={(e) => setEditSourceName(e.target.value)}
+                  placeholder="e.g., Child's text to Father, Teacher email"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #e5e7eb",
+                    fontSize: 14,
+                    boxSizing: "border-box"
+                  }}
+                />
+                <p style={{ margin: "4px 0 0", fontSize: 11, color: "#9ca3af" }}>
+                  This label will appear in court documents
+                </p>
+              </div>
+
               {/* Severity */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
@@ -956,9 +1051,15 @@ function EvidenceContent() {
                 padding: 12,
                 marginBottom: 20
               }}>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Preview:</div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Preview in exhibit:</div>
                 <div style={{ fontSize: 13, color: "#374151" }}>
-                  <strong>{editSeverity.toUpperCase()}</strong> | {editPatterns.join(", ") || "No patterns"}
+                  <strong>Source:</strong> {editSourceName || SOURCE_TYPES.find(s => s.value === editSourceType)?.label}
+                </div>
+                <div style={{ fontSize: 13, color: "#374151" }}>
+                  <strong>Severity:</strong> {editSeverity.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 13, color: "#374151" }}>
+                  <strong>Patterns:</strong> {editPatterns.join(", ") || "None"}
                 </div>
               </div>
             </div>
@@ -1014,7 +1115,7 @@ export default function EvidencePage() {
     <Suspense fallback={
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}></div>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
           <p style={{ color: "#6b7280" }}>Loading...</p>
         </div>
       </div>

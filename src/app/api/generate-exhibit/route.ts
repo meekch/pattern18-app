@@ -14,7 +14,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Pattern definitions for appendix - using neutral language
+// Pattern definitions for appendix
 const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; source: string }> = {
   'Gaslighting': {
     name: 'Gaslighting',
@@ -287,6 +287,41 @@ function getContextCategory(incident: any): string {
   return 'Co-parenting communication';
 }
 
+function getSourceLabel(incident: any, caseInfo: any): string {
+  // If custom source_name is set, use it
+  if (incident.source_name) {
+    return incident.source_name;
+  }
+  
+  // Get coparent name
+  const userRole = caseInfo?.user_role || 'respondent';
+  const petitionerName = caseInfo?.petitioner_name || '';
+  const respondentName = caseInfo?.respondent_name || '';
+  const coparentName = caseInfo?.coparent_name || '';
+  
+  let otherPartyName: string;
+  if (userRole === 'petitioner') {
+    otherPartyName = respondentName || coparentName || 'Respondent';
+  } else {
+    otherPartyName = petitionerName || coparentName || 'Petitioner';
+  }
+  
+  // Build label based on source_type
+  const sourceType = incident.source_type || 'coparent';
+  
+  switch (sourceType) {
+    case 'child':
+      return `Child's statement (regarding ${otherPartyName}'s behavior)`;
+    case 'third_party':
+      return 'Third-party communication';
+    case 'user':
+      return 'Submitting party\'s message (for context)';
+    case 'coparent':
+    default:
+      return `Written communication from ${otherPartyName}`;
+  }
+}
+
 function createExhibitDocument(
   incidents: any[],
   stats: any,
@@ -294,7 +329,7 @@ function createExhibitDocument(
   monthlyData: Record<string, number>,
   caseInfo: any
 ) {
-  const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
+  const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
   const cellBorders = { top: tableBorder, bottom: tableBorder, left: tableBorder, right: tableBorder };
 
   // Determine names based on user_role
@@ -323,11 +358,18 @@ function createExhibitDocument(
     caseName = 'In the Matter of Parenting Time';
   }
 
+  // Court-standard font settings
+  const FONT = 'Times New Roman';
+  const BODY_SIZE = 24; // 12pt
+  const HEADING1_SIZE = 28; // 14pt
+  const HEADING2_SIZE = 26; // 13pt
+  const SMALL_SIZE = 20; // 10pt
+
   return new Document({
     styles: {
       default: {
         document: {
-          run: { font: 'Arial', size: 22 }
+          run: { font: FONT, size: BODY_SIZE }
         }
       },
       paragraphStyles: [
@@ -335,7 +377,7 @@ function createExhibitDocument(
           id: 'Title',
           name: 'Title',
           basedOn: 'Normal',
-          run: { size: 48, bold: true, color: '1a3a2f', font: 'Arial' },
+          run: { size: 32, bold: true, font: FONT },
           paragraph: { spacing: { before: 0, after: 200 }, alignment: AlignmentType.CENTER }
         },
         {
@@ -344,7 +386,7 @@ function createExhibitDocument(
           basedOn: 'Normal',
           next: 'Normal',
           quickFormat: true,
-          run: { size: 28, bold: true, color: '1a3a2f', font: 'Arial' },
+          run: { size: HEADING1_SIZE, bold: true, font: FONT },
           paragraph: { spacing: { before: 300, after: 150 }, outlineLevel: 0 }
         },
         {
@@ -353,7 +395,7 @@ function createExhibitDocument(
           basedOn: 'Normal',
           next: 'Normal',
           quickFormat: true,
-          run: { size: 24, bold: true, color: '374151', font: 'Arial' },
+          run: { size: HEADING2_SIZE, bold: true, font: FONT },
           paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 1 }
         },
       ]
@@ -370,8 +412,8 @@ function createExhibitDocument(
             new Paragraph({
               alignment: AlignmentType.RIGHT,
               children: [
-                new TextRun({ text: caseName, size: 18, color: '6b7280' }),
-                new TextRun({ text: caseNumber ? ` | Case No. ${caseNumber}` : '', size: 18, color: '6b7280' })
+                new TextRun({ text: caseName, size: SMALL_SIZE, font: FONT }),
+                new TextRun({ text: caseNumber ? ` | Case No. ${caseNumber}` : '', size: SMALL_SIZE, font: FONT })
               ]
             })
           ]
@@ -383,11 +425,10 @@ function createExhibitDocument(
             new Paragraph({
               alignment: AlignmentType.CENTER,
               children: [
-                new TextRun({ text: 'Page ', size: 18, color: '6b7280' }),
-                new TextRun({ children: [PageNumber.CURRENT], size: 18, color: '6b7280' }),
-                new TextRun({ text: ' of ', size: 18, color: '6b7280' }),
-                new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18, color: '6b7280' }),
-                new TextRun({ text: ' | Prepared by Pattern 18', size: 18, color: '9ca3af' })
+                new TextRun({ text: 'Page ', size: SMALL_SIZE, font: FONT }),
+                new TextRun({ children: [PageNumber.CURRENT], size: SMALL_SIZE, font: FONT }),
+                new TextRun({ text: ' of ', size: SMALL_SIZE, font: FONT }),
+                new TextRun({ children: [PageNumber.TOTAL_PAGES], size: SMALL_SIZE, font: FONT }),
               ]
             })
           ]
@@ -398,62 +439,51 @@ function createExhibitDocument(
         new Paragraph({ spacing: { before: 1200 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: 'EXHIBIT ___', size: 56, bold: true, color: '1a3a2f' })]
+          children: [new TextRun({ text: 'EXHIBIT ___', size: 48, bold: true, font: FONT })]
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 400 },
-          children: [new TextRun({ text: 'DOCUMENTED COMMUNICATION PATTERNS', size: 28, bold: true, color: '374151' })]
+          children: [new TextRun({ text: 'DOCUMENTED COMMUNICATION PATTERNS', size: 28, bold: true, font: FONT })]
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 100 },
-          children: [new TextRun({ text: 'RELATED TO PARENTING TIME AND CO-PARENTING DISPUTES', size: 24, color: '374151' })]
+          children: [new TextRun({ text: 'RELATED TO PARENTING TIME AND CO-PARENTING DISPUTES', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({ spacing: { before: 800 } }),
         
         // Court info
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: courtName, size: 24, color: '4b5563' })]
+          children: [new TextRun({ text: courtName, size: BODY_SIZE, font: FONT })]
         }),
         (county || state) ? new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 50 },
-          children: [new TextRun({ text: [county, state].filter(Boolean).join(', '), size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: [county, state].filter(Boolean).join(', '), size: BODY_SIZE, font: FONT })]
         }) : new Paragraph({}),
         caseNumber ? new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 100 },
-          children: [new TextRun({ text: `Case No. ${caseNumber}`, size: 24, color: '6b7280' })]
+          children: [new TextRun({ text: `Case No. ${caseNumber}`, size: BODY_SIZE, font: FONT })]
         }) : new Paragraph({}),
         
         new Paragraph({ spacing: { before: 400 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: caseName, size: 26, bold: true, color: '1a3a2f' })]
+          children: [new TextRun({ text: caseName, size: HEADING2_SIZE, bold: true, font: FONT })]
         }),
         
         new Paragraph({ spacing: { before: 800 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: 'Prepared By', size: 20, color: '9ca3af' })]
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 50 },
-          children: [new TextRun({ text: 'Pattern 18', size: 24, bold: true, color: '1a3a2f' })]
-        }),
-        
-        new Paragraph({ spacing: { before: 600 } }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}`, size: 20, color: '6b7280' })]
+          children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}`, size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 200 },
-          children: [new TextRun({ text: `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, size: 20, color: '9ca3af' })]
+          children: [new TextRun({ text: `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, size: BODY_SIZE, font: FONT })]
         }),
 
         // ==================== PAGE BREAK ====================
@@ -462,24 +492,24 @@ function createExhibitDocument(
         // ==================== EXECUTIVE SUMMARY ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('EXECUTIVE SUMMARY')]
+          children: [new TextRun({ text: 'EXECUTIVE SUMMARY', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 200 },
           children: [
-            new TextRun({ text: `This exhibit documents ${stats.total} written communications occurring over a ${stats.daySpan}-day period from ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}. All communications occurred in the context of parenting time, holiday scheduling, or court-related matters.`, size: 22 }),
+            new TextRun({ text: `This exhibit documents ${stats.total} written communications occurring over a ${stats.daySpan}-day period from ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}. All communications occurred in the context of parenting time, holiday scheduling, or court-related matters.`, size: BODY_SIZE, font: FONT }),
           ]
         }),
         new Paragraph({
           spacing: { after: 200 },
           children: [
-            new TextRun({ text: `Analysis identifies repeated communication patterns associated with high-conflict custody dynamics. These patterns recur across multiple messages and escalate around holidays, schedule transitions, and pending court events.`, size: 22 }),
+            new TextRun({ text: `Analysis identifies repeated communication patterns associated with high-conflict custody dynamics. These patterns recur across multiple messages and escalate around holidays, schedule transitions, and pending court events.`, size: BODY_SIZE, font: FONT }),
           ]
         }),
         new Paragraph({
           spacing: { after: 200 },
           children: [
-            new TextRun({ text: `This exhibit is provided to assist the Court in evaluating patterns across time rather than isolated exchanges.`, size: 22 }),
+            new TextRun({ text: `This exhibit is provided to assist the Court in evaluating patterns across time rather than isolated exchanges.`, size: BODY_SIZE, font: FONT }),
           ]
         }),
 
@@ -487,43 +517,43 @@ function createExhibitDocument(
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 400 },
-          children: [new TextRun('COURT RELEVANCE AND CHILD IMPACT')]
+          children: [new TextRun({ text: 'COURT RELEVANCE AND CHILD IMPACT', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 150 },
-          children: [new TextRun({ text: 'The documented communications are relevant to parenting time determinations for the following reasons:', size: 22 })]
+          children: [new TextRun({ text: 'The documented communications are relevant to parenting time determinations for the following reasons:', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• All communications occurred during active parenting time disputes', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '1. All communications occurred during active parenting time disputes', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• The child is directly referenced or involved in scheduling decisions', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '2. The child is directly referenced or involved in scheduling decisions', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• The communications escalate around holidays and court proceedings', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '3. The communications escalate around holidays and court proceedings', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 200 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• The patterns interfere with cooperative co-parenting', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '4. The patterns interfere with cooperative co-parenting', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: 'These patterns support consideration of a simplified parenting structure designed to reduce negotiation and limit child exposure to adult conflict.', size: 22 })]
+          children: [new TextRun({ text: 'These patterns support consideration of a simplified parenting structure designed to reduce negotiation and limit child exposure to adult conflict.', size: BODY_SIZE, font: FONT })]
         }),
 
         // ==================== SUMMARY STATISTICS ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
-          children: [new TextRun('Summary Statistics')]
+          children: [new TextRun({ text: 'Summary Statistics', font: FONT })]
         }),
-        createSummaryTable(stats, patternCounts, cellBorders),
+        createSummaryTable(stats, patternCounts, cellBorders, FONT, BODY_SIZE),
 
         // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
@@ -531,13 +561,13 @@ function createExhibitDocument(
         // ==================== TIMELINE SUMMARY (ONE PAGE) ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('TIMELINE SUMMARY')]
+          children: [new TextRun({ text: 'TIMELINE SUMMARY', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 200 },
-          children: [new TextRun({ text: 'The following timeline provides a compressed view of documented communications for rapid review.', size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: 'The following timeline provides a compressed view of documented communications for rapid review.', size: BODY_SIZE, font: FONT })]
         }),
-        createTimelineTable(incidents, cellBorders),
+        createTimelineTable(incidents, cellBorders, FONT, SMALL_SIZE),
 
         // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
@@ -545,15 +575,15 @@ function createExhibitDocument(
         // ==================== INCIDENT SUMMARIES ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('INCIDENT SUMMARIES')]
+          children: [new TextRun({ text: 'INCIDENT SUMMARIES', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: `The following ${stats.total} incidents are presented in chronological order. Each incident includes the date, context, direct quote, and detected communication patterns.`, size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: `The following ${stats.total} incidents are presented in chronological order. Each incident includes the date, context, source, direct quote, and detected communication patterns.`, size: BODY_SIZE, font: FONT })]
         }),
 
         // All incidents
-        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, otherPartyName)),
+        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, caseInfo, FONT, BODY_SIZE, SMALL_SIZE)),
 
         // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
@@ -561,11 +591,11 @@ function createExhibitDocument(
         // ==================== PATTERN DEFINITIONS ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('APPENDIX: PATTERN DEFINITIONS')]
+          children: [new TextRun({ text: 'APPENDIX: PATTERN DEFINITIONS', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: 'The following definitions are based on peer-reviewed research and established clinical literature on high-conflict custody dynamics.', size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: 'The following definitions are based on peer-reviewed research and established clinical literature on high-conflict custody dynamics.', size: BODY_SIZE, font: FONT })]
         }),
 
         ...Object.entries(patternCounts).flatMap(([pattern]) => {
@@ -574,15 +604,15 @@ function createExhibitDocument(
           return [
             new Paragraph({
               heading: HeadingLevel.HEADING_2,
-              children: [new TextRun(def.name)]
+              children: [new TextRun({ text: def.name, font: FONT })]
             }),
             new Paragraph({
               spacing: { after: 100 },
-              children: [new TextRun({ text: def.definition, size: 22 })]
+              children: [new TextRun({ text: def.definition, size: BODY_SIZE, font: FONT })]
             }),
             new Paragraph({
               spacing: { after: 200 },
-              children: [new TextRun({ text: `Source: ${def.source}`, size: 20, italics: true, color: '6b7280' })]
+              children: [new TextRun({ text: `Source: ${def.source}`, size: SMALL_SIZE, italics: true, font: FONT })]
             }),
           ];
         }),
@@ -591,57 +621,57 @@ function createExhibitDocument(
         new Paragraph({ children: [new PageBreak()] }),
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('DISCLAIMER')]
+          children: [new TextRun({ text: 'DISCLAIMER', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: 'This exhibit documents observed communication patterns based on written exchanges. It does not assert medical diagnoses or legal conclusions. Pattern labels are provided for analytical clarity based on established research cited herein.', size: 22 })]
+          children: [new TextRun({ text: 'This exhibit documents observed communication patterns based on written exchanges. It does not assert medical diagnoses or legal conclusions. Pattern labels are provided for analytical clarity based on established research cited herein.', size: BODY_SIZE, font: FONT })]
         }),
 
         // ==================== PURPOSE OF SUBMISSION ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 400 },
-          children: [new TextRun('PURPOSE OF SUBMISSION')]
+          children: [new TextRun({ text: 'PURPOSE OF SUBMISSION', font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 150 },
-          children: [new TextRun({ text: 'This exhibit is submitted to assist the Court in:', size: 22 })]
+          children: [new TextRun({ text: 'This exhibit is submitted to assist the Court in:', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• Identifying recurring communication patterns', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '1. Identifying recurring communication patterns', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• Understanding escalation around parenting time disputes', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '2. Understanding escalation around parenting time disputes', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 100 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• Evaluating the need for conflict-reducing parenting structures', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '3. Evaluating the need for conflict-reducing parenting structures', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          indent: { left: 360 },
-          children: [new TextRun({ text: '• Reducing child involvement in adult decision-making', size: 22 })]
+          indent: { left: 720 },
+          children: [new TextRun({ text: '4. Reducing child involvement in adult decision-making', size: BODY_SIZE, font: FONT })]
         }),
 
         // ==================== END ====================
         new Paragraph({ spacing: { before: 600 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: '— End of Exhibit —', size: 22, italics: true, color: '9ca3af' })]
+          children: [new TextRun({ text: '- End of Exhibit -', size: BODY_SIZE, italics: true, font: FONT })]
         }),
       ]
     }]
   });
 }
 
-function createSummaryTable(stats: any, patternCounts: Record<string, number>, cellBorders: any) {
-  const headerShading = { fill: 'f3f4f6', type: ShadingType.CLEAR };
+function createSummaryTable(stats: any, patternCounts: Record<string, number>, cellBorders: any, font: string, size: number) {
+  const headerShading = { fill: 'f0f0f0', type: ShadingType.CLEAR };
   
   const topPatterns = Object.entries(patternCounts).slice(0, 5);
   
@@ -653,51 +683,51 @@ function createSummaryTable(stats: any, patternCounts: Record<string, number>, c
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            children: [new Paragraph({ children: [new TextRun({ text: 'Metric', bold: true, size: 22 })] })]
+            children: [new Paragraph({ children: [new TextRun({ text: 'Metric', bold: true, size, font })] })]
           }),
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            children: [new Paragraph({ children: [new TextRun({ text: 'Value', bold: true, size: 22 })] })]
+            children: [new Paragraph({ children: [new TextRun({ text: 'Value', bold: true, size, font })] })]
           })
         ]
       }),
       new TableRow({
         children: [
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Total Incidents', size: 22 })] })] }),
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.total}`, size: 22, bold: true })] })] })
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Total Incidents', size, font })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.total}`, size, font, bold: true })] })] })
         ]
       }),
       new TableRow({
         children: [
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Documentation Period', size: 22 })] })] }),
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.daySpan} days`, size: 22 })] })] })
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Documentation Period', size, font })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.daySpan} days`, size, font })] })] })
         ]
       }),
       new TableRow({
         children: [
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'High Severity', size: 22 })] })] }),
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.critical + stats.high}`, size: 22, color: 'dc2626' })] })] })
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'High Severity', size, font })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.critical + stats.high}`, size, font })] })] })
         ]
       }),
       new TableRow({
         children: [
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Patterns Detected', size: 22 })] })] }),
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.uniquePatterns}`, size: 22 })] })] })
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Patterns Detected', size, font })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.uniquePatterns}`, size, font })] })] })
         ]
       }),
       new TableRow({
         children: [
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Most Frequent Pattern', size: 22 })] })] }),
-          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: topPatterns[0] ? `${topPatterns[0][0]} (${topPatterns[0][1]}x)` : 'N/A', size: 22 })] })] })
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Most Frequent Pattern', size, font })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: topPatterns[0] ? `${topPatterns[0][0]} (${topPatterns[0][1]}x)` : 'N/A', size, font })] })] })
         ]
       }),
     ]
   });
 }
 
-function createTimelineTable(incidents: any[], cellBorders: any) {
-  const headerShading = { fill: '1a3a2f', type: ShadingType.CLEAR };
+function createTimelineTable(incidents: any[], cellBorders: any, font: string, size: number) {
+  const headerShading = { fill: 'e0e0e0', type: ShadingType.CLEAR };
   
   return new Table({
     columnWidths: [2000, 3500, 3500],
@@ -708,21 +738,21 @@ function createTimelineTable(incidents: any[], cellBorders: any) {
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Date', bold: true, color: 'ffffff', size: 20 })] })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Date', bold: true, size, font })] })]
           }),
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Context', bold: true, color: 'ffffff', size: 20 })] })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Context', bold: true, size, font })] })]
           }),
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Patterns Detected', bold: true, color: 'ffffff', size: 20 })] })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Patterns Detected', bold: true, size, font })] })]
           })
         ]
       }),
-      ...incidents.map((inc, idx) => {
+      ...incidents.map((inc) => {
         const date = new Date(inc.incident_date);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const context = getContextCategory(inc);
@@ -733,15 +763,15 @@ function createTimelineTable(incidents: any[], cellBorders: any) {
           children: [
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ children: [new TextRun({ text: dateStr, size: 20 })] })]
+              children: [new Paragraph({ children: [new TextRun({ text: dateStr, size, font })] })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ children: [new TextRun({ text: isDuplicate ? 'Pattern recurrence' : context, size: 20, italics: isDuplicate })] })]
+              children: [new Paragraph({ children: [new TextRun({ text: isDuplicate ? 'Pattern recurrence' : context, size, font, italics: isDuplicate })] })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ children: [new TextRun({ text: patterns, size: 20 })] })]
+              children: [new Paragraph({ children: [new TextRun({ text: patterns, size, font })] })]
             })
           ]
         });
@@ -750,23 +780,19 @@ function createTimelineTable(incidents: any[], cellBorders: any) {
   });
 }
 
-function createIncidentSection(incident: any, index: number, otherPartyName: string) {
+function createIncidentSection(incident: any, index: number, caseInfo: any, font: string, bodySize: number, smallSize: number) {
   const date = new Date(incident.incident_date);
   const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   
-  const severityColors: Record<string, string> = {
-    critical: 'dc2626',
-    high: 'ea580c',
-    medium: 'ca8a04',
-    low: '6b7280'
-  };
-
   const patterns = incident.patterns || [];
   const severity = incident.severity || 'medium';
   const coparentMessage = incident.coparent_message || '';
   const context = getContextCategory(incident);
   const isDuplicate = incident.isDuplicate;
   const duplicateOfIndex = incident.duplicateOfIndex;
+  
+  // Get proper source label
+  const sourceLabel = getSourceLabel(incident, caseInfo);
 
   if (!coparentMessage.trim()) {
     return [];
@@ -777,7 +803,7 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     new Paragraph({
       spacing: { before: 400 },
       children: [
-        new TextRun({ text: `INCIDENT ${index}`, bold: true, size: 24 }),
+        new TextRun({ text: `INCIDENT ${index}`, bold: true, size: bodySize, font }),
       ]
     }),
     
@@ -785,8 +811,8 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     new Paragraph({
       spacing: { before: 100 },
       children: [
-        new TextRun({ text: 'Date: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: dateStr, size: 20 }),
+        new TextRun({ text: 'Date: ', bold: true, size: bodySize, font }),
+        new TextRun({ text: dateStr, size: bodySize, font }),
       ]
     }),
     
@@ -794,17 +820,17 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     new Paragraph({
       spacing: { before: 50 },
       children: [
-        new TextRun({ text: 'Context: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: context, size: 20 }),
+        new TextRun({ text: 'Context: ', bold: true, size: bodySize, font }),
+        new TextRun({ text: context, size: bodySize, font }),
       ]
     }),
     
-    // Source
+    // Source - NOW USING DYNAMIC LABEL
     new Paragraph({
       spacing: { before: 50 },
       children: [
-        new TextRun({ text: 'Source: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: `Written communication from ${otherPartyName}`, size: 20 }),
+        new TextRun({ text: 'Source: ', bold: true, size: bodySize, font }),
+        new TextRun({ text: sourceLabel, size: bodySize, font }),
       ]
     }),
   ];
@@ -814,10 +840,9 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     elements.push(
       new Paragraph({
         spacing: { before: 150, after: 100 },
-        shading: { fill: 'fef3c7', type: ShadingType.CLEAR },
         children: [
-          new TextRun({ text: 'Pattern Recurrence Note: ', bold: true, size: 20 }),
-          new TextRun({ text: `This communication repeats the same statements made in Incident #${duplicateOfIndex}, reinforcing previously identified patterns.`, size: 20 }),
+          new TextRun({ text: 'Pattern Recurrence Note: ', bold: true, size: bodySize, font }),
+          new TextRun({ text: `This communication repeats the same statements made in Incident #${duplicateOfIndex}, reinforcing previously identified patterns.`, size: bodySize, font }),
         ]
       })
     );
@@ -827,14 +852,14 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
       new Paragraph({
         spacing: { before: 150 },
         children: [
-          new TextRun({ text: 'Direct Quote:', bold: true, size: 20, color: '6b7280' }),
+          new TextRun({ text: 'Direct Quote:', bold: true, size: bodySize, font }),
         ]
       }),
       new Paragraph({
         spacing: { before: 50, after: 100 },
-        indent: { left: 360 },
+        indent: { left: 720 },
         children: [
-          new TextRun({ text: `"${coparentMessage}"`, size: 22 }),
+          new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font }),
         ]
       })
     );
@@ -845,8 +870,8 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     new Paragraph({
       spacing: { before: 100 },
       children: [
-        new TextRun({ text: 'Detected Communication Patterns: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: patterns.length > 0 ? patterns.join(', ') : 'None detected', size: 20 }),
+        new TextRun({ text: 'Detected Communication Patterns: ', bold: true, size: bodySize, font }),
+        new TextRun({ text: patterns.length > 0 ? patterns.join(', ') : 'None detected', size: bodySize, font }),
       ]
     }),
     
@@ -854,8 +879,8 @@ function createIncidentSection(incident: any, index: number, otherPartyName: str
     new Paragraph({
       spacing: { before: 50, after: 300 },
       children: [
-        new TextRun({ text: 'Severity Assessment: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: severity.charAt(0).toUpperCase() + severity.slice(1), size: 20, color: severityColors[severity], bold: true }),
+        new TextRun({ text: 'Severity Assessment: ', bold: true, size: bodySize, font }),
+        new TextRun({ text: severity.charAt(0).toUpperCase() + severity.slice(1), size: bodySize, font, bold: true }),
       ]
     })
   );
