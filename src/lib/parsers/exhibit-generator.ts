@@ -279,9 +279,9 @@ function generateMessages(
       <span class="pattern-tag ${p.severity}">${p.patternName}</span>
     `).join('');
     
-    const senderClass = msg.sender === 'coparent' ? 'coparent' : 'user';
-    const senderLabel = msg.sender === 'coparent' 
-      ? (msg.senderName || 'Co-Parent') 
+    const senderClass = (msg as any).sender === 'coparent' ? 'coparent' : 'user';
+    const senderLabel = (msg as any).sender === 'coparent'
+      ? ((msg as any).senderName || 'Co-Parent')
       : 'User';
     
     // Optionally redact user messages
