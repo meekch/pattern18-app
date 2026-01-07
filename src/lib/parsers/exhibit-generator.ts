@@ -285,7 +285,7 @@ function generateMessages(
       : 'User';
     
     // Optionally redact user messages
-    const displayText = (opts.redactUserMessages && msg.sender === 'user')
+    const displayText = (opts.redactUserMessages && (msg as any).sender === 'user')
       ? '[User message redacted]'
       : escapeHtml(msg.text);
     
