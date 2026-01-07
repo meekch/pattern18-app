@@ -262,7 +262,7 @@ function generateMessages(
   
   // Sort by date
   messages = [...messages].sort((a, b) => 
-    a.timestamp.getTime() - b.timestamp.getTime()
+    ((a as any).timestamp || (a as any).date || new Date()).getTime() - ((b as any).timestamp || (b as any).date || new Date()).getTime()
   );
   
   if (messages.length === 0) {
