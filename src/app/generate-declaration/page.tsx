@@ -59,6 +59,7 @@ export default function GenerateDeclarationPage() {
   const [generatedDoc, setGeneratedDoc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
 
   // Case context
@@ -175,31 +176,54 @@ export default function GenerateDeclarationPage() {
       // Try clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(generatedDoc);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        return;
+      } else {
+        // Fallback: create textarea and copy
+        const textarea = document.createElement('textarea');
+        textarea.value = generatedDoc;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
       }
       
-      // Fallback: create textarea and copy
-      const textarea = document.createElement('textarea');
-      textarea.value = generatedDoc;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
+      // Always set copied state on success
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setShowToast(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowToast(false);
+      }, 2500);
+      
     } catch (err) {
       console.error('Copy failed:', err);
-      // Last resort: select all text so user can copy manually
-      if (textRef.current) {
-        const range = document.createRange();
-        range.selectNodeContents(textRef.current);
-        const selection = window.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+      // Even on error, try the fallback
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = generatedDoc;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setCopied(true);
+        setShowToast(true);
+        setTimeout(() => {
+          setCopied(false);
+          setShowToast(false);
+        }, 2500);
+      } catch {
+        // Last resort: select all text so user can copy manually
+        if (textRef.current) {
+          const range = document.createRange();
+          range.selectNodeContents(textRef.current);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          alert('Text selected - press Ctrl+C to copy');
+        }
       }
     }
   };
@@ -214,6 +238,30 @@ export default function GenerateDeclarationPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
+      {/* Toast Notification */}
+      {showToast && (
+        <div style={{
+          position: 'fixed',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#059669',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 12,
+          fontWeight: 600,
+          fontSize: 15,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          animation: 'slideDown 0.3s ease'
+        }}>
+          <span style={{ fontSize: 18 }}>✓</span> Copied to clipboard!
+        </div>
+      )}
+      
       {/* Header */}
       <header style={{
         background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -496,13 +544,14 @@ export default function GenerateDeclarationPage() {
                   onClick={handleCopy}
                   style={{
                     padding: '8px 16px',
-                    background: copied ? '#d1fae5' : '#f3f4f6',
-                    border: 'none',
+                    background: copied ? '#059669' : '#f3f4f6',
+                    border: copied ? '2px solid #059669' : 'none',
                     borderRadius: 8,
                     cursor: 'pointer',
-                    fontWeight: 500,
-                    color: copied ? '#059669' : '#374151',
-                    transition: 'all 0.2s'
+                    fontWeight: 600,
+                    color: copied ? 'white' : '#374151',
+                    transition: 'all 0.2s',
+                    transform: copied ? 'scale(1.05)' : 'scale(1)'
                   }}
                 >
                   {copied ? '✓ Copied!' : '📋 Copy All'}
@@ -550,16 +599,17 @@ export default function GenerateDeclarationPage() {
                 style={{
                   flex: 1,
                   padding: 14,
-                  background: copied ? '#d1fae5' : '#059669',
+                  background: copied ? '#047857' : '#059669',
                   border: 'none',
                   borderRadius: 10,
                   cursor: 'pointer',
                   fontWeight: 600,
-                  color: copied ? '#059669' : 'white',
-                  transition: 'all 0.2s'
+                  color: 'white',
+                  transition: 'all 0.2s',
+                  transform: copied ? 'scale(1.02)' : 'scale(1)'
                 }}
               >
-                {copied ? '✓ Copied!' : '📋 Copy to Clipboard'}
+                {copied ? '✓ Copied to Clipboard!' : '📋 Copy to Clipboard'}
               </button>
             </div>
           </>
@@ -567,6 +617,20 @@ export default function GenerateDeclarationPage() {
       </main>
 
       <BottomNav active="docs" />
+      
+      {/* Toast animation */}
+      <style jsx global>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
