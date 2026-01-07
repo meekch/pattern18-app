@@ -7,6 +7,18 @@
 import { AnalyzedMessage, PatternMatch, PATTERNS } from './pattern-detection';
 
 // ============================================
+// HELPER: Get timestamp flexibly
+// ============================================
+
+function getTimestamp(msg: any): Date {
+  return msg.timestamp || msg.date || new Date();
+}
+
+function getSender(msg: any): string {
+  return msg.sender || 'unknown';
+}
+
+// ============================================
 // INCIDENT TYPES - COERCIVE CONTROL PATTERNS
 // ============================================
 
@@ -147,9 +159,9 @@ export function detectIncidents(
     minMessagesPerIncident = 2,
   } = options;
 
-  // Sort messages by timestamp
+  // Sort messages by timestamp using helper
   const sorted = [...messages].sort(
-    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    (a, b) => getTimestamp(a).getTime() - getTimestamp(b).getTime()
   );
 
   if (sorted.length === 0) {
@@ -204,8 +216,8 @@ export function detectIncidents(
       totalIncidents: incidents.length,
       totalMessages: sorted.length,
       dateRange: sorted.length > 0 ? {
-        start: sorted[0].timestamp,
-        end: sorted[sorted.length - 1].timestamp
+        start: getTimestamp(sorted[0]),
+        end: getTimestamp(sorted[sorted.length - 1])
       } : null,
       categoryBreakdown,
       evidenceIncidents: evidenceIncidents.length,
@@ -234,7 +246,7 @@ function clusterByTime(
     }
 
     const lastMessage = currentCluster[currentCluster.length - 1];
-    const timeDiff = message.timestamp.getTime() - lastMessage.timestamp.getTime();
+    const timeDiff = getTimestamp(message).getTime() - getTimestamp(lastMessage).getTime();
 
     if (timeDiff <= windowMs) {
       currentCluster.push(message);
@@ -260,17 +272,17 @@ function createIncident(
   index: number
 ): Incident {
   const sorted = [...messages].sort(
-    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    (a, b) => getTimestamp(a).getTime() - getTimestamp(b).getTime()
   );
 
-  const startTime = sorted[0].timestamp;
-  const endTime = sorted[sorted.length - 1].timestamp;
+  const startTime = getTimestamp(sorted[0]);
+  const endTime = getTimestamp(sorted[sorted.length - 1]);
   const durationMinutes = Math.round(
     (endTime.getTime() - startTime.getTime()) / (1000 * 60)
   );
 
   // Collect all patterns from messages
-  const allPatterns = sorted.flatMap(m => m.patterns);
+  const allPatterns = sorted.flatMap(m => m.patterns || []);
   const uniquePatterns = [...new Set(allPatterns.map(p => p.patternName))];
 
   // Calculate severity
@@ -314,8 +326,8 @@ function createIncident(
     durationMinutes,
     messages: sorted,
     messageCount: sorted.length,
-    coparentMessageCount: sorted.filter(m => m.sender === 'coparent').length,
-    userMessageCount: sorted.filter(m => m.sender === 'user').length,
+    coparentMessageCount: sorted.filter(m => getSender(m) === 'coparent').length,
+    userMessageCount: sorted.filter(m => getSender(m) === 'user').length,
     patterns: allPatterns,
     uniquePatterns,
     severityScore: Math.round(severityScore * 10) / 10,
@@ -349,7 +361,7 @@ function detectPrimaryPattern(patterns: PatternMatch[]): IncidentCategory {
   // Sort by severity (critical > high > medium > low) then by count
   const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
   
-  const sorted = Object.entries(patternCounts).sort((a, b) => {
+  const sortedPatterns = Object.entries(patternCounts).sort((a, b) => {
     const sevA = severityOrder[a[1].severity as keyof typeof severityOrder] || 0;
     const sevB = severityOrder[b[1].severity as keyof typeof severityOrder] || 0;
     
@@ -357,7 +369,7 @@ function detectPrimaryPattern(patterns: PatternMatch[]): IncidentCategory {
     return b[1].count - a[1].count; // Then by count
   });
 
-  const primaryPatternName = sorted[0][0];
+  const primaryPatternName = sortedPatterns[0][0];
   
   // Map to category
   return PATTERN_TO_CATEGORY[primaryPatternName] || 'none_detected';
@@ -434,8 +446,8 @@ function assessEvidenceStrength(
   }
 
   // Check if user responses are calm/appropriate
-  const userMessages = messages.filter(m => m.sender === 'user');
-  const userHasPatterns = userMessages.some(m => m.patterns.length > 0);
+  const userMessages = messages.filter(m => getSender(m) === 'user');
+  const userHasPatterns = userMessages.some(m => (m.patterns || []).length > 0);
   if (!userHasPatterns && userMessages.length > 0) {
     strengthScore += 1;
     notes.push('Your responses remained appropriate');
