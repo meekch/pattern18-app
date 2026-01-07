@@ -31,10 +31,23 @@ interface CaseContext {
   userRole?: "petitioner" | "respondent";
 }
 
+const LEGAL_DISCLAIMER = `
+─────────────────────────────────────────
+
+NOTICE: This document was prepared using Pattern 18 documentation software as a starting point. Review by legal counsel is recommended before court submission. Pattern 18 provides documentation tools, not legal advice.
+
+─────────────────────────────────────────`;
+
 const PROMPTS = {
   declaration: `You are a legal document assistant helping a pro se litigant prepare a declaration for family court.
 
-CRITICAL RULES:
+OUTPUT FORMAT RULES - CRITICAL:
+- Do NOT use markdown formatting (no ** for bold, no # for headers)
+- Use ALL CAPS for section headers
+- Use plain text only - this will be copied into Word
+- Use clear spacing and indentation for readability
+
+CONTENT RULES:
 1. USE THE EXACT DATES PROVIDED - never change or generalize dates
 2. QUOTE MESSAGES EXACTLY as provided - put them in quotation marks
 3. ASSIGN EXHIBIT NUMBERS sequentially (Exhibit A-1, A-2, etc.)
@@ -42,34 +55,39 @@ CRITICAL RULES:
 5. Let the facts speak for themselves - judges draw their own conclusions
 
 STRUCTURE:
-- Proper court heading with case info if provided
-- "I, [name], declare under penalty of perjury that the following is true and correct:"
+- Court heading with case info (if provided)
+- "I, [name], declare under penalty of perjury under the laws of the State of [state] that the following is true and correct:"
 - Numbered paragraphs, one incident per paragraph
-- Each paragraph should include:
-  * The exact date and time if available
-  * What communication platform was used (text, email, etc.)
+- Each paragraph includes:
+  * The exact date
+  * What communication platform was used
   * The EXACT quote from the message
   * Reference to exhibit number
-  * Brief factual context (what prompted the message) if known
 - Signature block at end
 
 EXAMPLE FORMAT:
-"5. On July 15, 2024, at approximately 3:42 PM, Respondent sent me the following text message:
+5. On July 15, 2024, at approximately 3:42 PM, Respondent sent me the following text message:
 
-'You're such a terrible mother, no wonder he doesn't want to be around you.'
+   "You're such a terrible mother, no wonder he doesn't want to be around you."
 
-This message was sent after I requested the return of our child's medication. (See Exhibit A-5)"
+   This message was sent after I requested the return of our child's medication. (See Exhibit A-5)
 
 DO NOT:
+- Use markdown formatting
 - Use phrases like "hostile environment," "harmful behavior," "detrimental"
 - Interpret the co-parent's motives
 - Add emotional characterizations
-- Change or summarize the actual quotes
-- Use the same date for different incidents unless they actually occurred on the same date`,
+- Change or summarize the actual quotes`,
 
   timeline: `You are creating a chronological evidence timeline for family court.
 
-CRITICAL RULES:
+OUTPUT FORMAT RULES - CRITICAL:
+- Do NOT use markdown formatting (no ** for bold, no # for headers)
+- Use ALL CAPS for headers
+- Use plain text table format with | separators
+- This will be copied into Word
+
+CONTENT RULES:
 1. USE EXACT DATES as provided - never change them
 2. QUOTE MESSAGES EXACTLY in quotation marks
 3. List in chronological order (oldest to newest)
@@ -77,13 +95,13 @@ CRITICAL RULES:
 5. Keep descriptions factual and brief
 
 FORMAT:
-Date | Exhibit # | Type | Exact Quote or Description
------|-----------|------|---------------------------
+TIMELINE OF DOCUMENTED COMMUNICATIONS
 
-EXAMPLE:
-July 10, 2024 | A-1 | Text Message | "Just dropped at Tumbleweed"
-July 11, 2024 | A-2 | Text Message | "I didn't check until then and it was scheduled until 8:15"
-July 15, 2024 | A-3 | Text Message | "You're such a terrible mother"
+Date          | Exhibit | Type         | Quote/Description
+─────────────────────────────────────────────────────────────
+July 10, 2024 | A-1     | Text Message | "Just dropped at Tumbleweed"
+July 11, 2024 | A-2     | Text Message | "I didn't check until then"
+July 15, 2024 | A-3     | Text Message | "You're such a terrible mother"
 
 Include a summary section at the end noting:
 - Total number of documented incidents
@@ -92,7 +110,13 @@ Include a summary section at the end noting:
 
   pattern_summary: `You are creating a pattern analysis document for family court.
 
-CRITICAL RULES:
+OUTPUT FORMAT RULES - CRITICAL:
+- Do NOT use markdown formatting (no ** for bold, no # for headers)
+- Use ALL CAPS for pattern names and headers
+- Use plain text only
+- This will be copied into Word
+
+CONTENT RULES:
 1. Group incidents by pattern type
 2. USE EXACT DATES for each example
 3. QUOTE MESSAGES EXACTLY
@@ -100,29 +124,32 @@ CRITICAL RULES:
 5. Show escalation over time if present
 
 FORMAT:
-For each pattern type:
-1. Pattern name and total count
-2. Date range when pattern occurred
-3. 2-3 specific examples with exact quotes and dates
-4. Brief factual description of the pattern
+PATTERN ANALYSIS SUMMARY
 
-EXAMPLE:
-FINANCIAL MANIPULATION (12 occurrences)
-Date Range: July 2024 - April 2025
+PATTERN: [NAME] ([count] occurrences)
+Date Range: [start] - [end]
 
-Example 1 - July 15, 2024:
-"We doing the 60/40 split? How you going to pay?"
+Example 1 - [Date]:
+"[Exact quote]"
 
-Example 2 - August 3, 2024:
-"That's not how it works. We split expenses 50/50."
+Example 2 - [Date]:
+"[Exact quote]"
 
-This pattern involves messages where financial matters are raised in the context of parenting discussions.
+Context: [Brief factual description of when this pattern occurs]
+
+─────────────────────────────────────────
 
 DO NOT interpret motives or add emotional language. Let the quotes speak for themselves.`,
 
   exhibit_list: `You are creating a formal exhibit list for family court submission.
 
-CRITICAL RULES:
+OUTPUT FORMAT RULES - CRITICAL:
+- Do NOT use markdown formatting (no ** for bold, no # for headers)
+- Use ALL CAPS for headers
+- Use plain text only
+- This will be copied into Word
+
+CONTENT RULES:
 1. Number exhibits sequentially (A-1, A-2, etc.)
 2. USE EXACT DATES as provided
 3. Include brief description and first line of quote
@@ -131,19 +158,25 @@ CRITICAL RULES:
 FORMAT:
 EXHIBIT LIST
 
-Exhibit A-1
+Case: [Case info if provided]
+
+─────────────────────────────────────────
+
+EXHIBIT A-1
 Date: [exact date]
 Type: Text Message
 Description: Communication regarding [topic]
 Preview: "[first 50 characters of message]..."
 
-Exhibit A-2
+EXHIBIT A-2
 Date: [exact date]
 Type: Text Message
 Description: Communication regarding [topic]
 Preview: "[first 50 characters of message]..."
 
-End with:
+─────────────────────────────────────────
+
+SUMMARY
 Total Exhibits: [number]
 Date Range: [start] to [end]
 Prepared by: [name if provided]
@@ -214,20 +247,12 @@ ${exactMessage || "[No message text available]"}
     const yourTitle = yourRole === "petitioner" ? "Petitioner" : "Respondent";
     const otherTitle = yourRole === "petitioner" ? "Respondent" : "Petitioner";
     
-    // Map names correctly based on user's role in the case
-    const yourName = yourRole === "petitioner" 
-      ? caseContext.petitionerName 
-      : caseContext.respondentName;
-    const otherPartyName = yourRole === "petitioner"
-      ? caseContext.respondentName
-      : caseContext.petitionerName;
-    
     const contextInfo = `
 CASE INFORMATION:
 Court: ${caseContext.courtName || "[COURT NAME]"}
 Case Number: ${caseContext.caseNumber || "[CASE NUMBER]"}
-${yourTitle} (You): ${yourName || "[YOUR NAME]"}
-${otherTitle}: ${otherPartyName || "[OTHER PARTY NAME]"}
+${yourTitle} (You): ${caseContext.petitionerName || "[YOUR NAME]"}
+${otherTitle}: ${caseContext.respondentName || "[OTHER PARTY NAME]"}
 Your Role in Case: ${yourTitle}
 Purpose of Document: ${caseContext.filingPurpose || "Documentation of communication patterns"}
 
@@ -238,9 +263,16 @@ Critical Severity: ${incidents.filter(i => i.severity === "critical").length}
 High Severity: ${incidents.filter(i => i.severity === "high").length}
 `.trim();
 
-    const userMessage = `Generate a ${docType.replace("_", " ")} document using the EXACT information below.
+    const docTypeName = docType.replace("_", " ");
+    const userMessage = `Generate a ${docTypeName} document using the EXACT information below.
 
-IMPORTANT: 
+CRITICAL FORMATTING RULES:
+- Do NOT use markdown (no ** or # symbols)
+- Use ALL CAPS for headers
+- Use plain text only - this will be copied into Word
+- Use clear spacing for readability
+
+CRITICAL CONTENT RULES: 
 - Use the EXACT DATES provided for each incident - do not change them
 - Quote messages EXACTLY as written - do not paraphrase
 - Assign exhibit numbers A-1, A-2, etc. in chronological order
@@ -256,7 +288,7 @@ ${incidentsSummary}
 
 ===================================
 
-Generate the complete ${docType.replace("_", " ")} document now. Use exact quotes and dates.`;
+Generate the complete ${docTypeName} document now. Use exact quotes and dates. No markdown formatting.`;
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -270,9 +302,19 @@ Generate the complete ${docType.replace("_", " ")} document now. Use exact quote
       system: systemPrompt
     });
 
-    const document = response.content[0].type === "text" 
+    let document = response.content[0].type === "text" 
       ? response.content[0].text 
       : "Error generating document";
+
+    // Clean any remaining markdown that slipped through
+    document = document
+      .replace(/\*\*/g, '')  // Remove bold markers
+      .replace(/\*/g, '')    // Remove italic markers
+      .replace(/^#{1,6}\s/gm, '')  // Remove header markers
+      .replace(/`/g, '');    // Remove code markers
+
+    // Add legal disclaimer at the end
+    document = document + LEGAL_DISCLAIMER;
 
     return NextResponse.json({ 
       success: true,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
@@ -23,7 +23,7 @@ const DOC_TYPES = [
     name: 'Declaration',
     icon: '📜',
     description: 'Formal statement under penalty of perjury with numbered paragraphs. Use for declarations in support of motions.',
-    example: '"5. On July 15, 2024, Respondent sent me the following text message: \'You\'re a terrible mother.\' (See Exhibit A-5)"'
+    example: '5. On July 15, 2024, Respondent sent me the following text message: "You\'re a terrible mother." (See Exhibit A-5)'
   },
   {
     id: 'timeline',
@@ -59,6 +59,7 @@ export default function GenerateDeclarationPage() {
   const [generatedDoc, setGeneratedDoc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
 
   // Case context
   const [caseNumber, setCaseNumber] = useState('');
@@ -89,19 +90,19 @@ export default function GenerateDeclarationPage() {
 
       setIncidents(data || []);
 
-      // Load case info if exists
-      const { data: caseInfo } = await supabase
-        .from('case_info')
+      // Load case context (not case_info)
+      const { data: caseContext } = await supabase
+        .from('case_context')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
 
-      if (caseInfo) {
-        setCaseNumber(caseInfo.case_number || '');
-        setCourtName(caseInfo.court_name || '');
-        setPetitionerName(caseInfo.petitioner_name || '');
-        setRespondentName(caseInfo.respondent_name || '');
-        setUserRole(caseInfo.user_role || 'petitioner');
+      if (caseContext) {
+        setCaseNumber(caseContext.case_number || '');
+        setCourtName(caseContext.court || '');
+        setPetitionerName(caseContext.petitioner_name || '');
+        setRespondentName(caseContext.respondent_name || '');
+        setUserRole(caseContext.user_role || 'petitioner');
       }
     } catch (err) {
       console.error('Load error:', err);
@@ -155,11 +156,39 @@ export default function GenerateDeclarationPage() {
     }
   };
 
-  const handleCopy = () => {
-    if (generatedDoc) {
-      navigator.clipboard.writeText(generatedDoc);
+  const handleCopy = async () => {
+    if (!generatedDoc) return;
+    
+    try {
+      // Try clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(generatedDoc);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      
+      // Fallback: create textarea and copy
+      const textarea = document.createElement('textarea');
+      textarea.value = generatedDoc;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+      // Last resort: select all text so user can copy manually
+      if (textRef.current) {
+        const range = document.createRange();
+        range.selectNodeContents(textRef.current);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
     }
   };
 
@@ -296,7 +325,8 @@ export default function GenerateDeclarationPage() {
                       padding: '10px 12px',
                       border: '1px solid #e5e7eb',
                       borderRadius: 8,
-                      fontSize: 14
+                      fontSize: 14,
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -312,7 +342,8 @@ export default function GenerateDeclarationPage() {
                       padding: '10px 12px',
                       border: '1px solid #e5e7eb',
                       borderRadius: 8,
-                      fontSize: 14
+                      fontSize: 14,
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -328,7 +359,8 @@ export default function GenerateDeclarationPage() {
                       padding: '10px 12px',
                       border: '1px solid #e5e7eb',
                       borderRadius: 8,
-                      fontSize: 14
+                      fontSize: 14,
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -344,7 +376,8 @@ export default function GenerateDeclarationPage() {
                       padding: '10px 12px',
                       border: '1px solid #e5e7eb',
                       borderRadius: 8,
-                      fontSize: 14
+                      fontSize: 14,
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -414,6 +447,28 @@ export default function GenerateDeclarationPage() {
         ) : (
           /* Generated Document View */
           <>
+            {/* Legal Disclaimer Banner */}
+            <div style={{
+              background: '#fefce8',
+              border: '1px solid #fcd34d',
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12
+            }}>
+              <span style={{ fontSize: 20 }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 600, color: '#92400e', marginBottom: 4 }}>
+                  Draft Document - Attorney Review Recommended
+                </div>
+                <div style={{ fontSize: 13, color: '#a16207', lineHeight: 1.5 }}>
+                  This is a starting point generated from your evidence. Have an attorney review before filing with the court.
+                </div>
+              </div>
+            </div>
+
             <div style={{
               background: 'white',
               borderRadius: 16,
@@ -434,26 +489,30 @@ export default function GenerateDeclarationPage() {
                     borderRadius: 8,
                     cursor: 'pointer',
                     fontWeight: 500,
-                    color: copied ? '#059669' : '#374151'
+                    color: copied ? '#059669' : '#374151',
+                    transition: 'all 0.2s'
                   }}
                 >
                   {copied ? '✓ Copied!' : '📋 Copy All'}
                 </button>
               </div>
 
-              <div style={{
-                background: '#f9fafb',
-                border: '1px solid #e5e7eb',
-                borderRadius: 12,
-                padding: 20,
-                maxHeight: 500,
-                overflowY: 'auto',
-                fontFamily: 'Georgia, serif',
-                fontSize: 14,
-                lineHeight: 1.8,
-                whiteSpace: 'pre-wrap',
-                color: '#1f2937'
-              }}>
+              <div 
+                ref={textRef}
+                style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  padding: 20,
+                  maxHeight: 500,
+                  overflowY: 'auto',
+                  fontFamily: 'Georgia, serif',
+                  fontSize: 14,
+                  lineHeight: 1.8,
+                  whiteSpace: 'pre-wrap',
+                  color: '#1f2937'
+                }}
+              >
                 {generatedDoc}
               </div>
             </div>
@@ -479,15 +538,16 @@ export default function GenerateDeclarationPage() {
                 style={{
                   flex: 1,
                   padding: 14,
-                  background: '#059669',
+                  background: copied ? '#d1fae5' : '#059669',
                   border: 'none',
                   borderRadius: 10,
                   cursor: 'pointer',
                   fontWeight: 600,
-                  color: 'white'
+                  color: copied ? '#059669' : 'white',
+                  transition: 'all 0.2s'
                 }}
               >
-                📋 Copy to Clipboard
+                {copied ? '✓ Copied!' : '📋 Copy to Clipboard'}
               </button>
             </div>
           </>
