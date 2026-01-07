@@ -102,8 +102,8 @@ export default function BulkMessageUpload() {
         endTime: incident.endTime.toISOString(),
         messages: incident.messages.map(msg => ({
           ...msg,
-          timestamp: msg.timestamp.toISOString(),
-          editedAt: msg.editedAt?.toISOString() || null
+          timestamp: (msg as any).timestamp?.toISOString?.() || (msg as any).date?.toISOString?.() || new Date().toISOString(),
+          editedAt: (msg as any).editedAt?.toISOString?.() || null
         }))
       }));
 
