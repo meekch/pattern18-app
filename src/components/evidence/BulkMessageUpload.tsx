@@ -659,7 +659,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
     day: 'numeric',
     year: 'numeric'
   });
-  const preview = incident.messages[0]?.text?.slice(0, 120) || '';
+  const preview = ((incident.messages[0] as any)?.text || (incident.messages[0] as any)?.content || '').slice(0, 120);
 
   const severityColors: Record<string, { bg: string; border: string }> = {
     critical: { bg: '#fef2f2', border: '#fecaca' },
