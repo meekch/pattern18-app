@@ -3,7 +3,7 @@
  * Produces court-ready PDF documentation from analyzed messages
  */
 
-import { AnalyzedMessage, BulkAnalysisResult, Pattern, PATTERNS } from './pattern-detection';
+import { BulkAnalysisResult, Pattern, PATTERNS } from './pattern-detection';
 
 // ============================================
 // EXHIBIT TYPES
@@ -34,6 +34,34 @@ export const DEFAULT_EXHIBIT_OPTIONS: ExhibitOptions = {
 export interface ExhibitSection {
   type: 'header' | 'summary' | 'timeline' | 'patterns' | 'messages' | 'footer';
   content: string;
+}
+
+// ============================================
+// HELPER: Get message properties flexibly
+// ============================================
+
+function getMessageTimestamp(msg: any): Date {
+  return msg.timestamp || msg.date || new Date();
+}
+
+function getMessageSender(msg: any): string {
+  return msg.sender || 'unknown';
+}
+
+function getMessageSenderName(msg: any): string {
+  return msg.senderName || (getMessageSender(msg) === 'coparent' ? 'Co-Parent' : 'User');
+}
+
+function getMessageText(msg: any): string {
+  return msg.text || msg.content || '';
+}
+
+function getMessageSeverityScore(msg: any): number {
+  return msg.severityScore || 0;
+}
+
+function isMessageEdited(msg: any): boolean {
+  return msg.isEdited || false;
 }
 
 // ============================================
@@ -260,9 +288,9 @@ function generateMessages(
     );
   }
   
-  // Sort by date
+  // Sort by date using helper function
   messages = [...messages].sort((a, b) => 
-    ((a as any).timestamp || (a as any).date || new Date()).getTime() - ((b as any).timestamp || (b as any).date || new Date()).getTime()
+    getMessageTimestamp(a).getTime() - getMessageTimestamp(b).getTime()
   );
   
   if (messages.length === 0) {
@@ -279,24 +307,27 @@ function generateMessages(
       <span class="pattern-tag ${p.severity}">${p.patternName}</span>
     `).join('');
     
-    const senderClass = (msg as any).sender === 'coparent' ? 'coparent' : 'user';
-    const senderLabel = (msg as any).sender === 'coparent'
-      ? ((msg as any).senderName || 'Co-Parent')
-      : 'User';
+    const sender = getMessageSender(msg);
+    const senderClass = sender === 'coparent' ? 'coparent' : 'user';
+    const senderLabel = sender === 'coparent' ? getMessageSenderName(msg) : 'User';
+    const msgTimestamp = getMessageTimestamp(msg);
+    const msgText = getMessageText(msg);
+    const severityScore = getMessageSeverityScore(msg);
+    const edited = isMessageEdited(msg);
     
     // Optionally redact user messages
-    const displayText = (opts.redactUserMessages && (msg as any).sender === 'user')
+    const displayText = (opts.redactUserMessages && sender === 'user')
       ? '[User message redacted]'
-      : escapeHtml((msg as any).text || (msg as any).content || '');
+      : escapeHtml(msgText);
     
     return `
-      <div class="message ${senderClass} severity-${msg.severityScore > 5 ? 'high' : msg.severityScore > 2 ? 'medium' : 'low'}">
+      <div class="message ${senderClass} severity-${severityScore > 5 ? 'high' : severityScore > 2 ? 'medium' : 'low'}">
         <div class="message-header">
           <span class="message-number">#${index + 1}</span>
           <span class="message-sender">${senderLabel}</span>
-          <span class="message-time">${formatDateTime(msg.timestamp, opts.dateFormat)}</span>
-          ${msg.isEdited ? '<span class="edited-badge">Edited</span>' : ''}
-          ${msg.severityScore > 0 ? `<span class="severity-score">Severity: ${msg.severityScore}/10</span>` : ''}
+          <span class="message-time">${formatDateTime(msgTimestamp, opts.dateFormat)}</span>
+          ${edited ? '<span class="edited-badge">Edited</span>' : ''}
+          ${severityScore > 0 ? `<span class="severity-score">Severity: ${severityScore}/10</span>` : ''}
         </div>
         <div class="message-body">
           <p>${displayText}</p>
