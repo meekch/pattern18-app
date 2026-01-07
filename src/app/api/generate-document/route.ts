@@ -242,19 +242,18 @@ ${exactMessage || "[No message text available]"}
 `.trim();
     }).join("\n\n===================================\n\n");
 
-    // Format case context
-    const yourRole = caseContext.userRole || "petitioner";
-    const yourTitle = yourRole === "petitioner" ? "Petitioner" : "Respondent";
-    const otherTitle = yourRole === "petitioner" ? "Respondent" : "Petitioner";
+    // Format case context - keep petitioner/respondent labels correct
+    const yourRole = caseContext.userRole || "respondent";
     
     const contextInfo = `
 CASE INFORMATION:
 Court: ${caseContext.courtName || "[COURT NAME]"}
 Case Number: ${caseContext.caseNumber || "[CASE NUMBER]"}
-${yourTitle} (You): ${caseContext.petitionerName || "[YOUR NAME]"}
-${otherTitle}: ${caseContext.respondentName || "[OTHER PARTY NAME]"}
-Your Role in Case: ${yourTitle}
-Purpose of Document: ${caseContext.filingPurpose || "Documentation of communication patterns"}
+Petitioner: ${caseContext.petitionerName || "[PETITIONER NAME]"}
+Respondent: ${caseContext.respondentName || "[RESPONDENT NAME]"}
+You are the: ${yourRole === 'petitioner' ? 'Petitioner' : 'Respondent'}
+Your name: ${yourRole === 'petitioner' ? caseContext.petitionerName : caseContext.respondentName}
+The declaration/document should be signed by: ${yourRole === 'petitioner' ? caseContext.petitionerName : caseContext.respondentName}, ${yourRole === 'petitioner' ? 'Petitioner' : 'Respondent'}
 
 EVIDENCE SUMMARY:
 Total Incidents: ${incidents.length}
