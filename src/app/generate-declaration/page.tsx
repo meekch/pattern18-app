@@ -64,9 +64,9 @@ export default function GenerateDeclarationPage() {
   // Case context
   const [caseNumber, setCaseNumber] = useState('');
   const [courtName, setCourtName] = useState('');
-  const [petitionerName, setPetitionerName] = useState('');
-  const [respondentName, setRespondentName] = useState('');
-  const [userRole, setUserRole] = useState<'petitioner' | 'respondent'>('petitioner');
+  const [yourName, setYourName] = useState('');
+  const [coparentName, setCoparentName] = useState('');
+  const [userRole, setUserRole] = useState<'petitioner' | 'respondent'>('respondent');
 
   useEffect(() => {
     loadData();
@@ -90,7 +90,7 @@ export default function GenerateDeclarationPage() {
 
       setIncidents(data || []);
 
-      // Load case context (not case_info)
+      // Load case context
       const { data: caseContext } = await supabase
         .from('case_context')
         .select('*')
@@ -100,9 +100,20 @@ export default function GenerateDeclarationPage() {
       if (caseContext) {
         setCaseNumber(caseContext.case_number || '');
         setCourtName(caseContext.court || '');
-        setPetitionerName(caseContext.petitioner_name || '');
-        setRespondentName(caseContext.respondent_name || '');
-        setUserRole(caseContext.user_role || 'petitioner');
+        
+        // Set role
+        const role = caseContext.user_role || 'respondent';
+        setUserRole(role);
+        
+        // Map names based on role
+        if (role === 'petitioner') {
+          setYourName(caseContext.petitioner_name || '');
+          setCoparentName(caseContext.respondent_name || caseContext.coparent_name || '');
+        } else {
+          // User is respondent
+          setYourName(caseContext.respondent_name || '');
+          setCoparentName(caseContext.petitioner_name || caseContext.coparent_name || '');
+        }
       }
     } catch (err) {
       console.error('Load error:', err);
@@ -135,8 +146,9 @@ export default function GenerateDeclarationPage() {
           caseContext: {
             caseNumber,
             courtName,
-            petitionerName,
-            respondentName,
+            // Map back to petitioner/respondent based on role
+            petitionerName: userRole === 'petitioner' ? yourName : coparentName,
+            respondentName: userRole === 'petitioner' ? coparentName : yourName,
             userRole
           }
         }),
@@ -351,9 +363,9 @@ export default function GenerateDeclarationPage() {
                   <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Your Name</label>
                   <input
                     type="text"
-                    value={petitionerName}
-                    onChange={(e) => setPetitionerName(e.target.value)}
-                    placeholder="Your full name"
+                    value={yourName}
+                    onChange={(e) => setYourName(e.target.value)}
+                    placeholder="Your full legal name"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -368,9 +380,9 @@ export default function GenerateDeclarationPage() {
                   <label style={{ display: 'block', fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Co-Parent Name</label>
                   <input
                     type="text"
-                    value={respondentName}
-                    onChange={(e) => setRespondentName(e.target.value)}
-                    placeholder="Co-parent's full name"
+                    value={coparentName}
+                    onChange={(e) => setCoparentName(e.target.value)}
+                    placeholder="Co-parent's full legal name"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
