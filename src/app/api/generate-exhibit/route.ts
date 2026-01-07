@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   Header, Footer, AlignmentType, BorderStyle, WidthType,
-  HeadingLevel, ShadingType, PageBreak, PageNumber, LevelFormat
+  HeadingLevel, ShadingType, PageBreak, PageNumber
 } from 'docx';
 
 export const runtime = 'nodejs';
@@ -14,153 +14,133 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Pattern definitions for appendix
+// Pattern definitions for appendix - using neutral language
 const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; source: string }> = {
   'Gaslighting': {
     name: 'Gaslighting',
-    definition: 'A form of psychological manipulation where the abuser causes the victim to question their own memory, perception, and sanity. Common tactics include denying events occurred, trivializing feelings, and shifting blame.',
+    definition: 'A communication pattern where one party causes the other to question their own memory, perception, or judgment. Common indicators include denial of documented events, trivializing concerns, and shifting blame for miscommunication.',
     source: 'Stern, R. (2018). The Gaslight Effect.'
   },
   'DARVO': {
     name: 'DARVO (Deny, Attack, Reverse Victim and Offender)',
-    definition: 'A manipulation strategy where the perpetrator denies the behavior, attacks the person confronting them, and reverses the roles of victim and offender. The abuser portrays themselves as the victim.',
+    definition: 'A response pattern involving denial of behavior, attack of the person raising concerns, and reversal of victim and offender roles. The responding party positions themselves as the wronged party.',
     source: 'Freyd, J.J. (1997). Violations of power, adaptive blindness and betrayal trauma theory.'
   },
   'Financial Manipulation': {
-    name: 'Financial Abuse/Coercion',
-    definition: 'Using money or financial resources as a tool of control. Includes withholding funds, demanding detailed accounting, threatening financial ruin, or using financial obligations to manipulate behavior.',
+    name: 'Financial Coercion',
+    definition: 'Using financial matters as leverage in co-parenting communications. Includes withholding information about expenses, demanding detailed accounting, or linking financial discussions to unrelated parenting matters.',
     source: 'National Network to End Domestic Violence (2019).'
   },
   'Financial Abuse': {
-    name: 'Financial Abuse/Coercion',
-    definition: 'Using money or financial resources as a tool of control. Includes withholding funds, demanding detailed accounting, threatening financial ruin, or using financial obligations to manipulate behavior.',
+    name: 'Financial Coercion',
+    definition: 'Using financial matters as leverage in co-parenting communications. Includes withholding information about expenses, demanding detailed accounting, or linking financial discussions to unrelated parenting matters.',
     source: 'National Network to End Domestic Violence (2019).'
   },
-  'Triangulation': {
-    name: 'Triangulation',
-    definition: 'Involving a third party (often the child) in conflicts between two people. Using children as messengers, interrogating them about the other parent, or putting them in the middle of adult disputes.',
+  'Using Children as Weapons': {
+    name: 'Child Involvement in Adult Conflict',
+    definition: 'Placing children in the middle of parental disputes. Includes using children as messengers, discussing adult matters with children, or making statements that may affect the child\'s relationship with the other parent.',
     source: 'Warshak, R.A. (2010). Divorce Poison.'
   },
   'Triangulating Child': {
-    name: 'Using Children as Weapons',
-    definition: 'Placing children in the middle of parental conflict, using them as messengers, interrogating them about the other parent, or attempting to damage the child\'s relationship with the other parent.',
+    name: 'Child Involvement in Adult Conflict',
+    definition: 'Involving children in communications between parents or using children to relay information. This pattern places children in adult disputes.',
     source: 'Warshak, R.A. (2010). Divorce Poison.'
-  },
-  'Using Children as Weapons': {
-    name: 'Using Children as Weapons',
-    definition: 'Placing children in the middle of parental conflict, using them as messengers, interrogating them about the other parent, or attempting to damage the child\'s relationship with the other parent.',
-    source: 'Warshak, R.A. (2010). Divorce Poison.'
-  },
-  'Name-Calling/Verbal Abuse': {
-    name: 'Verbal Abuse',
-    definition: 'Direct attacks on character through insults, demeaning language, profanity, or degrading comments designed to humiliate and diminish self-worth.',
-    source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
-  },
-  'Verbal Abuse': {
-    name: 'Verbal Abuse',
-    definition: 'Direct attacks on character through insults, demeaning language, profanity, or degrading comments designed to humiliate and diminish self-worth.',
-    source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
-  },
-  'False Accusations': {
-    name: 'False Accusations',
-    definition: 'Making unfounded claims about behavior, character, or parenting to damage reputation, gain legal advantage, or manipulate others\' perceptions.',
-    source: 'Bernet, W. (2020). Parental Alienation, DSM-5, and ICD-11.'
-  },
-  'Emotional Blackmail': {
-    name: 'Emotional Blackmail',
-    definition: 'Using fear, obligation, and guilt (FOG) to control another person\'s behavior. Includes threats of self-harm, withdrawing affection, or leveraging the children\'s emotions.',
-    source: 'Forward, S. (1997). Emotional Blackmail.'
-  },
-  'Legal/Court Threats': {
-    name: 'Litigation Abuse',
-    definition: 'Using the legal system as a weapon to harass, control, or financially drain the other parent through excessive motions, false allegations, or threats of legal action.',
-    source: 'Ward, D. & Harvey, J.C. (1993). Family Wars: The Alienation of Children.'
   },
   'Threats': {
     name: 'Threats',
-    definition: 'Direct or indirect statements intended to create fear of harm, loss, or negative consequences. May include threats to take children, damage reputation, or cause financial harm.',
+    definition: 'Statements implying negative consequences, loss, or harm intended to influence compliance. May include references to legal action, relationship changes, or other adverse outcomes.',
     source: 'Stark, E. (2007). Coercive Control.'
   },
   'Intimidation': {
     name: 'Intimidation',
-    definition: 'Creating fear through looks, actions, gestures, or property destruction. Using size, voice, or aggressive behavior to frighten or control.',
-    source: 'Bancroft, L. (2002). Why Does He Do That?'
-  },
-  'Minimizing/Mocking': {
-    name: 'Minimizing and Denying',
-    definition: 'Dismissing concerns as overreactions, denying problematic behavior occurred, or mocking the other person\'s experiences and feelings to avoid accountability.',
+    definition: 'Communication intended to create pressure or fear rather than facilitate resolution. May include aggressive tone, ultimatums, or statements designed to discourage response.',
     source: 'Bancroft, L. (2002). Why Does He Do That?'
   },
   'Blame-Shifting': {
     name: 'Blame-Shifting',
-    definition: 'Refusing to take responsibility for one\'s actions by placing blame on the other person. Making everything their fault regardless of actual responsibility.',
+    definition: 'Consistently attributing responsibility for problems to the other party regardless of circumstances. Refusing to acknowledge any personal contribution to conflicts.',
     source: 'Bancroft, L. (2002). Why Does He Do That?'
+  },
+  'False Accusations': {
+    name: 'False Accusations',
+    definition: 'Making unfounded claims about behavior, character, or parenting without supporting evidence. May be used to damage reputation or gain positional advantage.',
+    source: 'Bernet, W. (2020). Parental Alienation, DSM-5, and ICD-11.'
+  },
+  'Emotional Blackmail': {
+    name: 'Emotional Blackmail',
+    definition: 'Using fear, obligation, or guilt to influence the other party\'s behavior. May include threats of self-harm, withdrawal of affection, or leveraging children\'s emotions.',
+    source: 'Forward, S. (1997). Emotional Blackmail.'
+  },
+  'Legal/Court Threats': {
+    name: 'Litigation References',
+    definition: 'Frequent references to legal action, court proceedings, or attorneys in routine parenting communications. Using the legal system as leverage in non-legal disputes.',
+    source: 'Ward, D. & Harvey, J.C. (1993). Family Wars.'
   },
   'Stonewalling': {
     name: 'Stonewalling',
-    definition: 'Refusing to communicate, engage, or respond to legitimate requests. Using silence as a form of control or punishment.',
+    definition: 'Refusing to communicate, engage, or respond to legitimate parenting requests. Using silence or non-response as a communication strategy.',
     source: 'Gottman, J. (1999). The Seven Principles for Making Marriage Work.'
   },
   'Gatekeeping': {
-    name: 'Gatekeeping',
-    definition: 'Controlling access to children, information, or resources. Withholding school information, medical updates, or excluding from decisions that should be shared.',
-    source: 'Eddy, B. (2019). BIFF: Quick Responses to High-Conflict People.'
-  },
-  'Information Gatekeeping': {
     name: 'Information Gatekeeping',
-    definition: 'Controlling access to important information about children, finances, or decisions. Withholding school information, medical updates, or excluding from decisions.',
+    definition: 'Controlling access to information about children, schedules, or decisions. Withholding school information, medical updates, or excluding from decisions that should be shared.',
     source: 'Eddy, B. (2019). BIFF: Quick Responses to High-Conflict People.'
-  },
-  'Schedule Manipulation': {
-    name: 'Schedule Manipulation',
-    definition: 'Unilaterally changing custody schedules, refusing exchanges, creating last-minute conflicts, or using scheduling as a tool of control and punishment.',
-    source: 'Custody conflict literature - various sources.'
   },
   'Monitoring/Stalking': {
-    name: 'Monitoring/Stalking Behavior',
-    definition: 'Excessive tracking, surveillance, or monitoring of the other parent. Includes using technology to track location, showing up unexpectedly, or knowing information they shouldn\'t.',
+    name: 'Monitoring Behavior',
+    definition: 'Excessive tracking, surveillance, or monitoring. Includes demonstrating knowledge of activities that should be private or showing up unexpectedly.',
     source: 'Stark, E. (2007). Coercive Control.'
   },
-  'Surveillance/Monitoring': {
-    name: 'Monitoring/Stalking Behavior',
-    definition: 'Excessive tracking, surveillance, or monitoring of the other parent. Includes using technology to track location, showing up unexpectedly, or knowing information they shouldn\'t.',
-    source: 'Stark, E. (2007). Coercive Control.'
+  'Denying': {
+    name: 'Denial',
+    definition: 'Refusing to acknowledge documented events, prior agreements, or established facts. May include claiming conversations never occurred or agreements were never made.',
+    source: 'Related to gaslighting - Stern, R. (2018).'
+  },
+  'Minimizing': {
+    name: 'Minimizing',
+    definition: 'Dismissing legitimate concerns as overreactions or making light of issues that affect parenting coordination.',
+    source: 'Bancroft, L. (2002). Why Does He Do That?'
   },
   'Projection': {
     name: 'Projection',
-    definition: 'Accusing others of behaviors or intentions that are actually one\'s own. The cheater accuses of cheating; the controller accuses of being controlling.',
+    definition: 'Accusing the other party of behaviors or intentions that mirror one\'s own actions.',
     source: 'Psychology literature on defense mechanisms.'
   },
   'Moving Goalposts': {
-    name: 'Moving Goalposts',
-    definition: 'Constantly changing expectations, requirements, or agreements. Nothing is ever good enough; the target keeps shifting to maintain control.',
-    source: 'Manipulation literature - various sources.'
+    name: 'Changing Expectations',
+    definition: 'Constantly changing requirements, expectations, or terms of agreements. Standards shift such that compliance becomes impossible.',
+    source: 'Communication literature - various sources.'
   },
   'Hoovering': {
     name: 'Hoovering',
-    definition: 'Attempting to suck someone back into a relationship or conflict after a period of distance. Sudden niceness, gifts, promises to change, or nostalgic appeals.',
-    source: 'Relationship abuse literature - various sources.'
+    definition: 'Attempting to re-engage after conflict through sudden niceness, gifts, or appeals to nostalgia. Often follows periods of tension.',
+    source: 'Relationship literature - various sources.'
   },
-  'Creating Urgency': {
-    name: 'False Urgency',
-    definition: 'Creating artificial time pressure to force decisions without adequate consideration. A manipulation tactic to prevent thoughtful responses.',
-    source: 'Influence and manipulation literature - various sources.'
+  'Schedule Manipulation': {
+    name: 'Schedule Disruption',
+    definition: 'Unilaterally changing custody schedules, creating last-minute conflicts, or using scheduling as a point of ongoing dispute.',
+    source: 'Custody conflict literature - various sources.'
   },
-  'Victim Positioning': {
-    name: 'Victim Positioning',
-    definition: 'Consistently portraying oneself as the victim regardless of circumstances. Part of DARVO pattern where the actual aggressor claims to be persecuted.',
-    source: 'Freyd, J.J. (1997).'
+  'Word Salad': {
+    name: 'Circular Communication',
+    definition: 'Long, confusing messages that do not address the actual issue. May include contradictions, topic changes, or exhausting amounts of text.',
+    source: 'Communication literature - various sources.'
   },
-  'Revisionist History': {
-    name: 'Revisionist History',
-    definition: 'Rewriting past events, agreements, or conversations to favor one\'s narrative. Includes claiming agreements were never made or that events occurred differently.',
-    source: 'Related to gaslighting - Stern, R. (2018).'
+  'Verbal Abuse': {
+    name: 'Verbal Attacks',
+    definition: 'Direct attacks on character through insults, demeaning language, or degrading comments.',
+    source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
+  },
+  'Name-Calling/Verbal Abuse': {
+    name: 'Verbal Attacks',
+    definition: 'Direct attacks on character through insults, demeaning language, or degrading comments.',
+    source: 'Evans, P. (2010). The Verbally Abusive Relationship.'
   },
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, includeExhibitOnly, caseInfo } = await request.json();
+    const { userId, includeExhibitOnly } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
@@ -184,34 +164,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No incidents found' }, { status: 404 });
     }
 
-    // Fetch case context (FIXED: was 'case_info')
+    // Fetch case context
     const { data: caseData } = await supabase
       .from('case_context')
       .select('*')
       .eq('user_id', userId)
       .single();
 
-    // Filter out incidents without a co-parent message (these can't be used as evidence)
+    // Filter out incidents without a co-parent message
     const validIncidents = incidents.filter(i => i.coparent_message && i.coparent_message.trim());
     
     if (validIncidents.length === 0) {
       return NextResponse.json({ 
-        error: 'No incidents with co-parent messages found. Make sure to include their exact words when saving evidence.' 
+        error: 'No incidents with messages found. Make sure to include exact quotes when saving evidence.' 
       }, { status: 404 });
     }
 
-    // Calculate statistics on valid incidents only
-    const stats = calculateStats(validIncidents);
-    const patternCounts = countPatterns(validIncidents);
-    const monthlyData = getMonthlyBreakdown(validIncidents);
+    // Detect duplicate messages
+    const messageHashes = new Map<string, number>();
+    const processedIncidents = validIncidents.map((inc, idx) => {
+      const msgHash = inc.coparent_message?.trim().substring(0, 100) || '';
+      const prevIndex = messageHashes.get(msgHash);
+      if (prevIndex !== undefined) {
+        return { ...inc, isDuplicate: true, duplicateOfIndex: prevIndex + 1 };
+      }
+      messageHashes.set(msgHash, idx);
+      return { ...inc, isDuplicate: false };
+    });
 
-    // Generate document with correct case data
-    const doc = createExhibitDocument(validIncidents, stats, patternCounts, monthlyData, caseData || caseInfo);
+    // Calculate statistics
+    const stats = calculateStats(processedIncidents);
+    const patternCounts = countPatterns(processedIncidents);
+    const monthlyData = getMonthlyBreakdown(processedIncidents);
+
+    // Generate document
+    const doc = createExhibitDocument(processedIncidents, stats, patternCounts, monthlyData, caseData);
 
     // Convert to buffer
     const buffer = await Packer.toBuffer(doc);
 
-    // Return as downloadable file
     return new NextResponse(Buffer.from(buffer), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -237,7 +228,7 @@ function calculateStats(incidents: any[]) {
   const dates = incidents.map(i => new Date(i.incident_date)).sort((a, b) => a.getTime() - b.getTime());
   const startDate = dates[0];
   const endDate = dates[dates.length - 1];
-  const daySpan = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daySpan = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
 
   return {
     total: incidents.length,
@@ -274,6 +265,28 @@ function getMonthlyBreakdown(incidents: any[]): Record<string, number> {
   return monthly;
 }
 
+function getContextCategory(incident: any): string {
+  const category = incident.category?.toLowerCase() || '';
+  const patterns = (incident.patterns || []).map((p: string) => p.toLowerCase());
+  
+  if (category.includes('schedule') || patterns.some((p: string) => p.includes('schedule'))) {
+    return 'Parenting time dispute';
+  }
+  if (category.includes('financial') || patterns.some((p: string) => p.includes('financial'))) {
+    return 'Financial matter';
+  }
+  if (category.includes('legal') || category.includes('court') || patterns.some((p: string) => p.includes('legal') || p.includes('court'))) {
+    return 'Court-related matter';
+  }
+  if (category.includes('holiday')) {
+    return 'Holiday scheduling';
+  }
+  if (category.includes('medical') || category.includes('school')) {
+    return 'Child welfare matter';
+  }
+  return 'Co-parenting communication';
+}
+
 function createExhibitDocument(
   incidents: any[],
   stats: any,
@@ -284,38 +297,30 @@ function createExhibitDocument(
   const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
   const cellBorders = { top: tableBorder, bottom: tableBorder, left: tableBorder, right: tableBorder };
 
-  // FIXED: Determine names based on user_role
-  const userRole = caseInfo?.user_role || 'petitioner';
+  // Determine names based on user_role
+  const userRole = caseInfo?.user_role || 'respondent';
   const petitionerName = caseInfo?.petitioner_name || '';
   const respondentName = caseInfo?.respondent_name || '';
   const coparentName = caseInfo?.coparent_name || '';
   
-  // Figure out who is who
-  let userName: string;
   let otherPartyName: string;
-  
   if (userRole === 'petitioner') {
-    userName = petitionerName || 'Petitioner';
     otherPartyName = respondentName || coparentName || 'Respondent';
   } else {
-    userName = respondentName || 'Respondent';
     otherPartyName = petitionerName || coparentName || 'Petitioner';
   }
 
-  // Case header info
   const caseNumber = caseInfo?.case_number || '';
-  const courtName = caseInfo?.court || '';
+  const courtName = caseInfo?.court || 'Superior Court';
   const county = caseInfo?.county || '';
   const state = caseInfo?.state || '';
   
-  // Build case name for header
+  // Build case name
   let caseName = '';
   if (petitionerName && respondentName) {
     caseName = `${petitionerName} v. ${respondentName}`;
-  } else if (userName && otherPartyName) {
-    caseName = `${userName} v. ${otherPartyName}`;
   } else {
-    caseName = 'Case Documentation';
+    caseName = 'In the Matter of Parenting Time';
   }
 
   return new Document({
@@ -353,30 +358,6 @@ function createExhibitDocument(
         },
       ]
     },
-    numbering: {
-      config: [
-        {
-          reference: 'bullet-list',
-          levels: [{
-            level: 0,
-            format: LevelFormat.BULLET,
-            text: '•',
-            alignment: AlignmentType.LEFT,
-            style: { paragraph: { indent: { left: 720, hanging: 360 } } }
-          }]
-        },
-        {
-          reference: 'numbered-list',
-          levels: [{
-            level: 0,
-            format: LevelFormat.DECIMAL,
-            text: '%1.',
-            alignment: AlignmentType.LEFT,
-            style: { paragraph: { indent: { left: 720, hanging: 360 } } }
-          }]
-        }
-      ]
-    },
     sections: [{
       properties: {
         page: {
@@ -406,37 +387,41 @@ function createExhibitDocument(
                 new TextRun({ children: [PageNumber.CURRENT], size: 18, color: '6b7280' }),
                 new TextRun({ text: ' of ', size: 18, color: '6b7280' }),
                 new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18, color: '6b7280' }),
-                new TextRun({ text: ' | Generated by Pattern 18', size: 18, color: '9ca3af' })
+                new TextRun({ text: ' | Prepared by Pattern 18', size: 18, color: '9ca3af' })
               ]
             })
           ]
         })
       },
       children: [
-        // TITLE PAGE
-        new Paragraph({ spacing: { before: 2000 } }),
+        // ==================== COVER PAGE ====================
+        new Paragraph({ spacing: { before: 1200 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: 'EXHIBIT', size: 72, bold: true, color: '1a3a2f' })]
+          children: [new TextRun({ text: 'EXHIBIT ___', size: 56, bold: true, color: '1a3a2f' })]
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 400 },
-          children: [new TextRun({ text: 'DOCUMENTED PATTERN OF COERCIVE CONTROL', size: 32, bold: true, color: '374151' })]
+          children: [new TextRun({ text: 'DOCUMENTED COMMUNICATION PATTERNS', size: 28, bold: true, color: '374151' })]
         }),
-        new Paragraph({ spacing: { before: 600 } }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100 },
+          children: [new TextRun({ text: 'RELATED TO PARENTING TIME AND CO-PARENTING DISPUTES', size: 24, color: '374151' })]
+        }),
+        new Paragraph({ spacing: { before: 800 } }),
         
         // Court info
-        courtName ? new Paragraph({
+        new Paragraph({
           alignment: AlignmentType.CENTER,
           children: [new TextRun({ text: courtName, size: 24, color: '4b5563' })]
-        }) : new Paragraph({}),
+        }),
         (county || state) ? new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 50 },
           children: [new TextRun({ text: [county, state].filter(Boolean).join(', '), size: 22, color: '6b7280' })]
         }) : new Paragraph({}),
-        
         caseNumber ? new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 100 },
@@ -446,29 +431,35 @@ function createExhibitDocument(
         new Paragraph({ spacing: { before: 400 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: caseName, size: 28, bold: true, color: '1a3a2f' })]
+          children: [new TextRun({ text: caseName, size: 26, bold: true, color: '1a3a2f' })]
         }),
         
-        new Paragraph({ spacing: { before: 1200 } }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} – ${formatDate(stats.endDate)}`, size: 22, color: '6b7280' })]
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 100 },
-          children: [new TextRun({ text: `(${stats.daySpan} days)`, size: 20, color: '9ca3af' })]
-        }),
         new Paragraph({ spacing: { before: 800 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: 'Prepared By', size: 20, color: '9ca3af' })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 50 },
+          children: [new TextRun({ text: 'Pattern 18', size: 24, bold: true, color: '1a3a2f' })]
+        }),
+        
+        new Paragraph({ spacing: { before: 600 } }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}`, size: 20, color: '6b7280' })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200 },
           children: [new TextRun({ text: `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, size: 20, color: '9ca3af' })]
         }),
 
-        // PAGE BREAK
+        // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
 
-        // EXECUTIVE SUMMARY
+        // ==================== EXECUTIVE SUMMARY ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           children: [new TextRun('EXECUTIVE SUMMARY')]
@@ -476,71 +467,107 @@ function createExhibitDocument(
         new Paragraph({
           spacing: { after: 200 },
           children: [
-            new TextRun({ text: `This exhibit documents `, size: 22 }),
-            new TextRun({ text: `${stats.total} incidents`, bold: true, size: 22 }),
-            new TextRun({ text: ` of concerning behavior by `, size: 22 }),
-            new TextRun({ text: otherPartyName, bold: true, size: 22 }),
-            new TextRun({ text: ` over a period of `, size: 22 }),
-            new TextRun({ text: `${stats.daySpan} days`, bold: true, size: 22 }),
-            new TextRun({ text: `. Analysis reveals `, size: 22 }),
-            new TextRun({ text: `${stats.uniquePatterns} distinct patterns`, bold: true, size: 22 }),
-            new TextRun({ text: ` of coercive control and manipulation.`, size: 22 }),
+            new TextRun({ text: `This exhibit documents ${stats.total} written communications occurring over a ${stats.daySpan}-day period from ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}. All communications occurred in the context of parenting time, holiday scheduling, or court-related matters.`, size: 22 }),
+          ]
+        }),
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [
+            new TextRun({ text: `Analysis identifies repeated communication patterns associated with high-conflict custody dynamics. These patterns recur across multiple messages and escalate around holidays, schedule transitions, and pending court events.`, size: 22 }),
+          ]
+        }),
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [
+            new TextRun({ text: `This exhibit is provided to assist the Court in evaluating patterns across time rather than isolated exchanges.`, size: 22 }),
           ]
         }),
 
-        // SEVERITY SUMMARY TABLE
-        new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          children: [new TextRun('Severity Breakdown')]
-        }),
-        createSeverityTable(stats, cellBorders),
-
-        // PATTERN BREAKDOWN
-        new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 400 },
-          children: [new TextRun('Pattern Breakdown')]
-        }),
-        createPatternTable(patternCounts, cellBorders),
-
-        // MONTHLY TIMELINE
-        new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 400 },
-          children: [new TextRun('Monthly Timeline')]
-        }),
-        createMonthlyTable(monthlyData, cellBorders),
-
-        // PAGE BREAK
-        new Paragraph({ children: [new PageBreak()] }),
-
-        // DETAILED EVIDENCE
+        // ==================== COURT RELEVANCE ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun('DOCUMENTED INCIDENTS')]
+          spacing: { before: 400 },
+          children: [new TextRun('COURT RELEVANCE AND CHILD IMPACT')]
+        }),
+        new Paragraph({
+          spacing: { after: 150 },
+          children: [new TextRun({ text: 'The documented communications are relevant to parenting time determinations for the following reasons:', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• All communications occurred during active parenting time disputes', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• The child is directly referenced or involved in scheduling decisions', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• The communications escalate around holidays and court proceedings', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 200 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• The patterns interfere with cooperative co-parenting', size: 22 })]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: `The following ${stats.total} incidents are presented in chronological order. Each incident includes the date, detected manipulation patterns, severity assessment, and relevant message content.`, size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: 'These patterns support consideration of a simplified parenting structure designed to reduce negotiation and limit child exposure to adult conflict.', size: 22 })]
+        }),
+
+        // ==================== SUMMARY STATISTICS ====================
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun('Summary Statistics')]
+        }),
+        createSummaryTable(stats, patternCounts, cellBorders),
+
+        // ==================== PAGE BREAK ====================
+        new Paragraph({ children: [new PageBreak()] }),
+
+        // ==================== TIMELINE SUMMARY (ONE PAGE) ====================
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun('TIMELINE SUMMARY')]
+        }),
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [new TextRun({ text: 'The following timeline provides a compressed view of documented communications for rapid review.', size: 22, color: '6b7280' })]
+        }),
+        createTimelineTable(incidents, cellBorders),
+
+        // ==================== PAGE BREAK ====================
+        new Paragraph({ children: [new PageBreak()] }),
+
+        // ==================== INCIDENT SUMMARIES ====================
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun('INCIDENT SUMMARIES')]
+        }),
+        new Paragraph({
+          spacing: { after: 300 },
+          children: [new TextRun({ text: `The following ${stats.total} incidents are presented in chronological order. Each incident includes the date, context, direct quote, and detected communication patterns.`, size: 22, color: '6b7280' })]
         }),
 
         // All incidents
-        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, cellBorders, otherPartyName)),
+        ...incidents.flatMap((incident, index) => createIncidentSection(incident, index + 1, otherPartyName)),
 
-        // PAGE BREAK
+        // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
 
-        // APPENDIX: PATTERN DEFINITIONS
+        // ==================== PATTERN DEFINITIONS ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           children: [new TextRun('APPENDIX: PATTERN DEFINITIONS')]
         }),
         new Paragraph({
           spacing: { after: 300 },
-          children: [new TextRun({ text: 'The following definitions are based on peer-reviewed research and established clinical literature on coercive control, domestic abuse, and high-conflict custody situations.', size: 22, color: '6b7280' })]
+          children: [new TextRun({ text: 'The following definitions are based on peer-reviewed research and established clinical literature on high-conflict custody dynamics.', size: 22, color: '6b7280' })]
         }),
 
-        // Pattern definitions
         ...Object.entries(patternCounts).flatMap(([pattern]) => {
           const def = PATTERN_DEFINITIONS[pattern];
           if (!def) return [];
@@ -560,7 +587,49 @@ function createExhibitDocument(
           ];
         }),
 
-        // CLOSING
+        // ==================== DISCLAIMER ====================
+        new Paragraph({ children: [new PageBreak()] }),
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun('DISCLAIMER')]
+        }),
+        new Paragraph({
+          spacing: { after: 300 },
+          children: [new TextRun({ text: 'This exhibit documents observed communication patterns based on written exchanges. It does not assert medical diagnoses or legal conclusions. Pattern labels are provided for analytical clarity based on established research cited herein.', size: 22 })]
+        }),
+
+        // ==================== PURPOSE OF SUBMISSION ====================
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 400 },
+          children: [new TextRun('PURPOSE OF SUBMISSION')]
+        }),
+        new Paragraph({
+          spacing: { after: 150 },
+          children: [new TextRun({ text: 'This exhibit is submitted to assist the Court in:', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• Identifying recurring communication patterns', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• Understanding escalation around parenting time disputes', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• Evaluating the need for conflict-reducing parenting structures', size: 22 })]
+        }),
+        new Paragraph({
+          spacing: { after: 300 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: '• Reducing child involvement in adult decision-making', size: 22 })]
+        }),
+
+        // ==================== END ====================
         new Paragraph({ spacing: { before: 600 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
@@ -571,57 +640,67 @@ function createExhibitDocument(
   });
 }
 
-function createSeverityTable(stats: any, cellBorders: any) {
+function createSummaryTable(stats: any, patternCounts: Record<string, number>, cellBorders: any) {
+  const headerShading = { fill: 'f3f4f6', type: ShadingType.CLEAR };
+  
+  const topPatterns = Object.entries(patternCounts).slice(0, 5);
+  
+  return new Table({
+    columnWidths: [4500, 4500],
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: cellBorders,
+            shading: headerShading,
+            children: [new Paragraph({ children: [new TextRun({ text: 'Metric', bold: true, size: 22 })] })]
+          }),
+          new TableCell({
+            borders: cellBorders,
+            shading: headerShading,
+            children: [new Paragraph({ children: [new TextRun({ text: 'Value', bold: true, size: 22 })] })]
+          })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Total Incidents', size: 22 })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.total}`, size: 22, bold: true })] })] })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Documentation Period', size: 22 })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.daySpan} days`, size: 22 })] })] })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'High Severity', size: 22 })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.critical + stats.high}`, size: 22, color: 'dc2626' })] })] })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Patterns Detected', size: 22 })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: `${stats.uniquePatterns}`, size: 22 })] })] })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: 'Most Frequent Pattern', size: 22 })] })] }),
+          new TableCell({ borders: cellBorders, children: [new Paragraph({ children: [new TextRun({ text: topPatterns[0] ? `${topPatterns[0][0]} (${topPatterns[0][1]}x)` : 'N/A', size: 22 })] })] })
+        ]
+      }),
+    ]
+  });
+}
+
+function createTimelineTable(incidents: any[], cellBorders: any) {
   const headerShading = { fill: '1a3a2f', type: ShadingType.CLEAR };
-  const criticalShading = { fill: 'fef2f2', type: ShadingType.CLEAR };
-  const highShading = { fill: 'fff7ed', type: ShadingType.CLEAR };
-  const mediumShading = { fill: 'fefce8', type: ShadingType.CLEAR };
-  const lowShading = { fill: 'f9fafb', type: ShadingType.CLEAR };
-
+  
   return new Table({
-    columnWidths: [2340, 2340, 2340, 2340],
-    rows: [
-      new TableRow({
-        tableHeader: true,
-        children: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(label =>
-          new TableCell({
-            borders: cellBorders,
-            shading: headerShading,
-            width: { size: 2340, type: WidthType.DXA },
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: label, bold: true, color: 'ffffff', size: 20 })]
-            })]
-          })
-        )
-      }),
-      new TableRow({
-        children: [
-          { count: stats.critical, shading: criticalShading, color: 'dc2626' },
-          { count: stats.high, shading: highShading, color: 'ea580c' },
-          { count: stats.medium, shading: mediumShading, color: 'ca8a04' },
-          { count: stats.low, shading: lowShading, color: '6b7280' },
-        ].map(({ count, shading, color }) =>
-          new TableCell({
-            borders: cellBorders,
-            shading,
-            width: { size: 2340, type: WidthType.DXA },
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: `${count}`, bold: true, color, size: 36 })]
-            })]
-          })
-        )
-      })
-    ]
-  });
-}
-
-function createPatternTable(patternCounts: Record<string, number>, cellBorders: any) {
-  const headerShading = { fill: 'f3f4f6', type: ShadingType.CLEAR };
-
-  return new Table({
-    columnWidths: [6000, 3360],
+    columnWidths: [2000, 3500, 3500],
     rows: [
       new TableRow({
         tableHeader: true,
@@ -629,94 +708,40 @@ function createPatternTable(patternCounts: Record<string, number>, cellBorders: 
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            width: { size: 6000, type: WidthType.DXA },
-            children: [new Paragraph({
-              children: [new TextRun({ text: 'Pattern', bold: true, size: 20 })]
-            })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Date', bold: true, color: 'ffffff', size: 20 })] })]
           }),
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            width: { size: 3360, type: WidthType.DXA },
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: 'Incidents', bold: true, size: 20 })]
-            })]
-          })
-        ]
-      }),
-      ...Object.entries(patternCounts).map(([pattern, count]) =>
-        new TableRow({
-          children: [
-            new TableCell({
-              borders: cellBorders,
-              width: { size: 6000, type: WidthType.DXA },
-              children: [new Paragraph({
-                children: [new TextRun({ text: pattern, size: 22 })]
-              })]
-            }),
-            new TableCell({
-              borders: cellBorders,
-              width: { size: 3360, type: WidthType.DXA },
-              children: [new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: `${count}`, size: 22, bold: true })]
-              })]
-            })
-          ]
-        })
-      )
-    ]
-  });
-}
-
-function createMonthlyTable(monthlyData: Record<string, number>, cellBorders: any) {
-  const headerShading = { fill: 'f3f4f6', type: ShadingType.CLEAR };
-
-  return new Table({
-    columnWidths: [6000, 3360],
-    rows: [
-      new TableRow({
-        tableHeader: true,
-        children: [
-          new TableCell({
-            borders: cellBorders,
-            shading: headerShading,
-            width: { size: 6000, type: WidthType.DXA },
-            children: [new Paragraph({
-              children: [new TextRun({ text: 'Month', bold: true, size: 20 })]
-            })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Context', bold: true, color: 'ffffff', size: 20 })] })]
           }),
           new TableCell({
             borders: cellBorders,
             shading: headerShading,
-            width: { size: 3360, type: WidthType.DXA },
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: 'Incidents', bold: true, size: 20 })]
-            })]
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Patterns Detected', bold: true, color: 'ffffff', size: 20 })] })]
           })
         ]
       }),
-      ...Object.entries(monthlyData).map(([month, count]) => {
-        const [year, m] = month.split('-');
-        const monthName = new Date(parseInt(year), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      ...incidents.map((inc, idx) => {
+        const date = new Date(inc.incident_date);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const context = getContextCategory(inc);
+        const patterns = (inc.patterns || []).slice(0, 2).join(', ') || 'None';
+        const isDuplicate = inc.isDuplicate;
+        
         return new TableRow({
           children: [
             new TableCell({
               borders: cellBorders,
-              width: { size: 6000, type: WidthType.DXA },
-              children: [new Paragraph({
-                children: [new TextRun({ text: monthName, size: 22 })]
-              })]
+              children: [new Paragraph({ children: [new TextRun({ text: dateStr, size: 20 })] })]
             }),
             new TableCell({
               borders: cellBorders,
-              width: { size: 3360, type: WidthType.DXA },
-              children: [new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: `${count}`, size: 22, bold: true })]
-              })]
+              children: [new Paragraph({ children: [new TextRun({ text: isDuplicate ? 'Pattern recurrence' : context, size: 20, italics: isDuplicate })] })]
+            }),
+            new TableCell({
+              borders: cellBorders,
+              children: [new Paragraph({ children: [new TextRun({ text: patterns, size: 20 })] })]
             })
           ]
         });
@@ -725,7 +750,7 @@ function createMonthlyTable(monthlyData: Record<string, number>, cellBorders: an
   });
 }
 
-function createIncidentSection(incident: any, index: number, cellBorders: any, otherPartyName: string) {
+function createIncidentSection(incident: any, index: number, otherPartyName: string) {
   const date = new Date(incident.incident_date);
   const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   
@@ -736,18 +761,13 @@ function createIncidentSection(incident: any, index: number, cellBorders: any, o
     low: '6b7280'
   };
 
-  const severityBg: Record<string, any> = {
-    critical: { fill: 'fef2f2', type: ShadingType.CLEAR },
-    high: { fill: 'fff7ed', type: ShadingType.CLEAR },
-    medium: { fill: 'fefce8', type: ShadingType.CLEAR },
-    low: { fill: 'f9fafb', type: ShadingType.CLEAR }
-  };
-
   const patterns = incident.patterns || [];
   const severity = incident.severity || 'medium';
   const coparentMessage = incident.coparent_message || '';
-  
-  // Skip if no co-parent message
+  const context = getContextCategory(incident);
+  const isDuplicate = incident.isDuplicate;
+  const duplicateOfIndex = incident.duplicateOfIndex;
+
   if (!coparentMessage.trim()) {
     return [];
   }
@@ -756,40 +776,89 @@ function createIncidentSection(incident: any, index: number, cellBorders: any, o
     // Incident header
     new Paragraph({
       spacing: { before: 400 },
-      shading: severityBg[severity],
       children: [
-        new TextRun({ text: `Incident #${index}`, bold: true, size: 24 }),
-        new TextRun({ text: '  |  ', color: '9ca3af', size: 22 }),
-        new TextRun({ text: dateStr, size: 22, color: '6b7280' }),
-        new TextRun({ text: '  |  ', color: '9ca3af', size: 22 }),
-        new TextRun({ text: severity.toUpperCase(), bold: true, size: 20, color: severityColors[severity] }),
+        new TextRun({ text: `INCIDENT ${index}`, bold: true, size: 24 }),
       ]
     }),
-
-    // Patterns
-    new Paragraph({
-      spacing: { before: 100, after: 100 },
-      children: [
-        new TextRun({ text: 'Patterns: ', bold: true, size: 20, color: '6b7280' }),
-        new TextRun({ text: patterns.length > 0 ? patterns.join(', ') : 'None detected', size: 20, color: '374151' }),
-      ]
-    }),
-
-    // Co-parent's exact words - clearly labeled
+    
+    // Date
     new Paragraph({
       spacing: { before: 100 },
-      children: [new TextRun({ text: `${otherPartyName}'s statement:`, bold: true, size: 20, color: '6b7280' })]
-    }),
-    new Paragraph({
-      spacing: { after: 300 },
-      indent: { left: 360 },
       children: [
-        new TextRun({ text: '"', size: 22, color: '6b7280' }),
-        new TextRun({ text: coparentMessage, size: 22 }),
-        new TextRun({ text: '"', size: 22, color: '6b7280' }),
+        new TextRun({ text: 'Date: ', bold: true, size: 20, color: '6b7280' }),
+        new TextRun({ text: dateStr, size: 20 }),
+      ]
+    }),
+    
+    // Context
+    new Paragraph({
+      spacing: { before: 50 },
+      children: [
+        new TextRun({ text: 'Context: ', bold: true, size: 20, color: '6b7280' }),
+        new TextRun({ text: context, size: 20 }),
+      ]
+    }),
+    
+    // Source
+    new Paragraph({
+      spacing: { before: 50 },
+      children: [
+        new TextRun({ text: 'Source: ', bold: true, size: 20, color: '6b7280' }),
+        new TextRun({ text: `Written communication from ${otherPartyName}`, size: 20 }),
       ]
     }),
   ];
+
+  // Handle duplicates differently
+  if (isDuplicate && duplicateOfIndex) {
+    elements.push(
+      new Paragraph({
+        spacing: { before: 150, after: 100 },
+        shading: { fill: 'fef3c7', type: ShadingType.CLEAR },
+        children: [
+          new TextRun({ text: 'Pattern Recurrence Note: ', bold: true, size: 20 }),
+          new TextRun({ text: `This communication repeats the same statements made in Incident #${duplicateOfIndex}, reinforcing previously identified patterns.`, size: 20 }),
+        ]
+      })
+    );
+  } else {
+    // Direct Quote
+    elements.push(
+      new Paragraph({
+        spacing: { before: 150 },
+        children: [
+          new TextRun({ text: 'Direct Quote:', bold: true, size: 20, color: '6b7280' }),
+        ]
+      }),
+      new Paragraph({
+        spacing: { before: 50, after: 100 },
+        indent: { left: 360 },
+        children: [
+          new TextRun({ text: `"${coparentMessage}"`, size: 22 }),
+        ]
+      })
+    );
+  }
+
+  // Detected patterns
+  elements.push(
+    new Paragraph({
+      spacing: { before: 100 },
+      children: [
+        new TextRun({ text: 'Detected Communication Patterns: ', bold: true, size: 20, color: '6b7280' }),
+        new TextRun({ text: patterns.length > 0 ? patterns.join(', ') : 'None detected', size: 20 }),
+      ]
+    }),
+    
+    // Severity
+    new Paragraph({
+      spacing: { before: 50, after: 300 },
+      children: [
+        new TextRun({ text: 'Severity Assessment: ', bold: true, size: 20, color: '6b7280' }),
+        new TextRun({ text: severity.charAt(0).toUpperCase() + severity.slice(1), size: 20, color: severityColors[severity], bold: true }),
+      ]
+    })
+  );
 
   return elements;
 }
