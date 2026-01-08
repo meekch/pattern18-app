@@ -115,10 +115,13 @@ export default function BottomNav({ active }: BottomNavProps) {
                 );
                 if (!confirmed) return;
                 
-                const doubleConfirm = window.confirm(
-                  'This is permanent. Type DELETE to confirm... (Click OK to proceed)'
+                const typed = window.prompt(
+                  'This is permanent. Type DELETE to confirm:'
                 );
-                if (!doubleConfirm) return;
+                if (typed !== 'DELETE') {
+                  if (typed !== null) alert('You must type DELETE exactly to proceed.');
+                  return;
+                }
 
                 try {
                   const { supabase } = await import('@/lib/supabase');

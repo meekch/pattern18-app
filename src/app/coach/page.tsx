@@ -32,6 +32,15 @@ export default function CoachPage() {
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [showExportNudge, setShowExportNudge] = useState(false);
+  const [exportedThisMonth, setExportedThisMonth] = useState(true);
+  const [showExportTip, setShowExportTip] = useState(false);
+
+  // Check if user has exported this month
+  useEffect(() => {
+    const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
+    const lastExport = localStorage.getItem('p18_last_export');
+    setExportedThisMonth(lastExport === currentMonth);
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -304,9 +313,51 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-          📁 {evidenceCount}
-        </button>
+        <div className="header-right">
+          {/* Export Reminder */}
+          <div className="export-reminder-wrap">
+            <button 
+              className={`export-reminder ${exportedThisMonth ? 'done' : 'pending'}`}
+              onClick={() => setShowExportTip(!showExportTip)}
+            >
+              {exportedThisMonth ? '✓' : '📲'}
+            </button>
+            {showExportTip && (
+              <div className="export-tip">
+                <div className="export-tip-header">
+                  <strong>Monthly Export</strong>
+                  <button onClick={() => setShowExportTip(false)}>✕</button>
+                </div>
+                <p>Export your text messages monthly to preserve evidence with timestamps.</p>
+                <label className="export-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={exportedThisMonth}
+                    onChange={(e) => {
+                      const currentMonth = new Date().toISOString().slice(0, 7);
+                      if (e.target.checked) {
+                        localStorage.setItem('p18_last_export', currentMonth);
+                      } else {
+                        localStorage.removeItem('p18_last_export');
+                      }
+                      setExportedThisMonth(e.target.checked);
+                    }}
+                  />
+                  Done this month
+                </label>
+                <button 
+                  className="export-tip-btn"
+                  onClick={() => { setShowExportTip(false); router.push('/faq#export'); }}
+                >
+                  How to export →
+                </button>
+              </div>
+            )}
+          </div>
+          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+            📁 {evidenceCount}
+          </button>
+        </div>
       </header>
 
       <div className="content">
@@ -546,6 +597,93 @@ export default function CoachPage() {
           color: white;
           font-size: 14px;
           cursor: pointer;
+        }
+        .header-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .export-reminder-wrap {
+          position: relative;
+        }
+        .export-reminder {
+          width: 32px;
+          height: 32px;
+          border-radius: 16px;
+          border: none;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .export-reminder.pending {
+          background: #fef3c7;
+          animation: pulse-soft 2s infinite;
+        }
+        .export-reminder.done {
+          background: rgba(255,255,255,0.2);
+          color: #86efac;
+        }
+        @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        .export-tip {
+          position: absolute;
+          top: 40px;
+          right: 0;
+          width: 240px;
+          background: white;
+          border-radius: 12px;
+          padding: 14px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+          z-index: 100;
+          color: #374151;
+          font-size: 13px;
+        }
+        .export-tip-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+        .export-tip-header strong {
+          color: #1a3a2f;
+        }
+        .export-tip-header button {
+          background: none;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .export-tip p {
+          margin: 0 0 12px;
+          line-height: 1.4;
+        }
+        .export-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          cursor: pointer;
+        }
+        .export-checkbox input {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+        }
+        .export-tip-btn {
+          width: 100%;
+          padding: 8px;
+          background: #f3f4f6;
+          border: none;
+          border-radius: 6px;
+          color: #1a3a2f;
+          font-weight: 500;
+          cursor: pointer;
+          font-size: 12px;
         }
         .content {
           flex: 1;
