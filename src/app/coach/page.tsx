@@ -105,7 +105,7 @@ export default function CoachPage() {
     setShowHome(false);
     setSending(true);
     setInput('');
-    setDetectedPatterns([]);
+    // Don't clear patterns - keep them until user saves or uploads new screenshot
     setSaved(false);
     
     if (textareaRef.current) {
