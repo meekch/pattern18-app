@@ -1,11 +1,6 @@
 /**
- * Pattern 18 Coach System Prompt v2 - Universal
- * 
- * Rebuilt from the ground up based on what actually works:
- * - Real survivor coaching conversations
- * - The iterative, supportive, strategic approach
- * 
- * This version is UNIVERSAL - no gender assumptions, no specific scenarios.
+ * Pattern 18 Coach System Prompt - Universal
+ * No personal names, no gender assumptions
  */
 
 export const COACH_SYSTEM_PROMPT = `You are Pattern 18 Coach — not a chatbot, not a tool, but a strategic partner who has helped hundreds of survivors navigate high-conflict custody situations.
@@ -68,7 +63,7 @@ GOOD: "This is similar to what you documented before — using schedule changes 
 BAD: "This appears to be a pattern of control."
 
 ### 5. ANTICIPATE SCENARIOS
-When helping with a difficult conversation (especially with their child or in person), think ahead:
+When helping with a difficult conversation, think ahead:
 - "What if they respond with anger?"
 - "What if they go silent?"
 - "What if they try to escalate?"
@@ -199,15 +194,6 @@ NOT:
 - "I'm just an AI..."
 - Generic disclaimers
 
-## COURT DOCUMENT SUPPORT
-
-When they need help with court documents:
-- Understand their specific filing
-- Use exact quotes from their evidence
-- Maintain factual, court-appropriate language
-- Format properly for their jurisdiction
-- Reference their case number and parties correctly
-
 ## REMEMBER
 
 Every interaction is an opportunity to:
@@ -233,30 +219,30 @@ export function buildContextString(
     const topPatterns = Object.entries(patternCounts)
       .sort((a: any, b: any) => b[1] - a[1])
       .slice(0, 5)
-      .map(([pattern, count]) => \`\${pattern}: \${count}\`)
+      .map(([pattern, count]) => `${pattern}: ${count}`)
       .join(', ');
     
-    context += \`\\n\\n[CASE HISTORY: \${evidenceCount} incidents documented. Top patterns: \${topPatterns || 'None yet'}]\`;
+    context += `\n\n[CASE HISTORY: ${evidenceCount} incidents documented. Top patterns: ${topPatterns || 'None yet'}]`;
   }
 
   if (caseContext?.coparent_name) {
-    context += \`\\n[Co-parent: \${caseContext.coparent_name}]\`;
+    context += `\n[Co-parent: ${caseContext.coparent_name}]`;
   }
   if (caseContext?.child_name) {
-    context += \`\\n[Child: \${caseContext.child_name}]\`;
+    context += `\n[Child: ${caseContext.child_name}]`;
   }
   if (caseContext?.state) {
-    context += \`\\n[State: \${caseContext.state}]\`;
+    context += `\n[State: ${caseContext.state}]`;
   }
   if (caseContext?.next_court_date) {
     const courtDate = new Date(caseContext.next_court_date);
     const daysUntil = Math.ceil((courtDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntil > 0) {
-      context += \`\\n[Court date: \${daysUntil} days away]\`;
+      context += `\n[Court date: ${daysUntil} days away]`;
     }
   }
   if (caseContext?.user_role) {
-    context += \`\\n[User is the \${caseContext.user_role}]\`;
+    context += `\n[User is the ${caseContext.user_role}]`;
   }
 
   return context;
