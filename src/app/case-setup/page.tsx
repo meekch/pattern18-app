@@ -144,7 +144,7 @@ export default function CaseSetupPage() {
     <div className="container">
       <header className="header">
         <button onClick={() => router.push('/coach')} className="back-btn">
-          â† Back
+        ← Back
         </button>
         <h1>My Case</h1>
       </header>
