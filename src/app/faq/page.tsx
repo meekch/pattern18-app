@@ -54,7 +54,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I share my case with my attorney?",
-    answer: "Yes. Go to My Case and tap 'Export Case' to download your entire case file as a JSON file you can share. You can also generate specific documents like the Court Exhibit Packet, which gives attorneys a clear, organized view of documented patterns with exact quotes and dates."
+    answer: "Yes. Go to My Case and tap 'Export Case' to download your evidence as a CSV file you can open in Excel or share with your attorney. You can also generate specific documents like the Court Exhibit Packet, which gives attorneys a clear, organized view of documented patterns with exact quotes and dates."
   },
   {
     question: "Can my attorney use this?",
@@ -73,8 +73,12 @@ const faqs: FAQItem[] = [
     answer: "Pattern 18 identifies 18 coercive control tactics recognized in family court:\n\n• Gaslighting\n• DARVO (Deny, Attack, Reverse Victim & Offender)\n• Intimidation & Threats\n• Financial Abuse\n• Using Children as Weapons\n• Blame-Shifting\n• False Accusations\n• Emotional Blackmail\n• Stonewalling\n• Monitoring/Stalking\n• Isolation Tactics\n• Minimizing/Denying\n• Word Salad\n• Moving Goalposts\n• Projection\n• Hoovering\n• Gatekeeping\n• Legal/Court Threats\n\nEach pattern is explained so you understand what's happening and can articulate it clearly to your attorney or the court."
   },
   {
+    question: "How do I delete my data?",
+    answer: "You have two options:\n\n**Delete individual incidents:** Go to Evidence, tap on any incident to expand it, then tap 'Delete'.\n\n**Delete everything:** Open the Menu (bottom right), scroll down, and tap 'Delete All Data'. This permanently removes all your incidents, case info, and uploaded documents. You'll be asked to confirm twice because this cannot be undone."
+  },
+  {
     question: "How do I cancel my subscription?",
-    answer: "You can cancel anytime from your account settings. Your access continues until the end of your billing period. No questions asked, no hoops to jump through.\n\nImportant: When you cancel, your data is permanently deleted from our servers after 30 days. We do not retain your personal case information. If you need your records, go to My Case and tap 'Export Case' to download everything before canceling."
+    answer: "You can cancel anytime from your account settings. Your access continues until the end of your billing period. No questions asked, no hoops to jump through.\n\nBefore canceling: Go to My Case and tap 'Export Case' to download your evidence as a CSV file. You can also delete all your data immediately from Menu → Delete All Data.\n\nIf you don't export or delete, your data is automatically removed from our servers 30 days after cancellation."
   },
   {
     question: "I forgot my password. How do I reset it?",

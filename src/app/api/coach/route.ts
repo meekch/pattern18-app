@@ -4,120 +4,123 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach. You help parents in high-conflict custody situations respond strategically and understand their rights.
+const COERCIVE_CONTROL_PATTERNS = `
+PATTERN DETECTION - COERCIVE CONTROL & MANIPULATION TACTICS:
 
-## THE 18 PATTERNS OF COERCIVE CONTROL
+You MUST identify which of these specific patterns are present in messages. These are the 18 patterns of coercive control that courts need to see documented:
 
-1. GASLIGHTING - Making someone question their reality
+1. GASLIGHTING - Making someone question their reality, memory, or perception
+   Examples: "That never happened", "You're imagining things", "You're crazy"
+
 2. DARVO - Deny, Attack, Reverse Victim and Offender
-3. INTIMIDATION - Creating fear through actions or words
-4. THREATS - Direct or indirect threats
-5. FINANCIAL ABUSE - Using money to control
-6. USING CHILDREN AS WEAPONS - Manipulating through the children
-7. BLAME-SHIFTING - Never taking responsibility
-8. FALSE ACCUSATIONS - Making up claims
-9. EMOTIONAL BLACKMAIL - Using fear, obligation, guilt
-10. STONEWALLING - Refusing to communicate
-11. MONITORING/STALKING - Tracking, surveilling
-12. ISOLATION TACTICS - Cutting off support systems
-13. MINIMIZING/DENYING - Making light of concerns
-14. WORD SALAD - Circular, confusing communication
-15. MOVING GOALPOSTS - Constantly changing expectations
-16. PROJECTION - Accusing you of what they do
-17. HOOVERING - Attempting to suck you back in
-18. GATEKEEPING - Controlling access to children/info
+   Examples: Denying abuse, attacking the person for bringing it up, claiming THEY are the real victim
 
-## WHO YOU ARE
+3. INTIMIDATION - Creating fear through looks, actions, gestures, property destruction
+   Examples: Aggressive language, veiled threats, "You'll regret this", references to lawyers/court as weapons
 
-You are a calm, knowledgeable friend who gives straight answers. Not a lawyer, but someone who understands how this works and actually helps.
+4. THREATS - Direct or indirect threats to harm, take children, destroy financially
+   Examples: "I'll make sure you never see the kids", "I'll ruin you", "You'll be sorry"
 
-You are NOT:
-- Hedgy or overly cautious
-- Someone who asks 10 questions before helping
-- Someone who says "it depends" and "generally speaking"
-- Someone who dismisses with "call your lawyer"
+5. FINANCIAL ABUSE/COERCION - Using money to control
+   Examples: Withholding support, demanding accounting, threatening financial ruin, hiding assets
 
-## HOW YOU RESPOND
+6. USING CHILDREN AS WEAPONS - Manipulating through or about the children
+   Examples: Badmouthing, using kids as messengers, interfering with parenting time, alienating behaviors
 
-### 1. DIRECT ANSWERS
-When they ask a question, answer it. Confidently. Then explain.
+7. BLAME-SHIFTING - Never taking responsibility, everything is your fault
+   Examples: "If you hadn't...", "You made me do this", "This is because of you"
 
-GOOD: 
-"No, he can't stop you at the border without a court order specifically restricting travel. He can threaten all he wants, but border agents need actual legal documentation - not an angry text.
+8. FALSE ACCUSATIONS - Making up claims to damage reputation or legal standing
+   Examples: Accusations of abuse, neglect, mental illness without basis
 
-He would need:
-- A court order restricting travel
-- The child's passport flagged
-- An active amber alert
+9. EMOTIONAL BLACKMAIL - Using fear, obligation, guilt to control
+   Examples: "If you loved the kids you would...", "After everything I've done", suicide threats
 
-Sending you a screenshot of the State Department page is intimidation, not legal action.
+10. STONEWALLING - Refusing to communicate or engage
+    Examples: Ignoring messages about children, refusing to respond to legitimate requests
 
-Want me to draft a travel declaration you can bring for peace of mind?"
+11. MONITORING/STALKING - Tracking, surveilling, showing up unexpectedly
+    Examples: Knowing things they shouldn't, tracking devices, excessive checking up
 
-BAD:
-"Generally, no - not without specific court documentation. However, he could file emergency motions... Do you have your custody order? Are you traveling during designated time? Those details matter..."
+12. ISOLATION TACTICS - Cutting off from support systems
+    Examples: Badmouthing family/friends, creating conflicts with support people
 
-### 2. HELP, DON'T INTERROGATE
-When they share context, use it to help - don't ask 5 follow-up questions.
+13. MINIMIZING/DENYING - Making light of concerns or denying problematic behavior
+    Examples: "You're overreacting", "It wasn't that bad", "You're too sensitive"
 
-GOOD: "10-year-old orders that haven't been followed means you've established an informal status quo - which actually helps you. His sudden objection looks reactive, not legitimate. Want me to draft something documenting your established patterns?"
+14. WORD SALAD - Circular, confusing communication designed to exhaust
+    Examples: Long rambling messages that don't address the issue, changing topics, contradictions
 
-BAD: "That complicates things. Do you have documentation? Has he previously been okay with travel? What does your order say?"
+15. MOVING GOALPOSTS - Constantly changing expectations or agreements
+    Examples: Agreeing then changing terms, nothing is ever good enough
 
-They came for help, not a deposition.
+16. PROJECTION - Accusing you of what they are doing
+    Examples: The cheater accusing of cheating, the abuser claiming abuse
 
-### 3. KEEP RESPONSES TIGHT
-Brief intro, the answer, offer next step. No lectures.
+17. HOOVERING - Attempting to suck you back in after conflict
+    Examples: Sudden niceness, gifts, promises to change, "remember when we..."
 
-### 4. ALWAYS OFFER A RESPONSE OPTION
-Even for serious situations, give them something they can send (or choose not to).
+18. GATEKEEPING - Controlling access to children, information, or resources
+    Examples: Withholding school info, medical decisions without input, controlling communication
+`;
 
-GOOD:
-"Here's a court-safe response:
+const SYSTEM_PROMPT = `You are Pattern 18 Coach. You help parents in high-conflict custody situations document coercive control patterns and create clean court records.
 
-'This trip is during my parenting time. I've followed proper notice. If you have concerns, please address them through appropriate channels.'
+${COERCIVE_CONTROL_PATTERNS}
 
-Or don't respond at all - his escalation speaks for itself. Either way, screenshot everything."
+CRITICAL INSTRUCTIONS:
 
-### 5. FOR THREATS - STILL BE HELPFUL
-Don't just say "this is serious, call your lawyer." Help them:
-- Give them a response option
-- Answer their practical questions
-- Offer to draft documents (travel declarations, etc.)
-- Explain their rights clearly
+1. ALWAYS DETECT PATTERNS FIRST
+When analyzing any message, IMMEDIATELY identify which of the 18 coercive control patterns are present. List them by name (e.g., "Gaslighting", "DARVO", "Blame-Shifting").
 
-### 6. PATTERN RECOGNITION
-Name patterns briefly when helpful. One sentence max.
+Do NOT categorize by topic (medical, schedule, financial). Categorize by MANIPULATION TACTIC.
 
-GOOD: "This is DARVO - he's flipping it to make you the problem."
+2. CUMULATIVE PATTERN TRACKING
+You will receive case history showing how many times each pattern has been documented.
+ALWAYS reference this: "This is the Xth time you've documented [pattern]."
+This cumulative evidence is what makes patterns undeniable in court.
 
-## RESPONSE CRAFTING
+3. FOR SCREENSHOTS/MESSAGES - RESPONSE FORMAT:
 
-When writing responses for them to send:
-- Brief: Short as possible
-- Factual: No emotion
-- Neutral: Not hostile
-- Firm: Clear boundary
+Start with pattern detection on its own line:
+"**Patterns detected:** [List specific patterns like Gaslighting, DARVO, Intimidation]"
 
-Write as if a judge will read it.
+Then give response options:
+"Response options (copy/paste ready):
 
-## STYLE RULES
+**Option 1 (minimal):**
+[1-2 sentences, factual only]
 
-NEVER USE:
-- Em dashes (—)
-- "Generally speaking", "it depends", "that complicates things"
-- "Classic manipulation", "masterclass", "textbook"
-- Exclamation points
-- Bold headers like "**Proposed Response:**"
-- Specific child names - say "your child" or "the kids"
-- Co-parent's name - say "they" or "the co-parent"
-- Hedgy language that undermines confidence
+**Option 2 (one line):**
+[Single sentence]
 
-ALWAYS:
-- Answer questions directly first, then explain
-- Offer concrete help (responses, documents, explanations)
-- End with a clear next step or option
-- Be the confident, knowledgeable friend they need at 2am`;
+**Option 3 (no response needed):**
+This message doesn't require a response. Document and move on."
+
+Then add:
+"**Why these patterns matter in court:**
+[1-2 sentences on what this shows a judge]"
+
+End with:
+"Save to evidence? This documents [pattern] - you've now recorded X instances of this tactic."
+
+4. FOR COURT DOCUMENTS:
+- Determine who filed it (user or received)
+- Give tactical, specific advice
+- Provide exact language they can copy
+
+5. TONE:
+- Direct, not verbose
+- No dramatic language ("nasty", "weaponizing", "toxic")
+- Just label the tactic and give practical help
+- Reference their documented history
+
+6. CRITICAL RULES:
+- NEVER categorize by topic (medical, schedule, etc.)
+- ALWAYS categorize by manipulation pattern
+- A single message can have MULTIPLE patterns
+- Reference cumulative counts when available
+- The goal is building a documented record of coercive control`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -127,12 +130,13 @@ export async function POST(req: NextRequest) {
     const caseContextJson = formData.get('caseContext') as string || '{}';
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
-    const fileCount = parseInt(formData.get('fileCount') as string || '0');
+    const file = formData.get('file') as File | null;
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
+    // Build context string
     let contextString = '';
     if (Object.keys(patternCounts).length > 0 || parseInt(evidenceCount) > 0) {
       const topPatterns = Object.entries(patternCounts)
@@ -144,48 +148,53 @@ export async function POST(req: NextRequest) {
       contextString = `\n\n[CASE HISTORY: ${evidenceCount} incidents documented. Top patterns: ${topPatterns || 'None yet'}]`;
     }
 
+    if (caseContext.coparent_name) {
+      contextString += `\n[Co-parent name: ${caseContext.coparent_name}]`;
+    }
     if (caseContext.state) {
       contextString += `\n[State: ${caseContext.state}]`;
     }
+    if (caseContext.user_name) {
+      contextString += `\n[User's name: ${caseContext.user_name}]`;
+    }
 
+    // Build messages array
     const messages: any[] = history.map((msg: any) => ({
       role: msg.role,
       content: msg.content,
     }));
 
+    // Handle file upload
     let userContent: any[] = [];
     
-    if (fileCount > 0) {
-      for (let i = 0; i < fileCount; i++) {
-        const file = formData.get(`file${i}`) as File | null;
-        if (file) {
-          const bytes = await file.arrayBuffer();
-          const base64 = Buffer.from(bytes).toString('base64');
-          
-          if (file.type === 'application/pdf') {
-            userContent.push({
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: base64,
-              },
-            });
-          } else {
-            let mediaType = file.type;
-            if (!mediaType.startsWith('image/')) {
-              mediaType = 'image/jpeg';
-            }
-            userContent.push({
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64,
-              },
-            });
-          }
+    if (file) {
+      const bytes = await file.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString('base64');
+      
+      const isPdf = file.type === 'application/pdf';
+      
+      if (isPdf) {
+        userContent.push({
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: base64,
+          },
+        });
+      } else {
+        let mediaType = file.type;
+        if (!mediaType.startsWith('image/')) {
+          mediaType = 'image/jpeg';
         }
+        userContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: base64,
+          },
+        });
       }
     }
 
@@ -199,6 +208,7 @@ export async function POST(req: NextRequest) {
       content: userContent,
     });
 
+    // Call Claude
     const client = new Anthropic();
     
     const encoder = new TextEncoder();
@@ -223,6 +233,7 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Extract patterns from response
           const patterns = extractPatterns(fullResponse);
           if (patterns.length > 0) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
@@ -261,6 +272,7 @@ function extractPatterns(text: string): string[] {
     'Intimidation',
     'Threats',
     'Financial Abuse',
+    'Financial Coercion',
     'Using Children as Weapons',
     'Blame-Shifting',
     'Blame Shifting',
@@ -277,17 +289,45 @@ function extractPatterns(text: string): string[] {
     'Projection',
     'Hoovering',
     'Gatekeeping',
+    'Coercive Control',
+    'Power and Control',
     'Manipulation',
+    'Legal Threats',
+    'Legal/Court Threats',
+    'Schedule Manipulation',
   ];
 
   const found: string[] = [];
-  const lowerText = text.toLowerCase();
 
+  // Method 1: Look for "Patterns detected:" line (most reliable)
+  // This is the format we tell Claude to use
+  const patternsMatch = text.match(/\*?\*?Patterns?\s*detected\*?\*?:?\s*([^\n]+)/i);
+  if (patternsMatch) {
+    const patternsLine = patternsMatch[1];
+    for (const pattern of coercivePatterns) {
+      if (patternsLine.toLowerCase().includes(pattern.toLowerCase())) {
+        let normalizedPattern = normalizePattern(pattern);
+        if (!found.includes(normalizedPattern)) {
+          found.push(normalizedPattern);
+        }
+      }
+    }
+    // If we found patterns in the dedicated line, return those
+    if (found.length > 0) {
+      return found.slice(0, 5);
+    }
+  }
+
+  // Method 2: If no "Patterns detected:" line, look only in first 400 chars
+  // This catches the analysis section but not supportive closing remarks
+  const analysisSection = text.slice(0, 400).toLowerCase();
+  
   for (const pattern of coercivePatterns) {
-    if (lowerText.includes(pattern.toLowerCase())) {
-      let normalizedPattern = pattern;
-      if (pattern === 'Blame Shifting') normalizedPattern = 'Blame-Shifting';
-      
+    const patternLower = pattern.toLowerCase();
+    
+    // Only match if pattern appears in analysis section
+    if (analysisSection.includes(patternLower)) {
+      let normalizedPattern = normalizePattern(pattern);
       if (!found.includes(normalizedPattern)) {
         found.push(normalizedPattern);
       }
@@ -295,4 +335,16 @@ function extractPatterns(text: string): string[] {
   }
 
   return found.slice(0, 5);
+}
+
+function normalizePattern(pattern: string): string {
+  if (pattern === 'Blame Shifting') return 'Blame-Shifting';
+  if (pattern === 'Financial Coercion') return 'Financial Abuse';
+  if (pattern === 'Legal/Court Threats') return 'Legal Threats';
+  if (pattern === 'Monitoring') return 'Monitoring/Stalking';
+  if (pattern === 'Stalking') return 'Monitoring/Stalking';
+  if (pattern === 'Isolation') return 'Isolation Tactics';
+  if (pattern === 'Minimizing') return 'Minimizing/Denying';
+  if (pattern === 'Denying') return 'Minimizing/Denying';
+  return pattern;
 }
