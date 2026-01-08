@@ -29,79 +29,64 @@ interface CaseContext {
   respondentName?: string;
   filingPurpose?: string;
   userRole?: "petitioner" | "respondent";
+  userName?: string;
+  coparentName?: string;
 }
-
-const LEGAL_DISCLAIMER = `
-─────────────────────────────────────────
-
-NOTICE: This document was prepared using Pattern 18 documentation software as a starting point. Review by legal counsel is recommended before court submission. Pattern 18 provides documentation tools, not legal advice.
-
-─────────────────────────────────────────`;
 
 const PROMPTS = {
   declaration: `You are a legal document assistant helping a pro se litigant prepare a declaration for family court.
 
-OUTPUT FORMAT RULES - CRITICAL:
-- Do NOT use markdown formatting (no ** for bold, no # for headers)
-- Use ALL CAPS for section headers
-- Use plain text only - this will be copied into Word
-- Use clear spacing and indentation for readability
+CRITICAL FORMATTING RULES:
+- Output PLAIN TEXT ONLY - no markdown, no asterisks, no bold formatting
+- Use standard legal document formatting (numbered paragraphs, proper headings)
+- NO ** or __ or other markdown syntax
 
-CONTENT RULES:
+CRITICAL CONTENT RULES:
 1. USE THE EXACT DATES PROVIDED - never change or generalize dates
 2. QUOTE MESSAGES EXACTLY as provided - put them in quotation marks
 3. ASSIGN EXHIBIT NUMBERS sequentially (Exhibit A-1, A-2, etc.)
 4. STATE FACTS ONLY - do not interpret or add emotional language
 5. Let the facts speak for themselves - judges draw their own conclusions
+6. USE THE ACTUAL PARTY NAMES PROVIDED - never use generic "Petitioner" or "Respondent" placeholders
 
 STRUCTURE:
-- Court heading with case info (if provided)
-- "I, [name], declare under penalty of perjury under the laws of the State of [state] that the following is true and correct:"
+- Proper court heading with case info and actual names
+- "I, [ACTUAL NAME], declare under penalty of perjury that the following is true and correct:"
 - Numbered paragraphs, one incident per paragraph
-- Each paragraph includes:
-  * The exact date
-  * What communication platform was used
+- Each paragraph should include:
+  * The exact date and time if available
+  * What communication platform was used (text, email, etc.)
   * The EXACT quote from the message
   * Reference to exhibit number
-- Signature block at end
-
-EXAMPLE FORMAT:
-5. On July 15, 2024, at approximately 3:42 PM, Respondent sent me the following text message:
-
-   "You're such a terrible mother, no wonder he doesn't want to be around you."
-
-   This message was sent after I requested the return of our child's medication. (See Exhibit A-5)
+  * Brief factual context (what prompted the message) if known
+- Signature block at end with actual name
 
 DO NOT:
-- Use markdown formatting
+- Use markdown formatting (**, __, etc.)
 - Use phrases like "hostile environment," "harmful behavior," "detrimental"
 - Interpret the co-parent's motives
 - Add emotional characterizations
-- Change or summarize the actual quotes`,
+- Change or summarize the actual quotes
+- Use generic placeholders instead of actual names provided`,
 
   timeline: `You are creating a chronological evidence timeline for family court.
 
-OUTPUT FORMAT RULES - CRITICAL:
-- Do NOT use markdown formatting (no ** for bold, no # for headers)
-- Use ALL CAPS for headers
-- Use plain text table format with | separators
-- This will be copied into Word
+CRITICAL FORMATTING RULES:
+- Output PLAIN TEXT ONLY - no markdown, no asterisks, no bold formatting
+- Use simple table format with | separators
+- NO ** or __ or other markdown syntax
 
-CONTENT RULES:
+CRITICAL CONTENT RULES:
 1. USE EXACT DATES as provided - never change them
 2. QUOTE MESSAGES EXACTLY in quotation marks
 3. List in chronological order (oldest to newest)
 4. Assign exhibit numbers sequentially
 5. Keep descriptions factual and brief
+6. USE THE ACTUAL PARTY NAMES PROVIDED
 
 FORMAT:
-TIMELINE OF DOCUMENTED COMMUNICATIONS
-
-Date          | Exhibit | Type         | Quote/Description
-─────────────────────────────────────────────────────────────
-July 10, 2024 | A-1     | Text Message | "Just dropped at Tumbleweed"
-July 11, 2024 | A-2     | Text Message | "I didn't check until then"
-July 15, 2024 | A-3     | Text Message | "You're such a terrible mother"
+Date | Exhibit # | Type | Exact Quote or Description
+-----|-----------|------|---------------------------
 
 Include a summary section at the end noting:
 - Total number of documented incidents
@@ -110,76 +95,55 @@ Include a summary section at the end noting:
 
   pattern_summary: `You are creating a pattern analysis document for family court.
 
-OUTPUT FORMAT RULES - CRITICAL:
-- Do NOT use markdown formatting (no ** for bold, no # for headers)
-- Use ALL CAPS for pattern names and headers
-- Use plain text only
-- This will be copied into Word
+CRITICAL FORMATTING RULES:
+- Output PLAIN TEXT ONLY - no markdown, no asterisks, no bold formatting
+- Use standard headings without markdown
+- NO ** or __ or other markdown syntax
 
-CONTENT RULES:
+CRITICAL CONTENT RULES:
 1. Group incidents by pattern type
 2. USE EXACT DATES for each example
 3. QUOTE MESSAGES EXACTLY
 4. Count occurrences of each pattern
 5. Show escalation over time if present
+6. USE THE ACTUAL PARTY NAMES PROVIDED
 
 FORMAT:
-PATTERN ANALYSIS SUMMARY
-
-PATTERN: [NAME] ([count] occurrences)
-Date Range: [start] - [end]
-
-Example 1 - [Date]:
-"[Exact quote]"
-
-Example 2 - [Date]:
-"[Exact quote]"
-
-Context: [Brief factual description of when this pattern occurs]
-
-─────────────────────────────────────────
+For each pattern type:
+1. Pattern name and total count (as plain heading)
+2. Date range when pattern occurred
+3. 2-3 specific examples with exact quotes and dates
+4. Brief factual description of the pattern
 
 DO NOT interpret motives or add emotional language. Let the quotes speak for themselves.`,
 
   exhibit_list: `You are creating a formal exhibit list for family court submission.
 
-OUTPUT FORMAT RULES - CRITICAL:
-- Do NOT use markdown formatting (no ** for bold, no # for headers)
-- Use ALL CAPS for headers
-- Use plain text only
-- This will be copied into Word
+CRITICAL FORMATTING RULES:
+- Output PLAIN TEXT ONLY - no markdown, no asterisks, no bold formatting
+- Use standard legal document formatting
+- NO ** or __ or other markdown syntax
 
-CONTENT RULES:
+CRITICAL CONTENT RULES:
 1. Number exhibits sequentially (A-1, A-2, etc.)
 2. USE EXACT DATES as provided
 3. Include brief description and first line of quote
 4. Note the communication type
+5. USE THE ACTUAL PARTY NAMES PROVIDED
 
 FORMAT:
 EXHIBIT LIST
 
-Case: [Case info if provided]
-
-─────────────────────────────────────────
-
-EXHIBIT A-1
+Exhibit A-1
 Date: [exact date]
 Type: Text Message
 Description: Communication regarding [topic]
 Preview: "[first 50 characters of message]..."
 
-EXHIBIT A-2
-Date: [exact date]
-Type: Text Message
-Description: Communication regarding [topic]
-Preview: "[first 50 characters of message]..."
-
-─────────────────────────────────────────
-
-SUMMARY
+End with:
 Total Exhibits: [number]
 Date Range: [start] to [end]
-Prepared by: [name if provided]
+Prepared by: [actual name]
 Date Prepared: [current date]`
 };
 
@@ -242,18 +206,34 @@ ${exactMessage || "[No message text available]"}
 `.trim();
     }).join("\n\n===================================\n\n");
 
-    // Format case context - keep petitioner/respondent labels correct
-    const yourRole = caseContext.userRole || "respondent";
+    // Determine actual names based on user role
+    const userRole = caseContext.userRole || "petitioner";
+    const isUserPetitioner = userRole === "petitioner";
+    
+    // Get actual names - use provided names or fallback
+    const yourName = caseContext.userName || 
+      (isUserPetitioner ? caseContext.petitionerName : caseContext.respondentName) || 
+      "[YOUR NAME]";
+    
+    const otherPartyName = caseContext.coparentName ||
+      (isUserPetitioner ? caseContext.respondentName : caseContext.petitionerName) || 
+      "[OTHER PARTY NAME]";
+
+    // For court documents, determine legal titles
+    const yourTitle = isUserPetitioner ? "Petitioner" : "Respondent";
+    const otherTitle = isUserPetitioner ? "Respondent" : "Petitioner";
     
     const contextInfo = `
 CASE INFORMATION:
 Court: ${caseContext.courtName || "[COURT NAME]"}
 Case Number: ${caseContext.caseNumber || "[CASE NUMBER]"}
-Petitioner: ${caseContext.petitionerName || "[PETITIONER NAME]"}
-Respondent: ${caseContext.respondentName || "[RESPONDENT NAME]"}
-You are the: ${yourRole === 'petitioner' ? 'Petitioner' : 'Respondent'}
-Your name: ${yourRole === 'petitioner' ? caseContext.petitionerName : caseContext.respondentName}
-The declaration/document should be signed by: ${yourRole === 'petitioner' ? caseContext.petitionerName : caseContext.respondentName}, ${yourRole === 'petitioner' ? 'Petitioner' : 'Respondent'}
+
+PARTIES (USE THESE EXACT NAMES IN THE DOCUMENT):
+You (${yourTitle}): ${yourName}
+Other Party (${otherTitle}): ${otherPartyName}
+
+Your Role in Case: ${yourTitle}
+Purpose of Document: ${caseContext.filingPurpose || "Documentation of communication patterns"}
 
 EVIDENCE SUMMARY:
 Total Incidents: ${incidents.length}
@@ -262,20 +242,16 @@ Critical Severity: ${incidents.filter(i => i.severity === "critical").length}
 High Severity: ${incidents.filter(i => i.severity === "high").length}
 `.trim();
 
-    const docTypeName = docType.replace("_", " ");
-    const userMessage = `Generate a ${docTypeName} document using the EXACT information below.
+    const userMessage = `Generate a ${docType.replace("_", " ")} document using the EXACT information below.
 
-CRITICAL FORMATTING RULES:
-- Do NOT use markdown (no ** or # symbols)
-- Use ALL CAPS for headers
-- Use plain text only - this will be copied into Word
-- Use clear spacing for readability
-
-CRITICAL CONTENT RULES: 
+CRITICAL INSTRUCTIONS: 
+- Output PLAIN TEXT ONLY - absolutely NO markdown formatting (no **, no __, no # headers)
 - Use the EXACT DATES provided for each incident - do not change them
 - Quote messages EXACTLY as written - do not paraphrase
 - Assign exhibit numbers A-1, A-2, etc. in chronological order
 - State facts only - no interpretations or emotional language
+- USE THE ACTUAL NAMES PROVIDED: "${yourName}" for you and "${otherPartyName}" for the other party
+- Do NOT use generic "Petitioner" or "Respondent" - use the actual names
 
 ${contextInfo}
 
@@ -287,7 +263,7 @@ ${incidentsSummary}
 
 ===================================
 
-Generate the complete ${docTypeName} document now. Use exact quotes and dates. No markdown formatting.`;
+Generate the complete ${docType.replace("_", " ")} document now. Use exact quotes, dates, and the actual party names provided. Output plain text only with no markdown.`;
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -305,15 +281,15 @@ Generate the complete ${docTypeName} document now. Use exact quotes and dates. N
       ? response.content[0].text 
       : "Error generating document";
 
-    // Clean any remaining markdown that slipped through
+    // Strip any remaining markdown that slipped through
     document = document
-      .replace(/\*\*/g, '')  // Remove bold markers
-      .replace(/\*/g, '')    // Remove italic markers
-      .replace(/^#{1,6}\s/gm, '')  // Remove header markers
-      .replace(/`/g, '');    // Remove code markers
-
-    // Add legal disclaimer at the end
-    document = document + LEGAL_DISCLAIMER;
+      .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove **bold**
+      .replace(/__(.*?)__/g, '$1')       // Remove __bold__
+      .replace(/\*(.*?)\*/g, '$1')       // Remove *italic*
+      .replace(/_(.*?)_/g, '$1')         // Remove _italic_
+      .replace(/^### /gm, '')            // Remove ### headers
+      .replace(/^## /gm, '')             // Remove ## headers
+      .replace(/^# /gm, '');             // Remove # headers
 
     return NextResponse.json({ 
       success: true,
