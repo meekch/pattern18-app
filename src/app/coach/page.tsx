@@ -10,11 +10,6 @@ interface Message {
   content: string;
   patterns?: string[];
   imageUrls?: string[];
-  document?: {
-    title: string;
-    filename: string;
-    content: string;
-  };
 }
 
 export default function CoachPage() {
@@ -30,22 +25,10 @@ export default function CoachPage() {
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [showExportNudge, setShowExportNudge] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // Simple save state - no modal!
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [lastImageUrls, setLastImageUrls] = useState<string[]>([]);
-  const [pendingDocument, setPendingDocument] = useState<{ title: string; filename: string; content: string } | null>(null);
-  const [downloadingDoc, setDownloadingDoc] = useState(false);
-  
-  // Feedback state
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'other'>('bug');
-  const [feedbackText, setFeedbackText] = useState('');
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -105,8 +88,6 @@ export default function CoachPage() {
     setShowHome(false);
     setSending(true);
     setInput('');
-    // Don't clear patterns - keep them until user saves or uploads new screenshot
-    setSaved(false);
     
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -120,8 +101,9 @@ export default function CoachPage() {
           imageUrls.push(url);
         }
       }
+      // Show export nudge after analyzing screenshots
       if (imageUrls.length > 0) {
-        setLastImageUrls(imageUrls);
+        setShowExportNudge(true);
       }
     }
 
@@ -175,52 +157,27 @@ export default function CoachPage() {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
                 assistantContent += data.content;
-                let displayContent = assistantContent
-                  .replace(/---QUOTES---[\s\S]*?---END QUOTES---/g, '')
-                  .replace(/---DOCUMENT START---[\s\S]*?---DOCUMENT END---/g, '')
-                  .trim();
                 setMessages(prev => {
                   const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = displayContent;
+                  newMessages[newMessages.length - 1].content = assistantContent;
                   return newMessages;
                 });
               }
               if (data.patterns) {
                 patterns = data.patterns;
-                setDetectedPatterns(patterns);
-              }
-              if (data.document) {
-                setPendingDocument(data.document);
+                setDetectedPatterns(prev => {
+                  const merged = [...new Set([...prev, ...patterns])];
+                  return merged;
+                });
               }
             } catch (e) {}
           }
         }
       }
 
-      const docMatch = assistantContent.match(/---DOCUMENT START---\n?([\s\S]*?)---DOCUMENT END---/);
-      let documentData: { title: string; filename: string; content: string } | undefined;
-      if (docMatch) {
-        const docContent = docMatch[1];
-        const titleMatch = docContent.match(/TITLE:\s*(.+?)(?:\n|$)/i);
-        const filenameMatch = docContent.match(/FILENAME:\s*(.+?)(?:\n|$)/i);
-        let content = docContent.replace(/TITLE:\s*.+?\n/i, '').replace(/FILENAME:\s*.+?\n/i, '').trim();
-        documentData = {
-          title: titleMatch ? titleMatch[1].trim() : 'Document',
-          filename: filenameMatch ? filenameMatch[1].trim() : 'document.docx',
-          content
-        };
-        setPendingDocument(documentData);
-      }
-
-      const finalDisplayContent = assistantContent
-        .replace(/---QUOTES---[\s\S]*?---END QUOTES---/g, '')
-        .replace(/---DOCUMENT START---[\s\S]*?---DOCUMENT END---/g, '')
-        .trim();
       setMessages(prev => {
         const newMessages = [...prev];
-        newMessages[newMessages.length - 1].content = finalDisplayContent;
         newMessages[newMessages.length - 1].patterns = patterns;
-        newMessages[newMessages.length - 1].document = documentData;
         return newMessages;
       });
 
@@ -253,31 +210,6 @@ export default function CoachPage() {
       case 'moment':
         router.push('/healing');
         break;
-    }
-  };
-
-  const handleSubmitFeedback = async () => {
-    if (!feedbackText.trim()) return;
-    setSubmittingFeedback(true);
-    
-    try {
-      await supabase.from('feedback').insert({
-        user_id: user?.id,
-        type: feedbackType,
-        message: feedbackText,
-        page: 'coach',
-        user_agent: navigator.userAgent,
-      });
-      
-      setShowFeedback(false);
-      setFeedbackText('');
-      setFeedbackType('bug');
-      alert('Thanks for your feedback! 💚');
-    } catch (error) {
-      console.error('Feedback error:', error);
-      alert('Failed to submit. Please try again.');
-    } finally {
-      setSubmittingFeedback(false);
     }
   };
 
@@ -352,87 +284,6 @@ export default function CoachPage() {
     await handleSend(prompt, files);
   };
 
-  // ONE-CLICK SAVE - no modal needed!
-  const handleSaveEvidence = async () => {
-    if (detectedPatterns.length === 0) return;
-    
-    setSaving(true);
-
-    try {
-      // Get the last user message content
-      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-      const messageContent = lastUserMsg?.content || 'Screenshot analyzed';
-      
-      // Auto-set severity based on patterns
-      const highSeverityPatterns = ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'];
-      const severity = detectedPatterns.some(p => 
-        highSeverityPatterns.includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-      ) ? 'high' : 'medium';
-
-      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: messageContent,
-        category: categoryKey,
-        patterns: detectedPatterns,
-        severity: severity,
-        incident_date: new Date().toISOString(),
-      });
-
-      // Update local state
-      setEvidenceCount(prev => prev + 1);
-      const newCounts = { ...patternCounts };
-      newCounts[categoryKey] = (newCounts[categoryKey] || 0) + 1;
-      setPatternCounts(newCounts);
-      
-      // Show saved confirmation
-      setSaved(true);
-      setDetectedPatterns([]);
-
-    } catch (error) {
-      console.error('Failed to save:', error);
-      alert('Failed to save. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const downloadDocument = async (doc: { title: string; filename: string; content: string }) => {
-    setDownloadingDoc(true);
-    try {
-      const response = await fetch('/api/create-doc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: doc.title,
-          filename: doc.filename,
-          content: doc.content,
-          caseInfo: caseContext
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create document');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = doc.filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('Failed to download document. Please try again.');
-    } finally {
-      setDownloadingDoc(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="loading">
@@ -470,11 +321,9 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <div className="header-right">
-          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-            📁 {evidenceCount}
-          </button>
-        </div>
+        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+          📁 {evidenceCount}
+        </button>
       </header>
 
       <div className="content">
@@ -543,17 +392,6 @@ export default function CoachPage() {
                     ))}
                   </div>
                 )}
-                {msg.document && (
-                  <div className="document-download">
-                    <button 
-                      onClick={() => downloadDocument(msg.document!)}
-                      disabled={downloadingDoc}
-                      className="download-btn"
-                    >
-                      📄 {downloadingDoc ? 'Creating...' : `Download: ${msg.document.filename}`}
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
             {sending && (
@@ -568,21 +406,19 @@ export default function CoachPage() {
           </div>
         )}
 
-        {/* One-click Save Evidence Button */}
-        {detectedPatterns.length > 0 && !showHome && !saved && (
-          <button 
-            className="save-evidence-btn" 
-            onClick={handleSaveEvidence}
-            disabled={saving}
-          >
-            {saving ? '💾 Saving...' : '💾 Save to Evidence'}
-          </button>
-        )}
-        
-        {/* Saved confirmation toast */}
-        {saved && !showHome && (
-          <div className="saved-toast">
-            ✓ Saved to Evidence
+        {/* Export Nudge - shows after screenshot analysis */}
+        {showExportNudge && !showHome && (
+          <div className="export-nudge">
+            <div className="nudge-content">
+              <span className="nudge-icon">💡</span>
+              <p>When things settle, export this text thread from your phone. Your calm responses next to their messages - that's your evidence.</p>
+              <button onClick={() => router.push('/evidence/upload')} className="nudge-btn">
+                Import Messages →
+              </button>
+              <button onClick={() => setShowExportNudge(false)} className="nudge-dismiss">
+                Got it
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -627,57 +463,7 @@ export default function CoachPage() {
         />
       </div>
 
-      {/* Floating Feedback Button */}
-      <button className="floating-feedback" onClick={() => setShowFeedback(true)}>
-        💡
-      </button>
-
       <BottomNav active="coach" />
-
-      {/* Feedback Modal */}
-      {showFeedback && (
-        <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
-          <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="feedback-header">
-              <h3>Send Feedback</h3>
-              <button className="close-btn" onClick={() => setShowFeedback(false)}>✕</button>
-            </div>
-            
-            <div className="feedback-types">
-              {(['bug', 'feature', 'other'] as const).map((type) => (
-                <button
-                  key={type}
-                  className={`type-btn ${feedbackType === type ? 'active' : ''}`}
-                  onClick={() => setFeedbackType(type)}
-                >
-                  {type === 'bug' ? '🐛 Bug' : type === 'feature' ? '✨ Feature' : '💬 Other'}
-                </button>
-              ))}
-            </div>
-            
-            <textarea
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder={
-                feedbackType === 'bug' 
-                  ? "What happened? What did you expect?" 
-                  : feedbackType === 'feature'
-                  ? "What would help you?"
-                  : "What's on your mind?"
-              }
-              rows={4}
-            />
-            
-            <button 
-              className="submit-feedback-btn"
-              onClick={handleSubmitFeedback}
-              disabled={submittingFeedback || !feedbackText.trim()}
-            >
-              {submittingFeedback ? 'Sending...' : 'Send Feedback'}
-            </button>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         .container {
@@ -685,7 +471,6 @@ export default function CoachPage() {
           background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
           display: flex;
           flex-direction: column;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         .drag-overlay {
           position: fixed;
@@ -750,29 +535,6 @@ export default function CoachPage() {
           color: white;
           font-size: 14px;
           cursor: pointer;
-        }
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .floating-feedback {
-          position: fixed;
-          bottom: 145px;
-          right: 16px;
-          width: 48px;
-          height: 48px;
-          border-radius: 24px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          font-size: 22px;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          z-index: 50;
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
         .content {
           flex: 1;
@@ -912,28 +674,6 @@ export default function CoachPage() {
           font-size: 12px;
           font-weight: 600;
         }
-        .document-download {
-          margin-top: 12px;
-          margin-right: 40px;
-        }
-        .download-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 20px;
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
-        }
-        .download-btn:disabled {
-          opacity: 0.7;
-          cursor: wait;
-        }
         .analyzing {
           display: flex;
           align-items: center;
@@ -950,41 +690,48 @@ export default function CoachPage() {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.2); opacity: 0.7; }
         }
-        .save-evidence-btn {
+        .export-nudge {
           position: fixed;
-          bottom: 140px;
+          bottom: 130px;
           left: 16px;
-          background: #059669;
+          right: 16px;
+          max-width: 400px;
+          margin: 0 auto;
+          z-index: 50;
+        }
+        .nudge-content {
+          background: white;
+          border: 2px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .nudge-icon {
+          font-size: 20px;
+        }
+        .nudge-content p {
+          margin: 8px 0 12px;
+          font-size: 14px;
+          color: #4b5563;
+          line-height: 1.5;
+        }
+        .nudge-btn {
+          background: #1a3a2f;
           color: white;
           border: none;
-          padding: 12px 18px;
-          border-radius: 20px;
+          padding: 10px 16px;
+          border-radius: 8px;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-          z-index: 50;
+          margin-right: 8px;
         }
-        .save-evidence-btn:disabled {
-          opacity: 0.7;
-          cursor: wait;
-        }
-        .saved-toast {
-          position: fixed;
-          bottom: 140px;
-          left: 16px;
-          background: #1a3a2f;
-          color: white;
-          padding: 12px 18px;
-          border-radius: 20px;
+        .nudge-dismiss {
+          background: none;
+          border: none;
+          color: #9ca3af;
           font-size: 14px;
-          font-weight: 600;
-          z-index: 50;
-          animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          cursor: pointer;
         }
         .input-area {
           position: fixed;
@@ -1033,93 +780,6 @@ export default function CoachPage() {
           cursor: pointer;
         }
         .send-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 200;
-          padding: 20px;
-        }
-        .feedback-modal {
-          background: white;
-          border-radius: 16px;
-          width: 100%;
-          max-width: 400px;
-          padding: 24px;
-        }
-        .feedback-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-        .feedback-header h3 {
-          margin: 0;
-          font-size: 18px;
-          color: #1a3a2f;
-        }
-        .close-btn {
-          background: #f3f4f6;
-          border: none;
-          width: 32px;
-          height: 32px;
-          border-radius: 16px;
-          cursor: pointer;
-          color: #6b7280;
-        }
-        .feedback-types {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-        .type-btn {
-          flex: 1;
-          padding: 10px;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          background: white;
-          cursor: pointer;
-          font-size: 13px;
-          font-weight: 500;
-        }
-        .type-btn.active {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
-        }
-        .feedback-modal textarea {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 15px;
-          font-family: inherit;
-          resize: none;
-          margin-bottom: 16px;
-          box-sizing: border-box;
-        }
-        .feedback-modal textarea:focus {
-          outline: none;
-          border-color: #1a3a2f;
-        }
-        .submit-feedback-btn {
-          width: 100%;
-          padding: 14px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .submit-feedback-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
