@@ -6,9 +6,32 @@ import { useRouter } from "next/navigation";
 interface FAQItem {
   question: string;
   answer: string;
+  category?: string;
 }
 
 const faqs: FAQItem[] = [
+  // HOW IT WORKS - NEW SECTION
+  {
+    question: "How does Pattern 18 work?",
+    answer: "Pattern 18 has two main modes:\n\n**In the Moment (Coach)**\nJust got a text that made your stomach drop? Open Coach, upload the screenshot or paste the message. AI identifies the manipulation patterns instantly, gives you response options that won't take the bait, and saves it to your evidence with one tap.\n\n**Building Your Case (Evidence + Documents)**\nGo to Evidence to review everything you've documented. Filter by pattern, edit severity, mark items for your exhibit. When you're ready for court, select the incidents you need and generate a professional Word document with exact quotes, dates, and pattern analysis.",
+    category: "getting-started"
+  },
+  {
+    question: "How do I bulk import my text messages?",
+    answer: "For thorough documentation, export your entire text history and let Pattern 18 analyze it all at once.\n\n**How to export texts from your phone:**\n\n• **iMazing** (iPhone, $50 one-time) - Easiest. Connect phone, select Messages, export as CSV\n• **Dr.Fone** (iPhone/Android, $50/year) - Similar process, works on both platforms\n• **SMS Backup & Restore** (Android, free) - Backs up to CSV automatically\n• **iTunes backup + iExplorer** (iPhone, free-ish) - More technical but works\n\n**To import:**\nGo to Coach → Import Message History (or Menu → Bulk Import). Upload your CSV file. Pattern 18 analyzes the entire thread, identifies patterns, and saves incidents automatically.\n\n**Pro tip:** Export weekly or monthly to keep your documentation current. Always do a fresh export before any court date.",
+    category: "getting-started"
+  },
+  {
+    question: "How often should I document?",
+    answer: "**In the moment:** Every time you get a message that feels manipulative, upload it to Coach immediately. Takes 30 seconds. Don't wait.\n\n**Bulk imports:** Weekly is ideal. Monthly minimum. This catches anything you missed in the moment.\n\n**Before court:** Always do a fresh export 1-2 weeks before any hearing. Review your evidence, mark the strongest incidents for your exhibit, generate your documents.\n\n**The pattern matters:** Courts don't act on one incident. They act on documented patterns over time. Consistency is your evidence.",
+    category: "getting-started"
+  },
+  {
+    question: "What's the difference between Coach, Evidence, and Documents?",
+    answer: "**Coach** - Your 24/7 support. Upload screenshots, get pattern analysis, draft responses, document in the moment. This is where evidence gets created.\n\n**Evidence** - Your case file. Everything you've documented lives here. Filter by pattern, severity, or date. Edit details. Mark items for your court exhibit. This is where you organize and prepare.\n\n**Documents** - Generate court-ready files. Select incidents from Evidence, choose document type (Exhibit Packet or Declaration), download a professional Word doc. This is where preparation becomes presentation.",
+    category: "getting-started"
+  },
+  // ORIGINAL FAQs - UPDATED
   {
     question: "What can Pattern 18 Coach do for me?",
     answer: "Pattern 18 Coach helps you navigate high-conflict co-parenting by: analyzing messages from your co-parent to identify manipulation patterns, helping you draft calm and court-appropriate responses, automatically documenting incidents to your case file, creating evidence packets for your attorney, and providing strategic support 24/7."
@@ -23,19 +46,19 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How do I create a court document?",
-    answer: "Go to My Case, check the incidents you want to include, then tap 'Generate Exhibit' or 'Create Document'. Pattern 18 will create a professional Word document with your evidence formatted for court submission — complete with pattern analysis, timeline, and exact quotes."
+    answer: "Go to Evidence, check the incidents you want to include, then tap 'Generate Exhibit'. Pattern 18 will create a professional Word document with your evidence formatted for court submission — complete with pattern analysis, timeline, and exact quotes.\n\nYou can also go to Documents to create declarations, timelines, or pattern summaries using the AI Declaration Writer."
   },
   {
     question: "Can I upload my custody orders?",
-    answer: "Yes! Go to the Docs tab to upload your custody orders, parenting plans, or other court documents. Pattern 18 can reference your specific orders when helping you respond to situations or identify violations. Your documents are stored securely and only accessible to you."
+    answer: "Yes! Go to the Documents tab → Court Orders to upload your custody orders, parenting plans, or other court documents. Pattern 18 can reference your specific orders when helping you respond to situations or identify violations. Your documents are stored securely and only accessible to you."
   },
   {
     question: "Can I share my case with my attorney?",
-    answer: "Yes. You can export your entire case file or generate specific documents to share with your attorney. Many users find it helpful to share the Court Exhibit Packet — it gives attorneys a clear, organized view of documented patterns."
+    answer: "Yes. You can export your entire case file or generate specific documents to share with your attorney. Many users find it helpful to share the Court Exhibit Packet — it gives attorneys a clear, organized view of documented patterns with exact quotes and dates."
   },
   {
     question: "Can my attorney use this?",
-    answer: "Pattern 18 Pro is in beta for family law attorneys. If your lawyer works with high-conflict custody cases, they can request early access at pro@pattern18.com.\n\nEarly adopters can become Pattern 18 Certified — listed in our directory as attorneys who understand coercive control and evidence-based documentation."
+    answer: "Pattern 18 Pro is available for family law attorneys. If your lawyer works with high-conflict custody cases, they can request access at pro@pattern18.com.\n\nFirms can become Pattern 18 Certified — listed in our directory as attorneys who understand coercive control and evidence-based documentation."
   },
   {
     question: "Is my information private and secure?",
@@ -43,7 +66,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How is this different from ChatGPT or other AI?",
-    answer: "Pattern 18 Coach is specifically designed for high-conflict co-parenting situations. Unlike general AI, it understands custody dynamics, court expectations, manipulation tactics, and the emotional toll of these situations. It won't give generic advice — it gives you strategic, court-aware guidance built by someone who has lived this experience for 15 years."
+    answer: "Pattern 18 Coach is specifically designed for high-conflict co-parenting situations. Unlike general AI, it understands custody dynamics, court expectations, manipulation tactics, and the emotional toll of these situations. It won't give generic advice — it gives you strategic, court-aware guidance built by someone who has lived this experience for 15 years.\n\nIt also automatically saves and organizes your evidence, tracks patterns over time, and generates court-ready documents. ChatGPT can't do any of that."
+  },
+  {
+    question: "What manipulation patterns does it detect?",
+    answer: "Pattern 18 identifies 18 coercive control tactics recognized in family court:\n\n• Gaslighting\n• DARVO (Deny, Attack, Reverse Victim & Offender)\n• Intimidation & Threats\n• Financial Abuse\n• Using Children as Weapons\n• Blame-Shifting\n• False Accusations\n• Emotional Blackmail\n• Stonewalling\n• Monitoring/Stalking\n• Isolation Tactics\n• Minimizing/Denying\n• Word Salad\n• Moving Goalposts\n• Projection\n• Hoovering\n• Gatekeeping\n• Legal/Court Threats\n\nEach pattern is explained so you understand what's happening and can articulate it clearly to your attorney or the court."
   },
   {
     question: "How do I cancel my subscription?",
@@ -55,7 +82,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Does Pattern 18 Coach give legal advice?",
-    answer: "No. Pattern 18 Coach provides support, documentation help, and communication strategies, but it is not a substitute for legal advice. Always consult with a qualified family law attorney for legal decisions. Think of Pattern 18 as a knowledgeable ally who helps you prepare and organize — your attorney makes the legal calls."
+    answer: "No. Pattern 18 Coach provides support, documentation help, and communication strategies, but it is not a substitute for legal advice. Always consult with a qualified family law attorney for legal decisions. Think of Pattern 18 as a knowledgeable ally who helps you prepare and organize — your attorney makes the legal calls.\n\nDocuments generated by Pattern 18 are starting points and should be reviewed by legal counsel before submitting to court."
   },
   {
     question: "Can I use this on my phone?",
@@ -65,11 +92,18 @@ const faqs: FAQItem[] = [
 
 export default function FAQPage() {
   const router = useRouter();
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0); // Start with first one open
+  const [filter, setFilter] = useState<'all' | 'getting-started'>('all');
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
+
+  const filteredFaqs = filter === 'all' 
+    ? faqs 
+    : faqs.filter(f => f.category === 'getting-started');
+
+  const gettingStartedCount = faqs.filter(f => f.category === 'getting-started').length;
 
   return (
     <div className="faq-page">
@@ -90,28 +124,51 @@ export default function FAQPage() {
         <p>Everything you need to know about Pattern 18</p>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="filter-tabs">
+        <button 
+          className={`filter-tab ${filter === 'getting-started' ? 'active' : ''}`}
+          onClick={() => setFilter('getting-started')}
+        >
+          🚀 How It Works ({gettingStartedCount})
+        </button>
+        <button 
+          className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+          onClick={() => setFilter('all')}
+        >
+          All Questions ({faqs.length})
+        </button>
+      </div>
+
       <div className="faq-container">
-        {faqs.map((faq, index) => (
-          <div
-            key={index}
-            className={`faq-item ${openIndex === index ? 'open' : ''}`}
-          >
-            <button
-              className="faq-question"
-              onClick={() => toggleFAQ(index)}
+        {filteredFaqs.map((faq, index) => {
+          const actualIndex = faqs.indexOf(faq);
+          return (
+            <div
+              key={actualIndex}
+              className={`faq-item ${openIndex === actualIndex ? 'open' : ''} ${faq.category === 'getting-started' ? 'getting-started' : ''}`}
             >
-              <span>{faq.question}</span>
-              <span className="faq-icon">{openIndex === index ? '−' : '+'}</span>
-            </button>
-            {openIndex === index && (
-              <div className="faq-answer">
-                {faq.answer.split('\n\n').map((paragraph, i) => (
-                  <p key={i}>{paragraph}</p>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+              <button
+                className="faq-question"
+                onClick={() => toggleFAQ(actualIndex)}
+              >
+                <span>{faq.question}</span>
+                <span className="faq-icon">{openIndex === actualIndex ? '−' : '+'}</span>
+              </button>
+              {openIndex === actualIndex && (
+                <div className="faq-answer">
+                  {faq.answer.split('\n\n').map((paragraph, i) => (
+                    <p key={i} dangerouslySetInnerHTML={{ 
+                      __html: paragraph
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br/>')
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="contact-section">
@@ -194,10 +251,40 @@ export default function FAQPage() {
           margin: 0;
         }
 
+        .filter-tabs {
+          display: flex;
+          gap: 8px;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px 24px 0;
+        }
+
+        .filter-tab {
+          padding: 10px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 20px;
+          background: white;
+          font-size: 13px;
+          font-weight: 600;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+          border-color: #1a3a2f;
+        }
+
+        .filter-tab.active {
+          background: #1a3a2f;
+          border-color: #1a3a2f;
+          color: white;
+        }
+
         .faq-container {
           max-width: 800px;
           margin: 0 auto;
-          padding: 32px 24px 80px;
+          padding: 20px 24px 80px;
         }
 
         .faq-item {
@@ -207,6 +294,10 @@ export default function FAQPage() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           overflow: hidden;
           transition: box-shadow 0.2s;
+        }
+
+        .faq-item.getting-started {
+          border-left: 4px solid #059669;
         }
 
         .faq-item:hover {
@@ -257,6 +348,11 @@ export default function FAQPage() {
           margin-bottom: 0;
         }
 
+        .faq-answer :global(strong) {
+          color: #1a3a2f;
+          font-weight: 600;
+        }
+
         .contact-section {
           text-align: center;
           padding: 48px 24px;
@@ -301,8 +397,17 @@ export default function FAQPage() {
             font-size: 24px;
           }
 
+          .filter-tabs {
+            padding: 16px 16px 0;
+          }
+
+          .filter-tab {
+            padding: 8px 12px;
+            font-size: 12px;
+          }
+
           .faq-container {
-            padding: 24px 16px 60px;
+            padding: 16px 16px 60px;
           }
 
           .faq-question {
