@@ -405,7 +405,6 @@ export default function CoachPage() {
           </div>
         )}
 
-        {/* Export Nudge */}
         {showExportNudge && !showHome && (
           <div className="export-nudge">
             <div className="nudge-content">
@@ -422,7 +421,6 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
