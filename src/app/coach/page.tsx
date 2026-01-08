@@ -23,7 +23,7 @@ export default function CoachPage() {
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
+  const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]); // For display only, not saving
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,7 +86,7 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Show export nudge when patterns detected (unless dismissed)
+  // Show export nudge when patterns are detected (after analysis)
   useEffect(() => {
     if (detectedPatterns.length > 0 && !showHome) {
       const nudgeDismissed = localStorage.getItem('p18_nudge_dismissed');
@@ -228,40 +228,6 @@ export default function CoachPage() {
 
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleSaveEvidence = async () => {
-    if (messages.length < 2 || !detectedPatterns.length) return;
-
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
-
-    if (!lastUserMsg || !lastAssistantMsg) return;
-
-    try {
-      // Get first detected pattern as category (already a coercive control pattern)
-      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: lastUserMsg.content,
-        category: categoryKey,
-        patterns: detectedPatterns,
-        severity: detectedPatterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-        ) ? 'high' : 'medium',
-        incident_date: new Date().toISOString(),
-      });
-
-      alert('Saved to evidence!');
-      setDetectedPatterns([]);
-      setEvidenceCount(prev => prev + 1);
-    } catch (error) {
-      console.error('Failed to save:', error);
-      alert('Failed to save. Please try again.');
-    }
   };
 
   const handleFeedbackSubmit = async () => {
@@ -452,16 +418,9 @@ export default function CoachPage() {
             <div ref={messagesEndRef} />
           </div>
         )}
-
-        {/* Save Evidence Button */}
-        {detectedPatterns.length > 0 && !showHome && (
-          <button className="save-evidence-btn" onClick={handleSaveEvidence}>
-            💾 Save to Evidence ({detectedPatterns.length} patterns detected)
-          </button>
-        )}
       </div>
 
-      {/* Export Nudge - Small toast, bottom left */}
+      {/* Export Nudge - Shows after analyzing a screenshot */}
       {showExportNudge && !showHome && (
         <div className="export-nudge">
           <span className="nudge-icon">💡</span>
@@ -844,21 +803,6 @@ export default function CoachPage() {
         .typing {
           color: #9ca3af;
           font-style: italic;
-        }
-        .save-evidence-btn {
-          position: fixed;
-          bottom: 200px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 24px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          z-index: 50;
         }
         
         /* Export Nudge - Small toast */
