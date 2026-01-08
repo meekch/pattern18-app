@@ -50,6 +50,8 @@ export default function MyCasePage() {
   const [criticalCount, setCriticalCount] = useState(0);
   const [exhibitCount, setExhibitCount] = useState(0);
   const [patternCounts, setPatternCounts] = useState<PatternCount[]>([]);
+  const [allIncidents, setAllIncidents] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -77,6 +79,7 @@ export default function MyCasePage() {
 
       if (evidence && evidence.length > 0) {
         setTotalIncidents(evidence.length);
+        setAllIncidents(evidence);
         setCriticalCount(evidence.filter((e: any) => 
           e.severity === 'critical' || e.severity === 'high'
         ).length);
@@ -101,6 +104,55 @@ export default function MyCasePage() {
     };
     init();
   }, [router]);
+
+  const exportCaseFile = async () => {
+    setExporting(true);
+    try {
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        caseInfo: caseContext ? {
+          caseNumber: caseContext.case_number,
+          court: caseContext.court,
+          county: caseContext.county,
+          state: caseContext.state,
+          userRole: caseContext.user_role,
+          nextCourtDate: caseContext.next_court_date,
+        } : null,
+        summary: {
+          totalIncidents: totalIncidents,
+          criticalCount: criticalCount,
+          exhibitCount: exhibitCount,
+          patterns: patternCounts,
+        },
+        incidents: allIncidents.map(inc => ({
+          id: inc.id,
+          date: inc.incident_date,
+          category: inc.category,
+          patterns: inc.patterns,
+          severity: inc.severity,
+          message: inc.coparent_message,
+          messages: inc.messages_json,
+          includedInExhibit: inc.include_in_exhibit,
+          createdAt: inc.created_at,
+        })),
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pattern18-case-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const daysUntilCourt = caseContext?.next_court_date
     ? Math.ceil((new Date(caseContext.next_court_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -244,7 +296,8 @@ export default function MyCasePage() {
               <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3a2f' }}>Create Document</span>
             </button>
             <button 
-              onClick={() => router.push('/evidence/upload')}
+              onClick={exportCaseFile}
+              disabled={exporting || totalIncidents === 0}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -254,11 +307,14 @@ export default function MyCasePage() {
                 background: 'white',
                 border: '2px solid #e5e7eb',
                 borderRadius: 12,
-                cursor: 'pointer'
+                cursor: totalIncidents === 0 ? 'not-allowed' : 'pointer',
+                opacity: totalIncidents === 0 ? 0.5 : 1
               }}
             >
-              <span style={{ fontSize: 28 }}>📤</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3a2f' }}>Bulk Import</span>
+              <span style={{ fontSize: 28 }}>{exporting ? '⏳' : '💾'}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1a3a2f' }}>
+                {exporting ? 'Exporting...' : 'Export Case'}
+              </span>
             </button>
             <button 
               onClick={() => router.push('/court-prep')}

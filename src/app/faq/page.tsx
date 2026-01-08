@@ -38,15 +38,15 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Why 'Pattern 18'?",
-    answer: "Eighteen is when the court orders end. When your child can choose. When you can finally plan a vacation, a holiday, a birthday — without someone weaponizing the system to destroy it.\n\nPattern 18 was built by someone 15 years into this fight, with 3 to go. It took years to understand what was happening — years lost in confusion, thousands of dollars, endless energy fighting something I didn't even know had a name.\n\nIf I had known what to look for, I could have spotted it, believed myself, and documented it from day one.\n\nThat's why this exists. So you don't lose years. So you see it clearly. So when you walk into court, you have evidence — not just your word against theirs.\n\nWe're not waiting for freedom. We're building it."
+    answer: "Eighteen is when the court orders end. When your child can choose. When you can finally plan a vacation, a holiday, a birthday - without someone weaponizing the system to destroy it.\n\nPattern 18 was built by someone 15 years into this fight, with 3 to go. It took years to understand what was happening - years lost in confusion, thousands of dollars, endless energy fighting something I didn't even know had a name.\n\nIf I had known what to look for, I could have spotted it, believed myself, and documented it from day one.\n\nThat's why this exists. So you don't lose years. So you see it clearly. So when you walk into court, you have evidence - not just your word against theirs.\n\nWe're not waiting for freedom. We're building it."
   },
   {
     question: "How do I document an incident?",
-    answer: "Just paste the message or upload a screenshot in Coach. Pattern 18 automatically analyzes it, identifies manipulation patterns, and saves it to your case file. You'll see a confirmation when it's saved. That's it — no extra steps."
+    answer: "Just paste the message or upload a screenshot in Coach. Pattern 18 automatically analyzes it, identifies manipulation patterns, and saves it to your case file. You'll see a confirmation when it's saved. That's it - no extra steps."
   },
   {
     question: "How do I create a court document?",
-    answer: "Go to Evidence, check the incidents you want to include, then tap 'Generate Exhibit'. Pattern 18 will create a professional Word document with your evidence formatted for court submission — complete with pattern analysis, timeline, and exact quotes.\n\nYou can also go to Documents to create declarations, timelines, or pattern summaries using the AI Declaration Writer."
+    answer: "Go to Evidence, check the incidents you want to include, then tap 'Generate Exhibit'. Pattern 18 will create a professional Word document with your evidence formatted for court submission - complete with pattern analysis, timeline, and exact quotes.\n\nYou can also go to Documents to create declarations, timelines, or pattern summaries using the AI Declaration Writer."
   },
   {
     question: "Can I upload my custody orders?",
@@ -54,11 +54,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I share my case with my attorney?",
-    answer: "Yes. You can export your entire case file or generate specific documents to share with your attorney. Many users find it helpful to share the Court Exhibit Packet — it gives attorneys a clear, organized view of documented patterns with exact quotes and dates."
+    answer: "Yes. Go to My Case and tap 'Export Case' to download your entire case file as a JSON file you can share. You can also generate specific documents like the Court Exhibit Packet, which gives attorneys a clear, organized view of documented patterns with exact quotes and dates."
   },
   {
     question: "Can my attorney use this?",
-    answer: "Pattern 18 Pro is available for family law attorneys. If your lawyer works with high-conflict custody cases, they can request access at pro@pattern18.com.\n\nFirms can become Pattern 18 Certified — listed in our directory as attorneys who understand coercive control and evidence-based documentation."
+    answer: "Pattern 18 Pro is available for family law attorneys. If your lawyer works with high-conflict custody cases, they can request access at pro@pattern18.com.\n\nFirms can become Pattern 18 Certified, recognized as attorneys who understand coercive control and evidence-based documentation."
   },
   {
     question: "Is my information private and secure?",
@@ -66,7 +66,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How is this different from ChatGPT or other AI?",
-    answer: "Pattern 18 Coach is specifically designed for high-conflict co-parenting situations. Unlike general AI, it understands custody dynamics, court expectations, manipulation tactics, and the emotional toll of these situations. It won't give generic advice — it gives you strategic, court-aware guidance built by someone who has lived this experience for 15 years.\n\nIt also automatically saves and organizes your evidence, tracks patterns over time, and generates court-ready documents. ChatGPT can't do any of that."
+    answer: "Pattern 18 Coach is specifically designed for high-conflict co-parenting situations. Unlike general AI, it understands custody dynamics, court expectations, manipulation tactics, and the emotional toll of these situations. It won't give generic advice - it gives you strategic, court-aware guidance built by someone who has lived this experience for 15 years.\n\nIt also automatically saves and organizes your evidence, tracks patterns over time, and generates court-ready documents. ChatGPT can't do any of that."
   },
   {
     question: "What manipulation patterns does it detect?",
@@ -74,7 +74,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How do I cancel my subscription?",
-    answer: "You can cancel anytime from your account settings. Your access continues until the end of your billing period. No questions asked, no hoops to jump through.\n\nImportant: When you cancel, your data is permanently deleted from our servers after 30 days. We do not retain your personal case information. If you need your records, please export your case file before canceling."
+    answer: "You can cancel anytime from your account settings. Your access continues until the end of your billing period. No questions asked, no hoops to jump through.\n\nImportant: When you cancel, your data is permanently deleted from our servers after 30 days. We do not retain your personal case information. If you need your records, go to My Case and tap 'Export Case' to download everything before canceling."
   },
   {
     question: "I forgot my password. How do I reset it?",
@@ -82,11 +82,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Does Pattern 18 Coach give legal advice?",
-    answer: "No. Pattern 18 Coach provides support, documentation help, and communication strategies, but it is not a substitute for legal advice. Always consult with a qualified family law attorney for legal decisions. Think of Pattern 18 as a knowledgeable ally who helps you prepare and organize — your attorney makes the legal calls.\n\nDocuments generated by Pattern 18 are starting points and should be reviewed by legal counsel before submitting to court."
+    answer: "No. Pattern 18 Coach provides support, documentation help, and communication strategies, but it is not a substitute for legal advice. Always consult with a qualified family law attorney for legal decisions. Think of Pattern 18 as a knowledgeable ally who helps you prepare and organize - your attorney makes the legal calls.\n\nDocuments generated by Pattern 18 are starting points and should be reviewed by legal counsel before submitting to court."
   },
   {
     question: "Can I use this on my phone?",
-    answer: "Yes! Pattern 18 works on any device with a web browser — phone, tablet, or computer. For the best mobile experience, add it to your home screen: in Safari tap Share then 'Add to Home Screen', or in Chrome tap the menu then 'Add to Home Screen'. It works just like a native app."
+    answer: "Yes! Pattern 18 works on any device with a web browser - phone, tablet, or computer. For the best mobile experience, add it to your home screen: in Safari tap Share then 'Add to Home Screen', or in Chrome tap the menu then 'Add to Home Screen'. It works just like a native app."
   }
 ];
 
