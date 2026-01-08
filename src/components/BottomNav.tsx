@@ -109,6 +109,41 @@ export default function BottomNav({ active }: BottomNavProps) {
                   <span className="menu-title">Log Out</span>
                 </div>
               </button>
+              <button onClick={async () => {
+                const confirmed = window.confirm(
+                  'Are you sure you want to delete ALL your data? This includes all incidents, case info, and uploaded documents. This cannot be undone.'
+                );
+                if (!confirmed) return;
+                
+                const doubleConfirm = window.confirm(
+                  'This is permanent. Type DELETE to confirm... (Click OK to proceed)'
+                );
+                if (!doubleConfirm) return;
+
+                try {
+                  const { supabase } = await import('@/lib/supabase');
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.user) return;
+
+                  // Delete all user data
+                  await supabase.from('incidents').delete().eq('user_id', session.user.id);
+                  await supabase.from('case_context').delete().eq('user_id', session.user.id);
+                  await supabase.from('court_documents').delete().eq('user_id', session.user.id);
+                  
+                  alert('All data deleted. You will now be logged out.');
+                  await supabase.auth.signOut();
+                  router.push('/login');
+                } catch (error) {
+                  console.error('Delete failed:', error);
+                  alert('Delete failed. Please try again or contact support.');
+                }
+              }} className="menu-item delete-all">
+                <span className="menu-icon">🗑️</span>
+                <div className="menu-text">
+                  <span className="menu-title">Delete All Data</span>
+                  <span className="menu-desc">Permanently remove everything</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -233,6 +268,15 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .menu-item.logout .menu-title {
           color: #dc2626;
+        }
+        .menu-item.delete-all {
+          margin-top: 8px;
+        }
+        .menu-item.delete-all .menu-title {
+          color: #dc2626;
+        }
+        .menu-item.delete-all .menu-desc {
+          color: #f87171;
         }
         .menu-desc {
           font-size: 13px;

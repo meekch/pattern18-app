@@ -108,40 +108,36 @@ export default function MyCasePage() {
   const exportCaseFile = async () => {
     setExporting(true);
     try {
-      const exportData = {
-        exportedAt: new Date().toISOString(),
-        caseInfo: caseContext ? {
-          caseNumber: caseContext.case_number,
-          court: caseContext.court,
-          county: caseContext.county,
-          state: caseContext.state,
-          userRole: caseContext.user_role,
-          nextCourtDate: caseContext.next_court_date,
-        } : null,
-        summary: {
-          totalIncidents: totalIncidents,
-          criticalCount: criticalCount,
-          exhibitCount: exhibitCount,
-          patterns: patternCounts,
-        },
-        incidents: allIncidents.map(inc => ({
-          id: inc.id,
-          date: inc.incident_date,
-          category: inc.category,
-          patterns: inc.patterns,
-          severity: inc.severity,
-          message: inc.coparent_message,
-          messages: inc.messages_json,
-          includedInExhibit: inc.include_in_exhibit,
-          createdAt: inc.created_at,
-        })),
-      };
+      // Build CSV content
+      const headers = ['Date', 'Severity', 'Category', 'Patterns', 'Message', 'In Exhibit'];
+      const rows = allIncidents.map(inc => {
+        const date = new Date(inc.incident_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        const message = inc.coparent_message || 
+          (inc.messages_json?.map((m: any) => m.text).join(' | ')) || 
+          '';
+        // Escape quotes and wrap in quotes for CSV
+        const escapeCSV = (str: string) => `"${String(str || '').replace(/"/g, '""')}"`;
+        
+        return [
+          escapeCSV(date),
+          escapeCSV(inc.severity || 'medium'),
+          escapeCSV(categoryLabels[inc.category] || inc.category || ''),
+          escapeCSV((inc.patterns || []).join(', ')),
+          escapeCSV(message),
+          inc.include_in_exhibit ? 'Yes' : 'No'
+        ].join(',');
+      });
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pattern18-case-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `pattern18-evidence-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
