@@ -107,9 +107,6 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const topPattern = Object.entries(patternCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-
   const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -463,7 +460,7 @@ export default function CoachPage() {
       await supabase.from('incidents').insert({
         user_id: user.id,
         title: primaryPattern,
-        coparent_message: saveData.coparentMessage, // HIS exact words
+        coparent_message: saveData.coparentMessage, // Their exact words
         user_context: saveData.userContext, // Your message for context (not used in exhibit)
         category: categoryKey,
         patterns: saveData.patterns,
@@ -513,7 +510,7 @@ export default function CoachPage() {
     );
   }
 
-  const coparentName = 'your co-parent';
+  const coparentName = caseContext?.coparent_name || 'your co-parent';
 
   return (
     <div 
@@ -555,29 +552,6 @@ export default function CoachPage() {
               <h1>Hey, I am glad you are here.</h1>
               <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
-
-            {evidenceCount > 0 && (
-              <div className="stats-bar">
-                <div className="stat">
-                  <span className="stat-num">{evidenceCount}</span>
-                  <span className="stat-label">DOCUMENTED</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat">
-                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
-                  <span className="stat-label">PATTERNS FOUND</span>
-                </div>
-                {topPattern && (
-                  <>
-                    <div className="stat-divider" />
-                    <div className="stat">
-                      <span className="stat-pattern">{topPattern[0]}</span>
-                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
 
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
@@ -735,7 +709,7 @@ export default function CoachPage() {
               {/* Co-parent's exact message */}
               <div className="form-group">
                 <label>
-                  {coparentName}'s exact message <span className="required">*</span>
+                  {coparentName}&apos;s exact message <span className="required">*</span>
                 </label>
                 <p className="help-text">
                   {extractedQuotes ? 'Verify this transcription is correct. Edit if needed.' : 'Paste their exact words. This is what appears in court documents.'}
@@ -849,10 +823,6 @@ export default function CoachPage() {
       </button>
 
       <BottomNav active="coach" />
-
-      {/* Upgrade prompt removed - free trial approach */}
-
-      {/* Free tier banner removed - let users try freely */}
 
       {/* Feedback Modal */}
       {showFeedback && (
@@ -1025,42 +995,6 @@ export default function CoachPage() {
           color: #4b5563;
           line-height: 1.5;
           margin: 0;
-        }
-        .stats-bar {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 16px;
-          background: white;
-          padding: 16px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .stat {
-          text-align: center;
-        }
-        .stat-num {
-          display: block;
-          font-size: 24px;
-          font-weight: 800;
-          color: #1a3a2f;
-        }
-        .stat-pattern {
-          display: block;
-          font-size: 14px;
-          font-weight: 700;
-          color: #1a3a2f;
-        }
-        .stat-label {
-          font-size: 10px;
-          color: #9ca3af;
-          letter-spacing: 0.5px;
-        }
-        .stat-divider {
-          width: 1px;
-          height: 40px;
-          background: #e5e7eb;
         }
         .quick-actions {
           background: white;
