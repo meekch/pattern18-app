@@ -101,7 +101,6 @@ export default function CoachPage() {
           imageUrls.push(url);
         }
       }
-      // Show export nudge after analyzing screenshots
       if (imageUrls.length > 0) {
         setShowExportNudge(true);
       }
@@ -406,12 +405,12 @@ export default function CoachPage() {
           </div>
         )}
 
-        {/* Export Nudge - shows after screenshot analysis */}
+        {/* Export Nudge */}
         {showExportNudge && !showHome && (
           <div className="export-nudge">
             <div className="nudge-content">
               <span className="nudge-icon">💡</span>
-              <p>When things settle, export this text thread from your phone. Your calm responses next to their messages - that's your evidence.</p>
+              <p>When things settle, export this text thread from your phone. Your calm responses next to their messages - that is your evidence.</p>
               <button onClick={() => router.push('/evidence/upload')} className="nudge-btn">
                 Import Messages →
               </button>
