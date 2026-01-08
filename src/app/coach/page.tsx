@@ -9,7 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  imageUrls?: string[];
+  hasImage?: boolean;
 }
 
 export default function CoachPage() {
@@ -24,11 +24,14 @@ export default function CoachPage() {
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showExportNudge, setShowExportNudge] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Feedback & nudge state
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [showExportNudge, setShowExportNudge] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -39,6 +42,7 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
+      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -47,6 +51,7 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
+      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -72,44 +77,32 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const fileToDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  // Show export nudge when patterns detected (unless dismissed)
+  useEffect(() => {
+    if (detectedPatterns.length > 0 && !showHome) {
+      const nudgeDismissed = localStorage.getItem('p18_nudge_dismissed');
+      if (!nudgeDismissed) {
+        setShowExportNudge(true);
+      }
+    }
+  }, [detectedPatterns, showHome]);
 
-  const handleSend = async (messageText?: string, files?: File[]) => {
+  const topPattern = Object.entries(patternCounts)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
-    if (!text.trim() && (!files || files.length === 0)) return;
+    if (!text.trim() && !file) return;
 
     setShowHome(false);
     setSending(true);
     setInput('');
-    
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-
-    const imageUrls: string[] = [];
-    if (files) {
-      for (const file of files) {
-        if (file.type.startsWith('image/')) {
-          const url = await fileToDataUrl(file);
-          imageUrls.push(url);
-        }
-      }
-      if (imageUrls.length > 0) {
-        setShowExportNudge(true);
-      }
-    }
+    setDetectedPatterns([]);
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || '',
-      imageUrls: imageUrls.length > 0 ? imageUrls : undefined
+      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
+      hasImage: !!file
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -121,11 +114,8 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (files) {
-        files.forEach((file, index) => {
-          formData.append(`file${index}`, file);
-        });
-        formData.append('fileCount', String(files.length));
+      if (file) {
+        formData.append('file', file);
       }
 
       const response = await fetch('/api/coach', {
@@ -164,25 +154,19 @@ export default function CoachPage() {
               }
               if (data.patterns) {
                 patterns = data.patterns;
-                setDetectedPatterns(prev => {
-                  const merged = [...new Set([...prev, ...patterns])];
-                  return merged;
-                });
+                setDetectedPatterns(patterns);
               }
             } catch (e) {}
           }
         }
       }
 
+      // Update final message with patterns
       setMessages(prev => {
         const newMessages = [...prev];
         newMessages[newMessages.length - 1].patterns = patterns;
         return newMessages;
       });
-
-      if (user?.id) {
-        await supabase.from('coach_messages').insert({ user_id: user.id });
-      }
 
     } catch (error) {
       console.error('Error:', error);
@@ -213,74 +197,88 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    const fileArray = Array.from(files);
+    // Check if PDF - redirect to docs
+    if (file.type === 'application/pdf') {
+      router.push('/docs');
+      return;
+    }
     
-    if (fileArray.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
+    // Check if CSV - redirect to bulk import
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
-      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
-    const pdfCount = fileArray.filter(f => f.type === 'application/pdf').length;
-    const imageCount = fileArray.filter(f => f.type.startsWith('image/')).length;
-    
-    let prompt = '';
-    if (pdfCount > 0 && imageCount > 0) {
-      prompt = `Analyze ${pdfCount === 1 ? 'this document' : `these ${pdfCount} documents`} and ${imageCount === 1 ? 'this screenshot' : `these ${imageCount} screenshots`} and help me understand what I need to do.`;
-    } else if (pdfCount > 0) {
-      prompt = pdfCount === 1 ? 'Analyze this document and help me understand what I need to do.' : `Analyze these ${pdfCount} documents and help me understand what I need to do.`;
-    } else if (imageCount > 0) {
-      prompt = imageCount === 1 ? 'Analyze this screenshot and help me respond.' : `Analyze these ${imageCount} screenshots and help me respond.`;
+    // Handle image
+    if (file.type.startsWith('image/')) {
+      await handleSend('Please analyze this screenshot and help me respond.', file);
     }
 
-    await handleSend(prompt, fileArray);
-
+    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+  const handleSaveEvidence = async () => {
+    if (messages.length < 2 || !detectedPatterns.length) return;
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget === e.target) {
-      setIsDragging(false);
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+
+    if (!lastUserMsg || !lastAssistantMsg) return;
+
+    try {
+      // Get first detected pattern as category (already a coercive control pattern)
+      const primaryPattern = detectedPatterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: lastUserMsg.content,
+        category: categoryKey,
+        patterns: detectedPatterns,
+        severity: detectedPatterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
+        ) ? 'high' : 'medium',
+        incident_date: new Date().toISOString(),
+      });
+
+      alert('Saved to evidence!');
+      setDetectedPatterns([]);
+      setEvidenceCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save. Please try again.');
     }
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackText.trim() || !user) return;
+    setFeedbackSending(true);
     
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length === 0) return;
-    
-    if (files.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
-      router.push('/evidence/upload');
-      return;
+    try {
+      await supabase.from('feedback').insert({
+        user_id: user.id,
+        message: feedbackText,
+        page: 'coach',
+        created_at: new Date().toISOString()
+      });
+      
+      alert('Thank you for your feedback!');
+      setFeedbackText('');
+      setShowFeedback(false);
+    } catch (err) {
+      // Table might not exist yet - just log
+      console.log('Feedback:', feedbackText);
+      alert('Thanks! Feedback noted.');
+      setFeedbackText('');
+      setShowFeedback(false);
+    } finally {
+      setFeedbackSending(false);
     }
-
-    const pdfCount = files.filter(f => f.type === 'application/pdf').length;
-    const imageCount = files.filter(f => f.type.startsWith('image/')).length;
-    
-    let prompt = '';
-    if (pdfCount > 0 && imageCount > 0) {
-      prompt = `Analyze ${pdfCount === 1 ? 'this document' : `these ${pdfCount} documents`} and ${imageCount === 1 ? 'this screenshot' : `these ${imageCount} screenshots`} and help me understand what I need to do.`;
-    } else if (pdfCount > 0) {
-      prompt = pdfCount === 1 ? 'Analyze this document and help me understand what I need to do.' : `Analyze these ${pdfCount} documents and help me understand what I need to do.`;
-    } else if (imageCount > 0) {
-      prompt = imageCount === 1 ? 'Analyze this screenshot and help me respond.' : `Analyze these ${imageCount} screenshots and help me respond.`;
-    }
-
-    await handleSend(prompt, files);
   };
 
   if (loading) {
@@ -297,21 +295,7 @@ export default function CoachPage() {
   }
 
   return (
-    <div 
-      className="container"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      {isDragging && (
-        <div className="drag-overlay">
-          <div className="drag-content">
-            <span className="drag-icon">📸</span>
-            <span className="drag-text">Drop to analyze</span>
-          </div>
-        </div>
-      )}
-
+    <div className="container">
       <header className="header">
         <div className="header-left">
           <span className="logo">18</span>
@@ -334,6 +318,31 @@ export default function CoachPage() {
               <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
+            {/* Stats Bar */}
+            {evidenceCount > 0 && (
+              <div className="stats-bar">
+                <div className="stat">
+                  <span className="stat-num">{evidenceCount}</span>
+                  <span className="stat-label">DOCUMENTED</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat">
+                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
+                  <span className="stat-label">PATTERNS FOUND</span>
+                </div>
+                {topPattern && (
+                  <>
+                    <div className="stat-divider" />
+                    <div className="stat">
+                      <span className="stat-pattern">{topPattern[0]}</span>
+                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Quick Actions */}
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
               
@@ -374,16 +383,7 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                {msg.imageUrls && msg.imageUrls.length > 0 && (
-                  <div className="message-images">
-                    {msg.imageUrls.map((url, idx) => (
-                      <img key={idx} src={url} alt={`Uploaded ${idx + 1}`} />
-                    ))}
-                  </div>
-                )}
-                {msg.content && (
-                  <div className="message-content">{msg.content}</div>
-                )}
+                <div className="message-content">{msg.content}</div>
                 {msg.patterns && msg.patterns.length > 0 && (
                   <div className="patterns-detected">
                     {msg.patterns.map((p, j) => (
@@ -395,53 +395,90 @@ export default function CoachPage() {
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="analyzing">
-                  <span className="analyzing-icon">🎯</span>
-                  <span>Identifying patterns...</span>
-                </div>
+                <div className="typing">Thinking...</div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
         )}
 
-        {showExportNudge && !showHome && (
-          <div className="export-nudge">
-            <div className="nudge-content">
-              <span className="nudge-icon">💡</span>
-              <p>When things settle, export this text thread from your phone. Your calm responses next to their messages - that is your evidence.</p>
-              <button onClick={() => router.push('/evidence/upload')} className="nudge-btn">
-                Import Messages →
-              </button>
-              <button onClick={() => setShowExportNudge(false)} className="nudge-dismiss">
-                Got it
-              </button>
-            </div>
-          </div>
+        {/* Save Evidence Button */}
+        {detectedPatterns.length > 0 && !showHome && (
+          <button className="save-evidence-btn" onClick={handleSaveEvidence}>
+            💾 Save to Evidence ({detectedPatterns.length} patterns detected)
+          </button>
         )}
       </div>
 
+      {/* Export Nudge - Small toast, bottom left */}
+      {showExportNudge && !showHome && (
+        <div className="export-nudge">
+          <span className="nudge-icon">💡</span>
+          <p>Export this thread from your phone later - your calm responses are evidence.</p>
+          <div className="nudge-actions">
+            <button onClick={() => router.push('/evidence/upload')} className="nudge-btn-primary">
+              Import →
+            </button>
+            <button onClick={() => setShowExportNudge(false)} className="nudge-btn-secondary">
+              Got it
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.setItem('p18_nudge_dismissed', 'true');
+                setShowExportNudge(false);
+              }} 
+              className="nudge-btn-dismiss"
+            >
+              Don't show again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Button */}
+      <button className="feedback-btn" onClick={() => setShowFeedback(true)} title="Send Feedback">
+        💬
+      </button>
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Send Feedback</h3>
+            <p>Bug? Idea? Confusion? We want to hear it.</p>
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="What's on your mind?"
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowFeedback(false)} className="modal-cancel">
+                Cancel
+              </button>
+              <button 
+                onClick={handleFeedbackSubmit} 
+                disabled={feedbackSending || !feedbackText.trim()}
+                className="modal-submit"
+              >
+                {feedbackSending ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
         </button>
-        <textarea
-          ref={textareaRef}
+        <input
+          type="text"
           value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            e.target.style.height = 'auto';
-            e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
-          }}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="What's going on?"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
+          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
           disabled={sending}
-          rows={1}
         />
         <button 
           className="send-btn" 
@@ -455,7 +492,6 @@ export default function CoachPage() {
           type="file"
           accept="image/*,.pdf,.csv"
           onChange={handleFileSelect}
-          multiple
           hidden
         />
       </div>
@@ -468,28 +504,6 @@ export default function CoachPage() {
           background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
           display: flex;
           flex-direction: column;
-        }
-        .drag-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(26, 58, 47, 0.9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-        }
-        .drag-content {
-          text-align: center;
-          color: white;
-        }
-        .drag-icon {
-          font-size: 64px;
-          display: block;
-          margin-bottom: 16px;
-        }
-        .drag-text {
-          font-size: 24px;
-          font-weight: 600;
         }
         .header {
           display: flex;
@@ -561,6 +575,42 @@ export default function CoachPage() {
           line-height: 1.5;
           margin: 0;
         }
+        .stats-bar {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 16px;
+          background: white;
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stat {
+          text-align: center;
+        }
+        .stat-num {
+          display: block;
+          font-size: 24px;
+          font-weight: 800;
+          color: #1a3a2f;
+        }
+        .stat-pattern {
+          display: block;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1a3a2f;
+        }
+        .stat-label {
+          font-size: 10px;
+          color: #9ca3af;
+          letter-spacing: 0.5px;
+        }
+        .stat-divider {
+          width: 1px;
+          height: 40px;
+          background: #e5e7eb;
+        }
         .quick-actions {
           background: white;
           border-radius: 16px;
@@ -623,38 +673,20 @@ export default function CoachPage() {
         .message {
           margin-bottom: 16px;
         }
-        .message.user .message-images {
-          margin-left: 40px;
-          margin-bottom: 8px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .message.user .message-images img {
-          max-width: 200px;
-          max-height: 200px;
-          border-radius: 12px;
-          border: 2px solid #1a3a2f;
-          object-fit: cover;
-        }
         .message.user .message-content {
           background: #1a3a2f;
           color: white;
           padding: 14px 18px;
           border-radius: 18px 18px 4px 18px;
           margin-left: 40px;
-          line-height: 1.6;
-          font-size: 15px;
         }
         .message.assistant .message-content {
           background: white;
-          color: #374151;
-          padding: 16px 20px;
+          color: #1a3a2f;
+          padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
           margin-right: 40px;
           white-space: pre-wrap;
-          line-height: 1.7;
-          font-size: 15px;
         }
         .patterns-detected {
           display: flex;
@@ -671,72 +703,177 @@ export default function CoachPage() {
           font-size: 12px;
           font-weight: 600;
         }
-        .analyzing {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: #1a3a2f;
-          font-weight: 500;
-          padding: 8px 0;
+        .typing {
+          color: #9ca3af;
+          font-style: italic;
         }
-        .analyzing-icon {
-          font-size: 24px;
-          animation: pulse 1s ease-in-out infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.2); opacity: 0.7; }
-        }
-        .export-nudge {
+        .save-evidence-btn {
           position: fixed;
-          bottom: 130px;
-          left: 16px;
-          right: 16px;
-          max-width: 400px;
-          margin: 0 auto;
-          z-index: 50;
-        }
-        .nudge-content {
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 16px;
-          padding: 16px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .nudge-icon {
-          font-size: 20px;
-        }
-        .nudge-content p {
-          margin: 8px 0 12px;
-          font-size: 14px;
-          color: #4b5563;
-          line-height: 1.5;
-        }
-        .nudge-btn {
+          bottom: 200px;
+          left: 50%;
+          transform: translateX(-50%);
           background: #1a3a2f;
           color: white;
           border: none;
-          padding: 10px 16px;
-          border-radius: 8px;
-          font-size: 14px;
+          padding: 12px 24px;
+          border-radius: 24px;
           font-weight: 600;
           cursor: pointer;
-          margin-right: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          z-index: 50;
         }
-        .nudge-dismiss {
-          background: none;
+        
+        /* Export Nudge - Small toast */
+        .export-nudge {
+          position: fixed;
+          bottom: 140px;
+          left: 12px;
+          max-width: 280px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 50;
+          font-size: 13px;
+        }
+        .nudge-icon {
+          font-size: 16px;
+          margin-right: 6px;
+        }
+        .export-nudge p {
+          margin: 0 0 10px 0;
+          color: #374151;
+          line-height: 1.4;
+        }
+        .nudge-actions {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .nudge-btn-primary {
+          padding: 6px 12px;
+          background: #1a3a2f;
+          color: white;
           border: none;
-          color: #9ca3af;
-          font-size: 14px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
           cursor: pointer;
         }
+        .nudge-btn-secondary {
+          padding: 6px 12px;
+          background: #f3f4f6;
+          color: #6b7280;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          cursor: pointer;
+        }
+        .nudge-btn-dismiss {
+          padding: 6px 8px;
+          background: transparent;
+          color: #9ca3af;
+          border: none;
+          font-size: 11px;
+          cursor: pointer;
+        }
+        
+        /* Feedback Button */
+        .feedback-btn {
+          position: fixed;
+          bottom: 90px;
+          right: 16px;
+          width: 44px;
+          height: 44px;
+          border-radius: 22px;
+          background: #6b7280;
+          color: white;
+          border: none;
+          font-size: 20px;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          z-index: 60;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Feedback Modal */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .modal-content {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          width: 100%;
+          max-width: 400px;
+        }
+        .modal-content h3 {
+          margin: 0 0 8px;
+          font-size: 18px;
+          color: #1a3a2f;
+        }
+        .modal-content p {
+          margin: 0 0 16px;
+          font-size: 14px;
+          color: #6b7280;
+        }
+        .modal-content textarea {
+          width: 100%;
+          height: 120px;
+          padding: 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 15px;
+          resize: none;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .modal-cancel {
+          flex: 1;
+          padding: 12px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .modal-submit {
+          flex: 1;
+          padding: 12px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+        .modal-submit:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+        }
+        
         .input-area {
           position: fixed;
           bottom: 70px;
           left: 0;
           right: 0;
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           gap: 12px;
           padding: 12px 16px;
           background: white;
@@ -751,19 +888,15 @@ export default function CoachPage() {
           font-size: 20px;
           cursor: pointer;
         }
-        .input-area textarea {
+        .input-area input[type="text"] {
           flex: 1;
           padding: 12px 16px;
           border: 2px solid #e5e7eb;
-          border-radius: 20px;
+          border-radius: 24px;
           font-size: 16px;
           outline: none;
-          resize: none;
-          font-family: inherit;
-          line-height: 1.4;
-          max-height: 150px;
         }
-        .input-area textarea:focus {
+        .input-area input[type="text"]:focus {
           border-color: #1a3a2f;
         }
         .send-btn {
