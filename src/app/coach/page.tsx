@@ -330,11 +330,14 @@ export default function CoachPage() {
     const pdfCount = fileArray.filter(f => f.type === 'application/pdf').length;
     const imageCount = fileArray.filter(f => f.type.startsWith('image/')).length;
     
-    let prompt = 'Please analyze ';
-    const parts = [];
-    if (pdfCount > 0) parts.push(`${pdfCount} PDF document${pdfCount > 1 ? 's' : ''}`);
-    if (imageCount > 0) parts.push(`${imageCount} screenshot${imageCount > 1 ? 's' : ''}`);
-    prompt += parts.join(' and ') + ' and help me understand what I need to do.';
+    let prompt = '';
+    if (pdfCount > 0 && imageCount > 0) {
+      prompt = `Analyze ${pdfCount === 1 ? 'this document' : `these ${pdfCount} documents`} and ${imageCount === 1 ? 'this screenshot' : `these ${imageCount} screenshots`} and help me understand what I need to do.`;
+    } else if (pdfCount > 0) {
+      prompt = pdfCount === 1 ? 'Analyze this document and help me understand what I need to do.' : `Analyze these ${pdfCount} documents and help me understand what I need to do.`;
+    } else if (imageCount > 0) {
+      prompt = imageCount === 1 ? 'Analyze this screenshot and help me respond.' : `Analyze these ${imageCount} screenshots and help me respond.`;
+    }
 
     await handleSend(prompt, fileArray);
 
@@ -375,11 +378,14 @@ export default function CoachPage() {
     const pdfCount = files.filter(f => f.type === 'application/pdf').length;
     const imageCount = files.filter(f => f.type.startsWith('image/')).length;
     
-    let prompt = 'Please analyze ';
-    const parts = [];
-    if (pdfCount > 0) parts.push(`${pdfCount} PDF document${pdfCount > 1 ? 's' : ''}`);
-    if (imageCount > 0) parts.push(`${imageCount} screenshot${imageCount > 1 ? 's' : ''}`);
-    prompt += parts.join(' and ') + ' and help me understand what I need to do.';
+    let prompt = '';
+    if (pdfCount > 0 && imageCount > 0) {
+      prompt = `Analyze ${pdfCount === 1 ? 'this document' : `these ${pdfCount} documents`} and ${imageCount === 1 ? 'this screenshot' : `these ${imageCount} screenshots`} and help me understand what I need to do.`;
+    } else if (pdfCount > 0) {
+      prompt = pdfCount === 1 ? 'Analyze this document and help me understand what I need to do.' : `Analyze these ${pdfCount} documents and help me understand what I need to do.`;
+    } else if (imageCount > 0) {
+      prompt = imageCount === 1 ? 'Analyze this screenshot and help me respond.' : `Analyze these ${imageCount} screenshots and help me respond.`;
+    }
 
     await handleSend(prompt, files);
   };
