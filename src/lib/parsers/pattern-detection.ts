@@ -5,7 +5,24 @@
  * Integrates with existing Pattern 18 detection system
  */
 
-import { ParsedMessage } from './imazing-parser';
+// ============================================
+// BASE MESSAGE TYPE (flexible to handle different sources)
+// ============================================
+
+export interface BaseMessage {
+  id: string;
+  text: string;
+  content?: string;  // Alternative to text
+  sender: 'user' | 'coparent' | string;
+  senderName?: string;
+  timestamp: Date;
+  date?: Date;  // Alternative to timestamp
+  isEdited?: boolean;
+  editedAt?: Date;
+  replyTo?: string;
+  attachments?: string[];
+  [key: string]: any;  // Allow additional properties
+}
 
 // ============================================
 // PATTERN DEFINITIONS
@@ -82,7 +99,7 @@ export const PATTERNS: Pattern[] = [
     category: 'abuse',
     description: 'Putting the child in the middle or using them as a messenger',
     indicators: [
-      'talked to hawk',
+      'talked to the kids',
       'told the kids',
       'he said he wants',
       'she made it clear',
@@ -271,7 +288,7 @@ export const PATTERNS: Pattern[] = [
       'everyone will know',
       'tell everyone',
       'expose you',
-      'make sure hawk knows',
+      'make sure the kids know',
       'he\'ll see who you really are',
       'court history'
     ],
@@ -340,11 +357,34 @@ export interface PatternMatch {
   confidence: number; // 0-1
 }
 
-export interface AnalyzedMessage extends ParsedMessage {
+export interface AnalyzedMessage {
+  // Core properties (required)
+  id: string;
+  text: string;
+  sender: 'user' | 'coparent' | string;
+  timestamp: Date;
+  
+  // Optional alternative properties
+  content?: string;
+  date?: Date;
+  senderName?: string;
+  
+  // Edit tracking
+  isEdited?: boolean;
+  editedAt?: Date;
+  
+  // Message relationships
+  replyTo?: string;
+  attachments?: string[];
+  
+  // Pattern analysis results
   patterns: PatternMatch[];
-  severityScore: number; // 0-10
+  severityScore: number;
   isEvidence: boolean;
   evidenceNotes?: string;
+  
+  // Allow any additional properties
+  [key: string]: any;
 }
 
 export interface BulkAnalysisResult {
@@ -370,29 +410,52 @@ export interface BulkAnalysisResult {
 }
 
 // ============================================
+// HELPER: Get properties flexibly
+// ============================================
+
+function getText(msg: any): string {
+  return msg.text || msg.content || '';
+}
+
+function getTimestamp(msg: any): Date {
+  return msg.timestamp || msg.date || new Date();
+}
+
+function getSender(msg: any): string {
+  return msg.sender || 'unknown';
+}
+
+// ============================================
 // DETECTION ENGINE
 // ============================================
 
-export function analyzeMessage(message: ParsedMessage): AnalyzedMessage {
+export function analyzeMessage(message: any): AnalyzedMessage {
   const patterns: PatternMatch[] = [];
+  const sender = getSender(message);
+  const text = getText(message);
+  const timestamp = getTimestamp(message);
   
   // Only analyze coparent messages for patterns
-  if (message.sender !== 'coparent') {
+  if (sender !== 'coparent') {
     return {
       ...message,
+      id: message.id || `msg-${Date.now()}`,
+      text,
+      sender,
+      timestamp,
       patterns: [],
       severityScore: 0,
       isEvidence: false
     };
   }
 
-  const textLower = message.text.toLowerCase();
+  const textLower = text.toLowerCase();
   
   for (const pattern of PATTERNS) {
     for (const indicator of pattern.indicators) {
       if (textLower.includes(indicator.toLowerCase())) {
         // Calculate confidence based on indicator specificity
-        const confidence = calculateConfidence(indicator, message.text);
+        const confidence = calculateConfidence(indicator, text);
         
         patterns.push({
           patternId: pattern.id,
@@ -400,7 +463,7 @@ export function analyzeMessage(message: ParsedMessage): AnalyzedMessage {
           category: pattern.category,
           severity: pattern.severity,
           matchedIndicator: indicator,
-          matchedText: extractContext(message.text, indicator),
+          matchedText: extractContext(text, indicator),
           confidence
         });
         
@@ -420,6 +483,10 @@ export function analyzeMessage(message: ParsedMessage): AnalyzedMessage {
 
   return {
     ...message,
+    id: message.id || `msg-${Date.now()}`,
+    text,
+    sender,
+    timestamp,
     patterns,
     severityScore,
     isEvidence,
@@ -427,12 +494,12 @@ export function analyzeMessage(message: ParsedMessage): AnalyzedMessage {
   };
 }
 
-export function analyzeBulk(messages: ParsedMessage[]): BulkAnalysisResult {
+export function analyzeBulk(messages: any[]): BulkAnalysisResult {
   const analyzedMessages = messages.map(analyzeMessage);
   
   // Build summary statistics
-  const coparentMessages = analyzedMessages.filter(m => m.sender === 'coparent');
-  const userMessages = analyzedMessages.filter(m => m.sender === 'user');
+  const coparentMessages = analyzedMessages.filter(m => getSender(m) === 'coparent');
+  const userMessages = analyzedMessages.filter(m => getSender(m) === 'user');
   const messagesWithPatterns = analyzedMessages.filter(m => m.patterns.length > 0);
   
   const patternBreakdown: Record<string, number> = {};
@@ -466,7 +533,7 @@ export function analyzeBulk(messages: ParsedMessage[]): BulkAnalysisResult {
       const examples = messagesWithPatterns
         .filter(m => m.patterns.some(p => p.patternName === name))
         .slice(0, 3)
-        .map(m => m.text.substring(0, 100) + (m.text.length > 100 ? '...' : ''));
+        .map(m => getText(m).substring(0, 100) + (getText(m).length > 100 ? '...' : ''));
       
       return { pattern, count, examples };
     })
@@ -478,7 +545,7 @@ export function analyzeBulk(messages: ParsedMessage[]): BulkAnalysisResult {
   for (const msg of analyzedMessages) {
     if (msg.patterns.length === 0) continue;
     
-    const dateKey = msg.timestamp.toISOString().split('T')[0];
+    const dateKey = getTimestamp(msg).toISOString().split('T')[0];
     if (!timelineMap[dateKey]) {
       timelineMap[dateKey] = { severity: 0, count: 0 };
     }
@@ -498,11 +565,11 @@ export function analyzeBulk(messages: ParsedMessage[]): BulkAnalysisResult {
   let dateRange: { start: Date; end: Date } | null = null;
   if (analyzedMessages.length > 0) {
     const sorted = [...analyzedMessages].sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+      (a, b) => getTimestamp(a).getTime() - getTimestamp(b).getTime()
     );
     dateRange = {
-      start: sorted[0].timestamp,
-      end: sorted[sorted.length - 1].timestamp
+      start: getTimestamp(sorted[0]),
+      end: getTimestamp(sorted[sorted.length - 1])
     };
   }
 
@@ -634,7 +701,7 @@ function assessCourtReadiness(
   
   // Check for pattern consistency over time
   const dates = new Set(evidenceMessages.map(m => 
-    m.timestamp.toISOString().split('T')[0]
+    getTimestamp(m).toISOString().split('T')[0]
   ));
   
   if (dates.size >= 3) {

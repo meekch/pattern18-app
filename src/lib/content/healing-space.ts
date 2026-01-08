@@ -1,376 +1,344 @@
 /**
  * Pattern 18 Healing Space System
  * 
- * This isn't just breathing exercises - it's the deeper support:
- * - Parenting a child who mirrors the abuser
+ * Support for parents in high-conflict coparenting:
+ * - Parenting a child who mirrors the other parent's behavior
  * - Managing your own triggers
  * - Scripts for hard conversations
  * - Grounding when you're spiraling
  * - Truth anchors when you're being gaslit
  * 
- * Based on what Christy actually needed from ChatGPT.
+ * Written to be universal - works for any gender, any child age, any situation.
  */
 
 /**
  * PARENTING THROUGH TRAUMA
- * When the child mirrors the abuser's behavior
+ * When the child mirrors the other parent's behavior
+ * 
+ * Note: Use [child] as placeholder, replaced with actual name in app.
+ * All pronouns kept neutral or contextual.
  */
 export const PARENTING_SUPPORT = {
   
     // Core truths for when it's hardest
     coreTruths: {
-      whenTriggered: {
-        short: "My trigger is not the problem. His father's abuse was.",
-        full: "I am not dramatic — I am healing. I do not owe anyone silence. My peace is sacred, and I protect it with love and strength, even when it hurts."
+      trigger: {
+        short: "My trigger is not the problem. The abuse was.",
+        full: "I am allowed to have reactions to cruelty. My nervous system learned to protect me. I won't shame myself for survival responses."
       },
-      whenMocked: {
-        short: "Mocking me doesn't make your behavior okay.",
-        full: "I've survived cruelty disguised as love. I know the difference now. I will not be shamed into silence, and I will not be pulled into patterns that broke me."
-      },
-      whenGuilted: {
+      boundaries: {
         short: "My boundaries are not betrayal.",
-        full: "My boundaries are not betrayal. I am not the problem. I'm breaking the cycle so my son doesn't become it. This is love in its most courageous form."
+        full: "Setting boundaries doesn't make me the problem. I'm breaking the cycle. This is love in its most courageous form."
       },
-      whenDefended: {
-        short: "You're allowed to love your dad. That doesn't mean I have to pretend he treated me well.",
-        full: "I know you see one version of him. I lived another. Both can be true, even if they don't match."
+      child: {
+        short: "They're allowed to love their other parent. That doesn't mean I have to pretend I was treated well.",
+        full: "My child can hold two truths: love for both parents, and eventually, understanding of what happened. I don't have to resolve that for them."
       },
-      whenHopeless: {
-        short: "You are the safe parent. You are the true mirror.",
-        full: "Even if he can't see it now, one day he will look back and realize who protected his heart — not by fighting the father, but by refusing to become him."
+      safe: {
+        short: "I am the safe parent. I am the steady ground.",
+        full: "Even if they can't see it now, one day they may look back and realize who protected their heart — not by fighting, but by refusing to become what hurt me."
       }
     },
   
-    // Scripts for when the child is mean/critical
-    whenChildIsMean: [
+    // Scripts for when the child is being difficult
+    // These are TEMPLATES - the app should adapt based on child's age and situation
+    whenChildIsDifficult: [
       {
-        situation: "When he's critical or mocking you",
-        script: "I know you learned that tone somewhere, but it doesn't work here. I won't be spoken to like that. If you're upset, use your real feelings — not someone else's voice.",
-        why: "Gently names the influence without shaming or overexplaining."
+        situation: "When they repeat something hurtful they heard",
+        script: "That's an interesting thing to say. Where did that come from?",
+        why: "Gently invites reflection without shaming or overexplaining."
       },
       {
-        situation: "When he's cruel on purpose",
-        script: "That was unkind, and I don't allow people to treat me that way — including you. I'm going to walk away now, and I'll be here when you're ready to try again with kindness.",
-        why: "Models boundaries and repair."
+        situation: "When they're critical of you",
+        script: "I hear that you're upset. I'm here when you want to talk about what's really going on.",
+        why: "Stays open without being defensive or reactive."
       },
       {
-        situation: "When you feel triggered",
-        script: "That hit a nerve for me. I'm going to take a minute so I can respond instead of react. I love you too much to let us spiral.",
-        why: "Models emotional responsibility and lets him see you're human without dumping on him."
-      },
-      {
-        situation: "When you want to tell the truth about his dad",
-        script: "I know you see and hear things at your dad's that are confusing. I've lived with those patterns too, and it took me a long time to understand them. If you ever want to talk about what's healthy or not, I'll tell you the truth — with love, not judgment.",
+        situation: "When you want to share your truth",
+        script: "I know you see and hear things that are confusing. I've experienced those patterns too, and it took me a long time to understand them. If you ever want to talk about what's healthy or not, I'm here.",
         why: "Opens the door without slamming the other parent."
       },
       {
-        situation: "When he apologizes or softens",
-        script: "Thank you. That matters to me. You're learning how to work through hard feelings, and that takes courage. Let's keep practicing together.",
-        why: "Reinforces his emotional maturity, not just compliance."
+        situation: "When they apologize or soften",
+        script: "Thank you. That matters to me. You're learning how to work through hard feelings, and that takes courage.",
+        why: "Reinforces emotional growth, not just compliance."
       }
     ],
   
-    // When child says specific hurtful things
-    specificResponses: {
-      "get it all out": {
-        context: "He says this mockingly when you try to speak calmly",
-        responses: [
-          "I don't perform for people. I speak the truth once, and I walk away when I'm not being respected.",
-          "I don't argue with disrespect. I step away from it."
+    // Responding to specific deflections
+    deflectionResponses: {
+      "mocking your calm": {
+        context: "They mock you for speaking calmly or setting boundaries",
+        options: [
+          "I don't perform. I speak the truth once, and I walk away when I'm not being respected.",
+          "You're welcome to disagree with how I communicate. I'm still going to do it this way."
         ],
-        why: "Avoids the trap completely, puts you back in control."
+        why: "Avoids the trap, maintains dignity."
       },
-      "you're ridiculous": {
-        context: "He dismisses your concerns as drama",
-        responses: [
-          "I've been through more than you know. Speaking up about what's not okay isn't drama. It's called healing. And I won't let that be mocked in my own home.",
-          "Calling someone dramatic is a tactic people use to silence truth. I know that trick. It doesn't work here."
+      "you're dramatic": {
+        context: "They say you're dramatic, overreacting, too sensitive",
+        options: [
+          "Being able to feel things deeply isn't a flaw. It's how I've survived and healed.",
+          "You can think I'm dramatic. I know what I experienced."
         ],
-        why: "Names the tactic without engaging in JADE."
+        why: "Names the tactic without engaging in JADE (Justify, Argue, Defend, Explain)."
       },
-      "you're over sensitive": {
-        context: "He minimizes your feelings",
-        responses: [
-          "I'm sensitive because I feel. Because I care. That's not weakness — that's what makes me human.",
-          "Being able to feel things deeply isn't a flaw. It's how I've survived, healed, and stayed connected to what matters."
+      "defends other parent": {
+        context: "They defend the other parent's behavior",
+        options: [
+          "You're allowed to love them. That doesn't mean I have to pretend I was treated well.",
+          "I understand you see things differently. My experience was real too."
         ],
-        why: "Reframes sensitivity as strength."
+        why: "Holds truth while allowing them to have their own relationship."
       },
-      "defends his dad": {
-        context: "He defends his father's behavior",
-        responses: [
-          "You're allowed to love your dad. That doesn't mean I have to pretend he treated me well. I won't lie to protect someone who hurt me.",
-          "I know you see one version of him. I lived another. Both can be true, even if they don't match."
+      "dismissive body language": {
+        context: "Eye rolls, sighs, turning away",
+        options: [
+          "I see that. I'm still going to say what I need to say.",
+          "I'm here when you're ready to hear me."
         ],
-        why: "Holds truth while allowing him to have his own relationship."
+        why: "Doesn't chase connection, holds ground."
       },
-      "rolls his eyes": {
-        context: "He rolls his eyes at your words",
-        responses: [
-          "You can roll your eyes — I still meant every word.",
-          "That eye roll doesn't change the truth. I love you, and I'm showing up anyway.",
-          "Good to know your eyes still work. Just making sure you heard me."
-        ],
-        why: "Doesn't chase the connection, holds ground."
-      },
-      "did you use ChatGPT": {
-        context: "He mocks you for using tools to help you communicate",
-        responses: [
+      "questions your sources": {
+        context: "They question where you got your words or ideas",
+        options: [
           "Does it matter where the words came from if they're true?",
-          "You can criticize the tool — but what I said still stands. Are you upset because it's not true… or because it is?",
-          "I use resources that help me grow. You're allowed to do the same. Doesn't change what I see and feel."
+          "I've learned a lot about healthy communication. This is me practicing it."
         ],
-        why: "If the only way he can avoid your words is by mocking how you found them, that tells you a lot."
+        why: "Redirects to substance, not source."
       },
-      "acts arrogant": {
-        context: "He responds with smugness or intellectual superiority",
-        responses: [
-          "It's easier to be smug than real. I get it. I've seen it before. But I hope someday you'll choose depth over distance.",
-          "That response proves my point. But I'm not here to fight — I'm here to love you enough to tell the truth.",
-          "Okay. I said what I needed to say. Whether or not it sinks in is up to you."
+      "acts superior": {
+        context: "Condescending or superior attitude",
+        options: [
+          "You don't have to agree with me. But I do expect basic respect.",
+          "I'm not going to engage when I'm being talked down to."
         ],
-        why: "Doesn't engage the performance, ends with calm."
+        why: "Sets clear boundary without escalating."
       }
     },
   
-    // When child comes back from other parent's house
-    afterDadsHouse: {
-      whatToExpect: "He may come back colder, meaner, more aligned with dad. This is conditioning, not choice. His survival brain tells him it's safer to align with the dominant parent.",
-      dayOneScript: {
-        greeting: "Hey. Welcome back.",
-        note: "Neutral. Warm. No expectations. Don't chase connection."
-      },
-      waitPeriod: "Give his nervous system 24-48 hours to detox from the other parent's influence before any deep talks.",
-      ifCold: {
-        script: "It's hard when you come back and I feel like I'm the enemy. I love you — and I'm still me.",
-        why: "You don't beg. You just hold your place."
-      }
+    // After time with other parent
+    afterOtherParentTime: {
+      expect: [
+        "Emotional dysregulation (anger, withdrawal, testing)",
+        "Repeating phrases or attitudes from the other home",
+        "Testing your boundaries to see if you're 'safe'",
+        "Needing space before reconnecting",
+        "Possible regression in behavior"
+      ],
+      approach: [
+        "Give them space to decompress (don't interrogate)",
+        "Keep your home calm and predictable",
+        "Don't take the bait if they're testing you",
+        "Neutral greeting: 'Hey, good to see you'",
+        "Let them come to you when ready"
+      ],
+      remember: "This is a transition. Their behavior right now doesn't define your relationship. Stay steady."
     }
   };
   
-  
   /**
-   * NERVOUS SYSTEM SUPPORT
-   * Grounding tools for when you're triggered
+   * GROUNDING TOOLS
+   * For when you're triggered, spiraling, or preparing for something hard
    */
   export const GROUNDING_TOOLS = {
     
-    // Quick regulation
-    quickBreathing: {
+    breathing: {
       name: "4-7-8 Breath",
+      when: "Quick regulation when triggered",
       steps: [
         "Breathe in through your nose for 4 counts",
         "Hold for 7 counts",
         "Exhale slowly through your mouth for 8 counts",
         "Repeat 3-4 times"
       ],
-      when: "When you feel your heart racing or chest tightening"
+      why: "Activates parasympathetic nervous system, breaks the stress response."
     },
   
-    // Body-based grounding
-    fiveThings: {
+    grounding: {
       name: "5-4-3-2-1 Grounding",
+      when: "When you're spiraling or dissociating",
       steps: [
-        "Name 5 things you can SEE",
-        "Name 4 things you can TOUCH",
-        "Name 3 things you can HEAR",
-        "Name 2 things you can SMELL",
-        "Name 1 thing you can TASTE"
+        "5 things you can SEE",
+        "4 things you can TOUCH",
+        "3 things you can HEAR",
+        "2 things you can SMELL",
+        "1 thing you can TASTE"
       ],
-      when: "When you're spiraling or dissociating"
+      why: "Brings you back to the present moment, out of the trauma loop."
     },
   
-    // Physical reset
-    coldWater: {
+    physical: {
       name: "Cold Water Reset",
+      when: "When emotions are overwhelming",
       steps: [
-        "Run cold water over your wrists for 30 seconds",
+        "Run cold water over your wrists",
+        "Or hold ice cubes in your hands",
         "Or splash cold water on your face",
-        "This activates the dive reflex and calms the nervous system"
+        "Focus on the physical sensation"
       ],
-      when: "When you need to physically interrupt a panic response"
+      why: "Interrupts the emotional flooding with physical sensation."
     },
   
-    // Before hard conversations
-    preConversation: {
+    preparation: {
       name: "Before Hard Conversations",
+      when: "Preparing for exchanges, court, or difficult interactions",
       steps: [
-        "Take 3 slow breaths",
-        "Feel your feet on the ground",
-        "Remind yourself: 'I do not have to convince him. I just have to stay rooted in truth.'",
-        "Picture yourself calm after the conversation is over",
-        "You are ready"
+        "Name what you're afraid of (write it down)",
+        "Remind yourself: 'I've survived worse'",
+        "Decide your ONE boundary for this interaction",
+        "Have an exit plan or time limit",
+        "Plan something gentle for yourself afterward"
       ],
-      when: "Before talking to your child about hard things, before court, before any high-stakes moment"
+      why: "Reduces anxiety by creating structure and safety."
     },
   
-    // After being triggered
-    afterTrigger: {
-      name: "Post-Trigger Recovery",
+    recovery: {
+      name: "After Being Triggered",
+      when: "After a hard interaction",
       steps: [
         "Remove yourself from the situation if possible",
-        "Put your hand on your heart",
-        "Say out loud: 'I am safe. This feeling will pass.'",
-        "Shake out your hands and arms (literally shake them)",
-        "Take 5 slow breaths",
-        "Remind yourself what just happened was a trigger, not a truth"
+        "Name it: 'I'm triggered right now'",
+        "Do 4-7-8 breathing",
+        "Remind yourself: 'This feeling will pass'",
+        "Wait before responding to anything"
       ],
-      when: "After your child says something that echoes the abuser, after a hard message, after court"
+      why: "Prevents reactive responses that could be used against you."
     }
   };
-  
   
   /**
    * TRUTH ANCHORS
-   * Mantras for when you're being gaslit or doubting yourself
+   * Mantras and reminders when you're being gaslit
    */
   export const TRUTH_ANCHORS = {
     
-    // Core identity
-    iAm: [
+    identity: [
       "I am not dramatic — I am healing.",
-      "I am not too sensitive — I am aware.",
-      "I am not the problem — I am the solution.",
-      "I am not crazy — I am reacting to crazy-making behavior.",
-      "I am not alone — I am building my case."
+      "I am not difficult — I have boundaries.",
+      "I am not crazy — I see clearly now.",
+      "I am not the problem — I'm breaking the cycle."
     ],
   
-    // About the situation
-    thisIs: [
+    reality: [
       "This is abuse. I am not imagining it.",
-      "This is a pattern. It has happened before and been documented.",
-      "This is not about me. It's about his need for control.",
-      "This is temporary. I am building toward freedom.",
-      "This is evidence. Every incident strengthens my case."
+      "My memory is accurate. My experience was real.",
+      "I don't need them to admit it for it to be true.",
+      "Other people's denial doesn't change what happened."
     ],
   
-    // About the future
-    iWill: [
+    boundaries: [
       "I will not be gaslit into silence.",
-      "I will not beg for basic respect.",
-      "I will not sacrifice my peace for his comfort.",
-      "I will not let my son become what hurt me.",
-      "I will document, prepare, and protect."
+      "I will not JADE (Justify, Argue, Defend, Explain).",
+      "I will not set myself on fire to keep someone else warm.",
+      "No response is a response. Silence is allowed."
     ],
   
-    // When you doubt yourself
-    remember: [
-      "You survived. You are still surviving. You will survive this too.",
-      "Your memory is accurate. Your feelings are valid. Your boundaries are necessary.",
-      "You are not making it up. The texts exist. The patterns are documented.",
-      "You have already changed the story. You're living proof of it.",
-      "One day, your son will understand. And even if he doesn't, you did everything right."
+    future: [
+      "My child is watching how I handle this.",
+      "I am modeling what healthy boundaries look like.",
+      "This situation is temporary. My healing is permanent.",
+      "I am building a record. Every incident documented is progress."
     ]
   };
   
-  
   /**
-   * CAR RIDE TALKS
-   * Scripts for hard conversations with children
+   * REPAIR SCRIPTS
+   * For after you've been triggered in front of your child
    */
-  export const CAR_RIDE_SCRIPTS = {
+  export const REPAIR_SCRIPTS = {
+    
+    full: `Hey. Last night, I got triggered. I've been through a lot, and sometimes I don't handle it perfectly. I'm sorry if it felt heavy.
   
-    // After a conflict with child
-    repairScript: {
-      full: `"Hey bud. Before you go, I just want to say something.
+  I want you to know that my reaction wasn't about you. You're not responsible for my feelings. I'm working on healing, and sometimes that's messy.
   
-  Last night, I got triggered. I've been through a lot, and sometimes when I hear a certain tone or see someone I love acting in ways I've worked hard to heal from, it hits deep. I didn't handle it perfectly, and I'm sorry if it felt heavy.
+  What I want you to learn from me isn't perfection — it's how to own your mistakes and keep showing up. I love you, and I'm here.`,
   
-  But I want to be honest with you — how we treat people matters. Not just in public. Not just when it makes us look good. But especially with the people closest to us, at home, when no one's watching. That's where real character lives.
+    short: `I got triggered last night. That wasn't about you. I'm sorry if it was hard to be around. I love you and I'm working on it.`,
   
-  I believe in you. Even when we argue. Even when I get hurt. I love you, and I'll be here when you get back."`,
-      
-      short: "I know last night got tense — I just want you to know I love you, I'm still learning too, and I'll be here when you get back.",
-      
-      lightest: "Look, I'm still your mom whether you like it or not. I love you. I screw up sometimes. You do too. We'll figure it out. See you in five."
-    },
-  
-    // Telling truth about patterns
-    namingPatterns: {
-      gentle: "I see you sometimes act in ways your dad does. I've worked hard to understand those patterns because they caused a lot of pain. I don't want you to carry that pain forward.",
-      
-      direct: "When I hear that tone — that sarcasm, that dismissiveness — it hits me in a place that's still healing. It reminds me of someone who treated me badly for a long time. And I know you're not him. I know you can choose something different.",
-      
-      withHope: "You're becoming your own person, and I want you to have real power — not power that comes from tearing people down. You're better than that. And I know part of you knows it too."
-    },
-  
-    // About healthy vs unhealthy
-    whatLoveLooksLike: {
-      notThis: "Love doesn't feel like walking on eggshells. It doesn't feel like being afraid to mess up.",
-      
-      thisIs: "Real love makes people feel safe, not small. Real strength makes people feel supported, not controlled.",
-      
-      boundary: "When someone controls others through fear, silence, or criticism — that's not leadership. That's harm."
-    }
+    lightest: `Hey, I know I was off last night. I'm okay. I love you.`
   };
   
+  /**
+   * RESPONDING TO CO-PARENT
+   * General principles for gray rock communication
+   */
+  export const COPARENT_COMMUNICATION = {
+    
+    principles: [
+      "BIFF: Brief, Informative, Friendly, Firm",
+      "Respond to what requires response, ignore the bait",
+      "State facts, not feelings",
+      "One topic per message when possible",
+      "Document everything"
+    ],
+  
+    formula: {
+      acknowledge: "Acknowledge the logistical request (if any)",
+      answer: "Provide necessary information only",
+      boundary: "Set boundary if needed, without explanation",
+      close: "End without invitation for debate"
+    },
+  
+    examples: [
+      {
+        bait: "Long accusatory message about your parenting",
+        response: "[Address only the logistics, ignore accusations]"
+      },
+      {
+        bait: "Demands immediate response",
+        response: "I'll respond to scheduling requests within 24 hours as our order specifies."
+      },
+      {
+        bait: "Tries to change agreed plans last minute",
+        response: "We'll stick with the schedule as agreed."
+      }
+    ],
+  
+    remember: "Every response you send could be read aloud in court. Write accordingly."
+  };
   
   /**
-   * System prompt for Healing Space conversations
+   * SYSTEM PROMPT FOR HEALING SPACE
    */
-  export const HEALING_SPACE_SYSTEM_PROMPT = `You are the Healing Space within Pattern 18 — a warm, knowledgeable, trauma-informed support for parents navigating high-conflict custody situations.
+  export const HEALING_SPACE_SYSTEM_PROMPT = `You are Pattern 18's Healing Space — a trauma-informed support system for parents in high-conflict custody situations.
   
   ## YOUR ROLE
   
-  You provide:
-  - Nervous system support (grounding, breathing, regulation)
-  - Parenting scripts for hard conversations with children
-  - Truth anchors when they're being gaslit
-  - Validation and compassion for their experience
-  - Psychoeducation about coercive control and its effects on children
+  You are not a therapist. You are a knowledgeable, warm companion who:
+  - Validates their experience without dramatizing
+  - Provides practical scripts and strategies
+  - Helps them regulate their nervous system
+  - Reminds them of truth when they're being gaslit
+  - Supports them in parenting through trauma
   
-  ## HOW YOU RESPOND
+  ## TONE
   
-  ### 1. MEET THEM WHERE THEY ARE
-  If they're in crisis, don't educate — ground first.
-  If they're grieving, don't fix — hold space first.
-  If they're triggered, help regulate — then strategize.
+  - Warm but grounded
+  - Direct but compassionate
+  - Knowledgeable without lecturing
+  - Present without being overwhelming
   
-  ### 2. GIVE SPECIFIC SCRIPTS
-  Don't say "set a boundary." Give them exact words:
-  - "That was unkind. I don't allow people to treat me that way — including you."
+  ## WHAT YOU HELP WITH
   
-  ### 3. EXPLAIN THE WHY
-  Help them understand what's happening:
-  - "He's not choosing this. He's been conditioned. His survival brain tells him it's safer to align with his dad."
+  1. **Regulation** - Breathing, grounding, managing triggers
+  2. **Parenting** - Scripts for hard conversations with children
+  3. **Truth** - Anchoring them in reality when they're being gaslit
+  4. **Repair** - How to reconnect after being triggered
+  5. **Communication** - Gray rock responses to co-parent
   
-  ### 4. ANTICIPATE SCENARIOS
-  Think ahead: "What if he rolls his eyes?" Have responses ready.
+  ## WHAT YOU DON'T DO
   
-  ### 5. SUPPORT THEIR NERVOUS SYSTEM
-  Offer grounding tools, breathing exercises, mantras — concrete things they can use.
-  
-  ### 6. HOLD HOPE
-  The story isn't finished. The child is still developing. The safe parent's steadiness matters.
-  
-  ## KEY UNDERSTANDINGS
-  
-  ### About Children of Coercive Control
-  - They align with the dominant parent for survival
-  - They may parrot the abuser's words and tone
-  - They're not broken — they're conditioned
-  - Your steadiness is the counterweight to the chaos
-  - It may take years, but they remember who was safe
-  
-  ### About Triggers
-  - Triggers are not weaknesses — they're alarm systems from trauma
-  - When your child sounds like your abuser, your body responds to the PATTERN, not just the words
-  - You can be triggered AND regulated
-  - Naming the trigger helps discharge it
-  
-  ### About Boundaries with Children
-  - Boundaries are not punishment — they're protection
-  - You can love your child AND refuse to be mistreated
-  - Walking away is not abandonment — it's modeling self-respect
-  - Calm with boundaries is what stops the cycle
-  
-  ## YOUR TONE
-  
-  - Warm and grounded
-  - Understanding but not enabling
-  - Hopeful but honest
-  - Like a wise friend who's been through this
+  - Provide therapy or medical advice
+  - Tell them what to do legally
+  - Badmouth the other parent (even if they do)
+  - Push them to do anything they're not ready for
+  - Minimize their experience
   
   ## REMEMBER
   
-  This parent is doing sacred work. They're trying to break a generational cycle while standing in the middle of it. Honor that courage.`;
+  They're often coming to you dysregulated. Meet them where they are. Help them feel safe first, then offer tools.
+  
+  Their child's behavior may mirror the other parent's. This is painful. Help them see it as a symptom, not a rejection.
+  
+  The goal isn't to "win" — it's to stay regulated, document everything, and break the cycle.`;
