@@ -1,8 +1,8 @@
 /**
  * Pattern Detection Integration
- * Analyzes parsed messages against the 18 coercive control patterns
+ * Analyzes parsed messages against coercive control patterns
  * 
- * Integrates with existing Pattern 18 detection system
+ * EXPANDED VERSION - 3-4x more indicators per pattern for better detection
  */
 
 // ============================================
@@ -12,20 +12,20 @@
 export interface BaseMessage {
   id: string;
   text: string;
-  content?: string;  // Alternative to text
+  content?: string;
   sender: 'user' | 'coparent' | string;
   senderName?: string;
   timestamp: Date;
-  date?: Date;  // Alternative to timestamp
+  date?: Date;
   isEdited?: boolean;
   editedAt?: Date;
   replyTo?: string;
   attachments?: string[];
-  [key: string]: any;  // Allow additional properties
+  [key: string]: any;
 }
 
 // ============================================
-// PATTERN DEFINITIONS
+// PATTERN DEFINITIONS - EXPANDED INDICATORS
 // ============================================
 
 export interface Pattern {
@@ -40,214 +40,596 @@ export interface Pattern {
 export const PATTERNS: Pattern[] = [
   {
     id: 1,
-    name: 'Revisionist History',
+    name: 'Gaslighting',
     category: 'manipulation',
-    description: 'Rewriting past events or agreements to favor their narrative',
+    description: 'Making someone question their own reality or memory',
     indicators: [
-      'that\'s not what happened',
-      'you agreed to',
-      'we never discussed',
+      // Direct denial
+      'that never happened',
+      'that didn\'t happen',
+      'never said that',
       'i never said',
+      'never did that',
+      'i didn\'t say',
+      'didn\'t happen',
+      'not what happened',
+      'not how it happened',
+      // Memory attacks
+      'you\'re imagining',
+      'imagining things',
       'you\'re remembering wrong',
-      'that was your idea',
-      'i did that as a favor',
-      'you asked me to'
+      'remember it wrong',
+      'your memory',
+      'bad memory',
+      'you forgot',
+      'you\'re confused',
+      'you\'re mistaken',
+      'misremember',
+      // Reality denial
+      'you\'re crazy',
+      'you\'re insane',
+      'losing your mind',
+      'you\'re delusional',
+      'making things up',
+      'making stuff up',
+      'that\'s not true',
+      'not true at all',
+      'complete lie',
+      'total lie',
+      'you\'re lying',
+      'you misunderstood',
+      'you misheard',
+      'you took it wrong',
+      'twisting my words',
+      'putting words in my mouth',
+      // Perception attacks
+      'nobody said that',
+      'no one said',
+      'i would never',
+      'you know that\'s not',
+      'we both know',
+      'you know better',
+      'that\'s ridiculous',
+      'that\'s absurd'
     ],
-    severity: 'medium'
+    severity: 'critical'
   },
   {
     id: 2,
-    name: 'Legal/Court Threats',
-    category: 'legal',
-    description: 'Using threats of court action to intimidate or control',
+    name: 'DARVO',
+    category: 'manipulation',
+    description: 'Deny, Attack, Reverse Victim and Offender',
     indicators: [
-      'petition the court',
-      'talk to my lawyer',
-      'take you to court',
-      'court order',
-      'judge will',
-      'get this resolved',
-      'legal action',
-      'sue you',
-      'attorneys fees',
-      'monetary reward',
-      'contempt'
+      // Blame reversal
+      'you\'re the problem',
+      'you\'re the one',
+      'you started this',
+      'you caused this',
+      'your fault',
+      'this is on you',
+      'you did this',
+      'you made me',
+      'because of you',
+      'thanks to you',
+      'you brought this on',
+      // Attack phrases
+      'you\'re being unreasonable',
+      'you\'re impossible',
+      'you\'re difficult',
+      'so difficult',
+      'impossible to deal with',
+      'can\'t talk to you',
+      'no reasoning with you',
+      // Victim reversal
+      'after everything i\'ve done',
+      'after all i do',
+      'i\'m the victim here',
+      'you\'re hurting me',
+      'you\'re punishing me',
+      'doing this to me',
+      'what you\'re doing to me',
+      'how you treat me',
+      'how could you do this',
+      'knife in my back',
+      'stabbed me',
+      'betrayed',
+      // Counter-accusations
+      'you\'re the abuser',
+      'you\'re the manipulator',
+      'you manipulated',
+      'you\'re controlling',
+      'you\'re toxic',
+      'you\'re the narcissist',
+      'you\'re trying to',
+      'you always play victim'
     ],
     severity: 'high'
   },
   {
     id: 3,
-    name: 'Financial Manipulation',
-    category: 'control',
-    description: 'Using money or financial threats to control or punish',
+    name: 'Legal/Court Threats',
+    category: 'legal',
+    description: 'Using threats of court action to intimidate or control',
     indicators: [
-      'can\'t afford',
-      'won\'t be able to get',
-      'that\'s on you',
-      'pay for',
-      'owe me',
-      'your bill',
-      'foot the bill',
-      'what do i owe',
-      'you\'re greedy'
+      // Direct legal threats
+      'take you to court',
+      'see you in court',
+      'going to court',
+      'file a motion',
+      'file against you',
+      'petition the court',
+      'talk to my lawyer',
+      'call my lawyer',
+      'my attorney',
+      'lawyer will',
+      'attorney will',
+      'legal action',
+      'sue you',
+      'i\'ll sue',
+      // Court order references
+      'court order',
+      'court will',
+      'judge will',
+      'contempt',
+      'held in contempt',
+      'violating the order',
+      'violation of',
+      // Financial legal threats
+      'attorney\'s fees',
+      'legal fees',
+      'pay for my lawyer',
+      'monetary award',
+      'damages',
+      // Custody threats
+      'full custody',
+      'sole custody',
+      'take the kids',
+      'lose custody',
+      'custody modification',
+      'emergency custody',
+      'supervised visitation',
+      // General legal intimidation
+      'documented',
+      'documenting this',
+      'on record',
+      'evidence against you',
+      'use this against you',
+      'get this resolved',
+      'handle this legally'
     ],
     severity: 'high'
   },
   {
     id: 4,
+    name: 'Financial Manipulation',
+    category: 'control',
+    description: 'Using money or financial threats to control or punish',
+    indicators: [
+      // Withholding/refusing
+      'can\'t afford',
+      'won\'t pay',
+      'not paying',
+      'refuse to pay',
+      'don\'t have the money',
+      'not my responsibility',
+      'that\'s on you',
+      'your problem',
+      'figure it out yourself',
+      // Demands
+      'you owe me',
+      'owe me money',
+      'pay me back',
+      'need to be reimbursed',
+      'reimburse me',
+      'your bill',
+      'foot the bill',
+      'pay for it',
+      'pay your share',
+      'what do i owe',
+      // Accusations
+      'you\'re greedy',
+      'money hungry',
+      'all about money',
+      'just want my money',
+      'using me for money',
+      'gold digger',
+      // Support manipulation
+      'child support',
+      'support payment',
+      'won\'t get a dime',
+      'cut you off',
+      'financially',
+      // Tracking/controlling
+      'every penny',
+      'account for',
+      'receipts',
+      'prove you spent',
+      'where did the money'
+    ],
+    severity: 'high'
+  },
+  {
+    id: 5,
     name: 'Triangulating Child',
     category: 'abuse',
     description: 'Putting the child in the middle or using them as a messenger',
     indicators: [
+      // Using child as messenger
+      'tell your mother',
+      'tell your father',
+      'tell your mom',
+      'tell your dad',
+      'ask your mother',
+      'ask your father',
+      'tell him i said',
+      'tell her i said',
+      // Child preferences
+      'he said he wants',
+      'she said she wants',
+      'he doesn\'t want to',
+      'she doesn\'t want to',
+      'let him decide',
+      'let her decide',
+      'his decision',
+      'her decision',
+      'ask your son',
+      'ask your daughter',
+      'child agrees with me',
+      'kids want to',
+      'kids don\'t want',
+      // Talking to/through child
       'talked to the kids',
       'told the kids',
-      'he said he wants',
-      'she made it clear',
-      'let him decide',
-      'his decision',
-      'ask your son',
-      'child agrees with me',
-      'tell your mother',
-      'tell your father'
+      'kids told me',
+      'he told me that you',
+      'she told me that you',
+      'according to the kids',
+      // Making child choose
+      'make him choose',
+      'which parent',
+      'choose between us',
+      'where he wants to live',
+      'who he wants to be with',
+      // Alienating
+      'doesn\'t love you',
+      'scared of you',
+      'afraid of you',
+      'doesn\'t want to see you',
+      'cries when',
+      'hates going to your'
     ],
     severity: 'critical'
   },
   {
-    id: 5,
-    name: 'DARVO',
-    category: 'manipulation',
-    description: 'Deny, Attack, Reverse Victim and Offender',
-    indicators: [
-      'you\'re being unreasonable',
-      'you\'re the problem',
-      'you started this',
-      'your fault',
-      'you\'re difficult',
-      'knife to my back',
-      'after everything i\'ve done',
-      'this is on you',
-      'you manipulated',
-      'you\'re trying to'
-    ],
-    severity: 'high'
-  },
-  {
     id: 6,
-    name: 'Dismissing Without Engaging',
-    category: 'control',
-    description: 'Refusing to address substance of proposals or concerns',
-    indicators: [
-      'that doesn\'t work',
-      'i don\'t agree',
-      'not going to happen',
-      'that\'s not how it works',
-      'simple as that',
-      'end of discussion',
-      'my way or',
-      'i\'ve made my decision'
-    ],
-    severity: 'medium'
-  },
-  {
-    id: 7,
     name: 'Name-Calling/Verbal Abuse',
     category: 'abuse',
     description: 'Direct insults or demeaning language',
     indicators: [
+      // Direct insults
       'bitch',
       'asshole',
+      'bastard',
       'stupid',
-      'crazy',
-      'insane',
+      'idiot',
+      'moron',
+      'dumb',
       'pathetic',
       'loser',
+      'worthless',
+      'piece of shit',
+      'piece of crap',
+      'fucked up',
+      'fuck you',
+      'go to hell',
+      'screw you',
+      // Parenting attacks
       'terrible mother',
       'terrible father',
-      'piece of',
-      'fucked up'
-    ],
-    severity: 'critical'
-  },
-  {
-    id: 8,
-    name: 'False Accusations',
-    category: 'manipulation',
-    description: 'Making unfounded claims about behavior or character',
-    indicators: [
-      'gambling addiction',
-      'drug problem',
-      'alcoholic',
-      'abusive',
-      'neglect',
+      'bad mother',
+      'bad father',
+      'worst mother',
+      'worst father',
+      'horrible parent',
       'unfit parent',
-      'scam',
-      'liar',
-      'you always',
-      'you never'
-    ],
-    severity: 'high'
-  },
-  {
-    id: 9,
-    name: 'Gaslighting',
-    category: 'manipulation',
-    description: 'Making someone question their own reality or memory',
-    indicators: [
-      'that never happened',
-      'you\'re imagining',
-      'you\'re crazy',
-      'nobody said that',
-      'you\'re making things up',
-      'that\'s not true',
-      'you misunderstood'
+      'deadbeat',
+      // Mental health attacks
+      'crazy',
+      'insane',
+      'psycho',
+      'mental',
+      'unstable',
+      'bipolar',
+      'borderline',
+      'narcissist',
+      // Character attacks
+      'disgusting',
+      'vile',
+      'evil',
+      'monster',
+      'trash',
+      'garbage',
+      'joke',
+      'embarrassment',
+      'disappointment'
     ],
     severity: 'critical'
   },
   {
-    id: 10,
+    id: 7,
     name: 'Emotional Blackmail',
     category: 'manipulation',
     description: 'Using guilt, fear, or obligation to control',
     indicators: [
+      // Guilt trips
       'if you loved',
-      'breaks my heart',
+      'if you cared',
+      'if you were a good',
+      'a real mother would',
+      'a real father would',
+      'any decent parent',
+      'how could you',
       'can\'t believe you would',
       'after all i\'ve done',
-      'how could you',
-      'you\'re hurting the kids',
-      'think about what you\'re doing'
+      'everything i\'ve sacrificed',
+      'i gave up everything',
+      // Emotional pressure
+      'breaks my heart',
+      'breaking my heart',
+      'you\'re killing me',
+      'destroying me',
+      'tearing me apart',
+      'hurting the kids',
+      'think about what you\'re doing',
+      'think of the children',
+      'for the kids',
+      'do it for',
+      // Fear/threat
+      'you\'ll regret',
+      'you\'ll be sorry',
+      'live with yourself',
+      'on your conscience',
+      'your choice',
+      'remember this moment',
+      // Obligation
+      'you owe me',
+      'owe it to',
+      'the least you could do',
+      'after everything',
+      'i deserve',
+      'promised me'
     ],
     severity: 'high'
   },
   {
-    id: 11,
-    name: 'Information Gatekeeping',
+    id: 8,
+    name: 'Stonewalling',
     category: 'control',
-    description: 'Withholding or controlling access to information',
+    description: 'Refusing to communicate or engage',
     indicators: [
-      'none of your business',
-      'don\'t need to know',
+      // Direct refusals
+      'not discussing this',
+      'not talking about this',
+      'nothing to discuss',
+      'conversation over',
+      'end of discussion',
+      'done talking',
+      'not responding',
+      'won\'t respond',
+      'don\'t contact me',
+      'stop messaging',
+      'stop texting',
+      'leave me alone',
+      // Dismissals
+      'that doesn\'t work',
+      'doesn\'t work for me',
+      'i don\'t agree',
+      'not going to happen',
+      'not happening',
+      'that\'s not how it works',
+      'simple as that',
+      'my way or',
+      'take it or leave it',
+      'i\'ve made my decision',
+      'decision is final',
+      'not up for debate',
+      'not negotiable',
+      // Ignoring
       'i\'ll handle it',
-      'not your concern',
+      'don\'t worry about it',
+      'none of your concern',
+      'not your business',
       'stay out of it',
-      'gatekeeping'
+      'butt out',
+      'back off'
     ],
     severity: 'medium'
   },
   {
-    id: 12,
+    id: 9,
+    name: 'False Accusations',
+    category: 'manipulation',
+    description: 'Making unfounded claims about behavior or character',
+    indicators: [
+      // Addiction accusations
+      'drinking problem',
+      'drug problem',
+      'alcoholic',
+      'addict',
+      'substance abuse',
+      'gambling addiction',
+      'on drugs',
+      'you were drunk',
+      'you were high',
+      // Abuse accusations
+      'you\'re abusive',
+      'you abuse',
+      'you hit',
+      'you hurt',
+      'physically abusive',
+      'emotionally abusive',
+      // Neglect accusations
+      'you neglect',
+      'neglecting the kids',
+      'don\'t take care of',
+      'unfit',
+      'endangering',
+      'put them at risk',
+      // Character accusations
+      'liar',
+      'you\'re lying',
+      'always lie',
+      'pathological liar',
+      'can\'t trust you',
+      'scam',
+      'fraud',
+      'cheater',
+      // Absolute statements
+      'you always',
+      'you never',
+      'every time',
+      'constantly',
+      'all the time'
+    ],
+    severity: 'high'
+  },
+  {
+    id: 10,
+    name: 'Minimizing/Mocking',
+    category: 'abuse',
+    description: 'Belittling concerns, experiences, or conditions',
+    indicators: [
+      // Minimizing
+      'not a big deal',
+      'no big deal',
+      'not that bad',
+      'overreacting',
+      'over-reacting',
+      'so dramatic',
+      'drama queen',
+      'you\'re fine',
+      'get over it',
+      'move on',
+      'let it go',
+      'grow up',
+      'stop whining',
+      'stop complaining',
+      // Mocking
+      'oh please',
+      'give me a break',
+      'cry me a river',
+      'boo hoo',
+      'poor you',
+      'playing victim',
+      'victim card',
+      'so sensitive',
+      'too sensitive',
+      'thin skinned',
+      'can\'t take a joke',
+      // Dismissing concerns
+      'doesn\'t matter',
+      'who cares',
+      'so what',
+      'whatever',
+      'sure jan',
+      'yeah right',
+      'not a real',
+      'fake',
+      'made up'
+    ],
+    severity: 'medium'
+  },
+  {
+    id: 11,
     name: 'Schedule Manipulation',
     category: 'control',
     description: 'Unilaterally changing or refusing to follow schedules',
     indicators: [
+      // Withholding
       'keeping him',
+      'keeping her',
+      'keeping the kids',
       'not exchanging',
+      'not bringing',
+      'not dropping off',
+      'won\'t return',
+      'not coming back',
+      'staying with me',
+      // Unilateral changes
       'change of plans',
+      'plans changed',
+      'i decided',
       'i\'ll decide when',
+      'when i say so',
+      'on my schedule',
+      'my time now',
+      'not your time',
+      'not your day',
+      'not your weekend',
+      // Control
       'not giving back',
-      'my time now'
+      'pick up early',
+      'drop off late',
+      'different time',
+      'won\'t work',
+      'can\'t do that time',
+      'find someone else',
+      'make arrangements',
+      // Interference
+      'busy that day',
+      'we have plans',
+      'something came up',
+      'can\'t make it',
+      'running late',
+      'be there when i get there'
     ],
     severity: 'high'
+  },
+  {
+    id: 12,
+    name: 'Threats',
+    category: 'abuse',
+    description: 'Direct or veiled threats of harm or negative consequences',
+    indicators: [
+      // Direct threats
+      'you\'ll regret this',
+      'you\'ll be sorry',
+      'you\'ll pay for this',
+      'watch your back',
+      'be careful',
+      'watch out',
+      'warning you',
+      'i\'m warning',
+      'don\'t test me',
+      'don\'t push me',
+      'don\'t mess with me',
+      // Consequence threats
+      'consequences',
+      'suffer the consequences',
+      'you asked for this',
+      'brought this on yourself',
+      'your funeral',
+      'on your head',
+      'mark my words',
+      'remember this',
+      // Reputation threats
+      'everyone will know',
+      'tell everyone',
+      'expose you',
+      'ruin you',
+      'destroy you',
+      'make sure people know',
+      'your reputation',
+      // Relationship threats
+      'never see the kids',
+      'take them away',
+      'you\'ll lose them',
+      'turn them against you',
+      'won\'t have a relationship',
+      'disown',
+      'dead to me'
+    ],
+    severity: 'critical'
   },
   {
     id: 13,
@@ -255,89 +637,238 @@ export const PATTERNS: Pattern[] = [
     category: 'control',
     description: 'Excessive tracking or monitoring behavior',
     indicators: [
+      // Location tracking
       'i know where you',
-      'i saw you',
-      'tracking',
+      'know where you are',
+      'i saw you at',
+      'saw you there',
+      'tracking you',
       'find my',
+      'location',
+      'gps',
+      'where were you',
+      'where are you',
+      // Checking up
       'checking up',
-      'watching you'
+      'keeping tabs',
+      'watching you',
+      'eyes on you',
+      'people tell me',
+      'heard you were',
+      'someone saw you',
+      'little birdie',
+      // Social media
+      'saw your post',
+      'your facebook',
+      'your instagram',
+      'who is that',
+      'who were you with',
+      'new boyfriend',
+      'new girlfriend',
+      // Communications
+      'read your messages',
+      'your texts',
+      'your emails',
+      'know what you said',
+      'who are you talking to',
+      'who called you'
     ],
     severity: 'high'
   },
   {
     id: 14,
-    name: 'Weaponizing Flexibility',
-    category: 'manipulation',
-    description: 'Using past accommodations against the other parent',
+    name: 'Information Gatekeeping',
+    category: 'control',
+    description: 'Withholding or controlling access to information',
     indicators: [
-      'did you a favor',
-      'was flexible',
-      'accommodated you',
-      'every time i help',
-      'comes back to',
-      'remember this'
+      // Direct withholding
+      'none of your business',
+      'not your business',
+      'don\'t need to know',
+      'doesn\'t concern you',
+      'not your concern',
+      'stay out of it',
+      'butt out',
+      'mind your own',
+      // Control
+      'i\'ll handle it',
+      'i\'ll take care of it',
+      'don\'t worry about it',
+      'leave it to me',
+      'my decision',
+      'i decide',
+      // School/medical gatekeeping
+      'don\'t need your input',
+      'already decided',
+      'already handled',
+      'taken care of',
+      'made the appointment',
+      'cancelled the appointment',
+      'changed doctors',
+      'new school'
     ],
     severity: 'medium'
   },
   {
     id: 15,
-    name: 'Threats of Exposure',
-    category: 'abuse',
-    description: 'Threatening to reveal information or damage reputation',
+    name: 'Blame-Shifting',
+    category: 'manipulation',
+    description: 'Refusing to accept responsibility, deflecting to others',
     indicators: [
-      'everyone will know',
-      'tell everyone',
-      'expose you',
-      'make sure the kids know',
-      'he\'ll see who you really are',
-      'court history'
-    ],
-    severity: 'high'
-  },
-  {
-    id: 16,
-    name: 'Minimizing/Mocking',
-    category: 'abuse',
-    description: 'Belittling concerns, experiences, or conditions',
-    indicators: [
-      'scam',
-      'not a real',
-      'you\'re fine',
-      'get over it',
-      'drama',
-      'overreacting',
-      'so sensitive',
-      'playing victim'
+      // Direct blame shifts
+      'your fault',
+      'you caused',
+      'you made this happen',
+      'because of you',
+      'if you hadn\'t',
+      'if you didn\'t',
+      'you started',
+      'you\'re the reason',
+      'this is on you',
+      // Deflection
+      'not my fault',
+      'not my problem',
+      'don\'t blame me',
+      'nothing to do with me',
+      'i didn\'t do anything',
+      'what did i do',
+      'i\'m not the one',
+      // Counter-blame
+      'look at yourself',
+      'look in the mirror',
+      'you should talk',
+      'that\'s rich coming from you',
+      'pot calling kettle',
+      'you\'re one to talk',
+      // Weaponizing flexibility
+      'did you a favor',
+      'was being nice',
+      'tried to help',
+      'this is what i get',
+      'every time i help',
+      'remember when i'
     ],
     severity: 'medium'
   },
   {
-    id: 17,
-    name: 'Victim Positioning',
-    category: 'manipulation',
-    description: 'Portraying themselves as the victim of the other parent',
+    id: 16,
+    name: 'Intimidation',
+    category: 'abuse',
+    description: 'Creating fear through words or implied actions',
     indicators: [
-      'doing this to me',
-      'hurting me',
-      'against me',
-      'you\'re punishing me',
-      'taking away from me',
-      'unfair to me'
+      // Aggressive tone
+      'don\'t test me',
+      'don\'t push me',
+      'don\'t make me',
+      'you don\'t want to',
+      'wouldn\'t do that if i were you',
+      'bad idea',
+      'big mistake',
+      'huge mistake',
+      // Implied threats
+      'you know what happens',
+      'you know what i\'m capable of',
+      'you\'ve seen what i can do',
+      'i always win',
+      'never lost',
+      'i will win',
+      'you can\'t beat me',
+      // Urgency/pressure
+      'need to know now',
+      'decide now',
+      'today',
+      'right now',
+      'immediately',
+      'last chance',
+      'final offer',
+      'won\'t ask again',
+      'running out of time',
+      'before it\'s too late',
+      // Power statements
+      'i\'m in charge',
+      'i\'m the parent',
+      'my house my rules',
+      'what i say goes',
+      'i make the decisions'
+    ],
+    severity: 'high'
+  },
+  {
+    id: 17,
+    name: 'Hoovering',
+    category: 'manipulation',
+    description: 'Attempting to suck you back in after conflict',
+    indicators: [
+      // Sudden niceness
+      'i miss you',
+      'miss the family',
+      'miss us',
+      'we were good together',
+      'remember when',
+      'the good times',
+      'think about the kids',
+      'for the family',
+      // False promises
+      'i\'ve changed',
+      'i\'m different now',
+      'give me another chance',
+      'one more chance',
+      'things will be different',
+      'i promise',
+      'swear to you',
+      'it won\'t happen again',
+      'learned my lesson',
+      // Love bombing
+      'i still love you',
+      'always loved you',
+      'you\'re the one',
+      'no one else',
+      'meant to be',
+      'soulmates',
+      // Guilt hoovering
+      'don\'t give up on us',
+      'don\'t throw this away',
+      'think of what we had',
+      'the kids need us together'
     ],
     severity: 'medium'
   },
   {
     id: 18,
-    name: 'Deadline/Urgency Pressure',
-    category: 'control',
-    description: 'Creating false urgency to force decisions',
+    name: 'Word Salad',
+    category: 'manipulation',
+    description: 'Circular, confusing communication designed to exhaust',
     indicators: [
-      'need to know now',
-      'decide today',
-      'before it\'s too late',
-      'running out of time',
-      'last chance',
-      'won\'t wait'
+      // Topic shifting
+      'that\'s not the point',
+      'not what we\'re talking about',
+      'changing the subject',
+      'but what about',
+      'and another thing',
+      'while we\'re at it',
+      'speaking of which',
+      // Circular logic
+      'i already told you',
+      'already explained',
+      'how many times',
+      'we\'ve been over this',
+      'round and round',
+      'talking in circles',
+      'not going to keep',
+      // Confusion tactics
+      'you\'re not listening',
+      'not understanding',
+      'missing the point',
+      'you don\'t get it',
+      'let me explain again',
+      'clearly you don\'t',
+      // Exhaustion phrases
+      'i\'m done explaining',
+      'can\'t keep doing this',
+      'exhausting',
+      'draining',
+      'waste of time',
+      'pointless'
     ],
     severity: 'medium'
   }
@@ -354,36 +885,25 @@ export interface PatternMatch {
   severity: 'low' | 'medium' | 'high' | 'critical';
   matchedIndicator: string;
   matchedText: string;
-  confidence: number; // 0-1
+  confidence: number;
 }
 
 export interface AnalyzedMessage {
-  // Core properties (required)
   id: string;
   text: string;
   sender: 'user' | 'coparent' | string;
   timestamp: Date;
-  
-  // Optional alternative properties
   content?: string;
   date?: Date;
   senderName?: string;
-  
-  // Edit tracking
   isEdited?: boolean;
   editedAt?: Date;
-  
-  // Message relationships
   replyTo?: string;
   attachments?: string[];
-  
-  // Pattern analysis results
   patterns: PatternMatch[];
   severityScore: number;
   isEvidence: boolean;
   evidenceNotes?: string;
-  
-  // Allow any additional properties
   [key: string]: any;
 }
 
@@ -410,7 +930,7 @@ export interface BulkAnalysisResult {
 }
 
 // ============================================
-// HELPER: Get properties flexibly
+// HELPER FUNCTIONS
 // ============================================
 
 function getText(msg: any): string {
@@ -454,7 +974,6 @@ export function analyzeMessage(message: any): AnalyzedMessage {
   for (const pattern of PATTERNS) {
     for (const indicator of pattern.indicators) {
       if (textLower.includes(indicator.toLowerCase())) {
-        // Calculate confidence based on indicator specificity
         const confidence = calculateConfidence(indicator, text);
         
         patterns.push({
@@ -473,10 +992,7 @@ export function analyzeMessage(message: any): AnalyzedMessage {
     }
   }
 
-  // Calculate overall severity score
   const severityScore = calculateSeverityScore(patterns);
-  
-  // Determine if this is evidence-worthy
   const isEvidence = severityScore >= 3 || patterns.some(p => 
     p.severity === 'critical' || p.severity === 'high'
   );
@@ -497,7 +1013,6 @@ export function analyzeMessage(message: any): AnalyzedMessage {
 export function analyzeBulk(messages: any[]): BulkAnalysisResult {
   const analyzedMessages = messages.map(analyzeMessage);
   
-  // Build summary statistics
   const coparentMessages = analyzedMessages.filter(m => getSender(m) === 'coparent');
   const userMessages = analyzedMessages.filter(m => getSender(m) === 'user');
   const messagesWithPatterns = analyzedMessages.filter(m => m.patterns.length > 0);
@@ -526,7 +1041,6 @@ export function analyzeBulk(messages: any[]): BulkAnalysisResult {
     totalSeverity += msg.severityScore;
   }
 
-  // Build top patterns list
   const topPatterns = Object.entries(patternBreakdown)
     .map(([name, count]) => {
       const pattern = PATTERNS.find(p => p.name === name)!;
@@ -540,7 +1054,6 @@ export function analyzeBulk(messages: any[]): BulkAnalysisResult {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // Build timeline
   const timelineMap: Record<string, { severity: number; count: number }> = {};
   for (const msg of analyzedMessages) {
     if (msg.patterns.length === 0) continue;
@@ -561,7 +1074,6 @@ export function analyzeBulk(messages: any[]): BulkAnalysisResult {
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Date range
   let dateRange: { start: Date; end: Date } | null = null;
   if (analyzedMessages.length > 0) {
     const sorted = [...analyzedMessages].sort(
@@ -573,7 +1085,6 @@ export function analyzeBulk(messages: any[]): BulkAnalysisResult {
     };
   }
 
-  // Court readiness assessment
   const courtReadyNotes: string[] = [];
   const courtReady = assessCourtReadiness(analyzedMessages, courtReadyNotes);
 
@@ -607,13 +1118,9 @@ export function analyzeBulk(messages: any[]): BulkAnalysisResult {
 // ============================================
 
 function calculateConfidence(indicator: string, fullText: string): number {
-  // Longer indicators = higher confidence
   const lengthFactor = Math.min(indicator.length / 20, 1);
-  
-  // Check if it's a phrase match vs single word
   const isPhrase = indicator.includes(' ') ? 0.2 : 0;
   
-  // Check context (beginning of sentence = higher confidence)
   const sentences = fullText.split(/[.!?]/);
   let contextBonus = 0;
   for (const sentence of sentences) {
@@ -652,7 +1159,6 @@ function calculateSeverityScore(patterns: PatternMatch[]): number {
     score += severityValues[pattern.severity] * pattern.confidence;
   }
   
-  // Cap at 10
   return Math.min(Math.round(score * 10) / 10, 10);
 }
 
@@ -699,7 +1205,6 @@ function assessCourtReadiness(
     notes.push(`${criticalPatterns.length} critical severity incidents identified.`);
   }
   
-  // Check for pattern consistency over time
   const dates = new Set(evidenceMessages.map(m => 
     getTimestamp(m).toISOString().split('T')[0]
   ));
