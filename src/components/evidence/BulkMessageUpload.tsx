@@ -1,4 +1,56 @@
-'use client';
+// At top of file, add import:
+import { deduplicateIncidents, filterExistingIncidents } from '@/lib/utils/duplicate-detection';
+
+// In handleSaveToEvidence, BEFORE the fetch call, add:
+const handleSaveToEvidence = async () => {
+  if (!userId) {
+    setSaveError('Please log in to save evidence');
+    return;
+  }
+  if (!state.incidentResult?.incidents.length) {
+    setSaveError('No incidents to save');
+    return;
+  }
+  setSaving(true);
+  setSaveError(null);
+  
+  try {
+    // Format incidents first
+    const incidentsToSave = state.incidentResult.incidents.map(incident => ({
+      ...incident,
+      incident_date: incident.startTime.toISOString(),
+      coparent_message: incident.messages[0]?.text || '',
+      messages_json: incident.messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp?.toISOString?.() || new Date().toISOString(),
+      }))
+    }));
+
+    // DEDUPLICATE - remove duplicates within the array
+    const deduplicated = deduplicateIncidents(incidentsToSave);
+    
+    // CHECK DATABASE - remove any that already exist
+    const { newIncidents, duplicateCount } = await filterExistingIncidents(userId, deduplicated);
+    
+    if (newIncidents.length === 0) {
+      setSaveError(`All ${duplicateCount} incidents already exist in your evidence.`);
+      setSaving(false);
+      return;
+    }
+    
+    // Only save the new ones
+    const response = await fetch('/api/incidents/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, incidents: newIncidents })
+    });
+
+    // ... rest of the save logic
+    
+    // Update success message to show duplicate info
+    if (duplicateCount > 0) {
+      // Could show: "Saved 30 incidents (skipped 24 duplicates)"
+    }'use client';
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
