@@ -27,13 +27,9 @@ export default function CoachPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Feedback & nudge state
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackSending, setFeedbackSending] = useState(false);
+  // Export reminder state
   const [showExportNudge, setShowExportNudge] = useState(false);
   const [exportedThisMonth, setExportedThisMonth] = useState(true);
-  const [showExportTip, setShowExportTip] = useState(false);
 
   // Check if user has exported this month
   useEffect(() => {
@@ -230,32 +226,6 @@ export default function CoachPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleFeedbackSubmit = async () => {
-    if (!feedbackText.trim() || !user) return;
-    setFeedbackSending(true);
-    
-    try {
-      await supabase.from('feedback').insert({
-        user_id: user.id,
-        message: feedbackText,
-        page: 'coach',
-        created_at: new Date().toISOString()
-      });
-      
-      alert('Thank you for your feedback!');
-      setFeedbackText('');
-      setShowFeedback(false);
-    } catch (err) {
-      // Table might not exist yet - just log
-      console.log('Feedback:', feedbackText);
-      alert('Thanks! Feedback noted.');
-      setFeedbackText('');
-      setShowFeedback(false);
-    } finally {
-      setFeedbackSending(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="loading">
@@ -280,46 +250,14 @@ export default function CoachPage() {
           </div>
         </div>
         <div className="header-right">
-          {/* Export Reminder */}
-          <div className="export-reminder-wrap">
-            <button 
-              className={`export-reminder ${exportedThisMonth ? 'done' : 'pending'}`}
-              onClick={() => setShowExportTip(!showExportTip)}
-            >
-              {exportedThisMonth ? '✓' : '📲'}
-            </button>
-            {showExportTip && (
-              <div className="export-tip">
-                <div className="export-tip-header">
-                  <strong>Monthly Export</strong>
-                  <button onClick={() => setShowExportTip(false)}>✕</button>
-                </div>
-                <p>Export your text messages monthly to preserve evidence with timestamps.</p>
-                <label className="export-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={exportedThisMonth}
-                    onChange={(e) => {
-                      const currentMonth = new Date().toISOString().slice(0, 7);
-                      if (e.target.checked) {
-                        localStorage.setItem('p18_last_export', currentMonth);
-                      } else {
-                        localStorage.removeItem('p18_last_export');
-                      }
-                      setExportedThisMonth(e.target.checked);
-                    }}
-                  />
-                  Done this month
-                </label>
-                <button 
-                  className="export-tip-btn"
-                  onClick={() => { setShowExportTip(false); router.push('/faq#export'); }}
-                >
-                  How to export →
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Export Reminder - simple indicator */}
+          <button 
+            className={`export-indicator ${exportedThisMonth ? 'done' : 'pending'}`}
+            onClick={() => router.push('/faq#export')}
+            title={exportedThisMonth ? 'Monthly export done' : 'Time to export your messages'}
+          >
+            {exportedThisMonth ? '✓' : '📲'}
+          </button>
           <button className="evidence-badge" onClick={() => router.push('/my-case')}>
             📁 {evidenceCount}
           </button>
@@ -445,38 +383,6 @@ export default function CoachPage() {
         </div>
       )}
 
-      {/* Feedback Button - in header area, not near send */}
-      <button className="feedback-btn" onClick={() => setShowFeedback(true)} title="Send Feedback">
-        💡
-      </button>
-
-      {/* Feedback Modal */}
-      {showFeedback && (
-        <div className="modal-overlay" onClick={() => setShowFeedback(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Send Feedback</h3>
-            <p>Bug? Idea? Confusion? We want to hear it.</p>
-            <textarea
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="What's on your mind?"
-            />
-            <div className="modal-actions">
-              <button onClick={() => setShowFeedback(false)} className="modal-cancel">
-                Cancel
-              </button>
-              <button 
-                onClick={handleFeedbackSubmit} 
-                disabled={feedbackSending || !feedbackText.trim()}
-                className="modal-submit"
-              >
-                {feedbackSending ? 'Sending...' : 'Send'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
@@ -562,10 +468,7 @@ export default function CoachPage() {
           align-items: center;
           gap: 8px;
         }
-        .export-reminder-wrap {
-          position: relative;
-        }
-        .export-reminder {
+        .export-indicator {
           width: 32px;
           height: 32px;
           border-radius: 16px;
@@ -576,73 +479,17 @@ export default function CoachPage() {
           align-items: center;
           justify-content: center;
         }
-        .export-reminder.pending {
+        .export-indicator.pending {
           background: #fef3c7;
           animation: pulse-soft 2s infinite;
         }
-        .export-reminder.done {
+        .export-indicator.done {
           background: rgba(255,255,255,0.2);
           color: #86efac;
         }
         @keyframes pulse-soft {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
-        }
-        .export-tip {
-          position: absolute;
-          top: 40px;
-          right: 0;
-          width: 240px;
-          background: white;
-          border-radius: 12px;
-          padding: 14px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-          z-index: 100;
-          color: #374151;
-          font-size: 13px;
-        }
-        .export-tip-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-        .export-tip-header strong {
-          color: #1a3a2f;
-        }
-        .export-tip-header button {
-          background: none;
-          border: none;
-          color: #9ca3af;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .export-tip p {
-          margin: 0 0 12px;
-          line-height: 1.4;
-        }
-        .export-checkbox {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          cursor: pointer;
-        }
-        .export-checkbox input {
-          width: 18px;
-          height: 18px;
-          cursor: pointer;
-        }
-        .export-tip-btn {
-          width: 100%;
-          padding: 8px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 6px;
-          color: #1a3a2f;
-          font-weight: 500;
-          cursor: pointer;
-          font-size: 12px;
         }
         .content {
           flex: 1;
@@ -859,94 +706,6 @@ export default function CoachPage() {
           border: none;
           font-size: 11px;
           cursor: pointer;
-        }
-        
-        /* Feedback Button - top right, below header */
-        .feedback-btn {
-          position: fixed;
-          top: 70px;
-          right: 16px;
-          width: 40px;
-          height: 40px;
-          border-radius: 20px;
-          background: white;
-          color: #6b7280;
-          border: 1px solid #e5e7eb;
-          font-size: 18px;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          z-index: 60;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        /* Feedback Modal */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 200;
-          padding: 20px;
-        }
-        .modal-content {
-          background: white;
-          border-radius: 16px;
-          padding: 24px;
-          width: 100%;
-          max-width: 400px;
-        }
-        .modal-content h3 {
-          margin: 0 0 8px;
-          font-size: 18px;
-          color: #1a3a2f;
-        }
-        .modal-content p {
-          margin: 0 0 16px;
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .modal-content textarea {
-          width: 100%;
-          height: 120px;
-          padding: 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          font-size: 15px;
-          resize: none;
-          font-family: inherit;
-          box-sizing: border-box;
-        }
-        .modal-actions {
-          display: flex;
-          gap: 12px;
-          margin-top: 16px;
-        }
-        .modal-cancel {
-          flex: 1;
-          padding: 12px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-        }
-        .modal-submit {
-          flex: 1;
-          padding: 12px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-        .modal-submit:disabled {
-          background: #9ca3af;
-          cursor: not-allowed;
         }
         
         .input-area {

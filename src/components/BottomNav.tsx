@@ -87,11 +87,46 @@ export default function BottomNav({ active }: BottomNavProps) {
                 </div>
               </button>
               
+              <button onClick={() => { 
+                setShowMenu(false); 
+                const currentMonth = new Date().toISOString().slice(0, 7);
+                const lastExport = localStorage.getItem('p18_last_export');
+                if (lastExport === currentMonth) {
+                  localStorage.removeItem('p18_last_export');
+                  alert('Export reminder reset. You\'ll see the 📲 indicator again.');
+                } else {
+                  localStorage.setItem('p18_last_export', currentMonth);
+                  alert('Nice! Monthly export marked as done. ✓');
+                }
+                window.location.reload();
+              }} className="menu-item">
+                <span className="menu-icon">📲</span>
+                <div className="menu-text">
+                  <span className="menu-title">Monthly Export</span>
+                  <span className="menu-desc">Mark as done / see instructions</span>
+                </div>
+              </button>
+              
               <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
                 <span className="menu-icon">💚</span>
                 <div className="menu-text">
                   <span className="menu-title">Healing Space</span>
                   <span className="menu-desc">Breathing, grounding, support</span>
+                </div>
+              </button>
+              
+              <button onClick={() => { 
+                setShowMenu(false); 
+                const feedback = window.prompt('Bug? Idea? Confusion? Let us know:');
+                if (feedback && feedback.trim()) {
+                  console.log('Feedback:', feedback);
+                  alert('Thank you for your feedback!');
+                }
+              }} className="menu-item">
+                <span className="menu-icon">💡</span>
+                <div className="menu-text">
+                  <span className="menu-title">Send Feedback</span>
+                  <span className="menu-desc">Help us improve</span>
                 </div>
               </button>
             </div>
