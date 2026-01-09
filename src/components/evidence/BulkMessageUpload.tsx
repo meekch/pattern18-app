@@ -53,9 +53,9 @@ const EXPORT_GUIDES = [
     steps: 'Chat → Menu → More → Export chat → Without media'
   },
   {
-    app: 'iMessage',
+    app: 'iMessage (iMazing)',
     icon: '🍎',
-    steps: 'Use iMazing or similar tool to export as CSV'
+    steps: 'Use iMazing to export as CSV'
   }
 ];
 
@@ -263,7 +263,7 @@ export default function BulkMessageUpload() {
               Drop CSV file here or click to upload
             </p>
             <p style={{ fontSize: 14, color: '#6b7280' }}>
-              CSV files only - exports from OFW, TalkingParents, AppClose, etc.
+              CSV files only - exports from OFW, TalkingParents, AppClose, iMazing, etc.
             </p>
           </div>
 
@@ -428,6 +428,7 @@ function ResultsView({
   saveError: string | null;
 }) {
   const [showIncidents, setShowIncidents] = useState(true);
+  const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
   const s = analysis.summary;
 
   return (
@@ -526,7 +527,7 @@ function ResultsView({
                 {incidents.incidents.length} incidents ready to save
               </h3>
               <p style={{ color: '#047857', fontSize: 14 }}>
-                Save to your Evidence Dashboard to access anytime and generate court exhibits.
+                Click any incident below to review before saving.
               </p>
             </div>
             <button
@@ -620,9 +621,14 @@ function ResultsView({
           </div>
 
           {showIncidents && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 500, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 600, overflowY: 'auto' }}>
               {incidents.incidents.map((incident) => (
-                <IncidentCard key={incident.id} incident={incident} />
+                <IncidentCard 
+                  key={incident.id} 
+                  incident={incident} 
+                  isExpanded={expandedIncident === incident.id}
+                  onToggle={() => setExpandedIncident(expandedIncident === incident.id ? null : incident.id)}
+                />
               ))}
             </div>
           )}
@@ -651,7 +657,7 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   );
 }
 
-function IncidentCard({ incident }: { incident: Incident }) {
+function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; isExpanded: boolean; onToggle: () => void }) {
   const categoryName = CATEGORY_DISPLAY_NAMES[incident.category] || incident.category;
   const dateStr = incident.startTime.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -675,61 +681,192 @@ function IncidentCard({ incident }: { incident: Incident }) {
       background: colors.bg,
       border: `1px solid ${colors.border}`,
       borderRadius: 12,
-      padding: 16
+      overflow: 'hidden'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, color: '#6b7280' }}>{dateStr}</span>
-        <span style={{
-          fontSize: 12,
-          padding: '2px 8px',
-          borderRadius: 12,
-          background: incident.evidenceStrength === 'strong' ? '#d1fae5' :
-                     incident.evidenceStrength === 'moderate' ? '#fef3c7' : '#f3f4f6',
-          color: incident.evidenceStrength === 'strong' ? '#065f46' :
-                incident.evidenceStrength === 'moderate' ? '#92400e' : '#6b7280'
-        }}>
-          {incident.evidenceStrength === 'strong' ? '🟢 Strong' :
-           incident.evidenceStrength === 'moderate' ? '🟡 Moderate' : '⚪ Weak'}
-        </span>
-      </div>
-
-      <h4 style={{ fontWeight: 600, color: '#1f2937', marginBottom: 4 }}>{incident.title}</h4>
-      
-      <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>
-        {incident.messageCount} messages • {incident.durationMinutes > 0 ? `${incident.durationMinutes} min • ` : ''}{categoryName}
-      </p>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-        {incident.uniquePatterns.slice(0, 4).map((pattern, i) => (
-          <span
-            key={i}
-            style={{
-              fontSize: 11,
+      {/* Header - always visible, clickable */}
+      <div 
+        onClick={onToggle}
+        style={{
+          padding: 16,
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>{dateStr}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 12,
               padding: '2px 8px',
-              background: 'rgba(0,0,0,0.05)',
-              borderRadius: 10,
-              color: '#4b5563'
-            }}
-          >
-            {pattern}
-          </span>
-        ))}
-        {incident.uniquePatterns.length > 4 && (
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>+{incident.uniquePatterns.length - 4} more</span>
+              borderRadius: 12,
+              background: incident.evidenceStrength === 'strong' ? '#d1fae5' :
+                         incident.evidenceStrength === 'moderate' ? '#fef3c7' : '#f3f4f6',
+              color: incident.evidenceStrength === 'strong' ? '#065f46' :
+                    incident.evidenceStrength === 'moderate' ? '#92400e' : '#6b7280'
+            }}>
+              {incident.evidenceStrength === 'strong' ? '🟢 Strong' :
+               incident.evidenceStrength === 'moderate' ? '🟡 Moderate' : '⚪ Weak'}
+            </span>
+            <span style={{ color: '#9ca3af', transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+              ▶
+            </span>
+          </div>
+        </div>
+
+        <h4 style={{ fontWeight: 600, color: '#1f2937', margin: 0 }}>{incident.title}</h4>
+        
+        <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
+          {incident.messageCount} messages • {incident.durationMinutes > 0 ? `${incident.durationMinutes} min • ` : ''}{categoryName}
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {incident.uniquePatterns.slice(0, 4).map((pattern, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: 11,
+                padding: '2px 8px',
+                background: 'rgba(0,0,0,0.05)',
+                borderRadius: 10,
+                color: '#4b5563'
+              }}
+            >
+              {pattern}
+            </span>
+          ))}
+          {incident.uniquePatterns.length > 4 && (
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{incident.uniquePatterns.length - 4} more</span>
+          )}
+        </div>
+
+        {!isExpanded && preview && (
+          <p style={{
+            fontSize: 13,
+            color: '#6b7280',
+            fontStyle: 'italic',
+            borderLeft: '2px solid #d1d5db',
+            paddingLeft: 12,
+            margin: 0
+          }}>
+            "{preview}{preview.length >= 120 ? '...' : ''}"
+          </p>
         )}
       </div>
 
-      {preview && (
-        <p style={{
-          fontSize: 13,
-          color: '#6b7280',
-          fontStyle: 'italic',
-          borderLeft: '2px solid #d1d5db',
-          paddingLeft: 12,
-          margin: 0
+      {/* Expanded Content - messages with pattern details */}
+      {isExpanded && (
+        <div style={{
+          borderTop: `1px solid ${colors.border}`,
+          background: 'white',
+          maxHeight: 400,
+          overflowY: 'auto'
         }}>
-          "{preview}{preview.length >= 120 ? '...' : ''}"
-        </p>
+          {/* Pattern Summary */}
+          {incident.uniquePatterns.length > 0 && (
+            <div style={{ padding: 16, background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8 }}>
+                ⚠️ PATTERNS DETECTED IN THIS INCIDENT
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {incident.uniquePatterns.map((pattern, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      padding: '4px 12px',
+                      background: '#fef3c7',
+                      border: '1px solid #fcd34d',
+                      borderRadius: 16,
+                      fontSize: 12,
+                      color: '#92400e'
+                    }}
+                  >
+                    {pattern}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div style={{ padding: '8px 0' }}>
+            {incident.messages.map((msg: any, idx: number) => {
+              const isCoparent = msg.sender === 'coparent';
+              const hasPatterns = msg.patterns && msg.patterns.length > 0;
+              
+              return (
+                <div 
+                  key={idx}
+                  style={{
+                    padding: '12px 16px',
+                    background: hasPatterns ? '#fef2f2' : (isCoparent ? '#fff' : '#f0fdf4'),
+                    borderBottom: idx < incident.messages.length - 1 ? '1px solid #f3f4f6' : 'none'
+                  }}
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    marginBottom: 4,
+                    fontSize: 11,
+                    color: '#9ca3af'
+                  }}>
+                    <span style={{ 
+                      fontWeight: 600,
+                      color: isCoparent ? '#dc2626' : '#059669'
+                    }}>
+                      {isCoparent ? '🔴 Co-parent' : '🟢 You'}
+                      {msg.senderName && isCoparent && ` (${msg.senderName})`}
+                    </span>
+                    <span>
+                      {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      }) : ''}
+                    </span>
+                  </div>
+                  
+                  <div style={{ 
+                    fontSize: 14, 
+                    color: '#374151',
+                    lineHeight: 1.5
+                  }}>
+                    {msg.text || msg.content}
+                  </div>
+
+                  {/* Show detected patterns for this specific message */}
+                  {hasPatterns && (
+                    <div style={{ 
+                      marginTop: 8, 
+                      display: 'flex', 
+                      flexWrap: 'wrap', 
+                      gap: 4 
+                    }}>
+                      {msg.patterns.map((p: any, i: number) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: 10,
+                            padding: '2px 8px',
+                            background: p.severity === 'critical' ? '#dc2626' :
+                                       p.severity === 'high' ? '#ea580c' : '#f59e0b',
+                            color: 'white',
+                            borderRadius: 8,
+                            fontWeight: 600
+                          }}
+                        >
+                          {p.patternName || p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
