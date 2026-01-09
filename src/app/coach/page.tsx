@@ -445,9 +445,9 @@ export default function CoachPage() {
         </div>
       )}
 
-      {/* Feedback Button */}
+      {/* Feedback Button - in header area, not near send */}
       <button className="feedback-btn" onClick={() => setShowFeedback(true)} title="Send Feedback">
-        💬
+        💡
       </button>
 
       {/* Feedback Modal */}
@@ -861,20 +861,20 @@ export default function CoachPage() {
           cursor: pointer;
         }
         
-        /* Feedback Button */
+        /* Feedback Button - top right, below header */
         .feedback-btn {
           position: fixed;
-          bottom: 90px;
+          top: 70px;
           right: 16px;
-          width: 44px;
-          height: 44px;
-          border-radius: 22px;
-          background: #6b7280;
-          color: white;
-          border: none;
-          font-size: 20px;
+          width: 40px;
+          height: 40px;
+          border-radius: 20px;
+          background: white;
+          color: #6b7280;
+          border: 1px solid #e5e7eb;
+          font-size: 18px;
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
           z-index: 60;
           display: flex;
           align-items: center;
