@@ -1,6 +1,7 @@
 /**
  * Generic Message Parser
  * Handles CSV exports from common co-parenting apps:
+ * - iMazing (iMessage export) - PRIORITY FORMAT
  * - OurFamilyWizard
  * - TalkingParents
  * - AppClose
@@ -59,15 +60,18 @@ export function parseCSV(content: string): ParseResult {
     };
   }
 
+  // Parse header to get column indices
+  const headerRow = parseCSVRow(lines[0]);
+  const headers = headerRow.map(h => h.toLowerCase().trim());
+  
   // Detect format from headers
-  const headerLine = lines[0].toLowerCase();
-  const format = detectCSVFormat(headerLine);
+  const format = detectCSVFormat(headers);
   
   if (format === 'unknown') {
     return {
       success: false,
       messages: [],
-      errors: ['Could not detect CSV format. Expected columns: date/timestamp, sender/from, message/text/body'],
+      errors: ['Could not detect CSV format. Expected columns: date/timestamp, sender/from/type, message/text/body'],
       metadata: { format: 'unknown', totalRows: lines.length - 1, parsedRows: 0 }
     };
   }
@@ -75,22 +79,35 @@ export function parseCSV(content: string): ParseResult {
   const messages: ParsedMessage[] = [];
   const errors: string[] = [];
   const senderCounts: Record<string, number> = {};
+  let coparentName = 'Co-parent';
+  let userName = 'You';
+
+  // Get column indices based on format
+  const colMap = getColumnMap(headers, format);
 
   // Parse each row
   for (let i = 1; i < lines.length; i++) {
     try {
       const row = parseCSVRow(lines[i]);
-      const parsed = parseRowByFormat(row, format, lines[0]);
+      const parsed = parseRowWithMap(row, colMap, format);
       
-      if (parsed) {
+      if (parsed && parsed.text) {
+        // Skip reactions/likes unless they have meaningful content
+        if (parsed.text.startsWith('Liked "') || parsed.text.startsWith('Loved "')) {
+          continue;
+        }
+        
         messages.push({
           ...parsed,
           id: `msg-${i}`
         });
-        senderCounts[parsed.senderName] = (senderCounts[parsed.senderName] || 0) + 1;
+        
+        // Track sender names for metadata
+        if (parsed.senderName && parsed.senderName !== 'You' && parsed.senderName !== 'Unknown') {
+          senderCounts[parsed.senderName] = (senderCounts[parsed.senderName] || 0) + 1;
+        }
       }
     } catch (err) {
-      // Skip malformed rows silently unless there are many
       if (errors.length < 5) {
         errors.push(`Row ${i + 1}: Could not parse`);
       }
@@ -109,15 +126,11 @@ export function parseCSV(content: string): ParseResult {
   // Sort by timestamp
   messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-  // Determine who is user vs coparent (user typically sends fewer messages in abuse situations)
-  const senders = Object.entries(senderCounts).sort((a, b) => b[1] - a[1]);
-  const coparentName = senders[0]?.[0] || 'Co-parent';
-  const userName = senders[1]?.[0] || 'You';
-
-  // Assign sender roles
-  messages.forEach(msg => {
-    msg.sender = msg.senderName === coparentName ? 'coparent' : 'user';
-  });
+  // Get co-parent name from the most frequent sender name
+  const topSender = Object.entries(senderCounts).sort((a, b) => b[1] - a[1])[0];
+  if (topSender) {
+    coparentName = topSender[0];
+  }
 
   return {
     success: true,
@@ -138,32 +151,187 @@ export function parseCSV(content: string): ParseResult {
 }
 
 /**
- * Detect CSV format from header line
+ * Detect CSV format from headers array
  */
-function detectCSVFormat(headerLine: string): string {
+function detectCSVFormat(headers: string[]): string {
+  const headerStr = headers.join(',');
+  
+  // iMazing (iMessage export) - has "type" with incoming/outgoing and "text" column
+  // Headers: chat session, message date, delivered date, read date, edited date, service, type, sender id, sender name, status, replying to, subject, text, attachment, attachment type
+  if (headers.includes('type') && headers.includes('text') && headers.includes('message date')) {
+    return 'imazing';
+  }
+  
   // OurFamilyWizard
-  if (headerLine.includes('sent by') && headerLine.includes('message')) {
+  if (headerStr.includes('sent by') && headerStr.includes('message')) {
     return 'ofw';
   }
+  
   // TalkingParents
-  if (headerLine.includes('sender') && headerLine.includes('body')) {
+  if (headers.includes('sender') && headers.includes('body')) {
     return 'talkingparents';
   }
+  
   // AppClose
-  if (headerLine.includes('from') && headerLine.includes('content')) {
+  if (headers.includes('from') && headers.includes('content')) {
     return 'appclose';
   }
+  
   // WhatsApp export
-  if (headerLine.includes('date') && headerLine.includes('message')) {
+  if (headerStr.includes('date') && headers.includes('message')) {
     return 'whatsapp';
   }
-  // iMazing / generic
-  if (headerLine.includes('date') || headerLine.includes('time') || headerLine.includes('timestamp')) {
-    if (headerLine.includes('text') || headerLine.includes('message') || headerLine.includes('body')) {
-      return 'generic';
+  
+  // Generic - has some date column and some text column
+  const hasDate = headers.some(h => 
+    h.includes('date') || h.includes('time') || h.includes('timestamp')
+  );
+  const hasText = headers.some(h => 
+    h === 'text' || h === 'message' || h === 'body' || h === 'content'
+  );
+  
+  if (hasDate && hasText) {
+    return 'generic';
+  }
+  
+  return 'unknown';
+}
+
+/**
+ * Get column indices for each field based on format
+ */
+interface ColumnMap {
+  timestamp: number;
+  sender: number;
+  senderName: number;
+  text: number;
+  type: number; // For iMazing: Incoming/Outgoing
+  editedDate: number;
+}
+
+function getColumnMap(headers: string[], format: string): ColumnMap {
+  const findCol = (names: string[], exact = false): number => {
+    for (const name of names) {
+      const idx = exact 
+        ? headers.findIndex(h => h === name)
+        : headers.findIndex(h => h.includes(name));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  switch (format) {
+    case 'imazing':
+      return {
+        timestamp: findCol(['message date'], false),
+        sender: findCol(['sender id'], false),
+        senderName: findCol(['sender name'], false),
+        text: findCol(['text'], true), // Exact match to avoid "attachment type"
+        type: findCol(['type'], true), // Exact match - Incoming/Outgoing
+        editedDate: findCol(['edited date'], false)
+      };
+    
+    case 'ofw':
+      return {
+        timestamp: findCol(['date', 'sent']),
+        sender: findCol(['sent by', 'sender', 'from']),
+        senderName: findCol(['sent by', 'sender', 'from']),
+        text: findCol(['message', 'text', 'body']),
+        type: -1,
+        editedDate: -1
+      };
+    
+    case 'talkingparents':
+      return {
+        timestamp: findCol(['date', 'time', 'sent']),
+        sender: findCol(['sender', 'from']),
+        senderName: findCol(['sender', 'from']),
+        text: findCol(['body', 'message', 'text']),
+        type: -1,
+        editedDate: -1
+      };
+    
+    case 'appclose':
+      return {
+        timestamp: findCol(['date', 'timestamp']),
+        sender: findCol(['from', 'sender']),
+        senderName: findCol(['from', 'sender']),
+        text: findCol(['content', 'message', 'text']),
+        type: -1,
+        editedDate: -1
+      };
+    
+    case 'whatsapp':
+      return {
+        timestamp: findCol(['date', 'time']),
+        sender: findCol(['sender', 'contact', 'from']),
+        senderName: findCol(['sender', 'contact', 'from']),
+        text: findCol(['message', 'text']),
+        type: -1,
+        editedDate: -1
+      };
+    
+    default: // generic
+      return {
+        timestamp: findCol(['date', 'time', 'timestamp', 'sent', 'datetime']),
+        sender: findCol(['sender', 'from', 'sent by', 'author', 'name']),
+        senderName: findCol(['sender', 'from', 'sent by', 'author', 'name']),
+        text: findCol(['text', 'message', 'body', 'content']),
+        type: findCol(['type', 'direction']),
+        editedDate: -1
+      };
+  }
+}
+
+/**
+ * Parse row using column map
+ */
+function parseRowWithMap(row: string[], colMap: ColumnMap, format: string): Omit<ParsedMessage, 'id'> | null {
+  const getValue = (idx: number): string => {
+    if (idx === -1 || idx >= row.length) return '';
+    return (row[idx] || '').trim();
+  };
+
+  const timestampStr = getValue(colMap.timestamp);
+  const timestamp = parseDate(timestampStr);
+  
+  if (!timestamp || isNaN(timestamp.getTime())) {
+    return null;
+  }
+
+  const text = getValue(colMap.text);
+  if (!text) {
+    return null;
+  }
+
+  let sender: 'user' | 'coparent' = 'coparent';
+  let senderName = getValue(colMap.senderName) || 'Unknown';
+
+  // For iMazing format, use Type column (Incoming = coparent, Outgoing = user)
+  if (format === 'imazing' && colMap.type !== -1) {
+    const typeValue = getValue(colMap.type).toLowerCase();
+    if (typeValue === 'outgoing') {
+      sender = 'user';
+      senderName = 'You';
+    } else if (typeValue === 'incoming') {
+      sender = 'coparent';
+      // senderName already set from Sender Name column
     }
   }
-  return 'unknown';
+
+  // Check for edited
+  const editedStr = getValue(colMap.editedDate);
+  const isEdited = !!editedStr && editedStr.length > 0;
+  const editedAt = isEdited ? parseDate(editedStr) : undefined;
+
+  return {
+    timestamp,
+    sender,
+    senderName,
+    text,
+    isEdited,
+    editedAt: editedAt && !isNaN(editedAt.getTime()) ? editedAt : undefined
+  };
 }
 
 /**
@@ -200,93 +368,31 @@ function parseCSVRow(line: string): string[] {
 }
 
 /**
- * Parse row based on detected format
- */
-function parseRowByFormat(row: string[], format: string, headerLine: string): Omit<ParsedMessage, 'id'> | null {
-  const headers = parseCSVRow(headerLine).map(h => h.toLowerCase());
-  
-  const getCol = (names: string[]): string => {
-    for (const name of names) {
-      const idx = headers.findIndex(h => h.includes(name));
-      if (idx !== -1 && row[idx]) {
-        return row[idx];
-      }
-    }
-    return '';
-  };
-
-  let timestamp: Date;
-  let senderName: string;
-  let text: string;
-
-  switch (format) {
-    case 'ofw':
-      timestamp = parseDate(getCol(['date', 'sent']));
-      senderName = getCol(['sent by', 'sender', 'from']);
-      text = getCol(['message', 'text', 'body']);
-      break;
-    
-    case 'talkingparents':
-      timestamp = parseDate(getCol(['date', 'time', 'sent']));
-      senderName = getCol(['sender', 'from']);
-      text = getCol(['body', 'message', 'text']);
-      break;
-    
-    case 'appclose':
-      timestamp = parseDate(getCol(['date', 'timestamp']));
-      senderName = getCol(['from', 'sender']);
-      text = getCol(['content', 'message', 'text']);
-      break;
-    
-    case 'whatsapp':
-      timestamp = parseDate(getCol(['date', 'time']));
-      senderName = getCol(['sender', 'contact', 'from']);
-      text = getCol(['message', 'text']);
-      break;
-    
-    case 'generic':
-    default:
-      timestamp = parseDate(getCol(['date', 'time', 'timestamp', 'sent', 'datetime']));
-      senderName = getCol(['sender', 'from', 'sent by', 'author', 'name']);
-      text = getCol(['text', 'message', 'body', 'content']);
-      break;
-  }
-
-  if (!timestamp || isNaN(timestamp.getTime()) || !text) {
-    return null;
-  }
-
-  return {
-    timestamp,
-    senderName: senderName || 'Unknown',
-    text: text.trim(),
-    sender: 'coparent' // Will be reassigned later
-  };
-}
-
-/**
  * Parse various date formats
  */
 function parseDate(dateStr: string): Date {
   if (!dateStr) return new Date(NaN);
   
-  // Try standard parsing first
+  // Clean the string
+  dateStr = dateStr.trim().replace(/^["']|["']$/g, '');
+  
+  // Try standard parsing first (handles ISO format like "2024-07-10 11:55:01")
   let date = new Date(dateStr);
   if (!isNaN(date.getTime())) return date;
   
   // Try common formats
-  // MM/DD/YYYY HH:MM
-  const usFormat = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2})/);
+  // MM/DD/YYYY HH:MM:SS or MM/DD/YYYY HH:MM
+  const usFormat = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
   if (usFormat) {
-    const [, month, day, year, hour, min] = usFormat;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min));
+    const [, month, day, year, hour, min, sec] = usFormat;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec || '0'));
   }
   
-  // DD/MM/YYYY HH:MM
-  const euFormat = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}):(\d{2})/);
-  if (euFormat) {
-    const [, day, month, year, hour, min] = euFormat;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min));
+  // YYYY-MM-DD HH:MM:SS
+  const isoLike = dateStr.match(/(\d{4})-(\d{2})-(\d{2})\s*(\d{2}):(\d{2}):(\d{2})/);
+  if (isoLike) {
+    const [, year, month, day, hour, min, sec] = isoLike;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(min), parseInt(sec));
   }
   
   // YYYY-MM-DD
