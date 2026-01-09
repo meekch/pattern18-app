@@ -658,14 +658,42 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 }
 
 function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; isExpanded: boolean; onToggle: () => void }) {
-  const categoryName = CATEGORY_DISPLAY_NAMES[incident.category] || incident.category;
-  const dateStr = incident.startTime.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-  const preview = ((incident.messages[0] as any)?.text || (incident.messages[0] as any)?.content || '').slice(0, 120);
+  // Debug: log incident structure
+  console.log('Incident data:', JSON.stringify(incident, null, 2).slice(0, 500));
+  
+  // Early return if incident is invalid
+  if (!incident) {
+    return <div style={{ padding: 16, color: '#999' }}>Invalid incident data</div>;
+  }
+  
+  // Defensive data access
+  const categoryName = CATEGORY_DISPLAY_NAMES?.[incident.category] || incident.category || 'Uncategorized';
+  
+  // Handle date - could be Date object or string
+  let dateStr = 'Unknown date';
+  try {
+    const dateObj = incident.startTime instanceof Date 
+      ? incident.startTime 
+      : new Date(incident.startTime);
+    if (!isNaN(dateObj.getTime())) {
+      dateStr = dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+  } catch (e) {
+    console.error('Date parse error:', e);
+  }
+  
+  // Get first message preview
+  const firstMsg = incident.messages?.[0];
+  const preview = (firstMsg?.text || (firstMsg as any)?.content || '').slice(0, 120);
+  
+  // Get patterns - could be array of strings or objects
+  const patterns = incident.uniquePatterns || [];
+  const patternList = patterns.map(p => typeof p === 'string' ? p : (p as any)?.patternName || 'Unknown');
 
   const severityColors: Record<string, { bg: string; border: string }> = {
     critical: { bg: '#fef2f2', border: '#fecaca' },
@@ -674,7 +702,7 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
     low: { bg: '#f9fafb', border: '#e5e7eb' }
   };
 
-  const colors = severityColors[incident.maxSeverity] || severityColors.low;
+  const colors = severityColors[incident.maxSeverity || 'low'] || severityColors.low;
 
   return (
     <div style={{
@@ -715,14 +743,14 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
           </div>
         </div>
 
-        <h4 style={{ fontWeight: 600, color: '#1f2937', margin: 0 }}>{incident.title}</h4>
+        <h4 style={{ fontWeight: 600, color: '#1f2937', margin: 0 }}>{incident.title || `${categoryName} - ${dateStr}`}</h4>
         
         <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
-          {incident.messageCount} messages • {incident.durationMinutes > 0 ? `${incident.durationMinutes} min • ` : ''}{categoryName}
+          {incident.messageCount || incident.messages?.length || 0} messages • {incident.durationMinutes > 0 ? `${incident.durationMinutes} min • ` : ''}{categoryName}
         </p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {incident.uniquePatterns.slice(0, 4).map((pattern, i) => (
+          {patternList.slice(0, 4).map((pattern, i) => (
             <span
               key={i}
               style={{
@@ -736,8 +764,8 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
               {pattern}
             </span>
           ))}
-          {incident.uniquePatterns.length > 4 && (
-            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{incident.uniquePatterns.length - 4} more</span>
+          {patternList.length > 4 && (
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{patternList.length - 4} more</span>
           )}
         </div>
 
@@ -764,13 +792,13 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
           overflowY: 'auto'
         }}>
           {/* Pattern Summary */}
-          {incident.uniquePatterns.length > 0 && (
+          {patternList.length > 0 && (
             <div style={{ padding: 16, background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8 }}>
                 ⚠️ PATTERNS DETECTED IN THIS INCIDENT
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {incident.uniquePatterns.map((pattern, i) => (
+                {patternList.map((pattern, i) => (
                   <span
                     key={i}
                     style={{
@@ -791,9 +819,25 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
 
           {/* Messages */}
           <div style={{ padding: '8px 0' }}>
-            {incident.messages.map((msg: any, idx: number) => {
+            {(incident.messages || []).map((msg: any, idx: number) => {
               const isCoparent = msg.sender === 'coparent';
-              const hasPatterns = msg.patterns && msg.patterns.length > 0;
+              const msgPatterns = msg.patterns || [];
+              const hasPatterns = msgPatterns.length > 0;
+              const msgText = msg.text || msg.content || '[No text]';
+              
+              // Handle timestamp
+              let timeStr = '';
+              try {
+                const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp);
+                if (!isNaN(ts.getTime())) {
+                  timeStr = ts.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  });
+                }
+              } catch (e) {}
               
               return (
                 <div 
@@ -801,7 +845,7 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
                   style={{
                     padding: '12px 16px',
                     background: hasPatterns ? '#fef2f2' : (isCoparent ? '#fff' : '#f0fdf4'),
-                    borderBottom: idx < incident.messages.length - 1 ? '1px solid #f3f4f6' : 'none'
+                    borderBottom: idx < (incident.messages?.length || 0) - 1 ? '1px solid #f3f4f6' : 'none'
                   }}
                 >
                   <div style={{ 
@@ -818,14 +862,7 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
                       {isCoparent ? '🔴 Co-parent' : '🟢 You'}
                       {msg.senderName && isCoparent && ` (${msg.senderName})`}
                     </span>
-                    <span>
-                      {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      }) : ''}
-                    </span>
+                    <span>{timeStr}</span>
                   </div>
                   
                   <div style={{ 
@@ -833,7 +870,7 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
                     color: '#374151',
                     lineHeight: 1.5
                   }}>
-                    {msg.text || msg.content}
+                    {msgText}
                   </div>
 
                   {/* Show detected patterns for this specific message */}
@@ -844,7 +881,7 @@ function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; 
                       flexWrap: 'wrap', 
                       gap: 4 
                     }}>
-                      {msg.patterns.map((p: any, i: number) => (
+                      {msgPatterns.map((p: any, i: number) => (
                         <span
                           key={i}
                           style={{
