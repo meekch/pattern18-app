@@ -364,31 +364,78 @@ function EvidenceContent() {
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-        {/* Stats Bar */}
-        <div style={{
+       {/* Stats Bar - CLICKABLE */}
+       <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: 16,
           marginBottom: 24,
         }}>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div 
+            onClick={() => setSeverityFilter("all")}
+            style={{ 
+              background: severityFilter === "all" ? "#f0fdf4" : "white", 
+              borderRadius: 12, 
+              padding: 16, 
+              textAlign: "center", 
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              border: severityFilter === "all" ? "2px solid #059669" : "2px solid transparent",
+              transition: "all 0.2s"
+            }}
+          >
             <div style={{ fontSize: 28, fontWeight: 700, color: "#1f2937" }}>{totalCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>Total</div>
           </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div 
+            onClick={() => setSeverityFilter("critical")}
+            style={{ 
+              background: severityFilter === "critical" ? "#fef2f2" : "white", 
+              borderRadius: 12, 
+              padding: 16, 
+              textAlign: "center", 
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              border: severityFilter === "critical" ? "2px solid #dc2626" : "2px solid transparent",
+              transition: "all 0.2s"
+            }}
+          >
             <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{criticalCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>Critical</div>
           </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div 
+            onClick={() => setSeverityFilter("high+")}
+            style={{ 
+              background: severityFilter === "high+" ? "#fff7ed" : "white", 
+              borderRadius: 12, 
+              padding: 16, 
+              textAlign: "center", 
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              border: severityFilter === "high+" ? "2px solid #ea580c" : "2px solid transparent",
+              transition: "all 0.2s"
+            }}
+          >
             <div style={{ fontSize: 28, fontWeight: 700, color: "#ea580c" }}>{highPlusCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>High+</div>
           </div>
-          <div style={{ background: "white", borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div 
+            onClick={() => setSeverityFilter("exhibit")}
+            style={{ 
+              background: severityFilter === "exhibit" ? "#f0fdf4" : "white", 
+              borderRadius: 12, 
+              padding: 16, 
+              textAlign: "center", 
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              border: severityFilter === "exhibit" ? "2px solid #059669" : "2px solid transparent",
+              transition: "all 0.2s"
+            }}
+          >
             <div style={{ fontSize: 28, fontWeight: 700, color: "#059669" }}>{exhibitCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>In Exhibit</div>
           </div>
         </div>
-
         {/* Filters */}
         <div style={{
           background: "white",
