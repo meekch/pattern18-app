@@ -36,6 +36,11 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
     definition: 'Using financial matters as leverage in co-parenting communications. Includes withholding information about expenses, demanding detailed accounting, or linking financial discussions to unrelated parenting matters.',
     source: 'National Network to End Domestic Violence (2019).'
   },
+  'Financial Coercion': {
+    name: 'Financial Coercion',
+    definition: 'Using financial matters as leverage in co-parenting communications. Includes withholding information about expenses, demanding detailed accounting, or linking financial discussions to unrelated parenting matters.',
+    source: 'National Network to End Domestic Violence (2019).'
+  },
   'Using Children as Weapons': {
     name: 'Child Involvement in Adult Conflict',
     definition: 'Placing children in the middle of parental disputes. Includes using children as messengers, discussing adult matters with children, or making statements that may affect the child\'s relationship with the other parent.',
@@ -76,6 +81,11 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
     definition: 'Frequent references to legal action, court proceedings, or attorneys in routine parenting communications. Using the legal system as leverage in non-legal disputes.',
     source: 'Ward, D. & Harvey, J.C. (1993). Family Wars.'
   },
+  'Legal Intimidation': {
+    name: 'Legal Intimidation',
+    definition: 'Using threats of legal action or court proceedings to create pressure or compliance. References to attorneys, lawsuits, or custody changes as leverage.',
+    source: 'Ward, D. & Harvey, J.C. (1993). Family Wars.'
+  },
   'Stonewalling': {
     name: 'Stonewalling',
     definition: 'Refusing to communicate, engage, or respond to legitimate parenting requests. Using silence or non-response as a communication strategy.',
@@ -89,6 +99,16 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
   'Monitoring/Stalking': {
     name: 'Monitoring Behavior',
     definition: 'Excessive tracking, surveillance, or monitoring. Includes demonstrating knowledge of activities that should be private or showing up unexpectedly.',
+    source: 'Stark, E. (2007). Coercive Control.'
+  },
+  'Monitoring/Control': {
+    name: 'Monitoring Behavior',
+    definition: 'Excessive tracking, surveillance, or monitoring. Includes demonstrating knowledge of activities that should be private or showing up unexpectedly.',
+    source: 'Stark, E. (2007). Coercive Control.'
+  },
+  'Escalation Patterns': {
+    name: 'Escalation Patterns',
+    definition: 'Progressive intensification of conflict, threats, or hostile communication over time. May include increasing frequency, severity, or scope of problematic behaviors.',
     source: 'Stark, E. (2007). Coercive Control.'
   },
   'Denying': {
@@ -299,11 +319,12 @@ function getSourceLabel(incident: any, caseInfo: any): string {
   const respondentName = caseInfo?.respondent_name || '';
   const coparentName = caseInfo?.coparent_name || '';
   
+  // FIXED: Use "Father" as fallback instead of "Petitioner/Respondent"
   let otherPartyName: string;
   if (userRole === 'petitioner') {
-    otherPartyName = respondentName || coparentName || 'Respondent';
+    otherPartyName = respondentName || coparentName || 'Father';
   } else {
-    otherPartyName = petitionerName || coparentName || 'Petitioner';
+    otherPartyName = petitionerName || coparentName || 'Father';
   }
   
   // Build label based on source_type
@@ -338,11 +359,12 @@ function createExhibitDocument(
   const respondentName = caseInfo?.respondent_name || '';
   const coparentName = caseInfo?.coparent_name || '';
   
+  // FIXED: Use "Father" as fallback instead of "Petitioner/Respondent"
   let otherPartyName: string;
   if (userRole === 'petitioner') {
-    otherPartyName = respondentName || coparentName || 'Respondent';
+    otherPartyName = respondentName || coparentName || 'Father';
   } else {
-    otherPartyName = petitionerName || coparentName || 'Petitioner';
+    otherPartyName = petitionerName || coparentName || 'Father';
   }
 
   const caseNumber = caseInfo?.case_number || '';
@@ -786,10 +808,13 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   
   const patterns = incident.patterns || [];
   const severity = incident.severity || 'medium';
-  const coparentMessage = incident.coparent_message || '';
   const context = getContextCategory(incident);
   const isDuplicate = incident.isDuplicate;
   const duplicateOfIndex = incident.duplicateOfIndex;
+  
+  // FIXED: Strip any embedded court notes from the quote
+  let coparentMessage = incident.coparent_message || '';
+  coparentMessage = coparentMessage.replace(/\s*\[Court Notes:.*?\]/gs, '').trim();
   
   // Get proper source label
   const sourceLabel = getSourceLabel(incident, caseInfo);
