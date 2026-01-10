@@ -814,7 +814,7 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   
   // FIXED: Strip any embedded court notes from the quote
   let coparentMessage = incident.coparent_message || '';
-  coparentMessage = coparentMessage.replace(/\s*\[Court Notes:.*?\]/gs, '').trim();
+  coparentMessage = coparentMessage.replace(/\s*\[Court Notes:[\s\S]*?\]/g, '').trim();
   
   // Get proper source label
   const sourceLabel = getSourceLabel(incident, caseInfo);
