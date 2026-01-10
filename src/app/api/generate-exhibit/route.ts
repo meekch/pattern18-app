@@ -826,11 +826,12 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   const elements: Paragraph[] = [
     // Incident header
     new Paragraph({
-      spacing: { before: 400 },
-      children: [
-        new TextRun({ text: `INCIDENT ${index}`, bold: true, size: bodySize, font }),
-      ]
-    }),
+        spacing: { before: 50, after: 100 },
+        indent: { left: 720 },
+        children: [
+          new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font, italics: true }),
+        ]
+      }),
     
     // Date
     new Paragraph({
