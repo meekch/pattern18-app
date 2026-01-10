@@ -104,13 +104,7 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Rotate progress messages while analyzing
-  useEffect(() => {
-    if (!sending) {
-      setProgressIndex(0);
-      return;
-    }
-    // Auto-send prompt from document upload
+  // Auto-send prompt from document upload
   useEffect(() => {
     if (loading) return;
     const savedPrompt = sessionStorage.getItem('coachPrompt');
@@ -119,6 +113,13 @@ export default function CoachPage() {
       handleSend(savedPrompt);
     }
   }, [loading]);
+
+  // Rotate progress messages while analyzing
+  useEffect(() => {
+    if (!sending) {
+      setProgressIndex(0);
+      return;
+    }
     const msgs = hasImage ? imageProgressMessages : progressMessages;
     const interval = setInterval(() => {
       setProgressIndex(prev => (prev + 1) % msgs.length);
