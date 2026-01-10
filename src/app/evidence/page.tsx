@@ -1,1173 +1,450 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import BottomNav from "@/components/BottomNav";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface Incident {
   id: string;
-  title: string;
   category: string;
   patterns: string[];
   severity: string;
   incident_date: string;
-  message_count?: number;
-  evidence_strength?: string;
   coparent_message?: string;
-  messages_json?: any[];
-  source?: string;
   include_in_exhibit?: boolean;
-  source_type?: 'coparent' | 'child' | 'third_party' | 'user';
-  source_name?: string;
+  source?: string;
 }
 
-interface GroupedIncidents {
-  [monthYear: string]: Incident[];
-}
-
-const categoryLabels: Record<string, string> = {
+const patternLabels: Record<string, string> = {
   gaslighting: "Gaslighting",
   darvo: "DARVO",
   intimidation: "Intimidation",
   threats: "Threats",
   financial_abuse: "Financial Abuse",
-  financial_manipulation: "Financial Manipulation",
   using_children_as_weapons: "Using Children as Weapons",
   blame_shifting: "Blame-Shifting",
   false_accusations: "False Accusations",
   emotional_blackmail: "Emotional Blackmail",
   stonewalling: "Stonewalling",
   monitoring_stalking: "Monitoring/Stalking",
-  isolation_tactics: "Isolation Tactics",
-  minimizing_denying: "Minimizing/Denying",
+  monitoring_control: "Monitoring/Control",
+  isolation_tactics: "Isolation",
+  minimizing_denying: "Minimizing",
   word_salad: "Word Salad",
   moving_goalposts: "Moving Goalposts",
   projection: "Projection",
   hoovering: "Hoovering",
   gatekeeping: "Gatekeeping",
-  verbal_abuse: "Verbal Abuse",
-  legal_threats: "Legal Threats",
-  schedule_manipulation: "Schedule Manipulation",
-  none_detected: "Uncategorized",
-  not_abuse: "Not Abuse (Dismissed)",
+  escalation_patterns: "Escalation",
+  legal_intimidation: "Legal Threats",
 };
 
-const AVAILABLE_PATTERNS = [
-  "Gaslighting", "DARVO", "Intimidation", "Threats", "Financial Manipulation",
-  "Using Children as Weapons", "Blame-Shifting", "False Accusations", 
-  "Emotional Blackmail", "Stonewalling", "Monitoring/Stalking", "Isolation Tactics",
-  "Minimizing/Denying", "Word Salad", "Moving Goalposts", "Projection",
-  "Hoovering", "Gatekeeping", "Verbal Abuse", "Legal/Court Threats",
-  "Name-Calling/Verbal Abuse", "Triangulating Child", "Schedule Manipulation"
-];
-
-const SOURCE_TYPES = [
-  { value: 'coparent', label: 'Co-parent message', description: 'Message FROM your co-parent' },
-  { value: 'child', label: 'Child statement', description: 'Statement from child about co-parent behavior' },
-  { value: 'third_party', label: 'Third party', description: 'Witness, teacher, therapist, etc.' },
-  { value: 'user', label: 'Your message', description: 'Your own message (for context)' },
-];
-
-const severityColors: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
-  high: { bg: "#fff7ed", text: "#ea580c", border: "#fed7aa" },
-  medium: { bg: "#fefce8", text: "#ca8a04", border: "#fef08a" },
-  low: { bg: "#f9fafb", text: "#6b7280", border: "#e5e7eb" },
+const severityColors: Record<string, { bg: string; text: string }> = {
+  critical: { bg: '#fef2f2', text: '#dc2626' },
+  high: { bg: '#fff7ed', text: '#ea580c' },
+  medium: { bg: '#fefce8', text: '#ca8a04' },
+  low: { bg: '#f9fafb', text: '#6b7280' },
 };
 
-function EvidenceContent() {
+export default function EvidencePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high+" | "exhibit">("all");
-  const [patternFilter, setPatternFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Edit modal state
-  const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
-  const [editSeverity, setEditSeverity] = useState("");
-  const [editPatterns, setEditPatterns] = useState<string[]>([]);
-  const [editSourceType, setEditSourceType] = useState<string>("coparent");
-  const [editSourceName, setEditSourceName] = useState("");
-  const [saving, setSaving] = useState(false);
-  
-  // Delete confirmation
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
+  const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
-    const pattern = searchParams.get('pattern');
-    if (pattern) {
-      setPatternFilter(pattern);
-    }
     loadEvidence();
   }, []);
 
   const loadEvidence = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("incidents")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("incident_date", { ascending: false });
-
-      if (error) throw error;
-      setIncidents(data || []);
-    } catch (err) {
-      console.error("Failed to load evidence:", err);
-    } finally {
-      setLoading(false);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      router.push('/login');
+      return;
     }
+
+    const { data } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .neq('category', 'not_abuse')
+      .order('incident_date', { ascending: false });
+
+    setIncidents(data || []);
+    setLoading(false);
   };
 
-  const toggleExhibit = async (id: string, currentValue: boolean) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const toggleExhibit = async (id: string, current: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      const { error } = await supabase
-        .from("incidents")
-        .update({ include_in_exhibit: !currentValue })
-        .eq("id", id)
-        .eq("user_id", session.user.id);
-      
-      if (error) {
-        console.error("Failed to update exhibit status:", error);
-        return;
-      }
-      
-      setIncidents(prev => prev.map(inc => 
-        inc.id === id ? { ...inc, include_in_exhibit: !currentValue } : inc
-      ));
-    } catch (err) {
-      console.error("Toggle exhibit error:", err);
-    }
-  };
+    await supabase
+      .from('incidents')
+      .update({ include_in_exhibit: !current })
+      .eq('id', id)
+      .eq('user_id', session.user.id);
 
-  const openEditModal = (incident: Incident) => {
-    setEditingIncident(incident);
-    setEditSeverity(incident.severity);
-    setEditPatterns(incident.patterns || []);
-    setEditSourceType(incident.source_type || 'coparent');
-    setEditSourceName(incident.source_name || '');
-  };
-
-  const saveEdit = async () => {
-    if (!editingIncident) return;
-    setSaving(true);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const category = editPatterns.length > 0 
-        ? editPatterns[0].toLowerCase().replace(/[\/\s]+/g, '_')
-        : 'none_detected';
-
-      const { error } = await supabase
-        .from("incidents")
-        .update({ 
-          severity: editSeverity,
-          patterns: editPatterns,
-          category: category,
-          source_type: editSourceType,
-          source_name: editSourceName || null
-        })
-        .eq("id", editingIncident.id)
-        .eq("user_id", session.user.id);
-
-      if (error) throw error;
-
-      setIncidents(prev => prev.map(inc => 
-        inc.id === editingIncident.id 
-          ? { ...inc, severity: editSeverity, patterns: editPatterns, category, source_type: editSourceType as any, source_name: editSourceName }
-          : inc
-      ));
-      setEditingIncident(null);
-    } catch (err) {
-      console.error("Save error:", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const dismissAsNotAbuse = async (id: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { error } = await supabase
-        .from("incidents")
-        .update({ 
-          severity: 'low',
-          patterns: [],
-          category: 'not_abuse',
-          include_in_exhibit: false
-        })
-        .eq("id", id)
-        .eq("user_id", session.user.id);
-
-      if (error) throw error;
-
-      setIncidents(prev => prev.map(inc => 
-        inc.id === id 
-          ? { ...inc, severity: 'low', patterns: [], category: 'not_abuse', include_in_exhibit: false }
-          : inc
-      ));
-      setExpandedId(null);
-    } catch (err) {
-      console.error("Dismiss error:", err);
-    }
+    setIncidents(prev => prev.map(inc =>
+      inc.id === id ? { ...inc, include_in_exhibit: !current } : inc
+    ));
   };
 
   const deleteIncident = async (id: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    if (!confirm('Delete this incident?')) return;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      const { error } = await supabase
-        .from("incidents")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", session.user.id);
+    await supabase
+      .from('incidents')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id);
 
-      if (error) throw error;
-
-      setIncidents(prev => prev.filter(inc => inc.id !== id));
-      setDeleteConfirm(null);
-      setExpandedId(null);
-    } catch (err) {
-      console.error("Delete error:", err);
-    }
+    setIncidents(prev => prev.filter(inc => inc.id !== id));
+    setExpandedId(null);
   };
 
-  const togglePattern = (pattern: string) => {
-    setEditPatterns(prev => 
-      prev.includes(pattern) 
-        ? prev.filter(p => p !== pattern)
-        : [...prev, pattern]
-    );
-  };
-
-  // Filter incidents
-  const filteredIncidents = incidents.filter(inc => {
-    if (severityFilter === "critical" && inc.severity !== "critical") return false;
-    if (severityFilter === "high+" && !["critical", "high"].includes(inc.severity)) return false;
-    if (severityFilter === "exhibit" && !inc.include_in_exhibit) return false;
-    
-    if (patternFilter !== "all") {
-      const hasPattern = inc.patterns?.some(p => 
-        p.toLowerCase().includes(patternFilter.toLowerCase())
-      ) || inc.category?.toLowerCase().includes(patternFilter.toLowerCase());
-      if (!hasPattern) return false;
-    }
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch = 
-        inc.title?.toLowerCase().includes(query) ||
-        inc.coparent_message?.toLowerCase().includes(query) ||
-        inc.patterns?.some(p => p.toLowerCase().includes(query)) ||
-        inc.category?.toLowerCase().includes(query);
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Group by month
-  const groupedIncidents: GroupedIncidents = filteredIncidents.reduce((acc, inc) => {
-    const date = new Date(inc.incident_date);
-    const monthYear = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-    if (!acc[monthYear]) acc[monthYear] = [];
-    acc[monthYear].push(inc);
-    return acc;
-  }, {} as GroupedIncidents);
-
-  // Stats
-  const totalCount = incidents.length;
-  const criticalCount = incidents.filter(i => i.severity === "critical").length;
-  const highPlusCount = incidents.filter(i => ["critical", "high"].includes(i.severity)).length;
   const exhibitCount = incidents.filter(i => i.include_in_exhibit).length;
-
-  const patternCounts: Record<string, number> = {};
-  incidents.forEach(inc => {
-    (inc.patterns || []).forEach(p => {
-      patternCounts[p] = (patternCounts[p] || 0) + 1;
-    });
-  });
-
-  // Get source type label for display
-  const getSourceTypeLabel = (sourceType?: string) => {
-    const found = SOURCE_TYPES.find(s => s.value === sourceType);
-    return found ? found.label : 'Co-parent';
-  };
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
-          <p style={{ color: "#6b7280" }}>Loading your evidence...</p>
-        </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#fafafa'
+      }}>
+        <div style={{ fontSize: 48 }}>📁</div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#fafafa', paddingBottom: 100 }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
-        padding: "16px 24px",
-        color: "white",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "sticky",
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 20px',
+        background: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        position: 'sticky',
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button 
-            onClick={() => router.push("/my-case")}
-            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 20,
+              cursor: 'pointer',
+              padding: 0
+            }}
           >
             ←
           </button>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>My Evidence</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: '#1a3a2f', margin: 0 }}>
+            Evidence ({incidents.length})
+          </h1>
         </div>
         <button
-          onClick={() => router.push("/docs")}
+          onClick={() => setSelectMode(!selectMode)}
           style={{
-            background: "#059669",
-            color: "white",
-            border: "none",
+            background: selectMode ? '#1a3a2f' : '#f3f4f6',
+            color: selectMode ? 'white' : '#374151',
+            border: 'none',
+            padding: '8px 14px',
             borderRadius: 8,
-            padding: "10px 20px",
-            fontWeight: 600,
-            cursor: "pointer"
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer'
           }}
         >
-          Create Document
+          {selectMode ? 'Done' : 'Select'}
         </button>
       </header>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-       {/* Stats Bar - CLICKABLE */}
-       <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-          marginBottom: 24,
+      <main style={{ maxWidth: 600, margin: '0 auto', padding: 16 }}>
+        
+        {/* Stats */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 16
         }}>
-          <div 
-            onClick={() => setSeverityFilter("all")}
-            style={{ 
-              background: severityFilter === "all" ? "#f0fdf4" : "white", 
-              borderRadius: 12, 
-              padding: 16, 
-              textAlign: "center", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              border: severityFilter === "all" ? "2px solid #059669" : "2px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#1f2937" }}>{totalCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>Total</div>
+          <div style={{
+            flex: 1,
+            background: 'white',
+            padding: 16,
+            borderRadius: 12,
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#1a3a2f' }}>{incidents.length}</div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Documented</div>
           </div>
-          <div 
-            onClick={() => setSeverityFilter("critical")}
-            style={{ 
-              background: severityFilter === "critical" ? "#fef2f2" : "white", 
-              borderRadius: 12, 
-              padding: 16, 
-              textAlign: "center", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              border: severityFilter === "critical" ? "2px solid #dc2626" : "2px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{criticalCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>Critical</div>
-          </div>
-          <div 
-            onClick={() => setSeverityFilter("high+")}
-            style={{ 
-              background: severityFilter === "high+" ? "#fff7ed" : "white", 
-              borderRadius: 12, 
-              padding: 16, 
-              textAlign: "center", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              border: severityFilter === "high+" ? "2px solid #ea580c" : "2px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#ea580c" }}>{highPlusCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>High+</div>
-          </div>
-          <div 
-            onClick={() => setSeverityFilter("exhibit")}
-            style={{ 
-              background: severityFilter === "exhibit" ? "#f0fdf4" : "white", 
-              borderRadius: 12, 
-              padding: 16, 
-              textAlign: "center", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              border: severityFilter === "exhibit" ? "2px solid #059669" : "2px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#059669" }}>{exhibitCount}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>In Exhibit</div>
+          <div style={{
+            flex: 1,
+            background: exhibitCount > 0 ? '#f0fdf4' : 'white',
+            padding: 16,
+            borderRadius: 12,
+            textAlign: 'center',
+            border: exhibitCount > 0 ? '2px solid #059669' : 'none'
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#059669' }}>{exhibitCount}</div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>In Exhibit</div>
           </div>
         </div>
-        {/* Filters */}
-        <div style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 24,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
-        }}>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[
-                { key: "all", label: "All" },
-                { key: "high+", label: "High+" },
-                { key: "critical", label: "Critical" },
-                { key: "exhibit", label: "📋 Exhibit" },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => setSeverityFilter(f.key as any)}
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 20,
-                    border: "1px solid",
-                    borderColor: severityFilter === f.key ? "#059669" : "#e5e7eb",
-                    background: severityFilter === f.key ? "#d1fae5" : "white",
-                    color: severityFilter === f.key ? "#065f46" : "#6b7280",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 500
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
 
-            <select
-              value={patternFilter}
-              onChange={(e) => setPatternFilter(e.target.value)}
+        {/* List */}
+        {incidents.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: 48,
+            background: 'white',
+            borderRadius: 16
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
+            <div style={{ color: '#6b7280', marginBottom: 16 }}>No evidence documented yet</div>
+            <button
+              onClick={() => router.push('/')}
               style={{
-                padding: "8px 12px",
+                background: '#1a3a2f',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
                 borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                background: patternFilter !== "all" ? "#fef3c7" : "white",
-                fontSize: 13,
-                color: "#374151",
-                cursor: "pointer",
-                minWidth: 180
+                fontWeight: 600,
+                cursor: 'pointer'
               }}
             >
-              <option value="all">All Patterns</option>
-              {allPatterns.map(pattern => (
-                <option key={pattern} value={pattern}>
-                  {pattern} ({patternCounts[pattern] || 0})
-                </option>
-              ))}
-            </select>
-            
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                fontSize: 13,
-                flex: 1,
-                minWidth: 150
-              }}
-            />
-
-            {(severityFilter !== "all" || patternFilter !== "all" || searchQuery) && (
-              <button
-                onClick={() => {
-                  setSeverityFilter("all");
-                  setPatternFilter("all");
-                  setSearchQuery("");
-                }}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 500
-                }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {filteredIncidents.length !== incidents.length && (
-            <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
-              Showing {filteredIncidents.length} of {incidents.length} incidents
-            </div>
-          )}
-        </div>
-
-        {/* Grouped List */}
-        {Object.keys(groupedIncidents).length === 0 ? (
-          <div style={{
-            textAlign: "center",
-            padding: 64,
-            background: "white",
-            borderRadius: 12,
-            color: "#6b7280"
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔭</div>
-            <p>No incidents match your filter</p>
+              Start Documenting →
+            </button>
           </div>
         ) : (
-          Object.entries(groupedIncidents).map(([monthYear, monthIncidents]) => (
-            <div key={monthYear} style={{ marginBottom: 32 }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                marginBottom: 12
-              }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
-                  📅 {monthYear}
-                </span>
-                <span style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  background: "#f3f4f6",
-                  padding: "2px 8px",
-                  borderRadius: 10
-                }}>
-                  {monthIncidents.length} incidents
-                </span>
-              </div>
-
-              <div style={{
-                background: "white",
-                borderRadius: 12,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                overflow: "hidden"
-              }}>
-                {monthIncidents.map((incident, idx) => {
-                  const isExpanded = expandedId === incident.id;
-                  const colors = severityColors[incident.severity] || severityColors.low;
-                  const preview = incident.coparent_message?.slice(0, 100) || 
-                                  incident.messages_json?.[0]?.text?.slice(0, 100) || "";
-                  
-                  return (
-                    <div
-                      key={incident.id}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {incidents.map((inc) => {
+              const colors = severityColors[inc.severity] || severityColors.medium;
+              const isExpanded = expandedId === inc.id;
+              const preview = inc.coparent_message?.slice(0, 80) || '';
+              
+              return (
+                <div
+                  key={inc.id}
+                  style={{
+                    background: 'white',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: inc.include_in_exhibit ? '2px solid #059669' : '1px solid #e5e7eb'
+                  }}
+                >
+                  {/* Main Row */}
+                  <div
+                    onClick={() => !selectMode && setExpandedId(isExpanded ? null : inc.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: 14,
+                      gap: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExhibit(inc.id, !!inc.include_in_exhibit);
+                      }}
                       style={{
-                        borderBottom: idx < monthIncidents.length - 1 ? "1px solid #f3f4f6" : "none"
+                        width: 22,
+                        height: 22,
+                        borderRadius: 6,
+                        border: `2px solid ${inc.include_in_exhibit ? '#059669' : '#d1d5db'}`,
+                        background: inc.include_in_exhibit ? '#059669' : 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
                       }}
                     >
-                      {/* Main Row */}
-                      <div
-                        onClick={() => setExpandedId(isExpanded ? null : incident.id)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "16px 20px",
-                          cursor: "pointer",
-                          gap: 12,
-                          transition: "background 0.15s",
-                          background: isExpanded ? "#f9fafb" : incident.category === 'not_abuse' ? "#f3f4f6" : "white",
-                          opacity: incident.category === 'not_abuse' ? 0.6 : 1
-                        }}
-                      >
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExhibit(incident.id, !!incident.include_in_exhibit);
-                          }}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: `2px solid ${incident.include_in_exhibit ? "#059669" : "#d1d5db"}`,
-                            background: incident.include_in_exhibit ? "#059669" : "white",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            flexShrink: 0
-                          }}
-                        >
-                          {incident.include_in_exhibit && (
-                            <span style={{ color: "white", fontSize: 12 }}>✓</span>
-                          )}
-                        </div>
+                      {inc.include_in_exhibit && (
+                        <span style={{ color: 'white', fontSize: 12 }}>✓</span>
+                      )}
+                    </button>
 
-                        <div style={{ width: 50, flexShrink: 0, fontSize: 13, color: "#6b7280" }}>
-                          {new Date(incident.incident_date).toLocaleDateString("en-US", { 
-                            month: "short", 
-                            day: "numeric" 
-                          })}
-                        </div>
-
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{
-                          padding: "4px 10px",
-                          borderRadius: 12,
                           fontSize: 11,
                           fontWeight: 600,
-                          textTransform: "uppercase",
+                          padding: '2px 8px',
+                          borderRadius: 10,
                           background: colors.bg,
                           color: colors.text,
-                          border: `1px solid ${colors.border}`,
-                          flexShrink: 0
+                          textTransform: 'uppercase'
                         }}>
-                          {incident.severity}
+                          {inc.severity}
                         </span>
-
-                        {/* Source type indicator */}
-                        {incident.source_type && incident.source_type !== 'coparent' && (
-                          <span style={{
-                            padding: "4px 8px",
-                            borderRadius: 8,
-                            fontSize: 10,
-                            fontWeight: 600,
-                            background: "#e0e7ff",
-                            color: "#3730a3",
-                            flexShrink: 0
-                          }}>
-                            {getSourceTypeLabel(incident.source_type)}
-                          </span>
-                        )}
-
-                        <div style={{
-                          flexShrink: 0,
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: incident.category === 'not_abuse' ? "#9ca3af" : "#374151",
-                          maxWidth: 140,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}>
-                          {categoryLabels[incident.category] || incident.category || "—"}
-                        </div>
-
-                        <div style={{
-                          flex: 1,
-                          fontSize: 13,
-                          color: "#6b7280",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}>
-                          {preview ? `"${preview}${preview.length >= 100 ? '...' : ''}"` : "—"}
-                        </div>
-
-                        <span style={{
-                          color: "#9ca3af",
-                          transform: isExpanded ? "rotate(90deg)" : "none",
-                          transition: "transform 0.15s"
-                        }}>
-                          ›
+                        <span style={{ fontSize: 13, color: '#6b7280' }}>
+                          {new Date(inc.incident_date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
                         </span>
                       </div>
-
-                      {/* Expanded Content */}
-                      {isExpanded && (
-                        <div style={{
-                          padding: "16px 20px 20px 56px",
-                          background: "#f9fafb"
+                      <div style={{ 
+                        fontSize: 14, 
+                        fontWeight: 600, 
+                        color: '#1a3a2f',
+                        marginBottom: 2
+                      }}>
+                        {patternLabels[inc.category] || inc.category?.replace(/_/g, ' ') || 'Documented'}
+                      </div>
+                      {preview && (
+                        <div style={{ 
+                          fontSize: 13, 
+                          color: '#6b7280',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
                         }}>
-                          {/* Action Buttons */}
-                          <div style={{
-                            display: "flex",
-                            gap: 8,
-                            marginBottom: 16,
-                            flexWrap: "wrap"
-                          }}>
-                            <button
-                              onClick={() => openEditModal(incident)}
-                              style={{
-                                padding: "8px 16px",
-                                background: "#3b82f6",
-                                color: "white",
-                                border: "none",
-                                borderRadius: 8,
-                                fontSize: 13,
-                                fontWeight: 500,
-                                cursor: "pointer"
-                              }}
-                            >
-                              ✏️ Edit
-                            </button>
-                            <button
-                              onClick={() => dismissAsNotAbuse(incident.id)}
-                              style={{
-                                padding: "8px 16px",
-                                background: "#f3f4f6",
-                                color: "#6b7280",
-                                border: "1px solid #e5e7eb",
-                                borderRadius: 8,
-                                fontSize: 13,
-                                fontWeight: 500,
-                                cursor: "pointer"
-                              }}
-                            >
-                              ❌ Not Abuse
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(incident.id)}
-                              style={{
-                                padding: "8px 16px",
-                                background: "#fef2f2",
-                                color: "#dc2626",
-                                border: "1px solid #fecaca",
-                                borderRadius: 8,
-                                fontSize: 13,
-                                fontWeight: 500,
-                                cursor: "pointer"
-                              }}
-                            >
-                              🗑️ Delete
-                            </button>
-                          </div>
-
-                          {/* Delete Confirmation */}
-                          {deleteConfirm === incident.id && (
-                            <div style={{
-                              background: "#fef2f2",
-                              border: "1px solid #fecaca",
-                              borderRadius: 8,
-                              padding: 16,
-                              marginBottom: 16
-                            }}>
-                              <p style={{ margin: "0 0 12px", color: "#dc2626", fontWeight: 500 }}>
-                                Delete this incident permanently?
-                              </p>
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <button
-                                  onClick={() => deleteIncident(incident.id)}
-                                  style={{
-                                    padding: "8px 16px",
-                                    background: "#dc2626",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: 6,
-                                    cursor: "pointer",
-                                    fontWeight: 500
-                                  }}
-                                >
-                                  Yes, Delete
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(null)}
-                                  style={{
-                                    padding: "8px 16px",
-                                    background: "white",
-                                    color: "#6b7280",
-                                    border: "1px solid #e5e7eb",
-                                    borderRadius: 6,
-                                    cursor: "pointer"
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Source Info */}
-                          <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>
-                              📌 SOURCE
-                            </div>
-                            <div style={{ fontSize: 14, color: "#374151" }}>
-                              {incident.source_name || getSourceTypeLabel(incident.source_type)}
-                            </div>
-                          </div>
-
-                          {/* Patterns */}
-                          {incident.patterns?.length > 0 && (
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                                ⚠️ PATTERNS DETECTED
-                              </div>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                {incident.patterns.map((pattern, i) => (
-                                  <span
-                                    key={i}
-                                    style={{
-                                      padding: "4px 12px",
-                                      background: "#fef3c7",
-                                      border: "1px solid #fcd34d",
-                                      borderRadius: 16,
-                                      fontSize: 12,
-                                      color: "#92400e"
-                                    }}
-                                  >
-                                    {pattern}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* All Messages */}
-                          <div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>
-                              📨 MESSAGES ({incident.messages_json?.length || 1})
-                            </div>
-                            <div style={{
-                              background: "white",
-                              borderRadius: 8,
-                              border: "1px solid #e5e7eb",
-                              maxHeight: 400,
-                              overflowY: "auto"
-                            }}>
-                              {incident.messages_json && incident.messages_json.length > 0 ? (
-                                incident.messages_json.map((msg: any, idx: number) => (
-                                  <div 
-                                    key={idx}
-                                    style={{
-                                      padding: 12,
-                                      borderBottom: idx < incident.messages_json!.length - 1 ? "1px solid #f3f4f6" : "none",
-                                      background: msg.sender === 'coparent' ? "#fff" : "#f0fdf4"
-                                    }}
-                                  >
-                                    <div style={{ 
-                                      display: "flex", 
-                                      justifyContent: "space-between",
-                                      marginBottom: 4,
-                                      fontSize: 11,
-                                      color: "#9ca3af"
-                                    }}>
-                                      <span style={{ 
-                                        fontWeight: 600,
-                                        color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
-                                      }}>
-                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
-                                      </span>
-                                      <span>
-                                        {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          hour: 'numeric',
-                                          minute: '2-digit'
-                                        }) : ''}
-                                      </span>
-                                    </div>
-                                    <div style={{ 
-                                      fontSize: 14, 
-                                      color: "#374151",
-                                      lineHeight: 1.5
-                                    }}>
-                                      {msg.text}
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div style={{ padding: 16, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-                                  {incident.coparent_message || "No message content"}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          "{preview}{preview.length >= 80 ? '...' : ''}"
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))
+
+                    {!selectMode && (
+                      <span style={{ 
+                        color: '#9ca3af',
+                        transform: isExpanded ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 0.15s'
+                      }}>
+                        ›
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Expanded */}
+                  {isExpanded && !selectMode && (
+                    <div style={{ 
+                      padding: '0 14px 14px',
+                      borderTop: '1px solid #f3f4f6'
+                    }}>
+                      {/* Patterns */}
+                      {inc.patterns?.length > 0 && (
+                        <div style={{ marginTop: 12, marginBottom: 12 }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {inc.patterns.map((p, i) => (
+                              <span key={i} style={{
+                                padding: '4px 10px',
+                                background: '#fef3c7',
+                                borderRadius: 12,
+                                fontSize: 12,
+                                color: '#92400e'
+                              }}>
+                                {p}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Full message */}
+                      {inc.coparent_message && (
+                        <div style={{
+                          background: '#f9fafb',
+                          padding: 12,
+                          borderRadius: 8,
+                          fontSize: 14,
+                          color: '#374151',
+                          lineHeight: 1.5,
+                          marginBottom: 12
+                        }}>
+                          "{inc.coparent_message}"
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => toggleExhibit(inc.id, !!inc.include_in_exhibit)}
+                          style={{
+                            flex: 1,
+                            padding: '10px',
+                            background: inc.include_in_exhibit ? '#f0fdf4' : '#f3f4f6',
+                            border: inc.include_in_exhibit ? '1px solid #059669' : 'none',
+                            borderRadius: 8,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            color: inc.include_in_exhibit ? '#059669' : '#374151'
+                          }}
+                        >
+                          {inc.include_in_exhibit ? '✓ In Exhibit' : 'Add to Exhibit'}
+                        </button>
+                        <button
+                          onClick={() => deleteIncident(inc.id)}
+                          style={{
+                            padding: '10px 16px',
+                            background: '#fef2f2',
+                            border: 'none',
+                            borderRadius: 8,
+                            fontSize: 13,
+                            cursor: 'pointer',
+                            color: '#dc2626'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </main>
 
-      {/* Floating Action Bar */}
+      {/* Generate Exhibit Button */}
       {exhibitCount > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: 100,
-          left: 20,
-          right: 20,
-          background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
-          borderRadius: 16,
-          padding: '14px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          zIndex: 1000
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: 16,
+          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          background: 'white',
+          borderTop: '1px solid #e5e7eb'
         }}>
-          <div style={{ color: 'white', fontSize: 15 }}>
-            ✓ <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
-          </div>
           <button
             onClick={() => router.push('/generate-exhibit')}
             style={{
-              background: '#059669',
+              width: '100%',
+              maxWidth: 600,
+              margin: '0 auto',
+              display: 'block',
+              padding: '16px',
+              background: 'linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)',
               color: 'white',
               border: 'none',
-              borderRadius: 10,
-              padding: '12px 24px',
+              borderRadius: 12,
+              fontSize: 16,
               fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: 15,
-              whiteSpace: 'nowrap'
+              cursor: 'pointer'
             }}
           >
-            Generate Exhibit →
+            📄 Generate Court Exhibit ({exhibitCount} incidents)
           </button>
         </div>
       )}
-
-      {/* Edit Modal */}
-      {editingIncident && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 2000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "white",
-            borderRadius: 16,
-            width: "100%",
-            maxWidth: 500,
-            maxHeight: "90vh",
-            overflow: "auto"
-          }}>
-            <div style={{
-              padding: 20,
-              borderBottom: "1px solid #e5e7eb"
-            }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Edit Incident</h2>
-              <p style={{ margin: "8px 0 0", fontSize: 13, color: "#6b7280" }}>
-                {new Date(editingIncident.incident_date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
-
-            <div style={{ padding: 20 }}>
-              {/* Source Type */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
-                  Source Type
-                </label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {SOURCE_TYPES.map(st => (
-                    <button
-                      key={st.value}
-                      onClick={() => setEditSourceType(st.value)}
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 8,
-                        border: editSourceType === st.value ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
-                        background: editSourceType === st.value ? "#f0fdf4" : "white",
-                        cursor: "pointer",
-                        textAlign: "left"
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, fontSize: 13, color: "#374151" }}>{st.label}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>{st.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Source Name */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
-                  Custom Source Label (optional)
-                </label>
-                <input
-                  type="text"
-                  value={editSourceName}
-                  onChange={(e) => setEditSourceName(e.target.value)}
-                  placeholder="e.g., Child's text to Father, Teacher email"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    border: "1px solid #e5e7eb",
-                    fontSize: 14,
-                    boxSizing: "border-box"
-                  }}
-                />
-                <p style={{ margin: "4px 0 0", fontSize: 11, color: "#9ca3af" }}>
-                  This label will appear in court documents
-                </p>
-              </div>
-
-              {/* Severity */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
-                  Severity
-                </label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {["critical", "high", "medium", "low"].map(sev => (
-                    <button
-                      key={sev}
-                      onClick={() => setEditSeverity(sev)}
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        borderRadius: 8,
-                        border: editSeverity === sev ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
-                        background: severityColors[sev].bg,
-                        color: severityColors[sev].text,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        textTransform: "capitalize"
-                      }}
-                    >
-                      {sev}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Patterns */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
-                  Patterns (click to toggle)
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {AVAILABLE_PATTERNS.map(pattern => (
-                    <button
-                      key={pattern}
-                      onClick={() => togglePattern(pattern)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 16,
-                        border: editPatterns.includes(pattern) ? "2px solid #f59e0b" : "1px solid #e5e7eb",
-                        background: editPatterns.includes(pattern) ? "#fef3c7" : "white",
-                        color: editPatterns.includes(pattern) ? "#92400e" : "#6b7280",
-                        fontSize: 12,
-                        cursor: "pointer"
-                      }}
-                    >
-                      {pattern}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div style={{
-                background: "#f9fafb",
-                borderRadius: 8,
-                padding: 12,
-                marginBottom: 20
-              }}>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Preview in exhibit:</div>
-                <div style={{ fontSize: 13, color: "#374151" }}>
-                  <strong>Source:</strong> {editSourceName || SOURCE_TYPES.find(s => s.value === editSourceType)?.label}
-                </div>
-                <div style={{ fontSize: 13, color: "#374151" }}>
-                  <strong>Severity:</strong> {editSeverity.toUpperCase()}
-                </div>
-                <div style={{ fontSize: 13, color: "#374151" }}>
-                  <strong>Patterns:</strong> {editPatterns.join(", ") || "None"}
-                </div>
-              </div>
-            </div>
-
-            <div style={{
-              padding: 20,
-              borderTop: "1px solid #e5e7eb",
-              display: "flex",
-              gap: 12
-            }}>
-              <button
-                onClick={() => setEditingIncident(null)}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  background: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontWeight: 500
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveEdit}
-                disabled={saving}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  background: saving ? "#9ca3af" : "#1a3a2f",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: saving ? "not-allowed" : "pointer",
-                  fontWeight: 600
-                }}
-              >
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <BottomNav active="case" />
     </div>
-  );
-}
-
-export default function EvidencePage() {
-  return (
-    <Suspense fallback={
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8faf9" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>📂</div>
-          <p style={{ color: "#6b7280" }}>Loading...</p>
-        </div>
-      </div>
-    }>
-      <EvidenceContent />
-    </Suspense>
   );
 }
