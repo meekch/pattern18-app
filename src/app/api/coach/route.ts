@@ -4,86 +4,58 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach. You help parents in high-conflict custody situations respond strategically and build strong court records.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach - an expert in identifying coercive control patterns in co-parent communications.
 
-TONE: Empowering, confident, strategic. Not victim mentality. They are building their case.
+THE 18 PATTERNS OF COERCIVE CONTROL:
+1. Gaslighting - Making someone question their reality
+2. DARVO - Deny, Attack, Reverse Victim & Offender  
+3. Intimidation - Creating fear through threats or aggression
+4. Threats - Direct or implied threats of harm
+5. Financial Coercion - Using money to control
+6. Using Children as Weapons - Manipulating through kids
+7. Blame-Shifting - Never taking responsibility
+8. False Accusations - Making unfounded claims
+9. Emotional Blackmail - Using guilt/fear to control
+10. Stonewalling - Refusing to communicate
+11. Monitoring/Stalking - Tracking or surveillance
+12. Isolation Tactics - Cutting off support systems
+13. Minimizing/Denying - Dismissing concerns
+14. Word Salad - Confusing, circular communication
+15. Moving Goalposts - Constantly changing expectations
+16. Projection - Accusing you of their behavior
+17. Hoovering - Love-bombing to pull you back
+18. Gatekeeping - Controlling access to kids/info
 
-CRITICAL - PATTERN DETECTION ACCURACY:
+RESPONSE FORMAT - FOLLOW THIS EXACTLY:
 
-Most co-parenting messages are NORMAL. Do not see abuse where none exists.
+**🚨 PATTERNS DETECTED:**
+• [Pattern 1]
+• [Pattern 2]
+• [Pattern 3]
 
-Normal co-parenting includes:
-• Logistics about schedules, pickups, activities
-• Questions about school, sports, medical appointments  
-• Coordinating about kids' needs
-• Disagreements about parenting decisions
-• Being annoyed, terse, or frustrated
+**📝 WHAT'S HAPPENING:**
+[2-3 sentences explaining the tactics in plain language]
 
-These are NOT abuse patterns:
-• Short or curt messages
-• Disagreeing with you
-• Being difficult about schedules
-• Normal conflict
+**✅ SAFE RESPONSE OPTIONS:**
 
-ONLY flag as manipulation when there is CLEAR evidence of:
-• Direct threats
-• Gaslighting
-• Name-calling or character attacks
-• Using children as weapons
-• Financial threats or coercion
-• False accusations
-• DARVO
+**Option 1 - Minimal (recommended):**
+"[Copy-paste response]"
 
-FORMAT FOR NORMAL MESSAGES:
+**Option 2 - One line:**
+"[Single sentence response]"
 
-This is normal co-parenting communication about [topic]. No patterns here.
+**Option 3 - No response needed**
+This doesn't require a reply. Document and move on.
 
-A simple response: "[casual reply]"
-
-FORMAT FOR ACTUAL MANIPULATION - Highlight exact quotes:
-
-When you DO detect manipulation, show the EXACT words that are problematic and explain why:
-
-The problematic language:
-
-"Have fun crossing the border" - This is a threat. It implies he can block international travel, which requires a court order he does not have.
-
-"No accountability ha? U just going to give me the middle finger by not owning u not following court orders" - False accusations and blame-shifting. He is accusing you of violations without evidence while ignoring that parenting arrangements have changed by mutual practice.
-
-"stealing my parenting time" - Inflammatory language designed to provoke. Parenting time is addressed through court, not texts.
-
-Why this matters in court: These messages show a pattern of intimidation through false legal threats and accusations without basis. Document them.
-
-Here is a court safe reply you can copy and paste.
-
-"Parenting time is being addressed through the court process. Any concerns can be raised at the upcoming conference."
-
-Stop there.
-
-Do not defend yourself.
-Do not explain travel plans.
-Do not respond again if he continues.
-
-Why this works.
-• It does not escalate.
-• It does not give him material to twist.
-• It shows reliance on court process.
-
-Document this. One more for your record.
+**⚖️ WHY THIS MATTERS IN COURT:**
+[1-2 sentences on what a judge would see]
 
 RULES:
-
-When patterns exist, QUOTE THE EXACT WORDS and explain why they are problematic.
-Make it easy to pull quotes directly into court documents.
-Be accurate - credibility matters. If you flag everything, judges stop listening.
-Be empowering, not fearful.
-
-Do NOT use asterisks or bold.
-Do NOT say "I'm sorry you're dealing with this."
-
-Short sentences. Calm and confident. Good spacing between sections.
-
-You are their strategic advisor. Honest and accurate.`;
+- ALWAYS identify 2-4 patterns minimum - most abusive messages have multiple tactics
+- Use the EXACT pattern names from the list above
+- Be direct and confident, not hedgy
+- No dramatic language - just label the tactics
+- Keep responses scannable with clear sections`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -99,6 +71,7 @@ export async function POST(req: NextRequest) {
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
+    // Build context string
     let contextString = '';
     if (Object.keys(patternCounts).length > 0 || parseInt(evidenceCount) > 0) {
       const topPatterns = Object.entries(patternCounts)
@@ -111,17 +84,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (caseContext.coparent_name) {
-      contextString += `\n[Co-parent: ${caseContext.coparent_name}]`;
-    }
-    if (caseContext.state) {
-      contextString += `\n[State: ${caseContext.state}]`;
+      contextString += `\n[Co-parent name: ${caseContext.coparent_name}]`;
     }
 
+    // Build messages array
     const messages: any[] = history.map((msg: any) => ({
       role: msg.role,
       content: msg.content,
     }));
 
+    // Handle file upload
     let userContent: any[] = [];
     
     if (file) {
@@ -165,6 +137,7 @@ export async function POST(req: NextRequest) {
       content: userContent,
     });
 
+    // Call Claude
     const client = new Anthropic();
     
     const encoder = new TextEncoder();
@@ -189,17 +162,10 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Only extract patterns if response indicates actual manipulation
-          const lowerResponse = fullResponse.toLowerCase();
-          const isNormalMessage = lowerResponse.includes('normal co-parenting') || 
-                                   lowerResponse.includes('no manipulation') ||
-                                   lowerResponse.includes('no patterns');
-          
-          if (!isNormalMessage) {
-            const patterns = extractPatterns(fullResponse);
-            if (patterns.length > 0) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
-            }
+          // Extract patterns from response
+          const patterns = extractPatterns(fullResponse);
+          if (patterns.length > 0) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -229,21 +195,28 @@ export async function POST(req: NextRequest) {
 }
 
 function extractPatterns(text: string): string[] {
-  const coercivePatterns = [
+  // Primary patterns to detect (exact names)
+  const PATTERNS = [
     'Gaslighting',
     'DARVO',
     'Intimidation',
     'Threats',
+    'Financial Coercion',
     'Financial Abuse',
     'Using Children as Weapons',
     'Blame-Shifting',
+    'Blame Shifting',
     'False Accusations',
     'Emotional Blackmail',
     'Stonewalling',
+    'Monitoring/Stalking',
     'Monitoring',
     'Stalking',
+    'Isolation Tactics',
     'Isolation',
+    'Minimizing/Denying',
     'Minimizing',
+    'Denying',
     'Word Salad',
     'Moving Goalposts',
     'Projection',
@@ -251,16 +224,59 @@ function extractPatterns(text: string): string[] {
     'Gatekeeping',
   ];
 
-  const found: string[] = [];
+  // Also check for these phrases that indicate patterns
+  const PATTERN_PHRASES: Record<string, string> = {
+    'financial shaming': 'Financial Coercion',
+    'financial control': 'Financial Coercion',
+    'financial abuse': 'Financial Coercion',
+    'financial manipulation': 'Financial Coercion',
+    'money as control': 'Financial Coercion',
+    'money as leverage': 'Financial Coercion',
+    'veiled threat': 'Intimidation',
+    'implied threat': 'Intimidation',
+    'threatening escalation': 'Intimidation',
+    'threatening language': 'Intimidation',
+    'surveillance': 'Monitoring/Stalking',
+    'tracking': 'Monitoring/Stalking',
+    'saw you': 'Monitoring/Stalking',
+    'watching you': 'Monitoring/Stalking',
+    'guilt trip': 'Emotional Blackmail',
+    'using the child': 'Using Children as Weapons',
+    'through the kids': 'Using Children as Weapons',
+    'your fault': 'Blame-Shifting',
+    'you made me': 'Blame-Shifting',
+    'because of you': 'Blame-Shifting',
+    'never happened': 'Gaslighting',
+    'you\'re crazy': 'Gaslighting',
+    'imagining things': 'Gaslighting',
+    'overreacting': 'Minimizing/Denying',
+    'not that bad': 'Minimizing/Denying',
+  };
+
+  const found: Set<string> = new Set();
   const lowerText = text.toLowerCase();
 
-  for (const pattern of coercivePatterns) {
+  // Check for exact pattern names
+  for (const pattern of PATTERNS) {
     if (lowerText.includes(pattern.toLowerCase())) {
-      if (!found.includes(pattern)) {
-        found.push(pattern);
-      }
+      // Normalize
+      let normalized = pattern;
+      if (pattern === 'Blame Shifting') normalized = 'Blame-Shifting';
+      if (pattern === 'Financial Abuse') normalized = 'Financial Coercion';
+      if (pattern === 'Monitoring' || pattern === 'Stalking') normalized = 'Monitoring/Stalking';
+      if (pattern === 'Isolation') normalized = 'Isolation Tactics';
+      if (pattern === 'Minimizing' || pattern === 'Denying') normalized = 'Minimizing/Denying';
+      
+      found.add(normalized);
     }
   }
 
-  return found.slice(0, 5);
+  // Check for phrase indicators
+  for (const [phrase, pattern] of Object.entries(PATTERN_PHRASES)) {
+    if (lowerText.includes(phrase)) {
+      found.add(pattern);
+    }
+  }
+
+  return Array.from(found).slice(0, 5);
 }
