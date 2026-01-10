@@ -191,6 +191,7 @@ export default function BulkMessageUpload() {
 
     try {
       // Convert AI incidents to database format
+      // Only include columns that exist in the incidents table
       const incidentsToSave = state.analysis.incidents.map((incident, idx) => ({
         user_id: userId,
         title: incident.title,
@@ -198,12 +199,8 @@ export default function BulkMessageUpload() {
         patterns: incident.patterns,
         severity: incident.severity,
         incident_date: incident.date || new Date().toISOString(),
-        coparent_message: incident.quotableText,
-        messages_json: incident.messages,
-        evidence_strength: incident.severity === 'critical' ? 'strong' : 
-                          incident.severity === 'high' ? 'moderate' : 'weak',
-        source: 'bulk_import',
-        court_notes: incident.courtNotes
+        coparent_message: incident.quotableText + (incident.courtNotes ? `\n\n[Court Notes: ${incident.courtNotes}]` : ''),
+        messages_json: incident.messages
       }));
 
       const { error } = await supabase.from('incidents').insert(incidentsToSave);
