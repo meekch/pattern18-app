@@ -27,10 +27,13 @@ export default function CoachPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // New state for sender question modal
+  // Sender question modal
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [copiedOption, setCopiedOption] = useState<number | null>(null);
+  
+  // Export reminder
+  const [showExportReminder, setShowExportReminder] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -41,7 +44,6 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
-      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -50,7 +52,6 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
-      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -67,6 +68,18 @@ export default function CoachPage() {
         setPatternCounts(counts);
       }
 
+      // Check export reminder (monthly)
+      const lastExport = localStorage.getItem('pattern18_last_export_reminder');
+      if (lastExport) {
+        const lastDate = new Date(lastExport);
+        const daysSince = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSince >= 30) {
+          setShowExportReminder(true);
+        }
+      } else if (evidence && evidence.length >= 5) {
+        setShowExportReminder(true);
+      }
+
       setLoading(false);
     };
     init();
@@ -75,6 +88,11 @@ export default function CoachPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const dismissExportReminder = () => {
+    localStorage.setItem('pattern18_last_export_reminder', new Date().toISOString());
+    setShowExportReminder(false);
+  };
 
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
@@ -100,9 +118,7 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (file) {
-        formData.append('file', file);
-      }
+      if (file) formData.append('file', file);
 
       const response = await fetch('/api/coach', {
         method: 'POST',
@@ -147,7 +163,6 @@ export default function CoachPage() {
         }
       }
 
-      // Update final message with patterns
       setMessages(prev => {
         const newMessages = [...prev];
         newMessages[newMessages.length - 1].patterns = patterns;
@@ -186,25 +201,21 @@ export default function CoachPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check if PDF - redirect to docs
     if (file.type === 'application/pdf') {
       router.push('/docs');
       return;
     }
     
-    // Check if CSV - redirect to bulk import
     if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
       return;
     }
 
-    // Handle image - show sender question modal
     if (file.type.startsWith('image/')) {
       setPendingFile(file);
       setShowSenderModal(true);
     }
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -217,11 +228,11 @@ export default function CoachPage() {
 
     let prompt = '';
     if (sender === 'coparent') {
-      prompt = 'This is a screenshot of a message FROM my co-parent. Please analyze it for manipulation patterns and help me respond.';
+      prompt = 'This screenshot is FROM MY CO-PARENT. Analyze for manipulation patterns and give me response options.';
     } else if (sender === 'me') {
-      prompt = 'This is a screenshot of MY OWN message that I am thinking of sending. Please review it and help me make sure it is factual, neutral, and appropriate for court documentation.';
+      prompt = 'This is MY OWN draft message. Review it - is it neutral, factual, and safe to send?';
     } else {
-      prompt = 'This is a screenshot of a conversation. Please help me understand what I am looking at.';
+      prompt = 'Help me understand what I am looking at in this screenshot.';
     }
 
     await handleSend(prompt, file);
@@ -237,24 +248,23 @@ export default function CoachPage() {
     }
   };
 
-  // Parse response options from assistant message
   const parseResponseOptions = (content: string) => {
     const options: { label: string; text: string }[] = [];
     
-    // Look for Option patterns
-    const optionRegex = /\*\*Option (\d)[^*]*\*\*[:\s]*\n([^*]+?)(?=\n\n\*\*|$)/gi;
-    let match;
+    const patterns = [
+      /OPTION 1[^:]*:\s*"([^"]+)"/i,
+      /OPTION 2[^:]*:\s*"([^"]+)"/i,
+    ];
     
-    while ((match = optionRegex.exec(content)) !== null) {
-      const optionNum = match[1];
-      const optionText = match[2].trim();
-      if (optionText && !optionText.toLowerCase().includes('no response needed')) {
+    patterns.forEach((regex, i) => {
+      const match = content.match(regex);
+      if (match && match[1]) {
         options.push({
-          label: `Option ${optionNum}`,
-          text: optionText
+          label: i === 0 ? 'Gray Rock' : 'With Boundary',
+          text: match[1].trim()
         });
       }
-    }
+    });
     
     return options;
   };
@@ -271,14 +281,14 @@ export default function CoachPage() {
         <div className="message-content">{msg.content}</div>
         {options.length > 0 && (
           <div className="copy-options">
-            <div className="copy-label">TAP TO COPY:</div>
+            <div className="copy-label">📋 TAP TO COPY:</div>
             {options.map((opt, i) => (
               <button
                 key={i}
                 className={`copy-btn ${copiedOption === i ? 'copied' : ''}`}
                 onClick={() => copyToClipboard(opt.text, i)}
               >
-                {copiedOption === i ? '✓ Copied!' : `📋 ${opt.label}`}
+                {copiedOption === i ? '✓ Copied!' : `${opt.label}: "${opt.text.slice(0, 50)}${opt.text.length > 50 ? '...' : ''}"`}
               </button>
             ))}
           </div>
@@ -292,7 +302,7 @@ export default function CoachPage() {
       <div className="loading">
         <div className="spinner">💚</div>
         <style jsx>{`
-          .loading { display: flex; align-items: center; justify-content: center; height: 100vh; background: #f5f7f6; }
+          .loading { display: flex; align-items: center; justify-content: center; height: 100vh; background: #ffffff; }
           .spinner { font-size: 48px; animation: pulse 1.5s infinite; }
           @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         `}</style>
@@ -315,6 +325,21 @@ export default function CoachPage() {
         </button>
       </header>
 
+      {showExportReminder && (
+        <div className="export-reminder">
+          <div className="reminder-content">
+            <span>📱</span>
+            <div>
+              <strong>Monthly reminder:</strong> Export your text messages to preserve evidence.
+            </div>
+          </div>
+          <div className="reminder-actions">
+            <button onClick={() => router.push('/evidence/upload')}>Import Now</button>
+            <button className="dismiss" onClick={dismissExportReminder}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
       <div className="content">
         {showHome ? (
           <div className="home">
@@ -324,7 +349,6 @@ export default function CoachPage() {
               <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
-            {/* Quick Actions - no stats bar */}
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
               
@@ -365,19 +389,27 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                {renderMessageContent(msg)}
-                {msg.patterns && msg.patterns.length > 0 && (
-                  <div className="patterns-detected">
-                    {msg.patterns.map((p, j) => (
-                      <span key={j} className="pattern-tag">{p}</span>
-                    ))}
-                  </div>
-                )}
+                {msg.role === 'assistant' && <div className="avatar">18</div>}
+                <div className="message-wrapper">
+                  {renderMessageContent(msg)}
+                  {msg.patterns && msg.patterns.length > 0 && (
+                    <div className="patterns-detected">
+                      {msg.patterns.map((p, j) => (
+                        <span key={j} className="pattern-tag">{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="typing">Thinking...</div>
+                <div className="avatar">18</div>
+                <div className="message-wrapper">
+                  <div className="typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -385,12 +417,11 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* Sender Question Modal */}
       {showSenderModal && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>Who sent this message?</h3>
-            <p>This helps me give you the right kind of support.</p>
+            <p>This helps me give you the right support.</p>
             
             <button className="modal-btn coparent" onClick={() => handleSenderChoice('coparent')}>
               <span>🔴</span>
@@ -426,7 +457,6 @@ export default function CoachPage() {
         </div>
       )}
 
-      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
@@ -460,7 +490,7 @@ export default function CoachPage() {
       <style jsx>{`
         .container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
+          background: #ffffff;
           display: flex;
           flex-direction: column;
         }
@@ -506,10 +536,48 @@ export default function CoachPage() {
           font-size: 14px;
           cursor: pointer;
         }
+        .export-reminder {
+          background: #fffbeb;
+          padding: 12px 16px;
+          border-bottom: 1px solid #fcd34d;
+        }
+        .reminder-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+          font-size: 14px;
+          color: #92400e;
+        }
+        .reminder-content span:first-child {
+          font-size: 20px;
+        }
+        .reminder-actions {
+          display: flex;
+          gap: 10px;
+        }
+        .reminder-actions button {
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .reminder-actions button:first-child {
+          background: #92400e;
+          color: white;
+          border: none;
+        }
+        .reminder-actions button.dismiss {
+          background: transparent;
+          color: #92400e;
+          border: 1px solid #92400e;
+        }
         .content {
           flex: 1;
           overflow-y: auto;
           padding-bottom: 140px;
+          background: #ffffff;
         }
         .home {
           max-width: 600px;
@@ -535,10 +603,10 @@ export default function CoachPage() {
           margin: 0;
         }
         .quick-actions {
-          background: white;
+          background: #f9fafb;
           border-radius: 16px;
           padding: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          border: 1px solid #e5e7eb;
         }
         .quick-actions h3 {
           text-align: center;
@@ -554,7 +622,7 @@ export default function CoachPage() {
           width: 100%;
           padding: 16px;
           background: white;
-          border: 2px solid #e5e7eb;
+          border: 1px solid #e5e7eb;
           border-radius: 12px;
           cursor: pointer;
           text-align: left;
@@ -566,7 +634,7 @@ export default function CoachPage() {
         }
         .action-btn:hover {
           border-color: #1a3a2f;
-          background: #f0fdf4;
+          background: #f9fafb;
         }
         .action-btn.primary {
           background: #f0fdf4;
@@ -589,81 +657,115 @@ export default function CoachPage() {
           color: #9ca3af;
         }
         .chat {
-          max-width: 600px;
+          max-width: 700px;
           margin: 0 auto;
           padding: 20px;
         }
         .message {
-          margin-bottom: 16px;
+          display: flex;
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+        .message.user {
+          flex-direction: row-reverse;
+        }
+        .avatar {
+          width: 32px;
+          height: 32px;
+          background: #1a3a2f;
+          color: white;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+        .message-wrapper {
+          max-width: 85%;
         }
         .message.user .message-content {
           background: #1a3a2f;
           color: white;
-          padding: 14px 18px;
+          padding: 12px 16px;
           border-radius: 18px 18px 4px 18px;
-          margin-left: 40px;
         }
         .message.assistant .message-content {
-          background: white;
-          color: #1a3a2f;
-          padding: 14px 18px;
-          border-radius: 18px 18px 18px 4px;
-          margin-right: 40px;
+          background: #f7f7f8;
+          color: #1a1a1a;
+          padding: 16px;
+          border-radius: 4px 18px 18px 18px;
+          font-size: 15px;
+          line-height: 1.7;
           white-space: pre-wrap;
         }
         .patterns-detected {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 8px;
-          margin-right: 40px;
+          gap: 6px;
+          margin-top: 10px;
         }
         .pattern-tag {
           background: #fef3c7;
           color: #92400e;
           padding: 4px 10px;
-          border-radius: 12px;
+          border-radius: 6px;
           font-size: 12px;
           font-weight: 600;
         }
         .typing {
-          color: #9ca3af;
-          font-style: italic;
+          display: flex;
+          gap: 4px;
+          padding: 8px 0;
+        }
+        .typing span {
+          width: 8px;
+          height: 8px;
+          background: #9ca3af;
+          border-radius: 50%;
+          animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing span:nth-child(1) { animation-delay: -0.32s; }
+        .typing span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
         }
         .copy-options {
           margin-top: 12px;
-          margin-right: 40px;
-          padding: 12px;
-          background: #f0fdf4;
+          padding: 14px;
+          background: #ffffff;
           border-radius: 12px;
-          border: 1px solid #bbf7d0;
+          border: 1px solid #e5e7eb;
         }
         .copy-label {
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 700;
           color: #059669;
           letter-spacing: 0.5px;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         }
         .copy-btn {
           display: block;
           width: 100%;
-          padding: 10px 14px;
+          padding: 12px 14px;
           margin-bottom: 8px;
-          background: white;
-          border: 1px solid #d1fae5;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
           border-radius: 8px;
           text-align: left;
           cursor: pointer;
-          font-size: 14px;
-          color: #1a3a2f;
+          font-size: 13px;
+          color: #374151;
           transition: all 0.2s;
+          line-height: 1.4;
         }
         .copy-btn:last-child {
           margin-bottom: 0;
         }
         .copy-btn:hover {
-          background: #d1fae5;
+          background: #f0fdf4;
           border-color: #059669;
         }
         .copy-btn.copied {
@@ -674,7 +776,7 @@ export default function CoachPage() {
         .modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.6);
+          background: rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -683,7 +785,7 @@ export default function CoachPage() {
         }
         .modal {
           background: white;
-          border-radius: 20px;
+          border-radius: 16px;
           padding: 24px;
           max-width: 360px;
           width: 100%;
@@ -705,7 +807,7 @@ export default function CoachPage() {
           width: 100%;
           padding: 14px;
           background: white;
-          border: 2px solid #e5e7eb;
+          border: 1px solid #e5e7eb;
           border-radius: 12px;
           cursor: pointer;
           text-align: left;
@@ -777,13 +879,15 @@ export default function CoachPage() {
         .input-area input[type="text"] {
           flex: 1;
           padding: 12px 16px;
-          border: 2px solid #e5e7eb;
+          border: 1px solid #e5e7eb;
           border-radius: 24px;
           font-size: 16px;
           outline: none;
+          background: #f9fafb;
         }
         .input-area input[type="text"]:focus {
           border-color: #1a3a2f;
+          background: white;
         }
         .send-btn {
           background: #1a3a2f;
