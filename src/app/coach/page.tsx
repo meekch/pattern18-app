@@ -9,7 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  hasImage?: boolean;
+  imageUrl?: string;
 }
 
 export default function CoachPage() {
@@ -94,7 +94,7 @@ export default function CoachPage() {
     setShowExportReminder(false);
   };
 
-  const handleSend = async (messageText?: string, file?: File) => {
+  const handleSend = async (messageText?: string, file?: File, imageUrl?: string) => {
     const text = messageText || input;
     if (!text.trim() && !file) return;
 
@@ -105,8 +105,8 @@ export default function CoachPage() {
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded screenshot]` : ''),
-      hasImage: !!file
+      content: text,
+      imageUrl: imageUrl
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -226,6 +226,9 @@ export default function CoachPage() {
     const file = pendingFile;
     setPendingFile(null);
 
+    // Create image URL for preview
+    const imageUrl = URL.createObjectURL(file);
+
     let prompt = '';
     if (sender === 'coparent') {
       prompt = 'This screenshot is FROM MY CO-PARENT. Analyze for manipulation patterns and give me response options.';
@@ -235,7 +238,7 @@ export default function CoachPage() {
       prompt = 'Help me understand what I am looking at in this screenshot.';
     }
 
-    await handleSend(prompt, file);
+    await handleSend(prompt, file, imageUrl);
   };
 
   const copyToClipboard = async (text: string, optionNum: number) => {
@@ -271,7 +274,29 @@ export default function CoachPage() {
 
   const renderMessageContent = (msg: Message) => {
     if (msg.role !== 'assistant') {
-      return <div className="message-content">{msg.content}</div>;
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          {msg.imageUrl && (
+            <img 
+              src={msg.imageUrl} 
+              alt="Uploaded screenshot" 
+              style={{
+                maxWidth: 280,
+                maxHeight: 400,
+                borderRadius: 12,
+                border: '1px solid #e5e7eb',
+                objectFit: 'contain'
+              }}
+            />
+          )}
+          <div style={{
+            background: '#1a3a2f',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '18px 18px 4px 18px'
+          }}>{msg.content}</div>
+        </div>
+      );
     }
 
     const options = parseResponseOptions(msg.content);
@@ -684,6 +709,19 @@ export default function CoachPage() {
         }
         .message-wrapper {
           max-width: 85%;
+        }
+        .user-message-content {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
+        }
+        .message-image {
+          max-width: 280px;
+          max-height: 400px;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          object-fit: contain;
         }
         .message.user .message-content {
           background: #1a3a2f;
