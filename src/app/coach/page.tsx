@@ -231,11 +231,11 @@ export default function CoachPage() {
 
     let prompt = '';
     if (sender === 'coparent') {
-      prompt = 'This screenshot is FROM MY CO-PARENT. Analyze for manipulation patterns and give me response options.';
+      prompt = 'This is from my co-parent. Help me respond.';
     } else if (sender === 'me') {
-      prompt = 'This is MY OWN draft message. Review it - is it neutral, factual, and safe to send?';
+      prompt = 'This is my draft. Is it safe to send?';
     } else {
-      prompt = 'Help me understand what I am looking at in this screenshot.';
+      prompt = 'Help me understand this.';
     }
 
     await handleSend(prompt, file, imageUrl);
@@ -431,8 +431,14 @@ export default function CoachPage() {
               <div className="message assistant">
                 <div className="avatar">18</div>
                 <div className="message-wrapper">
-                  <div className="typing">
-                    <span></span><span></span><span></span>
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    background: '#f7f7f8', 
+                    borderRadius: '4px 18px 18px 18px',
+                    color: '#6b7280',
+                    fontSize: 14
+                  }}>
+                    Analyzing...
                   </div>
                 </div>
               </div>
