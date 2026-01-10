@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
+import FloatingCoach from '@/components/FloatingCoach';
 
 const categoryLabels: Record<string, string> = {
   gaslighting: "Gaslighting",
@@ -108,7 +109,6 @@ export default function MyCasePage() {
   const exportCaseFile = async () => {
     setExporting(true);
     try {
-      // Build CSV content
       const headers = ['Date', 'Severity', 'Category', 'Patterns', 'Message', 'In Exhibit'];
       const rows = allIncidents.map(inc => {
         const date = new Date(inc.incident_date).toLocaleDateString('en-US', {
@@ -119,7 +119,6 @@ export default function MyCasePage() {
         const message = inc.coparent_message || 
           (inc.messages_json?.map((m: any) => m.text).join(' | ')) || 
           '';
-        // Escape quotes and wrap in quotes for CSV
         const escapeCSV = (str: string) => `"${String(str || '').replace(/"/g, '""')}"`;
         
         return [
@@ -154,7 +153,6 @@ export default function MyCasePage() {
     ? Math.ceil((new Date(caseContext.next_court_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  // Format court date for display
   const courtDateFormatted = caseContext?.next_court_date
     ? new Date(caseContext.next_court_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;
@@ -185,7 +183,7 @@ export default function MyCasePage() {
       background: 'linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%)',
       paddingBottom: 100 
     }}>
-      {/* Header with compact countdown */}
+      {/* Header */}
       <header style={{
         padding: '20px 24px',
         display: 'flex',
@@ -196,7 +194,7 @@ export default function MyCasePage() {
       }}>
         <h1 style={{ fontSize: 24, margin: 0 }}>My Case</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Compact court countdown */}
+          {/* Compact court countdown - white pill */}
           {daysUntilCourt && daysUntilCourt > 0 && (
             <button
               onClick={() => router.push('/court-prep')}
@@ -204,29 +202,39 @@ export default function MyCasePage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                background: '#f59e0b',
-                color: '#78350f',
+                background: 'white',
+                color: '#1a3a2f',
                 border: 'none',
                 padding: '6px 12px',
                 borderRadius: 20,
                 fontSize: 13,
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
-              <span>⚖️</span>
-              <span>{daysUntilCourt}d</span>
+              <span>📅</span>
+              <span>{courtDateFormatted}</span>
+              <span style={{ 
+                background: '#f59e0b', 
+                color: '#78350f',
+                padding: '2px 6px',
+                borderRadius: 10,
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                {daysUntilCourt}d
+              </span>
             </button>
           )}
           <button 
             onClick={() => router.push('/case-setup')} 
             style={{
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.15)',
               border: 'none',
               padding: '8px 12px',
               borderRadius: 8,
               fontSize: 20,
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             ⚙️
@@ -424,7 +432,7 @@ export default function MyCasePage() {
                 </div>
               </div>
 
-              {/* Pattern Bars - Clickable */}
+              {/* Pattern Bars */}
               <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 10 }}>
                 TOP PATTERNS
               </div>
@@ -494,7 +502,7 @@ export default function MyCasePage() {
           )}
         </div>
 
-        {/* Exhibit Status - only if they have items marked */}
+        {/* Exhibit Status */}
         {exhibitCount > 0 && (
           <div 
             onClick={() => router.push('/generate-exhibit')}
@@ -608,6 +616,12 @@ export default function MyCasePage() {
           )}
         </div>
       </main>
+
+      {/* Floating Coach */}
+      <FloatingCoach 
+        courtDate={caseContext?.next_court_date}
+        evidenceCount={totalIncidents}
+      />
 
       <BottomNav active="case" />
     </div>
