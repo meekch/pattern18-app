@@ -34,6 +34,23 @@ export default function CoachPage() {
   
   // Import tracking
   const [daysSinceImport, setDaysSinceImport] = useState<number | null>(null);
+  
+  // Progress messages for better UX during analysis
+  const [progressIndex, setProgressIndex] = useState(0);
+  const [hasImage, setHasImage] = useState(false);
+  const progressMessages = [
+    "Reading your message...",
+    "Identifying patterns...",
+    "Checking for manipulation tactics...",
+    "Preparing response options...",
+  ];
+  const imageProgressMessages = [
+    "Reading the screenshot...",
+    "Analyzing the conversation...",
+    "Identifying coercive patterns...",
+    "Checking tone and language...",
+    "Preparing strategic response...",
+  ];
 
   useEffect(() => {
     const init = async () => {
@@ -87,6 +104,21 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Rotate progress messages while analyzing
+  useEffect(() => {
+    if (!sending) {
+      setProgressIndex(0);
+      return;
+    }
+    
+    const msgs = hasImage ? imageProgressMessages : progressMessages;
+    const interval = setInterval(() => {
+      setProgressIndex(prev => (prev + 1) % msgs.length);
+    }, 2500);
+    
+    return () => clearInterval(interval);
+  }, [sending, hasImage]);
+
   const getImportMessage = () => {
     if (daysSinceImport === null) return { text: 'Import messages', urgent: false };
     if (daysSinceImport === 0) return { text: 'Imported today ✓', urgent: false };
@@ -101,6 +133,8 @@ export default function CoachPage() {
 
     setShowHome(false);
     setSending(true);
+    setHasImage(!!file);
+    setProgressIndex(0);
     setInput('');
     setDetectedPatterns([]);
 
@@ -429,10 +463,21 @@ export default function CoachPage() {
                     padding: '12px 16px', 
                     background: '#f7f7f8', 
                     borderRadius: '4px 18px 18px 18px',
-                    color: '#6b7280',
-                    fontSize: 14
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
                   }}>
-                    Analyzing...
+                    <div style={{
+                      width: 16,
+                      height: 16,
+                      border: '2px solid #e5e7eb',
+                      borderTopColor: '#059669',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                    <span style={{ color: '#4b5563', fontSize: 14 }}>
+                      {(hasImage ? imageProgressMessages : progressMessages)[progressIndex]}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -583,6 +628,10 @@ export default function CoachPage() {
         @keyframes pulse-urgent {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         .content {
           flex: 1;
