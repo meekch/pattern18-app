@@ -32,8 +32,8 @@ export default function CoachPage() {
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [copiedOption, setCopiedOption] = useState<number | null>(null);
   
-  // Export reminder
-  const [showExportReminder, setShowExportReminder] = useState(false);
+  // Import tracking
+  const [daysSinceImport, setDaysSinceImport] = useState<number | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -68,16 +68,14 @@ export default function CoachPage() {
         setPatternCounts(counts);
       }
 
-      // Check export reminder (monthly)
-      const lastExport = localStorage.getItem('pattern18_last_export_reminder');
-      if (lastExport) {
-        const lastDate = new Date(lastExport);
-        const daysSince = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysSince >= 30) {
-          setShowExportReminder(true);
-        }
-      } else if (evidence && evidence.length >= 5) {
-        setShowExportReminder(true);
+      // Calculate days since last import
+      const lastImport = localStorage.getItem('pattern18_last_import');
+      if (lastImport) {
+        const lastDate = new Date(lastImport);
+        const days = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        setDaysSinceImport(days);
+      } else {
+        setDaysSinceImport(null); // Never imported
       }
 
       setLoading(false);
@@ -89,9 +87,12 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const dismissExportReminder = () => {
-    localStorage.setItem('pattern18_last_export_reminder', new Date().toISOString());
-    setShowExportReminder(false);
+  const getImportMessage = () => {
+    if (daysSinceImport === null) return { text: 'Import messages', urgent: false };
+    if (daysSinceImport === 0) return { text: 'Imported today ✓', urgent: false };
+    if (daysSinceImport <= 7) return { text: `${daysSinceImport}d ago`, urgent: false };
+    if (daysSinceImport <= 30) return { text: `${daysSinceImport}d since import`, urgent: false };
+    return { text: `${daysSinceImport}d - import now`, urgent: true };
   };
 
   const handleSend = async (messageText?: string, file?: File, imageUrl?: string) => {
@@ -345,25 +346,18 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-          📁 {evidenceCount}
-        </button>
-      </header>
-
-      {showExportReminder && (
-        <div className="export-reminder">
-          <div className="reminder-content">
-            <span>📱</span>
-            <div>
-              <strong>Monthly reminder:</strong> Export your text messages to preserve evidence.
-            </div>
-          </div>
-          <div className="reminder-actions">
-            <button onClick={() => router.push('/evidence/upload')}>Import Now</button>
-            <button className="dismiss" onClick={dismissExportReminder}>Dismiss</button>
-          </div>
+        <div className="header-right">
+          <button 
+            className={`import-badge ${getImportMessage().urgent ? 'urgent' : ''}`}
+            onClick={() => router.push('/evidence/upload')}
+          >
+            📤 {getImportMessage().text}
+          </button>
+          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+            📁 {evidenceCount}
+          </button>
         </div>
-      )}
+      </header>
 
       <div className="content">
         {showHome ? (
@@ -561,48 +555,34 @@ export default function CoachPage() {
         .evidence-badge {
           background: rgba(255,255,255,0.15);
           border: none;
-          padding: 8px 14px;
+          padding: 8px 12px;
           border-radius: 20px;
           color: white;
           font-size: 14px;
           cursor: pointer;
         }
-        .export-reminder {
-          background: #fffbeb;
-          padding: 12px 16px;
-          border-bottom: 1px solid #fcd34d;
-        }
-        .reminder-content {
+        .header-right {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 10px;
-          font-size: 14px;
-          color: #92400e;
+          gap: 8px;
         }
-        .reminder-content span:first-child {
-          font-size: 20px;
-        }
-        .reminder-actions {
-          display: flex;
-          gap: 10px;
-        }
-        .reminder-actions button {
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
+        .import-badge {
+          background: rgba(255,255,255,0.15);
+          border: none;
+          padding: 6px 12px;
+          border-radius: 16px;
+          color: rgba(255,255,255,0.9);
+          font-size: 12px;
           cursor: pointer;
         }
-        .reminder-actions button:first-child {
-          background: #92400e;
+        .import-badge.urgent {
+          background: #f59e0b;
           color: white;
-          border: none;
+          animation: pulse-urgent 2s infinite;
         }
-        .reminder-actions button.dismiss {
-          background: transparent;
-          color: #92400e;
-          border: 1px solid #92400e;
+        @keyframes pulse-urgent {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
         .content {
           flex: 1;
