@@ -308,18 +308,15 @@ function getContextCategory(incident: any): string {
 }
 
 function getSourceLabel(incident: any, caseInfo: any): string {
-  // If custom source_name is set, use it
   if (incident.source_name) {
     return incident.source_name;
   }
   
-  // Get coparent name
   const userRole = caseInfo?.user_role || 'respondent';
   const petitionerName = caseInfo?.petitioner_name || '';
   const respondentName = caseInfo?.respondent_name || '';
   const coparentName = caseInfo?.coparent_name || '';
   
-  // FIXED: Use "Father" as fallback instead of "Petitioner/Respondent"
   let otherPartyName: string;
   if (userRole === 'petitioner') {
     otherPartyName = respondentName || coparentName || 'Father';
@@ -327,7 +324,6 @@ function getSourceLabel(incident: any, caseInfo: any): string {
     otherPartyName = petitionerName || coparentName || 'Father';
   }
   
-  // Build label based on source_type
   const sourceType = incident.source_type || 'coparent';
   
   switch (sourceType) {
@@ -353,13 +349,11 @@ function createExhibitDocument(
   const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
   const cellBorders = { top: tableBorder, bottom: tableBorder, left: tableBorder, right: tableBorder };
 
-  // Determine names based on user_role
   const userRole = caseInfo?.user_role || 'respondent';
   const petitionerName = caseInfo?.petitioner_name || '';
   const respondentName = caseInfo?.respondent_name || '';
   const coparentName = caseInfo?.coparent_name || '';
   
-  // FIXED: Use "Father" as fallback instead of "Petitioner/Respondent"
   let otherPartyName: string;
   if (userRole === 'petitioner') {
     otherPartyName = respondentName || coparentName || 'Father';
@@ -371,27 +365,21 @@ function createExhibitDocument(
   const courtName = caseInfo?.court || 'Superior Court';
   const county = caseInfo?.county || '';
   const state = caseInfo?.state || '';
-  
-  // Build case name
-  let caseName = '';
-  if (petitionerName && respondentName) {
-    caseName = `${petitionerName} v. ${respondentName}`;
-  } else {
-    caseName = 'In the Matter of Parenting Time';
-  }
 
-  // Court-standard font settings
+  // COURT-STANDARD FONT SETTINGS
   const FONT = 'Times New Roman';
-  const BODY_SIZE = 24; // 12pt
+  const BODY_SIZE = 24; // 12pt in half-points
   const HEADING1_SIZE = 28; // 14pt
   const HEADING2_SIZE = 26; // 13pt
   const SMALL_SIZE = 20; // 10pt
+  const LINE_SPACING = 360; // 1.5 line spacing (360=1.5x, 480=double, 240=single)
 
   return new Document({
     styles: {
       default: {
         document: {
-          run: { font: FONT, size: BODY_SIZE }
+          run: { font: FONT, size: BODY_SIZE },
+          paragraph: { spacing: { line: LINE_SPACING, after: 120 } }
         }
       },
       paragraphStyles: [
@@ -400,7 +388,7 @@ function createExhibitDocument(
           name: 'Title',
           basedOn: 'Normal',
           run: { size: 32, bold: true, font: FONT },
-          paragraph: { spacing: { before: 0, after: 200 }, alignment: AlignmentType.CENTER }
+          paragraph: { spacing: { before: 0, after: 200, line: 240 }, alignment: AlignmentType.CENTER }
         },
         {
           id: 'Heading1',
@@ -408,8 +396,8 @@ function createExhibitDocument(
           basedOn: 'Normal',
           next: 'Normal',
           quickFormat: true,
-          run: { size: HEADING1_SIZE, bold: true, font: FONT },
-          paragraph: { spacing: { before: 300, after: 150 }, outlineLevel: 0 }
+          run: { size: HEADING1_SIZE, bold: true, allCaps: true, font: FONT },
+          paragraph: { spacing: { before: 400, after: 200, line: 240 }, outlineLevel: 0 }
         },
         {
           id: 'Heading2',
@@ -418,14 +406,14 @@ function createExhibitDocument(
           next: 'Normal',
           quickFormat: true,
           run: { size: HEADING2_SIZE, bold: true, font: FONT },
-          paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 1 }
+          paragraph: { spacing: { before: 300, after: 150, line: 240 }, outlineLevel: 1 }
         },
       ]
     },
     sections: [{
       properties: {
         page: {
-          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // 1 inch margins
         }
       },
       headers: {
@@ -433,9 +421,9 @@ function createExhibitDocument(
           children: [
             new Paragraph({
               alignment: AlignmentType.RIGHT,
+              spacing: { after: 0 },
               children: [
-                new TextRun({ text: caseName, size: SMALL_SIZE, font: FONT }),
-                new TextRun({ text: caseNumber ? ` | Case No. ${caseNumber}` : '', size: SMALL_SIZE, font: FONT })
+                new TextRun({ text: caseNumber ? `Case No. ${caseNumber}` : '', size: SMALL_SIZE, font: FONT })
               ]
             })
           ]
@@ -457,55 +445,86 @@ function createExhibitDocument(
         })
       },
       children: [
-        // ==================== COVER PAGE ====================
-        new Paragraph({ spacing: { before: 1200 } }),
+        // ==================== CAPTION BLOCK (Proper Court Format) ====================
+        // Court Name - Centered, ALL CAPS
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: 'EXHIBIT ___', size: 48, bold: true, font: FONT })]
+          spacing: { after: 60, line: 240 },
+          children: [new TextRun({ text: courtName.toUpperCase(), size: BODY_SIZE, font: FONT })]
         }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 400 },
-          children: [new TextRun({ text: 'DOCUMENTED COMMUNICATION PATTERNS', size: 28, bold: true, font: FONT })]
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 100 },
-          children: [new TextRun({ text: 'RELATED TO PARENTING TIME AND CO-PARENTING DISPUTES', size: BODY_SIZE, font: FONT })]
-        }),
-        new Paragraph({ spacing: { before: 800 } }),
-        
-        // Court info
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: courtName, size: BODY_SIZE, font: FONT })]
-        }),
+        // County/State
         (county || state) ? new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { before: 50 },
-          children: [new TextRun({ text: [county, state].filter(Boolean).join(', '), size: BODY_SIZE, font: FONT })]
-        }) : new Paragraph({}),
-        caseNumber ? new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 100 },
-          children: [new TextRun({ text: `Case No. ${caseNumber}`, size: BODY_SIZE, font: FONT })]
-        }) : new Paragraph({}),
+          spacing: { after: 120, line: 240 },
+          children: [new TextRun({ text: [county ? `${county.toUpperCase()} COUNTY` : '', state?.toUpperCase()].filter(Boolean).join(', '), size: BODY_SIZE, font: FONT })]
+        }) : new Paragraph({ spacing: { after: 0 } }),
         
-        new Paragraph({ spacing: { before: 400 } }),
+        // Horizontal line
         new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: caseName, size: HEADING2_SIZE, bold: true, font: FONT })]
+          spacing: { before: 200, after: 200 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: '000000' } },
+          children: []
         }),
         
-        new Paragraph({ spacing: { before: 800 } }),
+        // Petitioner line
+        new Paragraph({
+          spacing: { after: 0, line: 240 },
+          children: [new TextRun({ text: petitionerName || '[PETITIONER NAME]', size: BODY_SIZE, font: FONT })]
+        }),
+        new Paragraph({
+          spacing: { after: 60, line: 240 },
+          indent: { left: 720 },
+          children: [new TextRun({ text: 'Petitioner,', size: BODY_SIZE, font: FONT })]
+        }),
+        
+        // vs. line with case number
+        new Paragraph({
+          spacing: { after: 60, line: 240 },
+          children: [
+            new TextRun({ text: 'v.', size: BODY_SIZE, font: FONT }),
+            new TextRun({ text: '\t\t\t\t\t', size: BODY_SIZE, font: FONT }),
+            new TextRun({ text: `Case No. ${caseNumber || '________________'}`, size: BODY_SIZE, font: FONT }),
+          ]
+        }),
+        
+        // Respondent line
+        new Paragraph({
+          spacing: { after: 0, line: 240 },
+          children: [new TextRun({ text: respondentName || '[RESPONDENT NAME]', size: BODY_SIZE, font: FONT })]
+        }),
+        new Paragraph({
+          spacing: { after: 120, line: 240 },
+          indent: { left: 720 },
+          children: [new TextRun({ text: 'Respondent.', size: BODY_SIZE, font: FONT })]
+        }),
+        
+        // Horizontal line
+        new Paragraph({
+          spacing: { before: 200, after: 400 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: '000000' } },
+          children: []
+        }),
+
+        // ==================== EXHIBIT TITLE ====================
         new Paragraph({
           alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 120, line: 240 },
+          children: [new TextRun({ text: 'EXHIBIT ___', size: 32, bold: true, font: FONT })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60, line: 240 },
+          children: [new TextRun({ text: 'DOCUMENTED COMMUNICATION PATTERNS', size: HEADING1_SIZE, bold: true, font: FONT })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60, line: 240 },
+          children: [new TextRun({ text: 'Related to Parenting Time and Co-Parenting Disputes', size: BODY_SIZE, font: FONT })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400, line: 240 },
           children: [new TextRun({ text: `Documentation Period: ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}`, size: BODY_SIZE, font: FONT })]
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 200 },
-          children: [new TextRun({ text: `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, size: BODY_SIZE, font: FONT })]
         }),
 
         // ==================== PAGE BREAK ====================
@@ -517,19 +536,18 @@ function createExhibitDocument(
           children: [new TextRun({ text: 'EXECUTIVE SUMMARY', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 200 },
           children: [
-            new TextRun({ text: `This exhibit documents ${stats.total} written communications occurring over a ${stats.daySpan}-day period from ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}. All communications occurred in the context of parenting time, holiday scheduling, or court-related matters.`, size: BODY_SIZE, font: FONT }),
+            new TextRun({ text: `This exhibit documents `, size: BODY_SIZE, font: FONT }),
+            new TextRun({ text: `${stats.total}`, size: BODY_SIZE, font: FONT, bold: true }),
+            new TextRun({ text: ` written communications occurring over a ${stats.daySpan}-day period from ${formatDate(stats.startDate)} through ${formatDate(stats.endDate)}. All communications occurred in the context of parenting time, holiday scheduling, or court-related matters.`, size: BODY_SIZE, font: FONT }),
           ]
         }),
         new Paragraph({
-          spacing: { after: 200 },
           children: [
             new TextRun({ text: `Analysis identifies repeated communication patterns associated with high-conflict custody dynamics. These patterns recur across multiple messages and escalate around holidays, schedule transitions, and pending court events.`, size: BODY_SIZE, font: FONT }),
           ]
         }),
         new Paragraph({
-          spacing: { after: 200 },
           children: [
             new TextRun({ text: `This exhibit is provided to assist the Court in evaluating patterns across time rather than isolated exchanges.`, size: BODY_SIZE, font: FONT }),
           ]
@@ -538,35 +556,28 @@ function createExhibitDocument(
         // ==================== COURT RELEVANCE ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          spacing: { before: 400 },
           children: [new TextRun({ text: 'COURT RELEVANCE AND CHILD IMPACT', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 150 },
           children: [new TextRun({ text: 'The documented communications are relevant to parenting time determinations for the following reasons:', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '1. All communications occurred during active parenting time disputes', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '2. The child is directly referenced or involved in scheduling decisions', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '3. The communications escalate around holidays and court proceedings', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 200 },
           indent: { left: 720 },
           children: [new TextRun({ text: '4. The patterns interfere with cooperative co-parenting', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 300 },
           children: [new TextRun({ text: 'These patterns support consideration of a simplified parenting structure designed to reduce negotiation and limit child exposure to adult conflict.', size: BODY_SIZE, font: FONT })]
         }),
 
@@ -580,13 +591,12 @@ function createExhibitDocument(
         // ==================== PAGE BREAK ====================
         new Paragraph({ children: [new PageBreak()] }),
 
-        // ==================== TIMELINE SUMMARY (ONE PAGE) ====================
+        // ==================== TIMELINE SUMMARY ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           children: [new TextRun({ text: 'TIMELINE SUMMARY', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 200 },
           children: [new TextRun({ text: 'The following timeline provides a compressed view of documented communications for rapid review.', size: BODY_SIZE, font: FONT })]
         }),
         createTimelineTable(incidents, cellBorders, FONT, SMALL_SIZE),
@@ -600,7 +610,6 @@ function createExhibitDocument(
           children: [new TextRun({ text: 'INCIDENT SUMMARIES', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 300 },
           children: [new TextRun({ text: `The following ${stats.total} incidents are presented in chronological order. Each incident includes the date, context, source, direct quote, and detected communication patterns.`, size: BODY_SIZE, font: FONT })]
         }),
 
@@ -616,7 +625,6 @@ function createExhibitDocument(
           children: [new TextRun({ text: 'APPENDIX: PATTERN DEFINITIONS', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 300 },
           children: [new TextRun({ text: 'The following definitions are based on peer-reviewed research and established clinical literature on high-conflict custody dynamics.', size: BODY_SIZE, font: FONT })]
         }),
 
@@ -629,11 +637,9 @@ function createExhibitDocument(
               children: [new TextRun({ text: def.name, font: FONT })]
             }),
             new Paragraph({
-              spacing: { after: 100 },
               children: [new TextRun({ text: def.definition, size: BODY_SIZE, font: FONT })]
             }),
             new Paragraph({
-              spacing: { after: 200 },
               children: [new TextRun({ text: `Source: ${def.source}`, size: SMALL_SIZE, italics: true, font: FONT })]
             }),
           ];
@@ -646,37 +652,30 @@ function createExhibitDocument(
           children: [new TextRun({ text: 'DISCLAIMER', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 300 },
           children: [new TextRun({ text: 'This exhibit documents observed communication patterns based on written exchanges. It does not assert medical diagnoses or legal conclusions. Pattern labels are provided for analytical clarity based on established research cited herein.', size: BODY_SIZE, font: FONT })]
         }),
 
-        // ==================== PURPOSE OF SUBMISSION ====================
+        // ==================== PURPOSE ====================
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          spacing: { before: 400 },
           children: [new TextRun({ text: 'PURPOSE OF SUBMISSION', font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 150 },
           children: [new TextRun({ text: 'This exhibit is submitted to assist the Court in:', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '1. Identifying recurring communication patterns', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '2. Understanding escalation around parenting time disputes', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 100 },
           indent: { left: 720 },
           children: [new TextRun({ text: '3. Evaluating the need for conflict-reducing parenting structures', size: BODY_SIZE, font: FONT })]
         }),
         new Paragraph({
-          spacing: { after: 300 },
           indent: { left: 720 },
           children: [new TextRun({ text: '4. Reducing child involvement in adult decision-making', size: BODY_SIZE, font: FONT })]
         }),
@@ -685,7 +684,7 @@ function createExhibitDocument(
         new Paragraph({ spacing: { before: 600 } }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: '- End of Exhibit -', size: BODY_SIZE, italics: true, font: FONT })]
+          children: [new TextRun({ text: '— End of Exhibit —', size: BODY_SIZE, italics: true, font: FONT })]
         }),
       ]
     }]
@@ -694,7 +693,6 @@ function createExhibitDocument(
 
 function createSummaryTable(stats: any, patternCounts: Record<string, number>, cellBorders: any, font: string, size: number) {
   const headerShading = { fill: 'f0f0f0', type: ShadingType.CLEAR };
-  
   const topPatterns = Object.entries(patternCounts).slice(0, 5);
   
   return new Table({
@@ -812,11 +810,9 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   const isDuplicate = incident.isDuplicate;
   const duplicateOfIndex = incident.duplicateOfIndex;
   
-  // FIXED: Strip any embedded court notes from the quote
   let coparentMessage = incident.coparent_message || '';
   coparentMessage = coparentMessage.replace(/\s*\[Court Notes:[\s\S]*?\]/g, '').trim();
   
-  // Get proper source label
   const sourceLabel = getSourceLabel(incident, caseInfo);
 
   if (!coparentMessage.trim()) {
@@ -824,18 +820,18 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   }
 
   const elements: Paragraph[] = [
-    // Incident header
+    // Pull quote at top (italicized, indented)
     new Paragraph({
-        spacing: { before: 50, after: 100 },
-        indent: { left: 720 },
-        children: [
-          new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font, italics: true }),
-        ]
-      }),
+      spacing: { before: 300, after: 150 },
+      indent: { left: 720 },
+      children: [
+        new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font, italics: true }),
+      ]
+    }),
     
     // Date
     new Paragraph({
-      spacing: { before: 100 },
+      spacing: { before: 100, after: 60 },
       children: [
         new TextRun({ text: 'Date: ', bold: true, size: bodySize, font }),
         new TextRun({ text: dateStr, size: bodySize, font }),
@@ -844,16 +840,16 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
     
     // Context
     new Paragraph({
-      spacing: { before: 50 },
+      spacing: { after: 60 },
       children: [
         new TextRun({ text: 'Context: ', bold: true, size: bodySize, font }),
         new TextRun({ text: context, size: bodySize, font }),
       ]
     }),
     
-    // Source - NOW USING DYNAMIC LABEL
+    // Source
     new Paragraph({
-      spacing: { before: 50 },
+      spacing: { after: 60 },
       children: [
         new TextRun({ text: 'Source: ', bold: true, size: bodySize, font }),
         new TextRun({ text: sourceLabel, size: bodySize, font }),
@@ -861,32 +857,28 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
     }),
   ];
 
-  // Handle duplicates differently
+  // Handle duplicates
   if (isDuplicate && duplicateOfIndex) {
     elements.push(
       new Paragraph({
-        spacing: { before: 150, after: 100 },
+        spacing: { before: 100, after: 60 },
         children: [
           new TextRun({ text: 'Pattern Recurrence Note: ', bold: true, size: bodySize, font }),
-          new TextRun({ text: `This communication repeats the same statements made in Incident #${duplicateOfIndex}, reinforcing previously identified patterns.`, size: bodySize, font }),
+          new TextRun({ text: `This communication repeats statements from Incident #${duplicateOfIndex}, reinforcing identified patterns.`, size: bodySize, font }),
         ]
       })
     );
   } else {
-    // Direct Quote
+    // Direct Quote (repeated for clarity in the record)
     elements.push(
       new Paragraph({
-        spacing: { before: 150 },
-        children: [
-          new TextRun({ text: 'Direct Quote:', bold: true, size: bodySize, font }),
-        ]
+        spacing: { before: 100 },
+        children: [new TextRun({ text: 'Direct Quote:', bold: true, size: bodySize, font })]
       }),
       new Paragraph({
-        spacing: { before: 50, after: 100 },
+        spacing: { before: 60, after: 100 },
         indent: { left: 720 },
-        children: [
-          new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font }),
-        ]
+        children: [new TextRun({ text: `"${coparentMessage}"`, size: bodySize, font })]
       })
     );
   }
@@ -894,7 +886,7 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
   // Detected patterns
   elements.push(
     new Paragraph({
-      spacing: { before: 100 },
+      spacing: { after: 60 },
       children: [
         new TextRun({ text: 'Detected Communication Patterns: ', bold: true, size: bodySize, font }),
         new TextRun({ text: patterns.length > 0 ? patterns.join(', ') : 'None detected', size: bodySize, font }),
@@ -903,7 +895,7 @@ function createIncidentSection(incident: any, index: number, caseInfo: any, font
     
     // Severity
     new Paragraph({
-      spacing: { before: 50, after: 300 },
+      spacing: { after: 300 },
       children: [
         new TextRun({ text: 'Severity Assessment: ', bold: true, size: bodySize, font }),
         new TextRun({ text: severity.charAt(0).toUpperCase() + severity.slice(1), size: bodySize, font, bold: true }),
