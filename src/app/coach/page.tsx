@@ -52,6 +52,44 @@ export default function CoachPage() {
     "Preparing strategic response...",
   ];
 
+  // Format markdown-like text to HTML
+  const formatMessage = (text: string) => {
+    let formatted = text
+      // Bold **text**
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic *text*
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      // Handle bullet points (•, -, *)
+      .replace(/^[•\-\*]\s+(.+)$/gm, '<li>$1</li>')
+      // Numbered lists
+      .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+    
+    // Wrap consecutive <li> items in <ul>
+    formatted = formatted.replace(/(<li>.*?<\/li>\s*)+/gs, (match) => `<ul>${match}</ul>`);
+    
+    // Handle quoted responses (text in quotes on its own line)
+    formatted = formatted.replace(/^"([^"]+)"$/gm, '<blockquote>$1</blockquote>');
+    
+    // Convert double newlines to paragraph breaks
+    const paragraphs = formatted.split(/\n\n+/);
+    formatted = paragraphs
+      .map(p => p.trim())
+      .filter(p => p)
+      .map(p => {
+        // Don't wrap if already wrapped in block element
+        if (p.startsWith('<ul>') || p.startsWith('<blockquote>') || p.startsWith('<li>')) {
+          return p;
+        }
+        return `<p>${p}</p>`;
+      })
+      .join('');
+    
+    // Convert single newlines to <br> within paragraphs
+    formatted = formatted.replace(/([^>])\n([^<])/g, '$1<br/>$2');
+    
+    return formatted;
+  };
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -347,7 +385,7 @@ export default function CoachPage() {
     
     return (
       <>
-        <div className="message-content">{msg.content}</div>
+        <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
         {options.length > 0 && (
           <div className="copy-options">
             <div className="copy-label">📋 TAP TO COPY:</div>
@@ -754,19 +792,6 @@ export default function CoachPage() {
         .message-wrapper {
           max-width: 85%;
         }
-        .user-message-content {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 8px;
-        }
-        .message-image {
-          max-width: 280px;
-          max-height: 400px;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-          object-fit: contain;
-        }
         .message.user .message-content {
           background: #1a3a2f;
           color: white;
@@ -776,47 +801,55 @@ export default function CoachPage() {
         .message.assistant .message-content {
           background: #f7f7f8;
           color: #1a1a1a;
-          padding: 16px;
+          padding: 20px;
           border-radius: 4px 18px 18px 18px;
           font-size: 15px;
           line-height: 1.7;
-          white-space: pre-wrap;
+        }
+        .message.assistant .message-content :global(p) {
+          margin: 0 0 16px 0;
+        }
+        .message.assistant .message-content :global(p:last-child) {
+          margin-bottom: 0;
+        }
+        .message.assistant .message-content :global(ul) {
+          margin: 12px 0;
+          padding-left: 20px;
+        }
+        .message.assistant .message-content :global(li) {
+          margin-bottom: 8px;
+          line-height: 1.6;
+        }
+        .message.assistant .message-content :global(blockquote) {
+          background: #e8f5e9;
+          border-left: 3px solid #1a3a2f;
+          padding: 14px 18px;
+          margin: 16px 0;
+          border-radius: 0 8px 8px 0;
+          font-style: italic;
+          color: #1a3a2f;
+        }
+        .message.assistant .message-content :global(strong) {
+          color: #1a3a2f;
+          font-weight: 600;
         }
         .patterns-detected {
           display: flex;
           flex-wrap: wrap;
           gap: 6px;
-          margin-top: 10px;
+          margin-top: 12px;
         }
         .pattern-tag {
           background: #fef3c7;
           color: #92400e;
-          padding: 4px 10px;
+          padding: 6px 12px;
           border-radius: 6px;
           font-size: 12px;
           font-weight: 600;
         }
-        .typing {
-          display: flex;
-          gap: 4px;
-          padding: 8px 0;
-        }
-        .typing span {
-          width: 8px;
-          height: 8px;
-          background: #9ca3af;
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out;
-        }
-        .typing span:nth-child(1) { animation-delay: -0.32s; }
-        .typing span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
         .copy-options {
-          margin-top: 12px;
-          padding: 14px;
+          margin-top: 16px;
+          padding: 16px;
           background: #ffffff;
           border-radius: 12px;
           border: 1px solid #e5e7eb;
@@ -826,19 +859,19 @@ export default function CoachPage() {
           font-weight: 700;
           color: #059669;
           letter-spacing: 0.5px;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
         .copy-btn {
           display: block;
           width: 100%;
-          padding: 12px 14px;
-          margin-bottom: 8px;
+          padding: 14px 16px;
+          margin-bottom: 10px;
           background: #f9fafb;
           border: 1px solid #e5e7eb;
           border-radius: 8px;
           text-align: left;
           cursor: pointer;
-          font-size: 13px;
+          font-size: 14px;
           color: #374151;
           transition: all 0.2s;
           line-height: 1.4;
