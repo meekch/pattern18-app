@@ -3,77 +3,94 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import {
-  parseCSV,
-  detectFormat,
-  type ParseResult,
-} from '@/lib/parsers/message-parser';
-import {
-  analyzeBulk,
-  type BulkAnalysisResult,
-} from '@/lib/parsers/pattern-detection';
-import {
-  detectIncidents,
-  type Incident,
-  type IncidentDetectionResult,
-  CATEGORY_DISPLAY_NAMES
-} from '@/lib/parsers/incident-detection';
+import { parseCSV, type ParseResult } from '@/lib/parsers/message-parser';
 
 type UploadStep = 'upload' | 'analyzing' | 'results';
+
+interface PatternResult {
+  name: string;
+  count: number;
+  severity: string;
+  description: string;
+  courtRelevance: string;
+  examples: Array<{
+    date: string;
+    quote: string;
+    analysis: string;
+  }>;
+}
+
+interface IncidentResult {
+  title: string;
+  date: string;
+  patterns: string[];
+  severity: string;
+  messages: Array<{
+    timestamp: string;
+    sender: string;
+    text: string;
+  }>;
+  quotableText: string;
+  courtNotes: string;
+}
+
+interface AnalysisResult {
+  summary: {
+    totalMessagesAnalyzed: number;
+    messagesWithPatterns: number;
+    dateRange: string;
+    topPatterns: string[];
+    overallSeverity: string;
+  };
+  patterns: PatternResult[];
+  incidents: IncidentResult[];
+  courtStrategy: {
+    strongestEvidence: string[];
+    exhibitRecommendations: Array<{
+      exhibitNumber: string;
+      title: string;
+      purpose: string;
+      dateRange: string;
+    }>;
+    oneLineSummary: string;
+  };
+}
 
 interface UploadState {
   step: UploadStep;
   file: File | null;
   parseResult: ParseResult | null;
-  analysisResult: BulkAnalysisResult | null;
-  incidentResult: IncidentDetectionResult | null;
+  analysis: AnalysisResult | null;
   error: string | null;
   isProcessing: boolean;
+  progress: string;
 }
 
 const EXPORT_GUIDES = [
-  {
-    app: 'OurFamilyWizard',
-    icon: '👨‍👩‍👧',
-    steps: 'Messages → Menu → Export → Download CSV'
-  },
-  {
-    app: 'TalkingParents',
-    icon: '💬',
-    steps: 'Messages → Export → Select date range → CSV'
-  },
-  {
-    app: 'AppClose',
-    icon: '📱',
-    steps: 'Settings → Export Data → Messages → CSV'
-  },
-  {
-    app: 'WhatsApp',
-    icon: '🟢',
-    steps: 'Chat → Menu → More → Export chat → Without media'
-  },
-  {
-    app: 'iMessage (iMazing)',
-    icon: '🍎',
-    steps: 'Use iMazing to export as CSV'
-  }
+  { app: 'iMessage (iMazing)', icon: '🍎', steps: 'Use iMazing app → Export messages as CSV' },
+  { app: 'OurFamilyWizard', icon: '👨‍👩‍👧', steps: 'Messages → Menu → Export → Download CSV' },
+  { app: 'TalkingParents', icon: '💬', steps: 'Messages → Export → Select date range → CSV' },
+  { app: 'AppClose', icon: '📱', steps: 'Settings → Export Data → Messages → CSV' },
+  { app: 'WhatsApp', icon: '🟢', steps: 'Chat → Menu → More → Export chat → Without media' }
 ];
 
 export default function BulkMessageUpload() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [expandedPattern, setExpandedPattern] = useState<string | null>(null);
+  const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
   const [state, setState] = useState<UploadState>({
     step: 'upload',
     file: null,
     parseResult: null,
-    analysisResult: null,
-    incidentResult: null,
+    analysis: null,
     error: null,
-    isProcessing: false
+    isProcessing: false,
+    progress: ''
   });
 
   useEffect(() => {
@@ -83,46 +100,6 @@ export default function BulkMessageUpload() {
     };
     getUser();
   }, []);
-
-  const handleSaveToEvidence = async () => {
-    if (!userId) {
-      setSaveError('Please log in to save evidence');
-      return;
-    }
-    if (!state.incidentResult?.incidents.length) {
-      setSaveError('No incidents to save');
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const incidentsToSave = state.incidentResult.incidents.map(incident => ({
-        ...incident,
-        startTime: incident.startTime.toISOString(),
-        endTime: incident.endTime.toISOString(),
-        messages: incident.messages.map(msg => ({
-          ...msg,
-          timestamp: (msg as any).timestamp?.toISOString?.() || (msg as any).date?.toISOString?.() || new Date().toISOString(),
-          editedAt: (msg as any).editedAt?.toISOString?.() || null
-        }))
-      }));
-
-      const response = await fetch('/api/incidents/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, incidents: incidentsToSave })
-      });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Failed to save incidents');
-      setSaved(true);
-    } catch (err) {
-      console.error('Save error:', err);
-      setSaveError(err instanceof Error ? err.message : 'Failed to save incidents');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,49 +113,112 @@ export default function BulkMessageUpload() {
   }, []);
 
   const processFile = async (file: File) => {
-    // Check file type
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.csv')) {
-      setState(prev => ({
-        ...prev,
-        error: 'Please upload a CSV file. Need help exporting? Click "How to export" below.',
-        isProcessing: false
-      }));
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setState(prev => ({ ...prev, error: 'Please upload a CSV file.' }));
       return;
     }
 
-    setState(prev => ({ ...prev, isProcessing: true, error: null, file, step: 'analyzing' }));
-    
+    setState(prev => ({ 
+      ...prev, 
+      isProcessing: true, 
+      error: null, 
+      file, 
+      step: 'analyzing',
+      progress: 'Parsing CSV...'
+    }));
+
     try {
+      // Step 1: Parse CSV
       const content = await file.text();
       const parseResult = parseCSV(content);
 
-      if (!parseResult.success) {
-        throw new Error(parseResult.errors?.join(', ') || 'Could not parse CSV file');
+      if (!parseResult.success || !parseResult.messages?.length) {
+        throw new Error(parseResult.errors?.join(', ') || 'No messages found in file');
       }
 
-      if (!parseResult.messages || parseResult.messages.length === 0) {
-        throw new Error('No messages found in file. Make sure the CSV has message content.');
+      setState(prev => ({ ...prev, progress: `Found ${parseResult.messages.length} messages. Analyzing patterns with AI...` }));
+
+      // Step 2: Send to AI for analysis
+      const response = await fetch('/api/analyze-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: parseResult.messages,
+          coparentName: parseResult.metadata?.coparentName
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Analysis failed');
       }
 
-      const analysisResult = analyzeBulk(parseResult.messages);
-      const incidentResult = detectIncidents(analysisResult.messages);
+      const result = await response.json();
+
+      if (!result.success || !result.analysis) {
+        throw new Error('No analysis returned');
+      }
 
       setState(prev => ({
         ...prev,
         step: 'results',
         parseResult,
-        analysisResult,
-        incidentResult,
-        isProcessing: false
+        analysis: result.analysis,
+        isProcessing: false,
+        progress: ''
       }));
+
     } catch (err) {
+      console.error('Processing error:', err);
       setState(prev => ({
         ...prev,
         error: err instanceof Error ? err.message : 'Failed to analyze file',
         step: 'upload',
-        isProcessing: false
+        isProcessing: false,
+        progress: ''
       }));
+    }
+  };
+
+  const handleSaveToEvidence = async () => {
+    if (!userId || !state.analysis?.incidents.length) {
+      setSaveError('No incidents to save');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      // Convert AI incidents to database format
+      const incidentsToSave = state.analysis.incidents.map((incident, idx) => ({
+        user_id: userId,
+        title: incident.title,
+        category: incident.patterns[0]?.toLowerCase().replace(/[\s\/]+/g, '_') || 'manipulation',
+        patterns: incident.patterns,
+        severity: incident.severity,
+        incident_date: incident.date || new Date().toISOString(),
+        coparent_message: incident.quotableText,
+        messages_json: incident.messages,
+        evidence_strength: incident.severity === 'critical' ? 'strong' : 
+                          incident.severity === 'high' ? 'moderate' : 'weak',
+        source: 'bulk_import',
+        court_notes: incident.courtNotes
+      }));
+
+      const { error } = await supabase.from('incidents').insert(incidentsToSave);
+      
+      if (error) throw error;
+
+      // Mark import timestamp
+      localStorage.setItem('pattern18_last_import', new Date().toISOString());
+      
+      setSaved(true);
+    } catch (err) {
+      console.error('Save error:', err);
+      setSaveError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -187,17 +227,25 @@ export default function BulkMessageUpload() {
       step: 'upload',
       file: null,
       parseResult: null,
-      analysisResult: null,
-      incidentResult: null,
+      analysis: null,
       error: null,
-      isProcessing: false
+      isProcessing: false,
+      progress: ''
     });
     setSaved(false);
     setSaveError(null);
   };
 
+  const severityColors: Record<string, { bg: string; border: string; text: string }> = {
+    critical: { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+    high: { bg: '#fff7ed', border: '#fed7aa', text: '#ea580c' },
+    medium: { bg: '#fefce8', border: '#fef08a', text: '#ca8a04' },
+    low: { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' }
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
+      {/* Error Banner */}
       {state.error && (
         <div style={{
           marginBottom: 24,
@@ -207,33 +255,22 @@ export default function BulkMessageUpload() {
           borderRadius: 12,
           color: '#dc2626',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
+          justifyContent: 'space-between'
         }}>
           <span>{state.error}</span>
-          <button
-            onClick={() => setState(prev => ({ ...prev, error: null }))}
-            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}
-          >
-            ×
-          </button>
+          <button onClick={() => setState(prev => ({ ...prev, error: null }))} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>×</button>
         </div>
       )}
 
-      {/* Upload Step */}
+      {/* UPLOAD STEP */}
       {state.step === 'upload' && (
-        <div style={{
-          background: 'white',
-          borderRadius: 16,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e5e7eb',
-          padding: 32
-        }}>
+        <div style={{ background: 'white', borderRadius: 16, padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <h2 style={{ fontSize: 24, fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>
             Import Message History
           </h2>
           <p style={{ color: '#6b7280', marginBottom: 24 }}>
-            Upload a CSV export from your messaging app to analyze patterns automatically
+            Upload a CSV export. AI will analyze for coercive control patterns and prepare court-ready evidence.
           </p>
 
           <div
@@ -246,156 +283,268 @@ export default function BulkMessageUpload() {
               padding: 48,
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s',
               background: '#f0fdf4'
             }}
           >
-            <input
-              id="file-input"
-              type="file"
-              accept=".csv"
-              onChange={handleFileInput}
-              style={{ display: 'none' }}
-              disabled={state.isProcessing}
-            />
+            <input id="file-input" type="file" accept=".csv" onChange={handleFileInput} style={{ display: 'none' }} />
             <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
             <p style={{ fontWeight: 600, color: '#059669', marginBottom: 8, fontSize: 18 }}>
               Drop CSV file here or click to upload
             </p>
             <p style={{ fontSize: 14, color: '#6b7280' }}>
-              CSV files only - exports from OFW, TalkingParents, AppClose, iMazing, etc.
+              Works with iMazing, OFW, TalkingParents, AppClose, WhatsApp
             </p>
           </div>
 
-          {/* How to Export Guide */}
           <div style={{ marginTop: 24 }}>
-            <button
-              onClick={() => setShowGuide(!showGuide)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#059669',
-                cursor: 'pointer',
-                fontSize: 15,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}
-            >
+            <button onClick={() => setShowGuide(!showGuide)}
+                    style={{ background: 'none', border: 'none', color: '#059669', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>
               {showGuide ? '▼' : '▶'} How to export from your app
             </button>
-
             {showGuide && (
-              <div style={{
-                marginTop: 16,
-                background: '#f9fafb',
-                borderRadius: 12,
-                padding: 20,
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {EXPORT_GUIDES.map((guide) => (
-                    <div
-                      key={guide.app}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: 12,
-                        background: 'white',
-                        borderRadius: 8,
-                        border: '1px solid #e5e7eb'
-                      }}
-                    >
-                      <span style={{ fontSize: 24 }}>{guide.icon}</span>
-                      <div>
-                        <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>
-                          {guide.app}
-                        </div>
-                        <div style={{ fontSize: 13, color: '#6b7280' }}>
-                          {guide.steps}
-                        </div>
-                      </div>
+              <div style={{ marginTop: 16, background: '#f9fafb', borderRadius: 12, padding: 20 }}>
+                {EXPORT_GUIDES.map((g) => (
+                  <div key={g.app} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'white', borderRadius: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 24 }}>{g.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{g.app}</div>
+                      <div style={{ fontSize: 13, color: '#6b7280' }}>{g.steps}</div>
                     </div>
-                  ))}
-                </div>
-                
-                <div style={{
-                  marginTop: 16,
-                  padding: 12,
-                  background: '#fefce8',
-                  borderRadius: 8,
-                  border: '1px solid #fef08a',
-                  fontSize: 13,
-                  color: '#92400e'
-                }}>
-                  💡 <strong>Tip:</strong> For individual screenshots, use the Coach instead. 
-                  <button 
-                    onClick={() => router.push('/coach')}
-                    style={{ color: '#059669', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', marginLeft: 4 }}
-                  >
-                    Go to Coach →
-                  </button>
-                </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          <div style={{ 
-            marginTop: 24, 
-            display: 'flex', 
-            gap: 24, 
-            justifyContent: 'center', 
-            fontSize: 14, 
-            color: '#6b7280' 
-          }}>
-            <span>✓ Detects manipulation patterns</span>
-            <span>✓ Groups into incidents</span>
-            <span>✓ Saves to evidence</span>
+          <div style={{ marginTop: 24, display: 'flex', gap: 24, justifyContent: 'center', fontSize: 14, color: '#6b7280' }}>
+            <span>✓ AI pattern detection</span>
+            <span>✓ Court-ready exhibits</span>
+            <span>✓ Quotable evidence</span>
           </div>
         </div>
       )}
 
-      {/* Analyzing Step */}
+      {/* ANALYZING STEP */}
       {state.step === 'analyzing' && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: 64,
-          background: 'white',
-          borderRadius: 16,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
+        <div style={{ textAlign: 'center', padding: 64, background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            background: '#d1fae5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px',
-            animation: 'pulse 2s infinite'
+            width: 64, height: 64, borderRadius: '50%', background: '#d1fae5',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 24px', animation: 'pulse 2s infinite'
           }}>
             <span style={{ fontSize: 32 }}>🔍</span>
           </div>
           <h2 style={{ fontSize: 20, color: '#374151', marginBottom: 8 }}>Analyzing Messages...</h2>
-          <p style={{ color: '#6b7280' }}>Detecting patterns and grouping incidents</p>
+          <p style={{ color: '#6b7280' }}>{state.progress || 'This may take a minute for large files'}</p>
         </div>
       )}
 
-      {/* Results Step */}
-      {state.step === 'results' && state.analysisResult && (
-        <ResultsView
-          analysis={state.analysisResult}
-          incidents={state.incidentResult}
-          parseResult={state.parseResult!}
-          onReset={handleReset}
-          onSave={handleSaveToEvidence}
-          saving={saving}
-          saved={saved}
-          saveError={saveError}
-        />
+      {/* RESULTS STEP */}
+      {state.step === 'results' && state.analysis && (
+        <div>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+            <div>
+              <h2 style={{ fontSize: 28, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>Analysis Complete</h2>
+              <p style={{ color: '#6b7280' }}>
+                {state.parseResult?.metadata?.coparentName && `Communication with ${state.parseResult.metadata.coparentName}`}
+                {state.analysis.summary.dateRange && ` • ${state.analysis.summary.dateRange}`}
+              </p>
+            </div>
+            <button onClick={handleReset} style={{ background: 'none', border: '1px solid #d1d5db', borderRadius: 8, padding: '8px 16px', cursor: 'pointer' }}>
+              ← Upload Another
+            </button>
+          </div>
+
+          {/* Save Status */}
+          {saveError && (
+            <div style={{ marginBottom: 24, padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626' }}>
+              {saveError}
+            </div>
+          )}
+          {saved && (
+            <div style={{ marginBottom: 24, padding: 20, background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: 12, color: '#065f46' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>✓ {state.analysis.incidents.length} incidents saved!</div>
+                  <div style={{ fontSize: 14, opacity: 0.9 }}>View, filter, and build your case.</div>
+                </div>
+                <button onClick={() => router.push('/evidence')}
+                        style={{ background: '#059669', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 600, cursor: 'pointer' }}>
+                  View Evidence →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Save CTA */}
+          {state.analysis.incidents.length > 0 && !saved && (
+            <div style={{ marginBottom: 32, padding: 24, background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', borderRadius: 16, border: '2px solid #34d399' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: 20, fontWeight: 600, color: '#065f46', marginBottom: 4 }}>
+                    {state.analysis.incidents.length} incidents ready to save
+                  </h3>
+                  <p style={{ color: '#047857', fontSize: 14 }}>Review the patterns and incidents below, then save to your evidence.</p>
+                </div>
+                <button onClick={handleSaveToEvidence} disabled={saving}
+                        style={{ background: saving ? '#9ca3af' : '#059669', color: 'white', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: 16, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? 'Saving...' : '✓ Save to Evidence'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+            <StatCard label="Messages Analyzed" value={state.analysis.summary.totalMessagesAnalyzed} />
+            <StatCard label="With Patterns" value={state.analysis.summary.messagesWithPatterns} color="#8b5cf6" />
+            <StatCard label="Incidents Found" value={state.analysis.incidents.length} color="#3b82f6" />
+            <StatCard label="Overall Severity" value={state.analysis.summary.overallSeverity.toUpperCase()} 
+                      color={severityColors[state.analysis.summary.overallSeverity]?.text} isText />
+          </div>
+
+          {/* Court Strategy Summary */}
+          {state.analysis.courtStrategy && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 16, padding: 24, marginBottom: 32 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: '#92400e', marginBottom: 12 }}>⚖️ Court Strategy</h3>
+              <p style={{ fontSize: 15, color: '#78350f', lineHeight: 1.6, marginBottom: 16 }}>
+                {state.analysis.courtStrategy.oneLineSummary}
+              </p>
+              {state.analysis.courtStrategy.exhibitRecommendations?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 8 }}>RECOMMENDED EXHIBITS:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {state.analysis.courtStrategy.exhibitRecommendations.map((ex, i) => (
+                      <div key={i} style={{ background: 'white', padding: 12, borderRadius: 8, border: '1px solid #fef08a' }}>
+                        <div style={{ fontWeight: 600, color: '#1f2937' }}>Exhibit {ex.exhibitNumber}: {ex.title}</div>
+                        <div style={{ fontSize: 13, color: '#6b7280' }}>{ex.purpose}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Patterns Detected */}
+          {state.analysis.patterns.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 16 }}>
+                Patterns Detected ({state.analysis.patterns.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {state.analysis.patterns.map((pattern) => {
+                  const colors = severityColors[pattern.severity] || severityColors.medium;
+                  const isExpanded = expandedPattern === pattern.name;
+                  return (
+                    <div key={pattern.name} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div onClick={() => setExpandedPattern(isExpanded ? null : pattern.name)}
+                           style={{ padding: 16, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: 4 }}>
+                            {pattern.name} <span style={{ color: colors.text }}>({pattern.count})</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: '#6b7280' }}>{pattern.description}</div>
+                        </div>
+                        <span style={{ color: '#9ca3af', transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>▶</span>
+                      </div>
+                      {isExpanded && (
+                        <div style={{ borderTop: `1px solid ${colors.border}`, padding: 16, background: 'white' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#059669', marginBottom: 12 }}>
+                            ⚖️ Why this matters: {pattern.courtRelevance}
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8 }}>EXAMPLES:</div>
+                          {pattern.examples.slice(0, 3).map((ex, i) => (
+                            <div key={i} style={{ background: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 8, borderLeft: `3px solid ${colors.border}` }}>
+                              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>{ex.date}</div>
+                              <div style={{ fontSize: 14, color: '#1f2937', fontStyle: 'italic', marginBottom: 8 }}>"{ex.quote}"</div>
+                              <div style={{ fontSize: 12, color: '#6b7280' }}>{ex.analysis}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Incidents */}
+          {state.analysis.incidents.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 16 }}>
+                Documented Incidents ({state.analysis.incidents.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {state.analysis.incidents.map((incident, idx) => {
+                  const colors = severityColors[incident.severity] || severityColors.medium;
+                  const isExpanded = expandedIncident === incident.title;
+                  return (
+                    <div key={idx} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div onClick={() => setExpandedIncident(isExpanded ? null : incident.title)}
+                           style={{ padding: 16, cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <span style={{ fontSize: 12, color: '#6b7280' }}>{incident.date}</span>
+                            <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: colors.border, color: colors.text, marginLeft: 8, fontWeight: 600 }}>
+                              {incident.severity.toUpperCase()}
+                            </span>
+                          </div>
+                          <span style={{ color: '#9ca3af', transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>▶</span>
+                        </div>
+                        <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>{incident.title}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                          {incident.patterns.map((p, i) => (
+                            <span key={i} style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(0,0,0,0.05)', borderRadius: 10, color: '#4b5563' }}>{p}</span>
+                          ))}
+                        </div>
+                        {incident.quotableText && (
+                          <div style={{ fontSize: 13, color: '#6b7280', fontStyle: 'italic', borderLeft: '2px solid #d1d5db', paddingLeft: 12 }}>
+                            "{incident.quotableText.slice(0, 150)}{incident.quotableText.length > 150 ? '...' : ''}"
+                          </div>
+                        )}
+                      </div>
+                      {isExpanded && (
+                        <div style={{ borderTop: `1px solid ${colors.border}`, background: 'white' }}>
+                          {incident.courtNotes && (
+                            <div style={{ padding: 16, background: '#f0fdf4', borderBottom: '1px solid #e5e7eb' }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: '#059669', marginBottom: 4 }}>⚖️ COURT NOTES</div>
+                              <div style={{ fontSize: 13, color: '#065f46' }}>{incident.courtNotes}</div>
+                            </div>
+                          )}
+                          <div style={{ padding: '8px 0' }}>
+                            {incident.messages.map((msg, i) => (
+                              <div key={i} style={{ padding: '12px 16px', background: msg.sender === 'coparent' ? '#fff' : '#f0fdf4', borderBottom: i < incident.messages.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
+                                  <span style={{ fontWeight: 600, color: msg.sender === 'coparent' ? '#dc2626' : '#059669' }}>
+                                    {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
+                                  </span>
+                                  <span style={{ marginLeft: 8 }}>{msg.timestamp}</span>
+                                </div>
+                                <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>{msg.text}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* No patterns found */}
+          {state.analysis.patterns.length === 0 && state.analysis.incidents.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 48, background: '#f0fdf4', borderRadius: 16, border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+              <h3 style={{ fontSize: 18, color: '#065f46', marginBottom: 8 }}>No concerning patterns detected</h3>
+              <p style={{ color: '#047857' }}>The messages appear to be normal co-parenting communication.</p>
+            </div>
+          )}
+        </div>
       )}
 
       <style jsx global>{`
@@ -408,503 +557,11 @@ export default function BulkMessageUpload() {
   );
 }
 
-function ResultsView({
-  analysis,
-  incidents,
-  parseResult,
-  onReset,
-  onSave,
-  saving,
-  saved,
-  saveError
-}: {
-  analysis: BulkAnalysisResult;
-  incidents: IncidentDetectionResult | null;
-  parseResult: ParseResult;
-  onReset: () => void;
-  onSave: () => void;
-  saving: boolean;
-  saved: boolean;
-  saveError: string | null;
-}) {
-  const [showIncidents, setShowIncidents] = useState(true);
-  const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
-  const s = analysis.summary;
-
+function StatCard({ label, value, color, isText }: { label: string; value: number | string; color?: string; isText?: boolean }) {
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>
-            Analysis Complete
-          </h2>
-          <p style={{ color: '#6b7280' }}>
-            {parseResult.metadata?.coparentName && `Communication with ${parseResult.metadata.coparentName}`}
-            {s.dateRange && ` • ${s.dateRange.start.toLocaleDateString()} - ${s.dateRange.end.toLocaleDateString()}`}
-          </p>
-        </div>
-        <button
-          onClick={onReset}
-          style={{
-            background: 'none',
-            border: '1px solid #d1d5db',
-            borderRadius: 8,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: '#6b7280'
-          }}
-        >
-          ← Upload Another
-        </button>
-      </div>
-
-      {/* Save Error */}
-      {saveError && (
-        <div style={{
-          marginBottom: 24,
-          padding: 16,
-          background: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: 8,
-          color: '#dc2626'
-        }}>
-          {saveError}
-        </div>
-      )}
-
-      {/* Save Success */}
-      {saved && (
-        <div style={{
-          marginBottom: 24,
-          padding: 20,
-          background: '#d1fae5',
-          border: '1px solid #6ee7b7',
-          borderRadius: 12,
-          color: '#065f46'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
-                ✓ {incidents?.incidents.length || 0} incidents saved!
-              </div>
-              <div style={{ fontSize: 14, opacity: 0.9 }}>
-                View, filter by pattern, and build your case.
-              </div>
-            </div>
-            <button
-              onClick={() => window.location.href = '/evidence'}
-              style={{
-                background: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: 10,
-                padding: '12px 24px',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              View Evidence →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Save CTA */}
-      {incidents && incidents.incidents.length > 0 && !saved && (
-        <div style={{
-          marginBottom: 32,
-          padding: 24,
-          background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-          borderRadius: 16,
-          border: '2px solid #34d399'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: '#065f46', marginBottom: 4 }}>
-                {incidents.incidents.length} incidents ready to save
-              </h3>
-              <p style={{ color: '#047857', fontSize: 14 }}>
-                Click any incident below to review before saving.
-              </p>
-            </div>
-            <button
-              onClick={onSave}
-              disabled={saving}
-              style={{
-                background: saving ? '#9ca3af' : '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: 12,
-                padding: '14px 28px',
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {saving ? 'Saving...' : '✓ Save to Evidence'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: 16,
-        marginBottom: 32
-      }}>
-        <StatCard label="Total Messages" value={s.totalMessages} />
-        <StatCard label="Incidents" value={incidents?.summary.totalIncidents || 0} color="#3b82f6" />
-        <StatCard label="Patterns Found" value={s.totalPatternMatches} color="#8b5cf6" />
-        <StatCard label="Critical" value={s.criticalCount} color={s.criticalCount > 0 ? '#dc2626' : undefined} />
-        <StatCard label="High Severity" value={s.highSeverityCount} color={s.highSeverityCount > 0 ? '#f97316' : undefined} />
-      </div>
-
-      {/* Top Patterns */}
-      {analysis.topPatterns.length > 0 && (
-        <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1f2937', marginBottom: 16 }}>
-            Most Common Patterns
-          </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {analysis.topPatterns.map(({ pattern, count }) => (
-              <span
-                key={pattern.id}
-                style={{
-                  padding: '8px 16px',
-                  background: pattern.severity === 'critical' ? '#fef2f2' :
-                             pattern.severity === 'high' ? '#fff7ed' :
-                             pattern.severity === 'medium' ? '#fefce8' : '#f0fdf4',
-                  border: `1px solid ${
-                    pattern.severity === 'critical' ? '#fecaca' :
-                    pattern.severity === 'high' ? '#fed7aa' :
-                    pattern.severity === 'medium' ? '#fef08a' : '#bbf7d0'
-                  }`,
-                  borderRadius: 20,
-                  fontSize: 14,
-                  color: pattern.severity === 'critical' ? '#dc2626' :
-                         pattern.severity === 'high' ? '#ea580c' :
-                         pattern.severity === 'medium' ? '#ca8a04' : '#16a34a'
-                }}
-              >
-                {pattern.name} ({count})
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Incidents */}
-      {incidents && incidents.incidents.length > 0 && (
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>
-              Detected Incidents ({incidents.incidents.length})
-            </h3>
-            <button
-              onClick={() => setShowIncidents(!showIncidents)}
-              style={{
-                background: 'none',
-                border: '1px solid #d1d5db',
-                borderRadius: 6,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                fontSize: 14
-              }}
-            >
-              {showIncidents ? 'Hide' : 'Show'}
-            </button>
-          </div>
-
-          {showIncidents && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 600, overflowY: 'auto' }}>
-              {incidents.incidents.map((incident) => (
-                <IncidentCard 
-                  key={incident.id} 
-                  incident={incident} 
-                  isExpanded={expandedIncident === incident.id}
-                  onToggle={() => setExpandedIncident(expandedIncident === incident.id ? null : incident.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
-  return (
-    <div style={{
-      background: 'white',
-      border: '1px solid #e5e7eb',
-      borderRadius: 12,
-      padding: 20,
-      textAlign: 'center'
-    }}>
-      <div style={{ fontSize: 32, fontWeight: 700, color: color || '#1f2937' }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function IncidentCard({ incident, isExpanded, onToggle }: { incident: Incident; isExpanded: boolean; onToggle: () => void }) {
-  // Debug: log incident structure
-  console.log('Incident data:', JSON.stringify(incident, null, 2).slice(0, 500));
-  
-  // Early return if incident is invalid
-  if (!incident) {
-    return <div style={{ padding: 16, color: '#999' }}>Invalid incident data</div>;
-  }
-  
-  // Defensive data access
-  const categoryName = CATEGORY_DISPLAY_NAMES?.[incident.category] || incident.category || 'Uncategorized';
-  
-  // Handle date - could be Date object or string
-  let dateStr = 'Unknown date';
-  try {
-    const dateObj = incident.startTime instanceof Date 
-      ? incident.startTime 
-      : new Date(incident.startTime);
-    if (!isNaN(dateObj.getTime())) {
-      dateStr = dateObj.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    }
-  } catch (e) {
-    console.error('Date parse error:', e);
-  }
-  
-  // Get first message preview
-  const firstMsg = incident.messages?.[0];
-  const preview = (firstMsg?.text || (firstMsg as any)?.content || '').slice(0, 120);
-  
-  // Get patterns - could be array of strings or objects
-  const patterns = incident.uniquePatterns || [];
-  const patternList = patterns.map(p => typeof p === 'string' ? p : (p as any)?.patternName || 'Unknown');
-
-  const severityColors: Record<string, { bg: string; border: string }> = {
-    critical: { bg: '#fef2f2', border: '#fecaca' },
-    high: { bg: '#fff7ed', border: '#fed7aa' },
-    medium: { bg: '#fefce8', border: '#fef08a' },
-    low: { bg: '#f9fafb', border: '#e5e7eb' }
-  };
-
-  const colors = severityColors[incident.maxSeverity || 'low'] || severityColors.low;
-
-  return (
-    <div style={{
-      background: colors.bg,
-      border: `1px solid ${colors.border}`,
-      borderRadius: 12,
-      overflow: 'hidden'
-    }}>
-      {/* Header - always visible, clickable */}
-      <div 
-        onClick={onToggle}
-        style={{
-          padding: 16,
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: 13, color: '#6b7280' }}>{dateStr}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              fontSize: 12,
-              padding: '2px 8px',
-              borderRadius: 12,
-              background: incident.evidenceStrength === 'strong' ? '#d1fae5' :
-                         incident.evidenceStrength === 'moderate' ? '#fef3c7' : '#f3f4f6',
-              color: incident.evidenceStrength === 'strong' ? '#065f46' :
-                    incident.evidenceStrength === 'moderate' ? '#92400e' : '#6b7280'
-            }}>
-              {incident.evidenceStrength === 'strong' ? '🟢 Strong' :
-               incident.evidenceStrength === 'moderate' ? '🟡 Moderate' : '⚪ Weak'}
-            </span>
-            <span style={{ color: '#9ca3af', transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
-              ▶
-            </span>
-          </div>
-        </div>
-
-        <h4 style={{ fontWeight: 600, color: '#1f2937', margin: 0 }}>{incident.title || `${categoryName} - ${dateStr}`}</h4>
-        
-        <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
-          {incident.messageCount || incident.messages?.length || 0} messages • {incident.durationMinutes > 0 ? `${incident.durationMinutes} min • ` : ''}{categoryName}
-        </p>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {patternList.slice(0, 4).map((pattern, i) => (
-            <span
-              key={i}
-              style={{
-                fontSize: 11,
-                padding: '2px 8px',
-                background: 'rgba(0,0,0,0.05)',
-                borderRadius: 10,
-                color: '#4b5563'
-              }}
-            >
-              {pattern}
-            </span>
-          ))}
-          {patternList.length > 4 && (
-            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{patternList.length - 4} more</span>
-          )}
-        </div>
-
-        {!isExpanded && preview && (
-          <p style={{
-            fontSize: 13,
-            color: '#6b7280',
-            fontStyle: 'italic',
-            borderLeft: '2px solid #d1d5db',
-            paddingLeft: 12,
-            margin: 0
-          }}>
-            "{preview}{preview.length >= 120 ? '...' : ''}"
-          </p>
-        )}
-      </div>
-
-      {/* Expanded Content - messages with pattern details */}
-      {isExpanded && (
-        <div style={{
-          borderTop: `1px solid ${colors.border}`,
-          background: 'white',
-          maxHeight: 400,
-          overflowY: 'auto'
-        }}>
-          {/* Pattern Summary */}
-          {patternList.length > 0 && (
-            <div style={{ padding: 16, background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8 }}>
-                ⚠️ PATTERNS DETECTED IN THIS INCIDENT
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {patternList.map((pattern, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      padding: '4px 12px',
-                      background: '#fef3c7',
-                      border: '1px solid #fcd34d',
-                      borderRadius: 16,
-                      fontSize: 12,
-                      color: '#92400e'
-                    }}
-                  >
-                    {pattern}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div style={{ padding: '8px 0' }}>
-            {(incident.messages || []).map((msg: any, idx: number) => {
-              const isCoparent = msg.sender === 'coparent';
-              const msgPatterns = msg.patterns || [];
-              const hasPatterns = msgPatterns.length > 0;
-              const msgText = msg.text || msg.content || '[No text]';
-              
-              // Handle timestamp
-              let timeStr = '';
-              try {
-                const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp);
-                if (!isNaN(ts.getTime())) {
-                  timeStr = ts.toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  });
-                }
-              } catch (e) {}
-              
-              return (
-                <div 
-                  key={idx}
-                  style={{
-                    padding: '12px 16px',
-                    background: hasPatterns ? '#fef2f2' : (isCoparent ? '#fff' : '#f0fdf4'),
-                    borderBottom: idx < (incident.messages?.length || 0) - 1 ? '1px solid #f3f4f6' : 'none'
-                  }}
-                >
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    marginBottom: 4,
-                    fontSize: 11,
-                    color: '#9ca3af'
-                  }}>
-                    <span style={{ 
-                      fontWeight: 600,
-                      color: isCoparent ? '#dc2626' : '#059669'
-                    }}>
-                      {isCoparent ? '🔴 Co-parent' : '🟢 You'}
-                      {msg.senderName && isCoparent && ` (${msg.senderName})`}
-                    </span>
-                    <span>{timeStr}</span>
-                  </div>
-                  
-                  <div style={{ 
-                    fontSize: 14, 
-                    color: '#374151',
-                    lineHeight: 1.5
-                  }}>
-                    {msgText}
-                  </div>
-
-                  {/* Show detected patterns for this specific message */}
-                  {hasPatterns && (
-                    <div style={{ 
-                      marginTop: 8, 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
-                      gap: 4 
-                    }}>
-                      {msgPatterns.map((p: any, i: number) => (
-                        <span
-                          key={i}
-                          style={{
-                            fontSize: 10,
-                            padding: '2px 8px',
-                            background: p.severity === 'critical' ? '#dc2626' :
-                                       p.severity === 'high' ? '#ea580c' : '#f59e0b',
-                            color: 'white',
-                            borderRadius: 8,
-                            fontWeight: 600
-                          }}
-                        >
-                          {p.patternName || p}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+    <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+      <div style={{ fontSize: isText ? 18 : 32, fontWeight: 700, color: color || '#1f2937' }}>{value}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{label}</div>
     </div>
   );
 }
