@@ -23,20 +23,14 @@ export default function CoachPage() {
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]); // For display only, not saving
+  const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Export reminder state
-  const [showExportNudge, setShowExportNudge] = useState(false);
-  const [exportedThisMonth, setExportedThisMonth] = useState(true);
-
-  // Check if user has exported this month
-  useEffect(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
-    const lastExport = localStorage.getItem('p18_last_export');
-    setExportedThisMonth(lastExport === currentMonth);
-  }, []);
+  
+  // New state for sender question modal
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showSenderModal, setShowSenderModal] = useState(false);
+  const [copiedOption, setCopiedOption] = useState<number | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -82,19 +76,6 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Show export nudge when patterns are detected (after analysis)
-  useEffect(() => {
-    if (detectedPatterns.length > 0 && !showHome) {
-      const nudgeDismissed = localStorage.getItem('p18_nudge_dismissed');
-      if (!nudgeDismissed) {
-        setShowExportNudge(true);
-      }
-    }
-  }, [detectedPatterns, showHome]);
-
-  const topPattern = Object.entries(patternCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-
   const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
     if (!text.trim() && !file) return;
@@ -106,7 +87,7 @@ export default function CoachPage() {
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
+      content: text || (file ? `[Uploaded screenshot]` : ''),
       hasImage: !!file
     };
     setMessages(prev => [...prev, userMessage]);
@@ -217,13 +198,93 @@ export default function CoachPage() {
       return;
     }
 
-    // Handle image
+    // Handle image - show sender question modal
     if (file.type.startsWith('image/')) {
-      await handleSend('Please analyze this screenshot and help me respond.', file);
+      setPendingFile(file);
+      setShowSenderModal(true);
     }
 
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSenderChoice = async (sender: 'coparent' | 'me' | 'other') => {
+    if (!pendingFile) return;
+    
+    setShowSenderModal(false);
+    const file = pendingFile;
+    setPendingFile(null);
+
+    let prompt = '';
+    if (sender === 'coparent') {
+      prompt = 'This is a screenshot of a message FROM my co-parent. Please analyze it for manipulation patterns and help me respond.';
+    } else if (sender === 'me') {
+      prompt = 'This is a screenshot of MY OWN message that I am thinking of sending. Please review it and help me make sure it is factual, neutral, and appropriate for court documentation.';
+    } else {
+      prompt = 'This is a screenshot of a conversation. Please help me understand what I am looking at.';
+    }
+
+    await handleSend(prompt, file);
+  };
+
+  const copyToClipboard = async (text: string, optionNum: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedOption(optionNum);
+      setTimeout(() => setCopiedOption(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Parse response options from assistant message
+  const parseResponseOptions = (content: string) => {
+    const options: { label: string; text: string }[] = [];
+    
+    // Look for Option patterns
+    const optionRegex = /\*\*Option (\d)[^*]*\*\*[:\s]*\n([^*]+?)(?=\n\n\*\*|$)/gi;
+    let match;
+    
+    while ((match = optionRegex.exec(content)) !== null) {
+      const optionNum = match[1];
+      const optionText = match[2].trim();
+      if (optionText && !optionText.toLowerCase().includes('no response needed')) {
+        options.push({
+          label: `Option ${optionNum}`,
+          text: optionText
+        });
+      }
+    }
+    
+    return options;
+  };
+
+  const renderMessageContent = (msg: Message) => {
+    if (msg.role !== 'assistant') {
+      return <div className="message-content">{msg.content}</div>;
+    }
+
+    const options = parseResponseOptions(msg.content);
+    
+    return (
+      <>
+        <div className="message-content">{msg.content}</div>
+        {options.length > 0 && (
+          <div className="copy-options">
+            <div className="copy-label">TAP TO COPY:</div>
+            {options.map((opt, i) => (
+              <button
+                key={i}
+                className={`copy-btn ${copiedOption === i ? 'copied' : ''}`}
+                onClick={() => copyToClipboard(opt.text, i)}
+              >
+                {copiedOption === i ? '✓ Copied!' : `📋 ${opt.label}`}
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    );
   };
 
   if (loading) {
@@ -249,19 +310,9 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <div className="header-right">
-          {/* Export Reminder - simple indicator */}
-          <button 
-            className={`export-indicator ${exportedThisMonth ? 'done' : 'pending'}`}
-            onClick={() => router.push('/faq#export')}
-            title={exportedThisMonth ? 'Monthly export done' : 'Time to export your messages'}
-          >
-            {exportedThisMonth ? '✓' : '📲'}
-          </button>
-          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-            📁 {evidenceCount}
-          </button>
-        </div>
+        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
+          📁 {evidenceCount}
+        </button>
       </header>
 
       <div className="content">
@@ -273,31 +324,7 @@ export default function CoachPage() {
               <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
-            {/* Stats Bar */}
-            {evidenceCount > 0 && (
-              <div className="stats-bar">
-                <div className="stat">
-                  <span className="stat-num">{evidenceCount}</span>
-                  <span className="stat-label">DOCUMENTED</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat">
-                  <span className="stat-num">{Object.keys(patternCounts).length}</span>
-                  <span className="stat-label">PATTERNS FOUND</span>
-                </div>
-                {topPattern && (
-                  <>
-                    <div className="stat-divider" />
-                    <div className="stat">
-                      <span className="stat-pattern">{topPattern[0]}</span>
-                      <span className="stat-label">TOP PATTERN ({topPattern[1]}X)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Quick Actions */}
+            {/* Quick Actions - no stats bar */}
             <div className="quick-actions">
               <h3>WHAT CAN I HELP WITH?</h3>
               
@@ -338,7 +365,7 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                <div className="message-content">{msg.content}</div>
+                {renderMessageContent(msg)}
                 {msg.patterns && msg.patterns.length > 0 && (
                   <div className="patterns-detected">
                     {msg.patterns.map((p, j) => (
@@ -358,26 +385,42 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* Export Nudge - Shows after analyzing a screenshot */}
-      {showExportNudge && !showHome && (
-        <div className="export-nudge">
-          <span className="nudge-icon">💡</span>
-          <p>Export this thread from your phone later - your calm responses are evidence.</p>
-          <div className="nudge-actions">
-            <button onClick={() => router.push('/evidence/upload')} className="nudge-btn-primary">
-              Import →
+      {/* Sender Question Modal */}
+      {showSenderModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Who sent this message?</h3>
+            <p>This helps me give you the right kind of support.</p>
+            
+            <button className="modal-btn coparent" onClick={() => handleSenderChoice('coparent')}>
+              <span>🔴</span>
+              <div>
+                <strong>From my co-parent</strong>
+                <span>Analyze for patterns & help me respond</span>
+              </div>
             </button>
-            <button onClick={() => setShowExportNudge(false)} className="nudge-btn-secondary">
-              Got it
+            
+            <button className="modal-btn me" onClick={() => handleSenderChoice('me')}>
+              <span>🟢</span>
+              <div>
+                <strong>My message (draft)</strong>
+                <span>Review before I send it</span>
+              </div>
             </button>
-            <button 
-              onClick={() => {
-                localStorage.setItem('p18_nudge_dismissed', 'true');
-                setShowExportNudge(false);
-              }} 
-              className="nudge-btn-dismiss"
-            >
-              Don't show again
+            
+            <button className="modal-btn other" onClick={() => handleSenderChoice('other')}>
+              <span>⚪</span>
+              <div>
+                <strong>Something else</strong>
+                <span>Just help me understand it</span>
+              </div>
+            </button>
+            
+            <button className="modal-cancel" onClick={() => {
+              setShowSenderModal(false);
+              setPendingFile(null);
+            }}>
+              Cancel
             </button>
           </div>
         </div>
@@ -463,34 +506,6 @@ export default function CoachPage() {
           font-size: 14px;
           cursor: pointer;
         }
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .export-indicator {
-          width: 32px;
-          height: 32px;
-          border-radius: 16px;
-          border: none;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .export-indicator.pending {
-          background: #fef3c7;
-          animation: pulse-soft 2s infinite;
-        }
-        .export-indicator.done {
-          background: rgba(255,255,255,0.2);
-          color: #86efac;
-        }
-        @keyframes pulse-soft {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
         .content {
           flex: 1;
           overflow-y: auto;
@@ -518,42 +533,6 @@ export default function CoachPage() {
           color: #4b5563;
           line-height: 1.5;
           margin: 0;
-        }
-        .stats-bar {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 16px;
-          background: white;
-          padding: 16px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .stat {
-          text-align: center;
-        }
-        .stat-num {
-          display: block;
-          font-size: 24px;
-          font-weight: 800;
-          color: #1a3a2f;
-        }
-        .stat-pattern {
-          display: block;
-          font-size: 14px;
-          font-weight: 700;
-          color: #1a3a2f;
-        }
-        .stat-label {
-          font-size: 10px;
-          color: #9ca3af;
-          letter-spacing: 0.5px;
-        }
-        .stat-divider {
-          width: 1px;
-          height: 40px;
-          background: #e5e7eb;
         }
         .quick-actions {
           background: white;
@@ -651,63 +630,129 @@ export default function CoachPage() {
           color: #9ca3af;
           font-style: italic;
         }
-        
-        /* Export Nudge - Small toast */
-        .export-nudge {
-          position: fixed;
-          bottom: 140px;
-          left: 12px;
-          max-width: 280px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
+        .copy-options {
+          margin-top: 12px;
+          margin-right: 40px;
           padding: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          z-index: 50;
-          font-size: 13px;
+          background: #f0fdf4;
+          border-radius: 12px;
+          border: 1px solid #bbf7d0;
         }
-        .nudge-icon {
-          font-size: 16px;
-          margin-right: 6px;
+        .copy-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #059669;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
         }
-        .export-nudge p {
-          margin: 0 0 10px 0;
-          color: #374151;
-          line-height: 1.4;
+        .copy-btn {
+          display: block;
+          width: 100%;
+          padding: 10px 14px;
+          margin-bottom: 8px;
+          background: white;
+          border: 1px solid #d1fae5;
+          border-radius: 8px;
+          text-align: left;
+          cursor: pointer;
+          font-size: 14px;
+          color: #1a3a2f;
+          transition: all 0.2s;
         }
-        .nudge-actions {
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
+        .copy-btn:last-child {
+          margin-bottom: 0;
         }
-        .nudge-btn-primary {
-          padding: 6px 12px;
-          background: #1a3a2f;
+        .copy-btn:hover {
+          background: #d1fae5;
+          border-color: #059669;
+        }
+        .copy-btn.copied {
+          background: #059669;
           color: white;
-          border: none;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
+          border-color: #059669;
         }
-        .nudge-btn-secondary {
-          padding: 6px 12px;
-          background: #f3f4f6;
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          padding: 20px;
+        }
+        .modal {
+          background: white;
+          border-radius: 20px;
+          padding: 24px;
+          max-width: 360px;
+          width: 100%;
+        }
+        .modal h3 {
+          margin: 0 0 8px 0;
+          font-size: 20px;
+          color: #1a3a2f;
+        }
+        .modal p {
+          margin: 0 0 20px 0;
           color: #6b7280;
-          border: none;
-          border-radius: 6px;
+          font-size: 14px;
+        }
+        .modal-btn {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          width: 100%;
+          padding: 14px;
+          background: white;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          cursor: pointer;
+          text-align: left;
+          margin-bottom: 10px;
+          transition: all 0.2s;
+        }
+        .modal-btn:hover {
+          border-color: #1a3a2f;
+          background: #f9fafb;
+        }
+        .modal-btn span:first-child {
+          font-size: 24px;
+        }
+        .modal-btn div {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .modal-btn strong {
+          color: #1a3a2f;
+          font-size: 15px;
+        }
+        .modal-btn div span {
           font-size: 12px;
-          cursor: pointer;
-        }
-        .nudge-btn-dismiss {
-          padding: 6px 8px;
-          background: transparent;
           color: #9ca3af;
-          border: none;
-          font-size: 11px;
-          cursor: pointer;
         }
-        
+        .modal-btn.coparent:hover {
+          border-color: #dc2626;
+          background: #fef2f2;
+        }
+        .modal-btn.me:hover {
+          border-color: #059669;
+          background: #f0fdf4;
+        }
+        .modal-cancel {
+          width: 100%;
+          padding: 12px;
+          background: none;
+          border: none;
+          color: #6b7280;
+          cursor: pointer;
+          font-size: 14px;
+          margin-top: 8px;
+        }
+        .modal-cancel:hover {
+          color: #1a3a2f;
+        }
         .input-area {
           position: fixed;
           bottom: 70px;
