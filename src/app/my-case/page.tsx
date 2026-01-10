@@ -154,6 +154,11 @@ export default function MyCasePage() {
     ? Math.ceil((new Date(caseContext.next_court_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
+  // Format court date for display
+  const courtDateFormatted = caseContext?.next_court_date
+    ? new Date(caseContext.next_court_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
+
   if (loading) {
     return (
       <div style={{ 
@@ -180,7 +185,7 @@ export default function MyCasePage() {
       background: 'linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%)',
       paddingBottom: 100 
     }}>
-      {/* Header */}
+      {/* Header with compact countdown */}
       <header style={{
         padding: '20px 24px',
         display: 'flex',
@@ -190,54 +195,46 @@ export default function MyCasePage() {
         color: 'white'
       }}>
         <h1 style={{ fontSize: 24, margin: 0 }}>My Case</h1>
-        <button 
-          onClick={() => router.push('/case-setup')} 
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: 'none',
-            padding: '8px 12px',
-            borderRadius: 8,
-            fontSize: 20,
-            cursor: 'pointer'
-          }}
-        >
-          ⚙️
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Compact court countdown */}
+          {daysUntilCourt && daysUntilCourt > 0 && (
+            <button
+              onClick={() => router.push('/court-prep')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#f59e0b',
+                color: '#78350f',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              <span>⚖️</span>
+              <span>{daysUntilCourt}d</span>
+            </button>
+          )}
+          <button 
+            onClick={() => router.push('/case-setup')} 
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: 8,
+              fontSize: 20,
+              cursor: 'pointer'
+            }}
+          >
+            ⚙️
+          </button>
+        </div>
       </header>
 
       <main style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
-        
-        {/* Court Countdown - only if set */}
-        {daysUntilCourt && daysUntilCourt > 0 && (
-          <div style={{
-            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-            borderRadius: 16,
-            padding: 20,
-            textAlign: 'center',
-            marginBottom: 20,
-            border: '2px solid #f59e0b',
-            cursor: 'pointer'
-          }}
-          onClick={() => router.push('/court-prep')}
-          >
-            <div style={{ fontSize: 48, fontWeight: 800, color: '#92400e' }}>
-              {daysUntilCourt}
-            </div>
-            <div style={{ fontSize: 16, color: '#92400e', marginBottom: 12 }}>
-              days until court
-            </div>
-            <div style={{
-              background: '#92400e',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: 8,
-              fontWeight: 600,
-              display: 'inline-block'
-            }}>
-              Prepare for Hearing →
-            </div>
-          </div>
-        )}
 
         {/* Quick Actions */}
         <div style={{
@@ -320,8 +317,12 @@ export default function MyCasePage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: 16,
-                background: 'white',
-                border: '2px solid #e5e7eb',
+                background: daysUntilCourt && daysUntilCourt > 0 && daysUntilCourt <= 14 
+                  ? '#fef3c7' 
+                  : 'white',
+                border: daysUntilCourt && daysUntilCourt > 0 && daysUntilCourt <= 14
+                  ? '2px solid #f59e0b'
+                  : '2px solid #e5e7eb',
                 borderRadius: 12,
                 cursor: 'pointer'
               }}
