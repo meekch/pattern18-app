@@ -568,7 +568,7 @@ export default function CoachPage() {
       </div>
 
       {/* Save Evidence Button */}
-      {messages.length > 0 && messages[messages.length - 1]?.patterns?.length > 0 && !showHome && (
+      {messages.length > 0 && (messages[messages.length - 1]?.patterns?.length ?? 0) > 0 && !showHome && (
         <button className="save-evidence-btn" onClick={handleSaveEvidence}>
           💾 Save to Evidence ({messages[messages.length - 1]?.patterns?.length} patterns)
         </button>
