@@ -354,6 +354,39 @@ export default function CoachPage() {
     return options;
   };
 
+  const handleSaveEvidence = async () => {
+    const lastMsg = messages[messages.length - 1];
+    const patterns = lastMsg?.patterns || [];
+    if (!patterns.length || !user) return;
+
+    // Find the user message (what they uploaded/pasted)
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUserMsg) return;
+
+    try {
+      const primaryPattern = patterns[0];
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_');
+      
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: lastUserMsg.content,
+        category: categoryKey,
+        patterns: patterns,
+        severity: patterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring'].some(t => p.toLowerCase().includes(t))
+        ) ? 'high' : 'medium',
+        incident_date: new Date().toISOString(),
+      });
+
+      alert('✓ Saved to evidence!');
+      setEvidenceCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save. Please try again.');
+    }
+  };
+
   const renderMessageContent = (msg: Message) => {
     if (msg.role !== 'assistant') {
       return (
@@ -533,6 +566,13 @@ export default function CoachPage() {
           </div>
         )}
       </div>
+
+      {/* Save Evidence Button */}
+      {messages.length > 0 && messages[messages.length - 1]?.patterns?.length > 0 && !showHome && (
+        <button className="save-evidence-btn" onClick={handleSaveEvidence}>
+          💾 Save to Evidence ({messages[messages.length - 1]?.patterns?.length} patterns)
+        </button>
+      )}
 
       {showSenderModal && (
         <div className="modal-overlay">
@@ -887,6 +927,25 @@ export default function CoachPage() {
           background: #059669;
           color: white;
           border-color: #059669;
+        }
+        .save-evidence-btn {
+          position: fixed;
+          bottom: 135px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #059669;
+          color: white;
+          border: none;
+          padding: 14px 24px;
+          border-radius: 24px;
+          font-weight: 600;
+          font-size: 15px;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          z-index: 50;
+        }
+        .save-evidence-btn:hover {
+          background: #047857;
         }
         .modal-overlay {
           position: fixed;
