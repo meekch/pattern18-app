@@ -65,7 +65,7 @@ export default function CoachPage() {
       .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
     
     // Wrap consecutive <li> items in <ul>
-    formatted = formatted.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
+    formatted = formatted.replace(/(<li>[\s\S]*?<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
     
     // Handle quoted responses (text in quotes on its own line)
     formatted = formatted.replace(/^"([^"]+)"$/gm, '<blockquote>$1</blockquote>');
