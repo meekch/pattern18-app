@@ -289,7 +289,7 @@ export default function CoachPage() {
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
-        paddingBottom: detectedPatterns.length > 0 ? '200px' : '140px'
+        paddingBottom: detectedPatterns.length > 0 ? '240px' : '140px'
       }}>
         {showWelcome ? (
           <div style={{
@@ -448,10 +448,17 @@ export default function CoachPage() {
                   background: 'white',
                   color: '#7a8a80',
                   fontSize: 15,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  animation: 'pulse 1.5s ease-in-out infinite'
                 }}>
                   Analyzing...
                 </div>
+                <style>{`
+                  @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                  }
+                `}</style>
               </div>
             )}
             
@@ -464,14 +471,39 @@ export default function CoachPage() {
       {detectedPatterns.length > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: 125,
+          bottom: 135,
           left: 0,
           right: 0,
           display: 'flex',
-          justifyContent: 'center',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
           padding: '0 20px',
           pointerEvents: 'none'
         }}>
+          {/* Pattern tags */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            justifyContent: 'center',
+            pointerEvents: 'auto'
+          }}>
+            {detectedPatterns.map((pattern, i) => (
+              <span key={i} style={{
+                background: '#fef3c7',
+                color: '#92400e',
+                padding: '4px 10px',
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 500
+              }}>
+                {pattern}
+              </span>
+            ))}
+          </div>
+          
+          {/* Save button */}
           <button
             onClick={handleSaveEvidence}
             disabled={saved}
@@ -485,24 +517,11 @@ export default function CoachPage() {
               fontWeight: 500,
               cursor: saved ? 'default' : 'pointer',
               boxShadow: '0 4px 12px rgba(26,58,47,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
               pointerEvents: 'auto',
               transition: 'background 0.2s'
             }}
           >
-            {saved ? '✓ Saved!' : 'Save to evidence'}
-            {!saved && (
-              <span style={{
-                background: 'rgba(255,255,255,0.2)',
-                padding: '3px 10px',
-                borderRadius: 12,
-                fontSize: 13
-              }}>
-                {detectedPatterns.length} {detectedPatterns.length === 1 ? 'pattern' : 'patterns'}
-              </span>
-            )}
+            {saved ? '✓ Saved to evidence!' : 'Save to evidence'}
           </button>
         </div>
       )}
