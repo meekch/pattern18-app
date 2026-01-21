@@ -23,6 +23,7 @@ export default function CoachPage() {
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
+  const [saved, setSaved] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,6 +76,7 @@ export default function CoachPage() {
     setSending(true);
     setInput('');
     setDetectedPatterns([]);
+    setSaved(false);
 
     // Create image URL for display if file is an image
     let imageUrl: string | undefined;
@@ -84,7 +86,7 @@ export default function CoachPage() {
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `Uploaded: ${file.name}` : ''),
+      content: text,
       imageUrl
     };
     setMessages(prev => [...prev, userMessage]);
@@ -199,8 +201,14 @@ export default function CoachPage() {
         incident_date: new Date().toISOString(),
       });
 
-      setDetectedPatterns([]);
+      setSaved(true);
       setEvidenceCount(prev => prev + 1);
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setDetectedPatterns([]);
+        setSaved(false);
+      }, 3000);
     } catch (error) {
       console.error('Failed to save:', error);
     }
@@ -281,7 +289,7 @@ export default function CoachPage() {
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
-        paddingBottom: detectedPatterns.length > 0 ? '160px' : '100px'
+        paddingBottom: detectedPatterns.length > 0 ? '200px' : '140px'
       }}>
         {showWelcome ? (
           <div style={{
@@ -438,11 +446,11 @@ export default function CoachPage() {
                   padding: '12px 16px',
                   borderRadius: '18px 18px 18px 4px',
                   background: 'white',
-                  color: '#9ca89f',
+                  color: '#7a8a80',
                   fontSize: 15,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                 }}>
-                  ...
+                  Analyzing...
                 </div>
               </div>
             )}
@@ -466,31 +474,35 @@ export default function CoachPage() {
         }}>
           <button
             onClick={handleSaveEvidence}
+            disabled={saved}
             style={{
               padding: '12px 24px',
-              background: '#1a3a2f',
+              background: saved ? '#059669' : '#1a3a2f',
               color: 'white',
               border: 'none',
               borderRadius: 24,
               fontSize: 15,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: saved ? 'default' : 'pointer',
               boxShadow: '0 4px 12px rgba(26,58,47,0.3)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              transition: 'background 0.2s'
             }}
           >
-            Save to evidence
-            <span style={{
-              background: 'rgba(255,255,255,0.2)',
-              padding: '3px 10px',
-              borderRadius: 12,
-              fontSize: 13
-            }}>
-              {detectedPatterns.length} {detectedPatterns.length === 1 ? 'pattern' : 'patterns'}
-            </span>
+            {saved ? '✓ Saved!' : 'Save to evidence'}
+            {!saved && (
+              <span style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '3px 10px',
+                borderRadius: 12,
+                fontSize: 13
+              }}>
+                {detectedPatterns.length} {detectedPatterns.length === 1 ? 'pattern' : 'patterns'}
+              </span>
+            )}
           </button>
         </div>
       )}
