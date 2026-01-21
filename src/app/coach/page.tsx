@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
+  imageUrl?: string;
 }
 
 export default function CoachPage() {
@@ -75,9 +76,16 @@ export default function CoachPage() {
     setInput('');
     setDetectedPatterns([]);
 
+    // Create image URL for display if file is an image
+    let imageUrl: string | undefined;
+    if (file && file.type.startsWith('image/')) {
+      imageUrl = URL.createObjectURL(file);
+    }
+
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded: ${file.name}]` : '')
+      content: text || (file ? `Uploaded: ${file.name}` : ''),
+      imageUrl
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -273,7 +281,7 @@ export default function CoachPage() {
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
-        paddingBottom: '100px'
+        paddingBottom: detectedPatterns.length > 0 ? '160px' : '100px'
       }}>
         {showWelcome ? (
           <div style={{
@@ -386,16 +394,36 @@ export default function CoachPage() {
               >
                 <div style={{
                   maxWidth: '85%',
-                  padding: '12px 16px',
-                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  background: msg.role === 'user' ? '#1a3a2f' : 'white',
-                  color: msg.role === 'user' ? 'white' : '#1a3a2f',
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap',
-                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8
                 }}>
-                  {msg.content}
+                  {msg.imageUrl && (
+                    <img 
+                      src={msg.imageUrl} 
+                      alt="Uploaded" 
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
+                        borderRadius: 12,
+                        objectFit: 'contain'
+                      }}
+                    />
+                  )}
+                  {msg.content && (
+                    <div style={{
+                      padding: '12px 16px',
+                      borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      background: msg.role === 'user' ? '#1a3a2f' : 'white',
+                      color: msg.role === 'user' ? 'white' : '#1a3a2f',
+                      fontSize: 15,
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap',
+                      boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
+                    }}>
+                      {msg.content}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -428,11 +456,13 @@ export default function CoachPage() {
       {detectedPatterns.length > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: 130,
-          left: 20,
-          right: 20,
+          bottom: 125,
+          left: 0,
+          right: 0,
           display: 'flex',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          padding: '0 20px',
+          pointerEvents: 'none'
         }}>
           <button
             onClick={handleSaveEvidence}
@@ -448,7 +478,8 @@ export default function CoachPage() {
               boxShadow: '0 4px 12px rgba(26,58,47,0.3)',
               display: 'flex',
               alignItems: 'center',
-              gap: 10
+              gap: 10,
+              pointerEvents: 'auto'
             }}
           >
             Save to evidence
