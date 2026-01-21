@@ -289,7 +289,7 @@ export default function CoachPage() {
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
-        paddingBottom: detectedPatterns.length > 0 ? '240px' : '140px'
+        paddingBottom: detectedPatterns.length > 0 ? '280px' : '140px'
       }}>
         {showWelcome ? (
           <div style={{
@@ -521,7 +521,7 @@ export default function CoachPage() {
               transition: 'background 0.2s'
             }}
           >
-            {saved ? '✓ Saved to evidence!' : 'Save to evidence'}
+            {saved ? '✓ Saved to My Case' : 'Save to evidence'}
           </button>
         </div>
       )}
