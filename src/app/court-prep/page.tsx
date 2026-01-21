@@ -557,6 +557,42 @@ export default function CourtPrepPage() {
         </div>
 
         {/* Evidence Status */}
+        {/* Doc Builder */}
+<div 
+  onClick={() => router.push('/doc-builder')}
+  style={{
+    background: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    border: '2px solid #059669'
+  }}
+>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <span style={{ fontSize: 28 }}>📝</span>
+    <div>
+      <div style={{ fontWeight: 600, color: '#1a3a2f' }}>Doc Builder</div>
+      <div style={{ fontSize: 13, color: '#6b7280' }}>
+        Build Resolution Statements, Affidavits & more
+      </div>
+    </div>
+  </div>
+  <div style={{
+    background: '#059669',
+    color: 'white',
+    padding: '10px 16px',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600
+  }}>
+    Build →
+  </div>
+</div>
         <div 
           onClick={() => router.push('/evidence')}
           style={{
