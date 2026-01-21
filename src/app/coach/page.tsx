@@ -213,7 +213,7 @@ export default function CoachPage() {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        background: '#fafafa'
+        background: '#f9faf8'
       }}>
         <div style={{ fontSize: 32 }}>💚</div>
       </div>
@@ -227,31 +227,40 @@ export default function CoachPage() {
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#fafafa'
+      background: '#f9faf8'
     }}>
-      {/* Minimal Header */}
+      {/* Header */}
       <header style={{
-        padding: '12px 20px',
-        borderBottom: '1px solid #eee',
+        padding: '14px 20px',
+        borderBottom: '1px solid #e8ebe8',
         background: 'white',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <span style={{
-          fontWeight: 700,
-          fontSize: 18,
-          color: '#1a3a2f'
-        }}>
-          Pattern 18
-        </span>
+        <div>
+          <div style={{
+            fontWeight: 700,
+            fontSize: 18,
+            color: '#1a3a2f'
+          }}>
+            Pattern 18
+          </div>
+          <div style={{
+            fontSize: 12,
+            color: '#7a8a80',
+            marginTop: 1
+          }}>
+            I've got you
+          </div>
+        </div>
         <button 
           onClick={() => router.push('/my-case')}
           style={{
             background: 'none',
             border: 'none',
             fontSize: 14,
-            color: '#666',
+            color: '#5a6a60',
             cursor: 'pointer'
           }}
         >
@@ -276,9 +285,9 @@ export default function CoachPage() {
             textAlign: 'center',
             padding: '0 20px'
           }}>
-            <div style={{ fontSize: 40, marginBottom: 20 }}>💚</div>
+            <div style={{ fontSize: 44, marginBottom: 24 }}>💚</div>
             <h1 style={{
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: 600,
               color: '#1a3a2f',
               margin: '0 0 8px 0'
@@ -286,49 +295,53 @@ export default function CoachPage() {
               Hey, I'm here.
             </h1>
             <p style={{
-              fontSize: 16,
-              color: '#666',
-              margin: '0 0 32px 0'
+              fontSize: 17,
+              color: '#5a6a60',
+              margin: '0 0 36px 0'
             }}>
               What's going on?
             </p>
 
-            {/* Subtle Suggestions */}
+            {/* Suggestions */}
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 8,
+              gap: 10,
               width: '100%',
-              maxWidth: 280
+              maxWidth: 300
             }}>
+              {/* Primary action */}
               <button
                 onClick={() => handleSuggestion('upload')}
                 style={{
-                  padding: '14px 20px',
-                  background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 12,
-                  fontSize: 15,
-                  color: '#333',
+                  padding: '16px 20px',
+                  background: '#f0f7f4',
+                  border: '1px solid #c8e0d5',
+                  borderRadius: 14,
+                  fontSize: 16,
+                  color: '#1a3a2f',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'border-color 0.2s'
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
                 }}
               >
                 📸 Just got a message
               </button>
+              
+              {/* Secondary actions */}
               <button
                 onClick={() => handleSuggestion("I have court coming up and need help preparing.")}
                 style={{
-                  padding: '14px 20px',
+                  padding: '16px 20px',
                   background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 12,
-                  fontSize: 15,
-                  color: '#333',
+                  border: '1px solid #e0e4e1',
+                  borderRadius: 14,
+                  fontSize: 16,
+                  color: '#3a4a40',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'border-color 0.2s'
+                  transition: 'all 0.2s'
                 }}
               >
                 ⚖️ Preparing for court
@@ -336,20 +349,29 @@ export default function CoachPage() {
               <button
                 onClick={() => handleSuggestion("I'm feeling overwhelmed and need a moment.")}
                 style={{
-                  padding: '14px 20px',
+                  padding: '16px 20px',
                   background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 12,
-                  fontSize: 15,
-                  color: '#333',
+                  border: '1px solid #e0e4e1',
+                  borderRadius: 14,
+                  fontSize: 16,
+                  color: '#3a4a40',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'border-color 0.2s'
+                  transition: 'all 0.2s'
                 }}
               >
                 🌿 I need a moment
               </button>
             </div>
+
+            {/* Hint */}
+            <p style={{
+              fontSize: 14,
+              color: '#9ca89f',
+              marginTop: 28
+            }}>
+              or just start typing
+            </p>
           </div>
         ) : (
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -371,7 +393,7 @@ export default function CoachPage() {
                   fontSize: 15,
                   lineHeight: 1.5,
                   whiteSpace: 'pre-wrap',
-                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
                 }}>
                   {msg.content}
                 </div>
@@ -388,9 +410,9 @@ export default function CoachPage() {
                   padding: '12px 16px',
                   borderRadius: '18px 18px 18px 4px',
                   background: 'white',
-                  color: '#999',
+                  color: '#9ca89f',
                   fontSize: 15,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                 }}>
                   ...
                 </div>
@@ -402,7 +424,7 @@ export default function CoachPage() {
         )}
       </div>
 
-      {/* Save to Evidence - Only shows when patterns detected */}
+      {/* Save to Evidence */}
       {detectedPatterns.length > 0 && (
         <div style={{
           position: 'fixed',
@@ -415,26 +437,26 @@ export default function CoachPage() {
           <button
             onClick={handleSaveEvidence}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               background: '#1a3a2f',
               color: 'white',
               border: 'none',
-              borderRadius: 20,
-              fontSize: 14,
+              borderRadius: 24,
+              fontSize: 15,
               fontWeight: 500,
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              boxShadow: '0 4px 12px rgba(26,58,47,0.3)',
               display: 'flex',
               alignItems: 'center',
-              gap: 8
+              gap: 10
             }}
           >
             Save to evidence
             <span style={{
               background: 'rgba(255,255,255,0.2)',
-              padding: '2px 8px',
-              borderRadius: 10,
-              fontSize: 12
+              padding: '3px 10px',
+              borderRadius: 12,
+              fontSize: 13
             }}>
               {detectedPatterns.length} {detectedPatterns.length === 1 ? 'pattern' : 'patterns'}
             </span>
@@ -450,7 +472,7 @@ export default function CoachPage() {
         right: 0,
         padding: '12px 16px',
         background: 'white',
-        borderTop: '1px solid #eee'
+        borderTop: '1px solid #e8ebe8'
       }}>
         <div style={{
           display: 'flex',
@@ -462,16 +484,17 @@ export default function CoachPage() {
           <button 
             onClick={() => fileInputRef.current?.click()}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 42,
+              height: 42,
+              borderRadius: 21,
               border: 'none',
-              background: '#f5f5f5',
-              fontSize: 18,
+              background: '#f0f2f0',
+              fontSize: 20,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              color: '#5a6a60'
             }}
           >
             +
@@ -485,28 +508,30 @@ export default function CoachPage() {
             disabled={sending}
             style={{
               flex: 1,
-              padding: '12px 16px',
-              border: '1px solid #e0e0e0',
+              padding: '12px 18px',
+              border: '1px solid #dfe3df',
               borderRadius: 24,
               fontSize: 16,
-              outline: 'none'
+              outline: 'none',
+              background: '#fafbfa'
             }}
           />
           <button 
             onClick={() => handleSend()}
             disabled={sending || !input.trim()}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 42,
+              height: 42,
+              borderRadius: 21,
               border: 'none',
-              background: input.trim() ? '#1a3a2f' : '#e0e0e0',
+              background: input.trim() ? '#1a3a2f' : '#dfe3df',
               color: 'white',
-              fontSize: 16,
+              fontSize: 18,
               cursor: input.trim() ? 'pointer' : 'default',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              transition: 'background 0.2s'
             }}
           >
             ↑
