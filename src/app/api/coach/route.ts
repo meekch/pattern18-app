@@ -4,58 +4,74 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - an expert in identifying coercive control patterns in co-parent communications.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach - a specialized AI assistant for survivors of coercive control in high-conflict custody situations. You work like a knowledgeable friend who deeply understands manipulation tactics, family court, trauma, and healing.
 
-THE 18 PATTERNS OF COERCIVE CONTROL:
-1. Gaslighting - Making someone question their reality
-2. DARVO - Deny, Attack, Reverse Victim & Offender  
-3. Intimidation - Creating fear through threats or aggression
-4. Threats - Direct or implied threats of harm
-5. Financial Coercion - Using money to control
-6. Using Children as Weapons - Manipulating through kids
-7. Blame-Shifting - Never taking responsibility
-8. False Accusations - Making unfounded claims
-9. Emotional Blackmail - Using guilt/fear to control
-10. Stonewalling - Refusing to communicate
-11. Monitoring/Stalking - Tracking or surveillance
-12. Isolation Tactics - Cutting off support systems
-13. Minimizing/Denying - Dismissing concerns
-14. Word Salad - Confusing, circular communication
-15. Moving Goalposts - Constantly changing expectations
-16. Projection - Accusing you of their behavior
-17. Hoovering - Love-bombing to pull you back
-18. Gatekeeping - Controlling access to kids/info
+WHO YOU'RE TALKING TO:
+Someone likely experiencing abuse who may not fully recognize it yet. They might be in crisis, confused, scared, angry, or numb. They're dealing with a co-parent who manipulates, and a court system that often doesn't understand coercive control. Many are doing this alone at 2am because they can't afford a lawyer.
 
-RESPONSE FORMAT - FOLLOW THIS EXACTLY:
+YOUR EXPERTISE:
+- Coercive control patterns: gaslighting, DARVO, intimidation, threats, financial abuse, using children as weapons, blame-shifting, false accusations, emotional blackmail, stonewalling, monitoring/stalking, isolation, minimizing/denying, word salad, moving goalposts, projection, hoovering, gatekeeping
+- Family court procedures, filings, what judges look for
+- Strategic communication that doesn't give the abuser ammunition
+- Documentation that holds up in court
+- Trauma-informed support and grounding techniques
 
-**🚨 PATTERNS DETECTED:**
-• [Pattern 1]
-• [Pattern 2]
-• [Pattern 3]
+HOW TO BE:
+- Conversational, not robotic. Talk like a person.
+- Warm but direct. Don't over-validate or be syrupy.
+- Meet them where they are. Crisis = brief and calming. Prepared = detailed and strategic.
+- Educate naturally. When you spot a tactic, name it: "What he just did has a name - it's called DARVO. He denied it, attacked you, and made himself the victim."
+- Never judge them for staying, reacting emotionally, or not knowing something.
+- No dramatic language like "toxic", "narcissist", or "abuser" unless they use it first.
 
-**📝 WHAT'S HAPPENING:**
-[2-3 sentences explaining the tactics in plain language]
+WHEN THEY SHARE A MESSAGE FROM THEIR CO-PARENT:
+1. Acknowledge how hard it is to receive that (briefly, one line)
+2. Name what's happening: "This is [pattern]. Here's what he's doing..."
+3. Explain why it works / what he wants you to do
+4. Give 2-3 response options (copy-paste ready, calm, factual, brief)
+5. End with: "Want to save this to your evidence?"
 
-**✅ SAFE RESPONSE OPTIONS:**
+Keep response options SHORT. One or two sentences max. The goal is to not engage, not win the argument.
 
-**Option 1 - Minimal (recommended):**
-"[Copy-paste response]"
+WHEN THEY ASK FOR HELP WITH COURT:
+- If they upload documents: read them carefully, summarize what matters, identify deadlines, explain what they need to do
+- If they're preparing: help them think through what to say, what to wear, what to expect
+- If they need documents generated: pull from their documented evidence, use exact quotes, proper legal formatting
+- Be specific and practical. "File this by Tuesday" not "consider filing soon"
 
-**Option 2 - One line:**
-"[Single sentence response]"
+WHEN THEY'RE OVERWHELMED OR SPIRALING:
+- Shorter responses
+- Ground them first: "Take a breath. You're safe right now."
+- One thing they can do, not a list
+- Offer grounding exercise if they need it
 
-**Option 3 - No response needed**
-This doesn't require a reply. Document and move on.
+WHEN THEY'RE JUST LEARNING:
+- Help them see the patterns they couldn't name before
+- Validate that it's real: "You're not crazy. This is a known tactic."
+- Don't overwhelm with information. One concept at a time.
 
-**⚖️ WHY THIS MATTERS IN COURT:**
-[1-2 sentences on what a judge would see]
+WHEN THEY NEED HEALING (not fighting):
+- No talk of court or documentation unless they bring it up
+- Somatic/body awareness, breathing, grounding
+- Gentle psychoeducation about trauma responses
+- Remind them: the goal is freedom, not revenge
 
-RULES:
-- ALWAYS identify 2-4 patterns minimum - most abusive messages have multiple tactics
-- Use the EXACT pattern names from the list above
-- Be direct and confident, not hedgy
-- No dramatic language - just label the tactics
-- Keep responses scannable with clear sections`;
+WHAT NOT TO DO:
+- Don't use bullet points for everything. Use paragraphs.
+- Don't repeat their message back to them. They know what it said.
+- Don't diagnose the co-parent ("he's a narcissist"). Describe behavior.
+- Don't promise outcomes ("you'll win in court").
+- Don't be preachy or lecture.
+- Don't ask too many questions at once. One at a time.
+- Don't offer to save evidence when they're venting or asking general questions.
+
+RESPONSE LENGTH:
+- Crisis/quick help: 3-5 sentences
+- Analyzing a message: Short paragraphs + response options
+- Court prep/documents: As long as needed to be thorough
+- Emotional support: Brief, warm, grounding
+
+Remember: You're the tool they wish they had from day one. Be that.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,21 +87,35 @@ export async function POST(req: NextRequest) {
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
-    // Build context string
+    // Build context about the user's case
     let contextString = '';
-    if (Object.keys(patternCounts).length > 0 || parseInt(evidenceCount) > 0) {
+    
+    const evidenceNum = parseInt(evidenceCount);
+    if (evidenceNum > 0) {
       const topPatterns = Object.entries(patternCounts)
         .sort((a: any, b: any) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([pattern, count]) => `${pattern}: ${count}`)
+        .slice(0, 3)
+        .map(([pattern, count]) => `${pattern} (${count}x)`)
         .join(', ');
       
-      contextString = `\n\n[CASE HISTORY: ${evidenceCount} incidents documented. Top patterns: ${topPatterns || 'None yet'}]`;
+      contextString = `\n\n[User's case: ${evidenceNum} incidents documented. Most common: ${topPatterns || 'none yet'}]`;
     }
 
     if (caseContext.coparent_name) {
-      contextString += `\n[Co-parent name: ${caseContext.coparent_name}]`;
+      contextString += `\n[Co-parent goes by: ${caseContext.coparent_name}]`;
     }
+    if (caseContext.state) {
+      contextString += `\n[State: ${caseContext.state}]`;
+    }
+    if (caseContext.next_court_date) {
+      const daysUntil = Math.ceil((new Date(caseContext.next_court_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysUntil > 0 && daysUntil < 90) {
+        contextString += `\n[Court date: ${daysUntil} days away]`;
+      }
+    }
+
+    // Detect if this looks like a co-parent message being shared
+    const isAnalyzingMessage = file !== null || looksLikeSharedMessage(message, history);
 
     // Build messages array
     const messages: any[] = history.map((msg: any) => ({
@@ -100,9 +130,7 @@ export async function POST(req: NextRequest) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
       
-      const isPdf = file.type === 'application/pdf';
-      
-      if (isPdf) {
+      if (file.type === 'application/pdf') {
         userContent.push({
           type: 'document',
           source: {
@@ -162,10 +190,13 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Extract patterns from response
-          const patterns = extractPatterns(fullResponse);
-          if (patterns.length > 0) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
+          // Only extract patterns if user shared a co-parent message
+          // AND the coach identified patterns in its response
+          if (isAnalyzingMessage) {
+            const patterns = extractPatterns(fullResponse);
+            if (patterns.length > 0) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
+            }
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -194,89 +225,106 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function extractPatterns(text: string): string[] {
-  // Primary patterns to detect (exact names)
-  const PATTERNS = [
-    'Gaslighting',
-    'DARVO',
-    'Intimidation',
-    'Threats',
-    'Financial Coercion',
-    'Financial Abuse',
-    'Using Children as Weapons',
-    'Blame-Shifting',
-    'Blame Shifting',
-    'False Accusations',
-    'Emotional Blackmail',
-    'Stonewalling',
-    'Monitoring/Stalking',
-    'Monitoring',
-    'Stalking',
-    'Isolation Tactics',
-    'Isolation',
-    'Minimizing/Denying',
-    'Minimizing',
-    'Denying',
-    'Word Salad',
-    'Moving Goalposts',
-    'Projection',
-    'Hoovering',
-    'Gatekeeping',
+function looksLikeSharedMessage(message: string, history: any[]): boolean {
+  const lower = message.toLowerCase();
+  
+  // Definitely sharing a message
+  const shareIndicators = [
+    'he said', 'she said', 'they said',
+    'he sent', 'she sent', 'they sent',
+    'he texted', 'she texted', 'they texted',
+    'he wrote', 'she wrote', 'they wrote',
+    'just got this', 'just received', 'got this message',
+    'look what he', 'look what she',
+    'can you believe',
+    'how do i respond to this',
+    'what should i say to this',
   ];
+  
+  // Definitely NOT analyzing a message
+  const generalIndicators = [
+    'what should i wear',
+    'what to expect',
+    'how do i prepare',
+    'help me stay calm',
+    'what might he say',
+    'what might she say',
+    'what will the judge',
+    'i have court',
+    'my hearing is',
+    'i\'m feeling',
+    'i can\'t',
+    'i need a moment',
+    'breathing',
+    'overwhelmed',
+    'scared',
+    'anxious',
+    'tips for',
+    'advice on',
+  ];
+  
+  // Check general indicators first (not analyzing)
+  for (const indicator of generalIndicators) {
+    if (lower.includes(indicator)) {
+      return false;
+    }
+  }
+  
+  // Check share indicators
+  for (const indicator of shareIndicators) {
+    if (lower.includes(indicator)) {
+      return true;
+    }
+  }
+  
+  // If message is very long with quotes, probably pasted content
+  if (message.length > 200 && (message.includes('"') || message.includes('"') || message.includes('\n'))) {
+    return true;
+  }
+  
+  // If it's a short question, not analyzing
+  if (message.length < 100 && message.trim().endsWith('?')) {
+    return false;
+  }
+  
+  return false;
+}
 
-  // Also check for these phrases that indicate patterns
-  const PATTERN_PHRASES: Record<string, string> = {
-    'financial shaming': 'Financial Coercion',
-    'financial control': 'Financial Coercion',
-    'financial abuse': 'Financial Coercion',
-    'financial manipulation': 'Financial Coercion',
-    'money as control': 'Financial Coercion',
-    'money as leverage': 'Financial Coercion',
-    'veiled threat': 'Intimidation',
-    'implied threat': 'Intimidation',
-    'threatening escalation': 'Intimidation',
-    'threatening language': 'Intimidation',
-    'surveillance': 'Monitoring/Stalking',
-    'tracking': 'Monitoring/Stalking',
-    'saw you': 'Monitoring/Stalking',
-    'watching you': 'Monitoring/Stalking',
-    'guilt trip': 'Emotional Blackmail',
-    'using the child': 'Using Children as Weapons',
-    'through the kids': 'Using Children as Weapons',
-    'your fault': 'Blame-Shifting',
-    'you made me': 'Blame-Shifting',
-    'because of you': 'Blame-Shifting',
-    'never happened': 'Gaslighting',
-    'you\'re crazy': 'Gaslighting',
-    'imagining things': 'Gaslighting',
-    'overreacting': 'Minimizing/Denying',
-    'not that bad': 'Minimizing/Denying',
+function extractPatterns(text: string): string[] {
+  const patterns: Record<string, string[]> = {
+    'Gaslighting': ['gaslighting', 'gaslight', 'making you question', 'question your reality'],
+    'DARVO': ['darvo', 'deny, attack', 'reverse victim', 'playing victim'],
+    'Intimidation': ['intimidation', 'intimidating', 'creating fear'],
+    'Threats': ['threat', 'threatening'],
+    'Financial Abuse': ['financial abuse', 'financial control', 'financial coercion', 'money to control'],
+    'Using Children as Weapons': ['using children', 'children as weapons', 'kids as leverage', 'through the children'],
+    'Blame-Shifting': ['blame-shifting', 'blame shifting', 'shifting blame', 'your fault'],
+    'False Accusations': ['false accusations', 'false accusation', 'accusing you of'],
+    'Emotional Blackmail': ['emotional blackmail', 'guilt trip', 'guilting'],
+    'Stonewalling': ['stonewalling', 'silent treatment', 'refusing to respond'],
+    'Monitoring/Stalking': ['monitoring', 'stalking', 'tracking', 'surveillance'],
+    'Isolation Tactics': ['isolation', 'isolating', 'cutting you off'],
+    'Minimizing/Denying': ['minimizing', 'denying', 'downplaying'],
+    'Word Salad': ['word salad', 'circular', 'confusing communication'],
+    'Moving Goalposts': ['moving goalposts', 'moving the goal', 'changing expectations'],
+    'Projection': ['projection', 'projecting'],
+    'Hoovering': ['hoovering', 'sucking you back', 'love bombing'],
+    'Gatekeeping': ['gatekeeping', 'withholding information', 'controlling access'],
   };
 
-  const found: Set<string> = new Set();
-  const lowerText = text.toLowerCase();
+  const found: string[] = [];
+  const lower = text.toLowerCase();
 
-  // Check for exact pattern names
-  for (const pattern of PATTERNS) {
-    if (lowerText.includes(pattern.toLowerCase())) {
-      // Normalize
-      let normalized = pattern;
-      if (pattern === 'Blame Shifting') normalized = 'Blame-Shifting';
-      if (pattern === 'Financial Abuse') normalized = 'Financial Coercion';
-      if (pattern === 'Monitoring' || pattern === 'Stalking') normalized = 'Monitoring/Stalking';
-      if (pattern === 'Isolation') normalized = 'Isolation Tactics';
-      if (pattern === 'Minimizing' || pattern === 'Denying') normalized = 'Minimizing/Denying';
-      
-      found.add(normalized);
+  for (const [patternName, keywords] of Object.entries(patterns)) {
+    for (const keyword of keywords) {
+      if (lower.includes(keyword)) {
+        if (!found.includes(patternName)) {
+          found.push(patternName);
+        }
+        break;
+      }
     }
   }
 
-  // Check for phrase indicators
-  for (const [phrase, pattern] of Object.entries(PATTERN_PHRASES)) {
-    if (lowerText.includes(phrase)) {
-      found.add(pattern);
-    }
-  }
-
-  return Array.from(found).slice(0, 5);
+  return found.slice(0, 5);
 }

@@ -9,7 +9,6 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
-  imageUrl?: string;
 }
 
 export default function CoachPage() {
@@ -19,76 +18,12 @@ export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [showHome, setShowHome] = useState(true);
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Sender question modal
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [showSenderModal, setShowSenderModal] = useState(false);
-  const [copiedOption, setCopiedOption] = useState<number | null>(null);
-  
-  // Import tracking
-  const [daysSinceImport, setDaysSinceImport] = useState<number | null>(null);
-  
-  // Progress messages for better UX during analysis
-  const [progressIndex, setProgressIndex] = useState(0);
-  const [hasImage, setHasImage] = useState(false);
-  const progressMessages = [
-    "Reading your message...",
-    "Identifying patterns...",
-    "Checking for manipulation tactics...",
-    "Preparing response options...",
-  ];
-  const imageProgressMessages = [
-    "Reading the screenshot...",
-    "Analyzing the conversation...",
-    "Identifying coercive patterns...",
-    "Checking tone and language...",
-    "Preparing strategic response...",
-  ];
-
-  // Format markdown-like text to HTML
-  const formatMessage = (text: string) => {
-    let formatted = text
-      // Bold **text**
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      // Italic *text*
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      // Handle bullet points (•, -, *)
-      .replace(/^[•\-\*]\s+(.+)$/gm, '<li>$1</li>')
-      // Numbered lists
-      .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-    
-    // Wrap consecutive <li> items in <ul>
-    formatted = formatted.replace(/(<li>[\s\S]*?<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
-    
-    // Handle quoted responses (text in quotes on its own line)
-    formatted = formatted.replace(/^"([^"]+)"$/gm, '<blockquote>$1</blockquote>');
-    
-    // Convert double newlines to paragraph breaks
-    const paragraphs = formatted.split(/\n\n+/);
-    formatted = paragraphs
-      .map(p => p.trim())
-      .filter(p => p)
-      .map(p => {
-        // Don't wrap if already wrapped in block element
-        if (p.startsWith('<ul>') || p.startsWith('<blockquote>') || p.startsWith('<li>')) {
-          return p;
-        }
-        return `<p>${p}</p>`;
-      })
-      .join('');
-    
-    // Convert single newlines to <br> within paragraphs
-    formatted = formatted.replace(/([^>])\n([^<])/g, '$1<br/>$2');
-    
-    return formatted;
-  };
 
   useEffect(() => {
     const init = async () => {
@@ -123,16 +58,6 @@ export default function CoachPage() {
         setPatternCounts(counts);
       }
 
-      // Calculate days since last import
-      const lastImport = localStorage.getItem('pattern18_last_import');
-      if (lastImport) {
-        const lastDate = new Date(lastImport);
-        const days = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        setDaysSinceImport(days);
-      } else {
-        setDaysSinceImport(null); // Never imported
-      }
-
       setLoading(false);
     };
     init();
@@ -142,53 +67,17 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-send prompt from document upload
-  useEffect(() => {
-    if (loading) return;
-    const savedPrompt = sessionStorage.getItem('coachPrompt');
-    if (savedPrompt) {
-      sessionStorage.removeItem('coachPrompt');
-      handleSend(savedPrompt);
-    }
-  }, [loading]);
-
-  // Rotate progress messages while analyzing
-  useEffect(() => {
-    if (!sending) {
-      setProgressIndex(0);
-      return;
-    }
-    const msgs = hasImage ? imageProgressMessages : progressMessages;
-    const interval = setInterval(() => {
-      setProgressIndex(prev => (prev + 1) % msgs.length);
-    }, 2500);
-    
-    return () => clearInterval(interval);
-  }, [sending, hasImage]);
-
-  const getImportMessage = () => {
-    if (daysSinceImport === null) return { text: 'Import messages', urgent: false };
-    if (daysSinceImport === 0) return { text: 'Imported today ✓', urgent: false };
-    if (daysSinceImport <= 7) return { text: `${daysSinceImport}d ago`, urgent: false };
-    if (daysSinceImport <= 30) return { text: `${daysSinceImport}d since import`, urgent: false };
-    return { text: `${daysSinceImport}d - import now`, urgent: true };
-  };
-
-  const handleSend = async (messageText?: string, file?: File, imageUrl?: string) => {
+  const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
     if (!text.trim() && !file) return;
 
-    setShowHome(false);
     setSending(true);
-    setHasImage(!!file);
-    setProgressIndex(0);
     setInput('');
     setDetectedPatterns([]);
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text,
-      imageUrl: imageUrl
+      content: text || (file ? `[Uploaded: ${file.name}]` : '')
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -200,7 +89,9 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (file) formData.append('file', file);
+      if (file) {
+        formData.append('file', file);
+      }
 
       const response = await fetch('/api/coach', {
         method: 'POST',
@@ -262,377 +153,365 @@ export default function CoachPage() {
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'screenshot':
-        fileInputRef.current?.click();
-        break;
-      case 'import':
-        router.push('/evidence/upload');
-        break;
-      case 'courtdoc':
-        router.push('/docs');
-        break;
-      case 'moment':
-        router.push('/healing');
-        break;
-    }
-  };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     if (file.type === 'application/pdf') {
-      router.push('/docs');
-      return;
-    }
-    
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      await handleSend('Please help me understand this document.', file);
+    } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
       return;
-    }
-
-    if (file.type.startsWith('image/')) {
-      setPendingFile(file);
-      setShowSenderModal(true);
+    } else if (file.type.startsWith('image/')) {
+      await handleSend('', file);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSenderChoice = async (sender: 'coparent' | 'me' | 'other') => {
-    if (!pendingFile) return;
-    
-    setShowSenderModal(false);
-    const file = pendingFile;
-    setPendingFile(null);
-
-    // Create image URL for preview
-    const imageUrl = URL.createObjectURL(file);
-
-    let prompt = '';
-    if (sender === 'coparent') {
-      prompt = 'This is from my co-parent. Help me respond.';
-    } else if (sender === 'me') {
-      prompt = 'This is my draft. Is it safe to send?';
-    } else {
-      prompt = 'Help me understand this.';
-    }
-
-    await handleSend(prompt, file, imageUrl);
-  };
-
-  const copyToClipboard = async (text: string, optionNum: number) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedOption(optionNum);
-      setTimeout(() => setCopiedOption(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  const parseResponseOptions = (content: string) => {
-    const options: { label: string; text: string }[] = [];
-    
-    const patterns = [
-      /OPTION 1[^:]*:\s*"([^"]+)"/i,
-      /OPTION 2[^:]*:\s*"([^"]+)"/i,
-    ];
-    
-    patterns.forEach((regex, i) => {
-      const match = content.match(regex);
-      if (match && match[1]) {
-        options.push({
-          label: i === 0 ? 'Gray Rock' : 'With Boundary',
-          text: match[1].trim()
-        });
-      }
-    });
-    
-    return options;
-  };
-
   const handleSaveEvidence = async () => {
-    const lastMsg = messages[messages.length - 1];
-    const patterns = lastMsg?.patterns || [];
-    if (!patterns.length || !user) return;
+    if (messages.length < 2 || !detectedPatterns.length) return;
 
-    // Find the user message (what they uploaded/pasted)
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
     if (!lastUserMsg) return;
 
     try {
-      const primaryPattern = patterns[0];
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_');
+      const primaryPattern = detectedPatterns[0];
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
       
       await supabase.from('incidents').insert({
         user_id: user.id,
         title: primaryPattern,
         coparent_message: lastUserMsg.content,
         category: categoryKey,
-        patterns: patterns,
-        severity: patterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring'].some(t => p.toLowerCase().includes(t))
+        patterns: detectedPatterns,
+        severity: detectedPatterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
         ) ? 'high' : 'medium',
         incident_date: new Date().toISOString(),
       });
 
-      alert('✓ Saved to evidence!');
+      setDetectedPatterns([]);
       setEvidenceCount(prev => prev + 1);
     } catch (error) {
       console.error('Failed to save:', error);
-      alert('Failed to save. Please try again.');
     }
   };
 
-  const renderMessageContent = (msg: Message) => {
-    if (msg.role !== 'assistant') {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          {msg.imageUrl && (
-            <img 
-              src={msg.imageUrl} 
-              alt="Uploaded screenshot" 
-              style={{
-                maxWidth: 280,
-                maxHeight: 400,
-                borderRadius: 12,
-                border: '1px solid #e5e7eb',
-                objectFit: 'contain'
-              }}
-            />
-          )}
-          <div style={{
-            background: '#1a3a2f',
-            color: 'white',
-            padding: '12px 16px',
-            borderRadius: '18px 18px 4px 18px'
-          }}>{msg.content}</div>
-        </div>
-      );
+  const handleSuggestion = (suggestion: string) => {
+    if (suggestion === 'upload') {
+      fileInputRef.current?.click();
+    } else {
+      handleSend(suggestion);
     }
-
-    const options = parseResponseOptions(msg.content);
-    
-    return (
-      <>
-        <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-        {options.length > 0 && (
-          <div className="copy-options">
-            <div className="copy-label">📋 TAP TO COPY:</div>
-            {options.map((opt, i) => (
-              <button
-                key={i}
-                className={`copy-btn ${copiedOption === i ? 'copied' : ''}`}
-                onClick={() => copyToClipboard(opt.text, i)}
-              >
-                {copiedOption === i ? '✓ Copied!' : `${opt.label}: "${opt.text.slice(0, 50)}${opt.text.length > 50 ? '...' : ''}"`}
-              </button>
-            ))}
-          </div>
-        )}
-      </>
-    );
   };
 
   if (loading) {
     return (
-      <div className="loading">
-        <div className="spinner">💚</div>
-        <style jsx>{`
-          .loading { display: flex; align-items: center; justify-content: center; height: 100vh; background: #ffffff; }
-          .spinner { font-size: 48px; animation: pulse 1.5s infinite; }
-          @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        `}</style>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#fafafa'
+      }}>
+        <div style={{ fontSize: 32 }}>💚</div>
       </div>
     );
   }
 
+  const showWelcome = messages.length === 0;
+
   return (
-    <div className="container">
-      <header className="header">
-        <div className="header-left">
-          <span className="logo">18</span>
-          <div className="header-text">
-            <span className="app-name">Pattern 18</span>
-            <span className="tagline">Your 24/7 Strategic Partner</span>
-          </div>
-        </div>
-        <div className="header-right">
-          <button 
-            className={`import-badge ${getImportMessage().urgent ? 'urgent' : ''}`}
-            onClick={() => router.push('/evidence/upload')}
-          >
-            📤 {getImportMessage().text}
-          </button>
-          <button className="evidence-badge" onClick={() => router.push('/my-case')}>
-            📁 {evidenceCount}
-          </button>
-        </div>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      background: '#fafafa'
+    }}>
+      {/* Minimal Header */}
+      <header style={{
+        padding: '12px 20px',
+        borderBottom: '1px solid #eee',
+        background: 'white',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <span style={{
+          fontWeight: 700,
+          fontSize: 18,
+          color: '#1a3a2f'
+        }}>
+          Pattern 18
+        </span>
+        <button 
+          onClick={() => router.push('/my-case')}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 14,
+            color: '#666',
+            cursor: 'pointer'
+          }}
+        >
+          My Case →
+        </button>
       </header>
 
-      <div className="content">
-        {showHome ? (
-          <div className="home">
-            <div className="welcome">
-              <div className="heart">💚</div>
-              <h1>Hey, I am glad you are here.</h1>
-              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
-            </div>
+      {/* Chat Area */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '20px',
+        paddingBottom: '100px'
+      }}>
+        {showWelcome ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            textAlign: 'center',
+            padding: '0 20px'
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 20 }}>💚</div>
+            <h1 style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: '#1a3a2f',
+              margin: '0 0 8px 0'
+            }}>
+              Hey, I'm here.
+            </h1>
+            <p style={{
+              fontSize: 16,
+              color: '#666',
+              margin: '0 0 32px 0'
+            }}>
+              What's going on?
+            </p>
 
-            <div className="quick-actions">
-              <h3>WHAT CAN I HELP WITH?</h3>
-              
-              <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
-                <span className="action-icon">📸</span>
-                <div className="action-text">
-                  <span className="action-title">Analyze a screenshot</span>
-                  <span className="action-desc">Upload image of a message</span>
-                </div>
+            {/* Subtle Suggestions */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              width: '100%',
+              maxWidth: 280
+            }}>
+              <button
+                onClick={() => handleSuggestion('upload')}
+                style={{
+                  padding: '14px 20px',
+                  background: 'white',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 12,
+                  fontSize: 15,
+                  color: '#333',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.2s'
+                }}
+              >
+                📸 Just got a message
               </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
-                <span className="action-icon">📄</span>
-                <div className="action-text">
-                  <span className="action-title">Court doc help</span>
-                  <span className="action-desc">Understand, respond, or prepare filings</span>
-                </div>
+              <button
+                onClick={() => handleSuggestion("I have court coming up and need help preparing.")}
+                style={{
+                  padding: '14px 20px',
+                  background: 'white',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 12,
+                  fontSize: 15,
+                  color: '#333',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.2s'
+                }}
+              >
+                ⚖️ Preparing for court
               </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('import')}>
-                <span className="action-icon">📤</span>
-                <div className="action-text">
-                  <span className="action-title">Import message history</span>
-                  <span className="action-desc">Bulk analyze CSV export</span>
-                </div>
-              </button>
-
-              <button className="action-btn" onClick={() => handleQuickAction('moment')}>
-                <span className="action-icon">🌿</span>
-                <div className="action-text">
-                  <span className="action-title">I need a moment</span>
-                  <span className="action-desc">Breathing, grounding, support</span>
-                </div>
+              <button
+                onClick={() => handleSuggestion("I'm feeling overwhelmed and need a moment.")}
+                style={{
+                  padding: '14px 20px',
+                  background: 'white',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 12,
+                  fontSize: 15,
+                  color: '#333',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.2s'
+                }}
+              >
+                🌿 I need a moment
               </button>
             </div>
           </div>
         ) : (
-          <div className="chat">
+          <div style={{ maxWidth: 600, margin: '0 auto' }}>
             {messages.map((msg, i) => (
-              <div key={i} className={`message ${msg.role}`}>
-                {msg.role === 'assistant' && <div className="avatar">18</div>}
-                <div className="message-wrapper">
-                  {renderMessageContent(msg)}
-                  {msg.patterns && msg.patterns.length > 0 && (
-                    <div className="patterns-detected">
-                      {msg.patterns.map((p, j) => (
-                        <span key={j} className="pattern-tag">{p}</span>
-                      ))}
-                    </div>
-                  )}
+              <div 
+                key={i} 
+                style={{
+                  marginBottom: 16,
+                  display: 'flex',
+                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                }}
+              >
+                <div style={{
+                  maxWidth: '85%',
+                  padding: '12px 16px',
+                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  background: msg.role === 'user' ? '#1a3a2f' : 'white',
+                  color: msg.role === 'user' ? 'white' : '#1a3a2f',
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap',
+                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                }}>
+                  {msg.content}
                 </div>
               </div>
             ))}
+            
             {sending && (
-              <div className="message assistant">
-                <div className="avatar">18</div>
-                <div className="message-wrapper">
-                  <div style={{ 
-                    padding: '12px 16px', 
-                    background: '#f7f7f8', 
-                    borderRadius: '4px 18px 18px 18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10
-                  }}>
-                    <div style={{
-                      width: 16,
-                      height: 16,
-                      border: '2px solid #e5e7eb',
-                      borderTopColor: '#059669',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }} />
-                    <span style={{ color: '#4b5563', fontSize: 14 }}>
-                      {(hasImage ? imageProgressMessages : progressMessages)[progressIndex]}
-                    </span>
-                  </div>
+              <div style={{
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'flex-start'
+              }}>
+                <div style={{
+                  padding: '12px 16px',
+                  borderRadius: '18px 18px 18px 4px',
+                  background: 'white',
+                  color: '#999',
+                  fontSize: 15,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                }}>
+                  ...
                 </div>
               </div>
             )}
+            
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
-      {/* Save Evidence Button */}
-      {messages.length > 0 && (messages[messages.length - 1]?.patterns?.length ?? 0) > 0 && !showHome && (
-        <button className="save-evidence-btn" onClick={handleSaveEvidence}>
-          💾 Save to Evidence ({messages[messages.length - 1]?.patterns?.length} patterns)
-        </button>
-      )}
-
-      {showSenderModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Who sent this message?</h3>
-            <p>This helps me give you the right support.</p>
-            
-            <button className="modal-btn coparent" onClick={() => handleSenderChoice('coparent')}>
-              <span>🔴</span>
-              <div>
-                <strong>From my co-parent</strong>
-                <span>Analyze for patterns & help me respond</span>
-              </div>
-            </button>
-            
-            <button className="modal-btn me" onClick={() => handleSenderChoice('me')}>
-              <span>🟢</span>
-              <div>
-                <strong>My message (draft)</strong>
-                <span>Review before I send it</span>
-              </div>
-            </button>
-            
-            <button className="modal-btn other" onClick={() => handleSenderChoice('other')}>
-              <span>⚪</span>
-              <div>
-                <strong>Something else</strong>
-                <span>Just help me understand it</span>
-              </div>
-            </button>
-            
-            <button className="modal-cancel" onClick={() => {
-              setShowSenderModal(false);
-              setPendingFile(null);
+      {/* Save to Evidence - Only shows when patterns detected */}
+      {detectedPatterns.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 130,
+          left: 20,
+          right: 20,
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={handleSaveEvidence}
+            style={{
+              padding: '10px 20px',
+              background: '#1a3a2f',
+              color: 'white',
+              border: 'none',
+              borderRadius: 20,
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            Save to evidence
+            <span style={{
+              background: 'rgba(255,255,255,0.2)',
+              padding: '2px 8px',
+              borderRadius: 10,
+              fontSize: 12
             }}>
-              Cancel
-            </button>
-          </div>
+              {detectedPatterns.length} {detectedPatterns.length === 1 ? 'pattern' : 'patterns'}
+            </span>
+          </button>
         </div>
       )}
 
-      <div className="input-area">
-        <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
-          📎
-        </button>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="What's going on?"
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          disabled={sending}
-        />
-        <button 
-          className="send-btn" 
-          onClick={() => handleSend()}
-          disabled={sending || !input.trim()}
-        >
-          ➤
-        </button>
+      {/* Input Area */}
+      <div style={{
+        position: 'fixed',
+        bottom: 70,
+        left: 0,
+        right: 0,
+        padding: '12px 16px',
+        background: 'white',
+        borderTop: '1px solid #eee'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          maxWidth: 600,
+          margin: '0 auto'
+        }}>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              border: 'none',
+              background: '#f5f5f5',
+              fontSize: 18,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            +
+          </button>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="What's happening?"
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            disabled={sending}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              border: '1px solid #e0e0e0',
+              borderRadius: 24,
+              fontSize: 16,
+              outline: 'none'
+            }}
+          />
+          <button 
+            onClick={() => handleSend()}
+            disabled={sending || !input.trim()}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              border: 'none',
+              background: input.trim() ? '#1a3a2f' : '#e0e0e0',
+              color: 'white',
+              fontSize: 16,
+              cursor: input.trim() ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            ↑
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -643,441 +522,6 @@ export default function CoachPage() {
       </div>
 
       <BottomNav active="coach" />
-
-      <style jsx>{`
-        .container {
-          min-height: 100vh;
-          background: #ffffff;
-          display: flex;
-          flex-direction: column;
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 20px;
-          background: #1a3a2f;
-          color: white;
-        }
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .logo {
-          background: white;
-          color: #1a3a2f;
-          font-weight: 800;
-          padding: 6px 10px;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-        .header-text {
-          display: flex;
-          flex-direction: column;
-        }
-        .app-name {
-          font-weight: 700;
-          font-size: 16px;
-        }
-        .tagline {
-          font-size: 11px;
-          opacity: 0.8;
-        }
-        .evidence-badge {
-          background: rgba(255,255,255,0.15);
-          border: none;
-          padding: 8px 12px;
-          border-radius: 20px;
-          color: white;
-          font-size: 14px;
-          cursor: pointer;
-        }
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .import-badge {
-          background: rgba(255,255,255,0.15);
-          border: none;
-          padding: 6px 12px;
-          border-radius: 16px;
-          color: rgba(255,255,255,0.9);
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .import-badge.urgent {
-          background: #f59e0b;
-          color: white;
-          animation: pulse-urgent 2s infinite;
-        }
-        @keyframes pulse-urgent {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .content {
-          flex: 1;
-          overflow-y: auto;
-          padding-bottom: 140px;
-          background: #ffffff;
-        }
-        .home {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-        .welcome {
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .heart {
-          font-size: 48px;
-          margin-bottom: 16px;
-        }
-        .welcome h1 {
-          font-size: 24px;
-          color: #1a3a2f;
-          margin: 0 0 12px 0;
-        }
-        .welcome p {
-          color: #4b5563;
-          line-height: 1.5;
-          margin: 0;
-        }
-        .quick-actions {
-          background: #f9fafb;
-          border-radius: 16px;
-          padding: 20px;
-          border: 1px solid #e5e7eb;
-        }
-        .quick-actions h3 {
-          text-align: center;
-          font-size: 12px;
-          letter-spacing: 1px;
-          color: #6b7280;
-          margin: 0 0 16px 0;
-        }
-        .action-btn {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          width: 100%;
-          padding: 16px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          cursor: pointer;
-          text-align: left;
-          margin-bottom: 12px;
-          transition: all 0.2s;
-        }
-        .action-btn:last-child {
-          margin-bottom: 0;
-        }
-        .action-btn:hover {
-          border-color: #1a3a2f;
-          background: #f9fafb;
-        }
-        .action-btn.primary {
-          background: #f0fdf4;
-          border-color: #1a3a2f;
-        }
-        .action-icon {
-          font-size: 28px;
-        }
-        .action-text {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .action-title {
-          font-weight: 600;
-          color: #1a3a2f;
-        }
-        .action-desc {
-          font-size: 13px;
-          color: #9ca3af;
-        }
-        .chat {
-          max-width: 700px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-        .message {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 24px;
-        }
-        .message.user {
-          flex-direction: row-reverse;
-        }
-        .avatar {
-          width: 32px;
-          height: 32px;
-          background: #1a3a2f;
-          color: white;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 800;
-          flex-shrink: 0;
-        }
-        .message-wrapper {
-          max-width: 85%;
-        }
-        .message.user .message-content {
-          background: #1a3a2f;
-          color: white;
-          padding: 12px 16px;
-          border-radius: 18px 18px 4px 18px;
-        }
-        .message.assistant .message-content {
-          background: #f7f7f8;
-          color: #1a1a1a;
-          padding: 20px;
-          border-radius: 4px 18px 18px 18px;
-          font-size: 15px;
-          line-height: 1.7;
-        }
-        .message.assistant .message-content :global(p) {
-          margin: 0 0 16px 0;
-        }
-        .message.assistant .message-content :global(p:last-child) {
-          margin-bottom: 0;
-        }
-        .message.assistant .message-content :global(ul) {
-          margin: 12px 0;
-          padding-left: 20px;
-        }
-        .message.assistant .message-content :global(li) {
-          margin-bottom: 8px;
-          line-height: 1.6;
-        }
-        .message.assistant .message-content :global(blockquote) {
-          background: #e8f5e9;
-          border-left: 3px solid #1a3a2f;
-          padding: 14px 18px;
-          margin: 16px 0;
-          border-radius: 0 8px 8px 0;
-          font-style: italic;
-          color: #1a3a2f;
-        }
-        .message.assistant .message-content :global(strong) {
-          color: #1a3a2f;
-          font-weight: 600;
-        }
-        .patterns-detected {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 12px;
-        }
-        .pattern-tag {
-          background: #fef3c7;
-          color: #92400e;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .copy-options {
-          margin-top: 16px;
-          padding: 16px;
-          background: #ffffff;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-        }
-        .copy-label {
-          font-size: 11px;
-          font-weight: 700;
-          color: #059669;
-          letter-spacing: 0.5px;
-          margin-bottom: 12px;
-        }
-        .copy-btn {
-          display: block;
-          width: 100%;
-          padding: 14px 16px;
-          margin-bottom: 10px;
-          background: #f9fafb;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          text-align: left;
-          cursor: pointer;
-          font-size: 14px;
-          color: #374151;
-          transition: all 0.2s;
-          line-height: 1.4;
-        }
-        .copy-btn:last-child {
-          margin-bottom: 0;
-        }
-        .copy-btn:hover {
-          background: #f0fdf4;
-          border-color: #059669;
-        }
-        .copy-btn.copied {
-          background: #059669;
-          color: white;
-          border-color: #059669;
-        }
-        .save-evidence-btn {
-          position: fixed;
-          bottom: 135px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #059669;
-          color: white;
-          border: none;
-          padding: 14px 24px;
-          border-radius: 24px;
-          font-weight: 600;
-          font-size: 15px;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          z-index: 50;
-        }
-        .save-evidence-btn:hover {
-          background: #047857;
-        }
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 200;
-          padding: 20px;
-        }
-        .modal {
-          background: white;
-          border-radius: 16px;
-          padding: 24px;
-          max-width: 360px;
-          width: 100%;
-        }
-        .modal h3 {
-          margin: 0 0 8px 0;
-          font-size: 20px;
-          color: #1a3a2f;
-        }
-        .modal p {
-          margin: 0 0 20px 0;
-          color: #6b7280;
-          font-size: 14px;
-        }
-        .modal-btn {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          width: 100%;
-          padding: 14px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          cursor: pointer;
-          text-align: left;
-          margin-bottom: 10px;
-          transition: all 0.2s;
-        }
-        .modal-btn:hover {
-          border-color: #1a3a2f;
-          background: #f9fafb;
-        }
-        .modal-btn span:first-child {
-          font-size: 24px;
-        }
-        .modal-btn div {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .modal-btn strong {
-          color: #1a3a2f;
-          font-size: 15px;
-        }
-        .modal-btn div span {
-          font-size: 12px;
-          color: #9ca3af;
-        }
-        .modal-btn.coparent:hover {
-          border-color: #dc2626;
-          background: #fef2f2;
-        }
-        .modal-btn.me:hover {
-          border-color: #059669;
-          background: #f0fdf4;
-        }
-        .modal-cancel {
-          width: 100%;
-          padding: 12px;
-          background: none;
-          border: none;
-          color: #6b7280;
-          cursor: pointer;
-          font-size: 14px;
-          margin-top: 8px;
-        }
-        .modal-cancel:hover {
-          color: #1a3a2f;
-        }
-        .input-area {
-          position: fixed;
-          bottom: 70px;
-          left: 0;
-          right: 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          background: white;
-          border-top: 1px solid #e5e7eb;
-        }
-        .attach-btn {
-          background: #f3f4f6;
-          border: none;
-          width: 44px;
-          height: 44px;
-          border-radius: 22px;
-          font-size: 20px;
-          cursor: pointer;
-        }
-        .input-area input[type="text"] {
-          flex: 1;
-          padding: 12px 16px;
-          border: 1px solid #e5e7eb;
-          border-radius: 24px;
-          font-size: 16px;
-          outline: none;
-          background: #f9fafb;
-        }
-        .input-area input[type="text"]:focus {
-          border-color: #1a3a2f;
-          background: white;
-        }
-        .send-btn {
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          width: 44px;
-          height: 44px;
-          border-radius: 22px;
-          font-size: 18px;
-          cursor: pointer;
-        }
-        .send-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
     </div>
   );
 }
