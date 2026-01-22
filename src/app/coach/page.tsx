@@ -261,26 +261,32 @@ export default function CoachPage() {
     if (!lastUserMsg) return;
 
     try {
-      let screenshotUrl = null;
+      let screenshotPath = null;
       
       // Upload screenshot if we have one
       if (lastFile && lastFile.type.startsWith('image/')) {
         const fileName = `${user.id}/${Date.now()}-${lastFile.name}`;
+        console.log('Uploading screenshot:', fileName);
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('evidence-screenshots')
           .upload(fileName, lastFile);
         
-        if (!uploadError && uploadData) {
-          // Store the path, not a public URL - we'll generate signed URLs when needed
-          screenshotUrl = fileName;
+        if (uploadError) {
+          console.error('Screenshot upload failed:', uploadError);
+        } else if (uploadData) {
+          console.log('Screenshot uploaded:', uploadData.path);
+          screenshotPath = uploadData.path;
         }
+      } else {
+        console.log('No file to upload. lastFile:', lastFile);
       }
 
       const primaryPattern = detectedPatterns[0];
       const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
       
       // Save with all the useful data
-      await supabase.from('incidents').insert({
+      const insertData = {
         user_id: user.id,
         title: primaryPattern,
         // Use extracted message if available, otherwise user's text
@@ -292,10 +298,14 @@ export default function CoachPage() {
         ) ? 'high' : 'medium',
         incident_date: new Date().toISOString(),
         // New fields for richer evidence
-        screenshot_path: screenshotUrl,
+        screenshot_path: screenshotPath,
         ai_response: lastAssistantMsg?.content || null,
         source: lastFile ? 'screenshot' : 'text',
-      });
+      };
+      
+      console.log('Saving incident:', insertData);
+      
+      await supabase.from('incidents').insert(insertData);
 
       setSaved(true);
       setEvidenceCount(prev => prev + 1);

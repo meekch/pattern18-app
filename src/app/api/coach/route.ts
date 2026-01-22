@@ -57,9 +57,9 @@ Why this works:
 • [3-5 words]
 • [3-5 words]
 
-If you want a shorter version or one that fully disengages, say the word.
+If you want shorter or to fully disengage, say the word.
 
-[If they have history, add: "Save this and you'll have [X] documented instances of [pattern]."]
+[Cumulative evidence note if applicable]
 
 WHEN THEY ASK FOR "SHORTER":
 
@@ -73,6 +73,7 @@ CRITICAL RULES:
 - FIRST LINE: Just "This is [pattern]." Nothing else.
 - Response in quotation marks
 - EXACTLY 3 bullets, each 3-5 words
+- ALWAYS include "If you want shorter or to fully disengage, say the word." before cumulative note
 - NEVER invent details (dates, names, specifics you don't know)
 - Under 80 words (not counting cumulative evidence note)
 - ALWAYS mention their cumulative count when they have prior evidence of that pattern
