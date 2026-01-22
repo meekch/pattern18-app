@@ -23,6 +23,8 @@ export default function CoachPage() {
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
+  const [extractedMessage, setExtractedMessage] = useState<string | null>(null);
+  const [lastFile, setLastFile] = useState<File | null>(null);
   const [saved, setSaved] = useState(false);
   const [hasImage, setHasImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -77,8 +79,10 @@ export default function CoachPage() {
     setSending(true);
     setInput('');
     setDetectedPatterns([]);
+    setExtractedMessage(null);
     setSaved(false);
     setHasImage(!!file);
+    if (file) setLastFile(file);
 
     // Create image URL for display if file is an image
     let imageUrl: string | undefined;
@@ -137,15 +141,22 @@ export default function CoachPage() {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
                 assistantContent += data.content;
+                // Remove [EXTRACTED MESSAGE] tags from display
+                const cleanContent = assistantContent
+                  .replace(/\[EXTRACTED MESSAGE\][\s\S]*?\[\/EXTRACTED MESSAGE\]\s*/gi, '')
+                  .trim();
                 setMessages(prev => {
                   const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = assistantContent;
+                  newMessages[newMessages.length - 1].content = cleanContent;
                   return newMessages;
                 });
               }
               if (data.patterns) {
                 patterns = data.patterns;
                 setDetectedPatterns(patterns);
+              }
+              if (data.extractedMessage) {
+                setExtractedMessage(data.extractedMessage);
               }
             } catch (e) {}
           }
@@ -190,30 +201,62 @@ export default function CoachPage() {
     if (messages.length < 2 || !detectedPatterns.length) return;
 
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
     if (!lastUserMsg) return;
 
     try {
+      let screenshotUrl = null;
+      
+      // Upload screenshot if we have one
+      if (lastFile && lastFile.type.startsWith('image/')) {
+        const fileName = `${user.id}/${Date.now()}-${lastFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('evidence-screenshots')
+          .upload(fileName, lastFile);
+        
+        if (!uploadError && uploadData) {
+          // Store the path, not a public URL - we'll generate signed URLs when needed
+          screenshotUrl = fileName;
+        }
+      }
+
       const primaryPattern = detectedPatterns[0];
       const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
       
+      // Save with all the useful data
       await supabase.from('incidents').insert({
         user_id: user.id,
         title: primaryPattern,
-        coparent_message: lastUserMsg.content,
+        // Use extracted message if available, otherwise user's text
+        coparent_message: extractedMessage || lastUserMsg.content || '',
         category: categoryKey,
         patterns: detectedPatterns,
         severity: detectedPatterns.some(p => 
           ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
         ) ? 'high' : 'medium',
         incident_date: new Date().toISOString(),
+        // New fields for richer evidence
+        screenshot_path: screenshotUrl,
+        ai_response: lastAssistantMsg?.content || null,
+        source: lastFile ? 'screenshot' : 'text',
       });
 
       setSaved(true);
       setEvidenceCount(prev => prev + 1);
+      setLastFile(null);
+      
+      // Update pattern counts locally
+      const newCounts = { ...patternCounts };
+      detectedPatterns.forEach(p => {
+        const key = p.toLowerCase().replace(/[\s\/]+/g, '_');
+        newCounts[key] = (newCounts[key] || 0) + 1;
+      });
+      setPatternCounts(newCounts);
       
       // Reset after 3 seconds
       setTimeout(() => {
         setDetectedPatterns([]);
+        setExtractedMessage(null);
         setSaved(false);
       }, 3000);
     } catch (error) {
