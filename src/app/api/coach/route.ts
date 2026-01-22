@@ -38,7 +38,13 @@ HOW TO BE:
 
 WHEN THEY SHARE A MESSAGE FROM THEIR CO-PARENT:
 
+If they uploaded a screenshot, FIRST extract the co-parent's exact message text. This is critical for evidence.
+
 Format your response like this:
+
+[EXTRACTED MESSAGE]
+"[The exact text from the co-parent's message - copy it word for word from the screenshot]"
+[/EXTRACTED MESSAGE]
 
 This is [pattern name].
 
@@ -227,8 +233,14 @@ export async function POST(req: NextRequest) {
           // AND the coach identified patterns in its response
           if (isAnalyzingMessage) {
             const patterns = extractPatterns(fullResponse);
-            if (patterns.length > 0) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
+            const extractedMessage = extractCoparentMessage(fullResponse);
+            
+            const metadata: any = {};
+            if (patterns.length > 0) metadata.patterns = patterns;
+            if (extractedMessage) metadata.extractedMessage = extractedMessage;
+            
+            if (Object.keys(metadata).length > 0) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`));
             }
           }
 
@@ -363,4 +375,20 @@ function extractPatterns(text: string): string[] {
   }
 
   return found.slice(0, 5);
+}
+
+function extractCoparentMessage(text: string): string | null {
+  // Look for message between [EXTRACTED MESSAGE] tags
+  const match = text.match(/\[EXTRACTED MESSAGE\]\s*"?([^"]*)"?\s*\[\/EXTRACTED MESSAGE\]/i);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  
+  // Fallback: look for quoted text after "exact message" or similar
+  const fallbackMatch = text.match(/(?:exact message|co-parent (?:said|wrote|sent))[\s:]*"([^"]+)"/i);
+  if (fallbackMatch && fallbackMatch[1]) {
+    return fallbackMatch[1].trim();
+  }
+  
+  return null;
 }

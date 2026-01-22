@@ -197,6 +197,62 @@ export default function CoachPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  
+  const renderMessageContent = (content: string) => {
+    // Find the quoted response (text between quotes after "Here is a court-safe response")
+    const parts = content.split(/("[\s\S]*?")/g);
+    
+    return parts.map((part, i) => {
+      // Check if this is a quoted response (starts and ends with quotes, more than 20 chars)
+      if (part.startsWith('"') && part.endsWith('"') && part.length > 20) {
+        const quoteText = part.slice(1, -1); // Remove quotes
+        return (
+          <div key={i} style={{
+            background: '#f0f7f4',
+            border: '2px solid #1a3a2f',
+            borderRadius: 12,
+            padding: 16,
+            margin: '12px 0',
+            position: 'relative'
+          }}>
+            <div style={{ 
+              fontSize: 15, 
+              lineHeight: 1.6,
+              color: '#1a3a2f',
+              paddingRight: 50
+            }}>
+              {quoteText}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(quoteText);
+                setCopiedIndex(i);
+                setTimeout(() => setCopiedIndex(null), 2000);
+              }}
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                background: copiedIndex === i ? '#059669' : '#1a3a2f',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                padding: '4px 10px',
+                fontSize: 12,
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+            >
+              {copiedIndex === i ? '✓' : 'Copy'}
+            </button>
+          </div>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   const handleSaveEvidence = async () => {
     if (messages.length < 2 || !detectedPatterns.length) return;
 
@@ -479,7 +535,7 @@ export default function CoachPage() {
                       whiteSpace: 'pre-wrap',
                       boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
                     }}>
-                      {msg.content}
+                      {msg.role === 'assistant' ? renderMessageContent(msg.content) : msg.content}
                     </div>
                   )}
                 </div>
