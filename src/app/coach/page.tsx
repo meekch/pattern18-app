@@ -94,7 +94,11 @@ export default function CoachPage() {
     try {
       const formData = new FormData();
       formData.append('message', text);
-      formData.append('history', JSON.stringify(messages));
+      formData.append('history', JSON.stringify(
+        messages
+          .filter(m => m.content && m.content.trim())
+          .map(m => ({ role: m.role, content: m.content }))
+      ));
       if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
@@ -154,9 +158,10 @@ export default function CoachPage() {
 
     } catch (error) {
       console.error('Error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, something went wrong. Please try again.' 
+        content: `Something went wrong: ${errorMsg}. Try refreshing the page.`
       }]);
     } finally {
       setSending(false);

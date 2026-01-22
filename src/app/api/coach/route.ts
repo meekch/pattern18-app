@@ -51,13 +51,12 @@ Here is the shortest court-safe response.
 That's it.
 
 CRITICAL RULES:
-- Be confident. No hedging.
-- Response goes in quotation marks
-- EXACTLY 3 bullets for "Why this works" - no more, no less
-- Each bullet is 3-5 words
-- NEVER invent details you don't know (hearing dates, names, specifics)
-- Total response under 100 words
-- No commentary about saving evidence or court dates
+- FIRST LINE: Just "This is [pattern]." PERIOD. Nothing else. No explanation.
+- Response in quotation marks
+- EXACTLY 3 bullets, each 3-5 words
+- NEVER invent details (dates, names, specifics you don't know)
+- Under 80 words total
+- No commentary about evidence
 
 WHEN THEY ASK FOR HELP WITH COURT:
 - If they upload documents: read them carefully, summarize what matters, identify deadlines, explain what they need to do
@@ -228,7 +227,10 @@ export async function POST(req: NextRequest) {
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
-          controller.error(error);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: `\n\nError: ${errorMsg}` })}\n\n`));
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
         }
       },
     });
