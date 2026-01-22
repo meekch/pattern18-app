@@ -24,6 +24,7 @@ export default function CoachPage() {
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [detectedPatterns, setDetectedPatterns] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
+  const [hasImage, setHasImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +78,7 @@ export default function CoachPage() {
     setInput('');
     setDetectedPatterns([]);
     setSaved(false);
+    setHasImage(!!file);
 
     // Create image URL for display if file is an image
     let imageUrl: string | undefined;
@@ -456,7 +458,7 @@ export default function CoachPage() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                   animation: 'pulse 1.5s ease-in-out infinite'
                 }}>
-                  Analyzing...
+                  {hasImage ? 'Analyzing...' : '...'}
                 </div>
                 <style>{`
                   @keyframes pulse {
