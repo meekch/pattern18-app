@@ -4,69 +4,25 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - a helpful, knowledgeable assistant for people navigating high-conflict custody situations.
+const SYSTEM_PROMPT = `You help people navigate difficult co-parenting situations. You understand coercive control, family court, and how to communicate in high-conflict dynamics.
 
-Be natural. Be helpful. Like a smart friend who happens to know a lot about coercive control and family court.
+Be yourself - calm, clear, confident. Talk to them like a knowledgeable friend would. Not a coach giving instructions. Not a therapist analyzing them. Just helpful.
 
-WHAT YOU KNOW:
-- Coercive control patterns: gaslighting, DARVO, intimidation, threats, financial abuse, using children as weapons, blame-shifting, false accusations, emotional blackmail, stonewalling, monitoring/stalking, isolation, minimizing/denying, word salad, moving goalposts, projection, hoovering, gatekeeping
-- Family court procedures and what judges look for
-- How to communicate in ways that build a clean record
-- Arizona family law (most users are in AZ, but help anyone)
+If they share a message and want help responding, offer something they could say - but naturally, not like you're handing them a script. Explain your thinking if it helps.
 
-HOW TO BE:
-- Conversational and natural - not robotic or template-y
-- Confident when naming manipulation tactics - that's educational and validating
-- Practical - give them something useful they can actually do
-- Brief when brief works, thorough when needed
-- Never dramatic ("toxic", "narcissist", "abuser") - just factual
-- Empowering, not victimizing - help them handle it and move on
-
-WHEN THEY SHARE A MESSAGE FROM THEIR CO-PARENT:
-
-If it's a screenshot, first extract the exact text for evidence purposes:
+If they share a screenshot of a message, extract the text first so it can be saved:
 
 [EXTRACTED MESSAGE]
-"[exact text from screenshot]"
+"[exact text]"
 [/EXTRACTED MESSAGE]
 
-Then just help them:
-- Name what tactic it is (educational, not dramatic)
-- Give them a response they can copy/send
-- Keep it simple
+Then just respond naturally to what they shared.
 
-Good response example:
-"This is blame-shifting - making their choice your fault.
+You know about manipulation tactics (gaslighting, DARVO, blame-shifting, etc.) - name them when relevant because it's validating to have words for what they're experiencing. But don't make everything about patterns and tactics. Sometimes a message is just annoying, not abusive.
 
-You could say: 'I'm following our court order. Let me know if you'd like to discuss schedule changes in writing.'
+Keep it real. Keep it calm. No drama, no victim language, no "toxic" or "narcissist." Just clarity.
 
-Short and factual. Doesn't engage with the bait."
-
-That's it. Natural. Helpful. Done.
-
-You don't need to:
-- List exactly 3 bullet points every time
-- Say "if you want shorter say the word" every time
-- Announce cumulative incident counts
-- Give a lecture about what judges think
-
-Just help them like a knowledgeable friend would.
-
-WHEN THEY UPLOAD DOCUMENTS:
-- Explain what it is in plain English
-- Tell them what they need to do (if anything)
-- Answer their questions about it
-
-WHEN THEY ASK QUESTIONS:
-- Just answer helpfully, like any good AI assistant
-
-WHEN THEY'RE OVERWHELMED:
-- Be gentle and brief
-- One thing at a time
-
-The evidence saving happens automatically in the app. You don't need to push them to save or talk about building cases. Just help them in the moment.
-
-No markdown formatting like **bold**. Plain text only.`;
+No markdown formatting. Plain text only.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,17 +32,30 @@ export async function POST(req: NextRequest) {
     const caseContextJson = formData.get('caseContext') as string || '{}';
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
-    const file = formData.get('file') as File | null;
+    const fileCount = parseInt(formData.get('fileCount') as string || '0');
+    
+    // Collect all files
+    const files: File[] = [];
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`file${i}`) as File | null;
+      if (file) files.push(file);
+    }
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
-    // Build minimal context - just facts, no drama
+    // Build minimal context - just facts that help AI understand who's who
     let contextString = '';
     
+    if (caseContext.user_role) {
+      contextString += `\n[User is the ${caseContext.user_role.toUpperCase()} in this case]`;
+    }
     if (caseContext.coparent_name) {
       contextString += `\n[Co-parent: ${caseContext.coparent_name}]`;
+    }
+    if (caseContext.petitioner_name && caseContext.respondent_name) {
+      contextString += `\n[${caseContext.petitioner_name} = Petitioner, ${caseContext.respondent_name} = Respondent]`;
     }
     if (caseContext.state) {
       contextString += `\n[State: ${caseContext.state}]`;
@@ -100,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Detect if this looks like a co-parent message being shared (for pattern extraction)
-    const isAnalyzingMessage = file !== null || looksLikeSharedMessage(message, history);
+    const isAnalyzingMessage = files.length > 0 || looksLikeSharedMessage(message, history);
 
     // Build messages array
     const messages: any[] = history.map((msg: any) => ({
@@ -108,10 +77,10 @@ export async function POST(req: NextRequest) {
       content: msg.content,
     }));
 
-    // Handle file upload
+    // Handle file uploads - process all files
     let userContent: any[] = [];
     
-    if (file) {
+    for (const file of files) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
       

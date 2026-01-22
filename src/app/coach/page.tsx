@@ -72,27 +72,38 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (messageText?: string, file?: File) => {
+  const handleSend = async (messageText?: string, files?: File | File[]) => {
     const text = messageText || input;
-    if (!text.trim() && !file) return;
+    const fileArray = files ? (Array.isArray(files) ? files : [files]) : [];
+    if (!text.trim() && fileArray.length === 0) return;
 
     setSending(true);
     setInput('');
     setDetectedPatterns([]);
     setExtractedMessage(null);
     setSaved(false);
-    setHasImage(!!file);
-    if (file) setLastFile(file);
+    setHasImage(fileArray.some(f => f.type.startsWith('image/')));
+    if (fileArray.length > 0) setLastFile(fileArray[0]); // Save first file for evidence
 
-    // Create image URL for display if file is an image
+    // Create image URL for display if first file is an image
     let imageUrl: string | undefined;
-    if (file && file.type.startsWith('image/')) {
-      imageUrl = URL.createObjectURL(file);
+    if (fileArray.length > 0 && fileArray[0].type.startsWith('image/')) {
+      imageUrl = URL.createObjectURL(fileArray[0]);
+    }
+
+    // Build display text for user message
+    let displayText = text;
+    if (!displayText && fileArray.length > 0) {
+      if (fileArray.length === 1) {
+        displayText = `[Uploaded: ${fileArray[0].name}]`;
+      } else {
+        displayText = `[Uploaded ${fileArray.length} documents]`;
+      }
     }
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text,
+      content: displayText,
       imageUrl
     };
     setMessages(prev => [...prev, userMessage]);
@@ -109,9 +120,11 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (file) {
-        formData.append('file', file);
-      }
+      // Append all files
+      fileArray.forEach((file, index) => {
+        formData.append(`file${index}`, file);
+      });
+      formData.append('fileCount', String(fileArray.length));
 
       const response = await fetch('/api/coach', {
         method: 'POST',
@@ -184,18 +197,33 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
-    if (file.type === 'application/pdf') {
-      await handleSend('Please help me understand this document.', file);
-    } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+    // Check for CSV - redirect to bulk import
+    const hasCSV = Array.from(files).some(f => f.type === 'text/csv' || f.name.endsWith('.csv'));
+    if (hasCSV) {
       router.push('/evidence/upload');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
-    } else if (file.type.startsWith('image/')) {
-      await handleSend('', file);
     }
-
+    
+    // Convert to array for processing
+    const fileArray = Array.from(files);
+    
+    // Generate prompt based on what was uploaded
+    let prompt = '';
+    if (fileArray.length === 1) {
+      if (fileArray[0].type === 'application/pdf') {
+        prompt = 'What is this document?';
+      }
+      // For single image, no prompt needed
+    } else {
+      prompt = `I'm uploading ${fileArray.length} documents. Can you help me understand them?`;
+    }
+    
+    await handleSend(prompt, fileArray);
+    
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -407,7 +435,7 @@ export default function CoachPage() {
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
-        paddingBottom: detectedPatterns.length > 0 ? '280px' : '140px'
+        paddingBottom: detectedPatterns.length > 0 ? '300px' : '160px'
       }}>
         {showWelcome ? (
           <div style={{
@@ -647,7 +675,7 @@ export default function CoachPage() {
       {/* Input Area */}
       <div style={{
         position: 'fixed',
-        bottom: 70,
+        bottom: 80,
         left: 0,
         right: 0,
         padding: '12px 16px',
@@ -722,6 +750,7 @@ export default function CoachPage() {
           type="file"
           accept="image/*,.pdf,.csv"
           onChange={handleFileSelect}
+          multiple
           hidden
         />
       </div>
