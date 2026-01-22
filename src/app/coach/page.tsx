@@ -141,9 +141,11 @@ export default function CoachPage() {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
                 assistantContent += data.content;
-                // Remove [EXTRACTED MESSAGE] tags from display
-                const cleanContent = assistantContent
+                // Remove [EXTRACTED MESSAGE] tags from display - handle both complete and partial tags during streaming
+                let cleanContent = assistantContent
                   .replace(/\[EXTRACTED MESSAGE\][\s\S]*?\[\/EXTRACTED MESSAGE\]\s*/gi, '')
+                  .replace(/\[EXTRACTED MESSAGE\][\s\S]*$/gi, '') // Remove incomplete opening tag at end
+                  .replace(/\[\/EXTRACTED MESSAGE\]\s*/gi, '') // Remove any orphaned closing tags
                   .trim();
                 setMessages(prev => {
                   const newMessages = [...prev];
