@@ -8,6 +8,7 @@ import BottomNav from '@/components/BottomNav';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  patterns?: string[];
   files?: { name: string; type: string }[];
 }
 
@@ -18,8 +19,10 @@ export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [showHome, setShowHome] = useState(true);
+  const [caseContext, setCaseContext] = useState<any>(null);
+  const [evidenceCount, setEvidenceCount] = useState(0);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [patterns, setPatterns] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +34,21 @@ export default function CoachPage() {
         return;
       }
       setUser(session.user);
+
+      const { data: caseData } = await supabase
+        .from('case_context')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (caseData) setCaseContext(caseData);
+
+      const { count } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+
+      setEvidenceCount(count || 0);
       setLoading(false);
     };
     init();
@@ -46,42 +64,45 @@ export default function CoachPage() {
     
     if (!text && files.length === 0) return;
 
+    setShowHome(false);
     setSending(true);
     setInput('');
     setPendingFiles([]);
-    setPatterns([]);
 
-    // Build user message with file info
+    // Build display content
+    const fileInfo = files.map(f => ({ name: f.name, type: f.type }));
+    
     const userMessage: Message = { 
       role: 'user', 
-      content: text,
-      files: files.map(f => ({ name: f.name, type: f.type }))
+      content: text || (files.length > 0 ? `Uploaded ${files.length} file${files.length > 1 ? 's' : ''}` : ''),
+      files: fileInfo.length > 0 ? fileInfo : undefined
     };
     setMessages(prev => [...prev, userMessage]);
 
     try {
       const formData = new FormData();
       formData.append('message', text);
-      formData.append('history', JSON.stringify(
-        messages.map(m => ({ role: m.role, content: m.content }))
-      ));
+      formData.append('history', JSON.stringify(messages));
+      if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
       
-      files.forEach((file, index) => {
-        formData.append(`file${index}`, file);
-      });
-      formData.append('fileCount', String(files.length));
+      // Append all files
+      for (const file of files) {
+        formData.append('file', file);
+      }
 
       const response = await fetch('/api/coach', {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to send');
+      if (!response.ok) throw new Error('Failed to send message');
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No reader');
 
       let assistantContent = '';
+      let patterns: string[] = [];
+      
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
@@ -92,7 +113,7 @@ export default function CoachPage() {
         const lines = text.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+          if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
@@ -104,37 +125,64 @@ export default function CoachPage() {
                 });
               }
               if (data.patterns) {
-                setPatterns(data.patterns);
+                patterns = data.patterns;
               }
             } catch (e) {}
           }
         }
       }
 
+      // Update with patterns (for quiet tagging)
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1].patterns = patterns;
+        return newMessages;
+      });
+
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Something went wrong. Please try again.'
+        content: 'Sorry, something went wrong. Please try again.' 
       }]);
     } finally {
       setSending(false);
     }
   };
 
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'screenshot':
+        fileInputRef.current?.click();
+        break;
+      case 'import':
+        router.push('/evidence/upload');
+        break;
+      case 'courtdoc':
+        router.push('/docs');
+        break;
+      case 'moment':
+        router.push('/healing');
+        break;
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
     
     const fileArray = Array.from(files);
     
-    // Check for CSV - redirect
-    if (fileArray.some(f => f.name.endsWith('.csv'))) {
+    // Check for CSV - redirect to bulk import
+    if (fileArray.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
       router.push('/evidence/upload');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
-    
+
+    // Add files to pending (supports multiple)
     setPendingFiles(prev => [...prev, ...fileArray]);
+    
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -142,266 +190,157 @@ export default function CoachPage() {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    if (messages.length < 2) return;
-    
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
-    
-    if (!lastUserMsg || !lastAssistantMsg) return;
-
-    try {
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: patterns[0] || 'Conversation',
-        coparent_message: lastUserMsg.content,
-        category: patterns[0]?.toLowerCase().replace(/[\s\/]+/g, '_') || 'uncategorized',
-        patterns: patterns,
-        severity: 'medium',
-        incident_date: new Date().toISOString(),
-        ai_response: lastAssistantMsg.content,
-        source: 'coach',
-      });
-      
-      alert('Saved to My Case');
-    } catch (error) {
-      console.error('Save error:', error);
-    }
+  const getFileIcon = (type: string) => {
+    if (type === 'application/pdf') return '📄';
+    if (type.startsWith('image/')) return '📷';
+    return '📎';
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f8f9fa' }}>
-        <div style={{ fontSize: 32 }}>💚</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f7f6' }}>
+        <div style={{ fontSize: 48, animation: 'pulse 1.5s infinite' }}>💚</div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8f9fa' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <header style={{
-        padding: '16px 20px',
-        background: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{ fontWeight: 600, fontSize: 18, color: '#1a3a2f' }}>Pattern 18</div>
-        <button 
-          onClick={() => router.push('/my-case')}
-          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14 }}
-        >
-          My Case →
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#1a3a2f', color: 'white' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ background: 'white', color: '#1a3a2f', fontWeight: 800, padding: '6px 10px', borderRadius: 8, fontSize: 14 }}>18</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Pattern 18</span>
+            <span style={{ fontSize: 11, opacity: 0.8 }}>Your 24/7 Strategic Partner</span>
+          </div>
+        </div>
+        <button onClick={() => router.push('/my-case')} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', padding: '8px 14px', borderRadius: 20, color: 'white', fontSize: 14, cursor: 'pointer' }}>
+          📁 {evidenceCount}
         </button>
       </header>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 20, paddingBottom: 160 }}>
-        {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', marginTop: 60, color: '#6b7280' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>💚</div>
-            <p style={{ fontSize: 18, marginBottom: 8 }}>How can I help?</p>
-            <p style={{ fontSize: 14 }}>Upload documents or ask anything</p>
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 160 }}>
+        {showHome ? (
+          <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>💚</div>
+              <h1 style={{ fontSize: 24, color: '#1a3a2f', margin: '0 0 12px 0' }}>Hey, I am glad you are here.</h1>
+              <p style={{ color: '#4b5563', lineHeight: 1.5, margin: 0 }}>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
+            </div>
+
+            <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <h3 style={{ textAlign: 'center', fontSize: 12, letterSpacing: 1, color: '#6b7280', margin: '0 0 16px 0' }}>WHAT CAN I HELP WITH?</h3>
+              
+              {[
+                { id: 'screenshot', icon: '📸', title: 'Analyze a screenshot', desc: 'Upload image of a message', primary: true },
+                { id: 'courtdoc', icon: '📄', title: 'Court doc help', desc: 'Understand, respond, or prepare filings' },
+                { id: 'import', icon: '📤', title: 'Import message history', desc: 'Bulk analyze CSV export' },
+                { id: 'moment', icon: '🌿', title: 'I need a moment', desc: 'Breathing, grounding, support' },
+              ].map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => handleQuickAction(action.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 16, width: '100%', padding: 16,
+                    background: action.primary ? '#f0fdf4' : 'white',
+                    border: `2px solid ${action.primary ? '#1a3a2f' : '#e5e7eb'}`,
+                    borderRadius: 12, cursor: 'pointer', textAlign: 'left', marginBottom: 12
+                  }}
+                >
+                  <span style={{ fontSize: 28 }}>{action.icon}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontWeight: 600, color: '#1a3a2f' }}>{action.title}</span>
+                    <span style={{ fontSize: 13, color: '#9ca3af' }}>{action.desc}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
-          <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
             {messages.map((msg, i) => (
-              <div key={i} style={{ marginBottom: 24 }}>
-                {/* User message */}
-                {msg.role === 'user' && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <div>
-                      {/* Show files if any */}
-                      {msg.files && msg.files.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8, justifyContent: 'flex-end' }}>
-                          {msg.files.map((f, j) => (
-                            <div key={j} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              padding: '8px 12px',
-                              background: '#f3f4f6',
-                              borderRadius: 8,
-                              fontSize: 13
-                            }}>
-                              <span>{f.type.includes('pdf') ? '📄' : '🖼️'}</span>
-                              <span style={{ color: '#374151', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {f.name}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {msg.content && (
-                        <div style={{
-                          background: '#1a3a2f',
-                          color: 'white',
-                          padding: '12px 16px',
-                          borderRadius: 16,
-                          maxWidth: 400,
-                          whiteSpace: 'pre-wrap'
-                        }}>
-                          {msg.content}
-                        </div>
-                      )}
-                    </div>
+              <div key={i} style={{ marginBottom: 16 }}>
+                {/* Show files if present */}
+                {msg.files && msg.files.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8, marginLeft: msg.role === 'user' ? 40 : 0, marginRight: msg.role === 'assistant' ? 40 : 0 }}>
+                    {msg.files.map((f, j) => (
+                      <span key={j} style={{ background: '#f3f4f6', padding: '4px 10px', borderRadius: 8, fontSize: 12, color: '#374151' }}>
+                        {getFileIcon(f.type)} {f.name}
+                      </span>
+                    ))}
                   </div>
                 )}
-                
-                {/* Assistant message */}
-                {msg.role === 'assistant' && (
-                  <div style={{
-                    background: 'white',
-                    padding: '16px 20px',
-                    borderRadius: 16,
-                    border: '1px solid #e5e7eb',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.6,
-                    color: '#1f2937'
-                  }}>
-                    {msg.content || '...'}
-                  </div>
-                )}
+                <div style={{
+                  background: msg.role === 'user' ? '#1a3a2f' : 'white',
+                  color: msg.role === 'user' ? 'white' : '#1a3a2f',
+                  padding: '14px 18px',
+                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  marginLeft: msg.role === 'user' ? 40 : 0,
+                  marginRight: msg.role === 'assistant' ? 40 : 0,
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {msg.content}
+                </div>
               </div>
             ))}
+            {sending && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ background: 'white', color: '#9ca3af', padding: '14px 18px', borderRadius: '18px 18px 18px 4px', marginRight: 40, fontStyle: 'italic' }}>
+                  Thinking...
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
-      {/* Save option - only shows after conversation with detected patterns */}
-      {messages.length >= 2 && patterns.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: 150,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 50
-        }}>
-          <button
-            onClick={handleSave}
-            style={{
-              padding: '10px 20px',
-              background: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: 20,
-              fontSize: 14,
-              color: '#6b7280',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}
+      {/* Input Area */}
+      <div style={{ position: 'fixed', bottom: 70, left: 0, right: 0, background: 'white', borderTop: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
+        {/* File Previews */}
+        {pendingFiles.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            {pendingFiles.map((file, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #1a3a2f', borderRadius: 8, padding: '6px 10px' }}>
+                <span style={{ fontSize: 14 }}>{getFileIcon(file.type)}</span>
+                <span style={{ fontSize: 12, color: '#1a3a2f', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 14, cursor: 'pointer', padding: 0 }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => fileInputRef.current?.click()} style={{ background: '#f3f4f6', border: 'none', width: 44, height: 44, borderRadius: 22, fontSize: 20, cursor: 'pointer', flexShrink: 0 }}>
+            +
+          </button>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={pendingFiles.length > 0 ? "Add a message (optional)..." : "What's going on?"}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            disabled={sending}
+            style={{ flex: 1, padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 24, fontSize: 16, outline: 'none' }}
+          />
+          <button 
+            onClick={handleSend}
+            disabled={sending || (!input.trim() && pendingFiles.length === 0)}
+            style={{ background: '#1a3a2f', color: 'white', border: 'none', width: 44, height: 44, borderRadius: 22, fontSize: 18, cursor: 'pointer', flexShrink: 0, opacity: (sending || (!input.trim() && pendingFiles.length === 0)) ? 0.5 : 1 }}
           >
-            Save to My Case
+            ↑
           </button>
         </div>
-      )}
-
-      {/* Input Area */}
-      <div style={{
-        position: 'fixed',
-        bottom: 70,
-        left: 0,
-        right: 0,
-        background: 'white',
-        borderTop: '1px solid #e5e7eb',
-        padding: 16
-      }}>
-        <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          {/* Pending files */}
-          {pendingFiles.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-              {pendingFiles.map((file, i) => (
-                <div key={i} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  background: '#f3f4f6',
-                  borderRadius: 8,
-                  fontSize: 13
-                }}>
-                  <span>{file.type.includes('pdf') ? '📄' : '🖼️'}</span>
-                  <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {file.name}
-                  </span>
-                  <button 
-                    onClick={() => removeFile(i)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16 }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Input row */}
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                border: '1px solid #e5e7eb',
-                background: 'white',
-                fontSize: 20,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6b7280'
-              }}
-            >
-              +
-            </button>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              placeholder="Ask anything..."
-              disabled={sending}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                border: '1px solid #e5e7eb',
-                borderRadius: 24,
-                fontSize: 16,
-                outline: 'none'
-              }}
-            />
-            <button 
-              onClick={handleSend}
-              disabled={sending || (!input.trim() && pendingFiles.length === 0)}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                border: 'none',
-                background: sending || (!input.trim() && pendingFiles.length === 0) ? '#e5e7eb' : '#1a3a2f',
-                color: 'white',
-                fontSize: 18,
-                cursor: sending ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ↑
-            </button>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            onChange={handleFileSelect}
-            multiple
-            hidden
-          />
-        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          onChange={handleFileSelect}
+          multiple
+          hidden
+        />
       </div>
 
       <BottomNav active="coach" />
