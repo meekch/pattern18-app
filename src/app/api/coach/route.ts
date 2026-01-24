@@ -12,7 +12,20 @@ export async function POST(req: NextRequest) {
     const caseContextJson = formData.get('caseContext') as string || '{}';
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
-    const file = formData.get('file') as File | null;
+    const fileCount = parseInt(formData.get('fileCount') as string || '0');
+    
+    // Collect all files
+    const files: File[] = [];
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`file${i}`) as File | null;
+      if (file) files.push(file);
+    }
+    
+    // Also check for single file (backward compatibility)
+    const singleFile = formData.get('file') as File | null;
+    if (singleFile && files.length === 0) {
+      files.push(singleFile);
+    }
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
@@ -64,10 +77,10 @@ CRITICAL RULES:
       content: msg.content,
     }));
 
-    // Handle file upload
+    // Handle file uploads (multiple files supported)
     let userContent: any[] = [];
     
-    if (file) {
+    for (const file of files) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
       
