@@ -4,66 +4,76 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You help people navigate difficult co-parenting situations. You understand coercive control, family court, and how to communicate in high-conflict dynamics.
-
-Be yourself - calm, clear, confident. Talk to them like a knowledgeable friend would. Not a coach giving instructions. Not a therapist analyzing them. Just helpful.
-
-When they share a screenshot or message, first check if it's clear who sent it. If you can't tell from context, just ask: "Is this something they sent you, or something you're thinking of sending?"
-
-If they share a message FROM their co-parent and want help responding:
-- Offer something they could say - naturally, not like a script
-- Explain your thinking if it helps them understand why
-- Keep responses calm, factual, brief
-
-You know about manipulation tactics (gaslighting, DARVO, blame-shifting, etc.) - name them when relevant because it's validating to have words for what they're experiencing. But don't make everything about patterns and tactics. Sometimes a message is just annoying, not abusive.
-
-When reading documents, just report what they say accurately. Don't assume or guess - read the names and details from the document itself.
-
-Keep it real. Keep it calm. No drama, no victim language, no "toxic" or "narcissist." Just clarity.
-
-No markdown formatting. No bold headers. Plain text only.`;
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const message = formData.get('message') as string || '';
     const historyJson = formData.get('history') as string || '[]';
     const caseContextJson = formData.get('caseContext') as string || '{}';
-    
-    // Get all files (supports multiple)
-    const files: File[] = [];
-    for (const [key, value] of formData.entries()) {
-      if (key === 'file' && value instanceof File) {
-        files.push(value);
-      }
-    }
+    const patternCountsJson = formData.get('patternCounts') as string || '{}';
+    const evidenceCount = formData.get('evidenceCount') as string || '0';
+    const file = formData.get('file') as File | null;
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
+    const patternCounts = JSON.parse(patternCountsJson);
 
-    // Build context
-    let contextString = '';
-    if (caseContext.coparent_name) {
-      contextString += `\n[Co-parent: ${caseContext.coparent_name}]`;
-    }
-    if (caseContext.state) {
-      contextString += `\n[State: ${caseContext.state}]`;
+    // Build system prompt with case context
+    let systemPrompt = `You help people navigate co-parenting and family court situations. Be helpful, warm, and natural.
+
+CRITICAL RULES:
+1. When analyzing a screenshot or message, ALWAYS ASK "Is this from your co-parent or is this your message?" before analyzing. Never assume.
+2. Only identify manipulation patterns in the CO-PARENT's messages, never the user's. The user is the survivor.
+3. If the user shares their own message, help them refine it or confirm it looks good. Never call their message manipulative.
+4. Keep responses conversational. No markdown formatting (no ** or ## or bullet points unless specifically helpful).
+5. Be direct and practical. This person may be reading at 2am with shaking hands.`;
+
+    // Add case context if available
+    if (caseContext.user_role) {
+      const userRole = caseContext.user_role === 'petitioner' ? 'Petitioner' : 'Respondent';
+      const coparentRole = caseContext.user_role === 'petitioner' ? 'Respondent' : 'Petitioner';
+      systemPrompt += `\n\nCASE CONTEXT:
+- The user is the ${userRole} in their case
+- Their co-parent is the ${coparentRole}`;
+      
+      if (caseContext.coparent_name) {
+        systemPrompt += `\n- Co-parent's name or reference: ${caseContext.coparent_name}`;
+      }
+      if (caseContext.state) {
+        systemPrompt += `\n- State: ${caseContext.state}`;
+      }
     }
 
-    // Build messages array from history
+    // Add evidence stats if they have history
+    if (parseInt(evidenceCount) > 0 && Object.keys(patternCounts).length > 0) {
+      const topPatterns = Object.entries(patternCounts)
+        .sort((a: any, b: any) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([pattern, count]) => `${pattern} (${count}x)`)
+        .join(', ');
+      
+      systemPrompt += `\n\nDOCUMENTATION HISTORY:
+- ${evidenceCount} incidents documented so far
+- Most frequent patterns: ${topPatterns}
+- You can reference this when relevant (e.g., "This is consistent with the gaslighting pattern you've documented 12 times")`;
+    }
+
+    // Build messages array
     const messages: any[] = history.map((msg: any) => ({
       role: msg.role,
       content: msg.content,
     }));
 
-    // Handle file uploads (multiple supported)
+    // Handle file upload
     let userContent: any[] = [];
     
-    for (const file of files) {
+    if (file) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
       
-      if (file.type === 'application/pdf') {
+      const isPdf = file.type === 'application/pdf';
+      
+      if (isPdf) {
         userContent.push({
           type: 'document',
           source: {
@@ -72,30 +82,26 @@ export async function POST(req: NextRequest) {
             data: base64,
           },
         });
-      } else if (file.type.startsWith('image/')) {
+      } else {
+        let mediaType = file.type;
+        if (!mediaType.startsWith('image/')) {
+          mediaType = 'image/jpeg';
+        }
         userContent.push({
           type: 'image',
           source: {
             type: 'base64',
-            media_type: file.type,
+            media_type: mediaType,
             data: base64,
           },
         });
       }
     }
 
-    // Add text message
-    let textContent = message || '';
-    if (contextString) {
-      textContent += contextString;
-    }
-    
-    if (textContent || userContent.length === 0) {
-      userContent.push({
-        type: 'text',
-        text: textContent || 'What can you tell me about this?',
-      });
-    }
+    userContent.push({
+      type: 'text',
+      text: message,
+    });
 
     messages.push({
       role: 'user',
@@ -112,7 +118,7 @@ export async function POST(req: NextRequest) {
           const response = await client.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 2000,
-            system: SYSTEM_PROMPT,
+            system: systemPrompt,
             messages: messages,
             stream: true,
           });
@@ -127,7 +133,7 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Extract patterns quietly for tagging (not for display)
+          // Silently extract patterns for evidence tagging (background feature)
           const patterns = extractPatterns(fullResponse);
           if (patterns.length > 0) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
@@ -159,23 +165,52 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Quiet pattern extraction for background tagging
+// Silent pattern extraction for automatic evidence tagging
 function extractPatterns(text: string): string[] {
-  const patterns = [
-    'Gaslighting', 'DARVO', 'Intimidation', 'Threats',
-    'Financial Abuse', 'Using Children as Weapons', 'Blame-Shifting',
-    'False Accusations', 'Emotional Blackmail', 'Stonewalling',
-    'Monitoring', 'Stalking', 'Isolation', 'Minimizing', 'Denying',
-    'Word Salad', 'Moving Goalposts', 'Projection', 'Hoovering', 'Gatekeeping'
+  const coercivePatterns = [
+    'Gaslighting',
+    'DARVO',
+    'Intimidation',
+    'Threats',
+    'Financial Abuse',
+    'Using Children as Weapons',
+    'Blame-Shifting',
+    'False Accusations',
+    'Emotional Blackmail',
+    'Stonewalling',
+    'Monitoring/Stalking',
+    'Isolation Tactics',
+    'Minimizing/Denying',
+    'Word Salad',
+    'Moving Goalposts',
+    'Projection',
+    'Hoovering',
+    'Gatekeeping',
   ];
 
   const found: string[] = [];
   const lowerText = text.toLowerCase();
 
-  for (const pattern of patterns) {
-    if (lowerText.includes(pattern.toLowerCase()) && !found.includes(pattern)) {
-      found.push(pattern);
+  for (const pattern of coercivePatterns) {
+    if (lowerText.includes(pattern.toLowerCase())) {
+      if (!found.includes(pattern)) {
+        found.push(pattern);
+      }
     }
+  }
+
+  // Also catch variations
+  if (lowerText.includes('blame shifting') && !found.includes('Blame-Shifting')) {
+    found.push('Blame-Shifting');
+  }
+  if ((lowerText.includes('monitoring') || lowerText.includes('stalking')) && !found.includes('Monitoring/Stalking')) {
+    found.push('Monitoring/Stalking');
+  }
+  if ((lowerText.includes('minimizing') || lowerText.includes('denying')) && !found.includes('Minimizing/Denying')) {
+    found.push('Minimizing/Denying');
+  }
+  if (lowerText.includes('isolation') && !found.includes('Isolation Tactics')) {
+    found.push('Isolation Tactics');
   }
 
   return found.slice(0, 5);
