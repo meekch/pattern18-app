@@ -32,25 +32,31 @@ export async function POST(req: NextRequest) {
     const patternCounts = JSON.parse(patternCountsJson);
 
     // Build system prompt with case context
-    let systemPrompt = `You help people navigate co-parenting and family court situations. Be helpful, warm, and natural.
+    let systemPrompt = `You help people navigate co-parenting and family court situations.
 
-CRITICAL RULES:
-1. When analyzing a screenshot or message, ALWAYS ASK "Is this from your co-parent or is this your message?" before analyzing. Never assume.
-2. Only identify manipulation patterns in the CO-PARENT's messages, never the user's. The user is the survivor.
-3. If the user shares their own message, help them refine it or confirm it looks good. Never call their message manipulative.
-4. Keep responses conversational. No markdown formatting (no ** or ## or bullet points unless specifically helpful).
-5. Be direct and practical. This person may be reading at 2am with shaking hands.`;
+Be confident, clear, and accurate. Read documents carefully to get the facts right.
+
+Your approach:
+- State what each document IS and what it MEANS for them
+- Identify who filed by reading signatures and content, not assuming
+- Highlight their strengths and current position
+- Give numbered next steps in priority order
+- Ask logical follow-up questions to guide them further
+- Offer specific next actions: "Want me to help you prepare X?" or "Should we practice Y?"
+
+Use short paragraphs, bullets, and bold headers for easy scanning.
+
+For text message screenshots: Ask who sent it before analyzing.`;
 
     // Add case context if available
-    if (caseContext.user_role) {
-      const userRole = caseContext.user_role === 'petitioner' ? 'Petitioner' : 'Respondent';
-      const coparentRole = caseContext.user_role === 'petitioner' ? 'Respondent' : 'Petitioner';
-      systemPrompt += `\n\nCASE CONTEXT:
-- The user is the ${userRole} in their case
-- Their co-parent is the ${coparentRole}`;
-      
+    if (caseContext.user_role || caseContext.coparent_name || caseContext.state) {
+      systemPrompt += `\n\nUser's case context:`;
+      if (caseContext.user_role) {
+        const userRole = caseContext.user_role === 'petitioner' ? 'Petitioner' : 'Respondent';
+        systemPrompt += `\n- User is the ${userRole} (from original case filing)`;
+      }
       if (caseContext.coparent_name) {
-        systemPrompt += `\n- Co-parent's name or reference: ${caseContext.coparent_name}`;
+        systemPrompt += `\n- Co-parent: ${caseContext.coparent_name}`;
       }
       if (caseContext.state) {
         systemPrompt += `\n- State: ${caseContext.state}`;
@@ -58,17 +64,8 @@ CRITICAL RULES:
     }
 
     // Add evidence stats if they have history
-    if (parseInt(evidenceCount) > 0 && Object.keys(patternCounts).length > 0) {
-      const topPatterns = Object.entries(patternCounts)
-        .sort((a: any, b: any) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([pattern, count]) => `${pattern} (${count}x)`)
-        .join(', ');
-      
-      systemPrompt += `\n\nDOCUMENTATION HISTORY:
-- ${evidenceCount} incidents documented so far
-- Most frequent patterns: ${topPatterns}
-- You can reference this when relevant (e.g., "This is consistent with the gaslighting pattern you've documented 12 times")`;
+    if (parseInt(evidenceCount) > 0) {
+      systemPrompt += `\n- ${evidenceCount} incidents documented in their case`;
     }
 
     // Build messages array
