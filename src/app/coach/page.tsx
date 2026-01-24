@@ -245,6 +245,21 @@ export default function CoachPage() {
     }
   };
 
+  // Simple markdown formatter for assistant messages
+  const formatMessage = (text: string): string => {
+    return text
+      // Convert **bold** to <strong>
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // Convert bullet points
+      .replace(/^• /gm, '<br/>• ')
+      .replace(/^- /gm, '<br/>– ')
+      // Convert numbered lists
+      .replace(/^(\d+)\. /gm, '<br/>$1. ')
+      // Convert line breaks
+      .replace(/\n\n/g, '<br/><br/>')
+      .replace(/\n/g, '<br/>');
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -354,7 +369,14 @@ export default function CoachPage() {
                     ))}
                   </div>
                 )}
-                <div className="message-content">{msg.content}</div>
+                {msg.role === 'assistant' ? (
+                  <div 
+                    className="message-content" 
+                    dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} 
+                  />
+                ) : (
+                  <div className="message-content">{msg.content}</div>
+                )}
                 {msg.patterns && msg.patterns.length > 0 && (
                   <div className="patterns-detected">
                     {msg.patterns.map((p, j) => (
@@ -633,7 +655,11 @@ export default function CoachPage() {
           padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
           margin-right: 40px;
-          white-space: pre-wrap;
+          line-height: 1.6;
+        }
+        .message.assistant .message-content strong {
+          font-weight: 600;
+          color: #1a3a2f;
         }
         .patterns-detected {
           display: flex;
