@@ -1,77 +1,94 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 
+const AFFIRMATIONS = [
+  "You are not crazy. What you experienced is real.",
+  "Your body is trying to protect you. This reaction makes sense.",
+  "You don't have to respond right now.",
+  "This feeling will pass. It always does.",
+  "You have survived 100% of your hardest days.",
+  "Safety is available to you right now, in this moment.",
+  "You are allowed to take up space.",
+  "You don't owe anyone an explanation.",
+  "Your peace matters more than their approval.",
+  "One breath at a time.",
+];
+
+const GROUNDING_STEPS = [
+  { count: 5, sense: "SEE", icon: "👀", color: "#a7f3d0" },
+  { count: 4, sense: "TOUCH", icon: "✋", color: "#bae6fd" },
+  { count: 3, sense: "HEAR", icon: "👂", color: "#ddd6fe" },
+  { count: 2, sense: "SMELL", icon: "🌿", color: "#fde68a" },
+  { count: 1, sense: "TASTE", icon: "💧", color: "#fecaca" },
+];
+
 export default function HealingPage() {
   const router = useRouter();
+  const [activeMode, setActiveMode] = useState<'home' | 'breathe' | 'ground' | 'affirm' | 'learn'>('home');
   
-  // Breathing exercise state
-  const [breathingActive, setBreathingActive] = useState(false);
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('inhale');
-  const [breathCount, setBreathCount] = useState(0);
-  const [countdown, setCountdown] = useState(4);
-  
-  // Grounding exercise state
+  // Breathing state - Cyclic Sighing
+  const [breathPhase, setBreathPhase] = useState<'ready' | 'inhale1' | 'inhale2' | 'exhale' | 'rest'>('ready');
+  const [cycleCount, setCycleCount] = useState(0);
+  const [isBreathing, setIsBreathing] = useState(false);
+  const breathTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Grounding state
   const [groundingStep, setGroundingStep] = useState(0);
   const [groundingComplete, setGroundingComplete] = useState(false);
   
-  // Active section
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  // Affirmation state
+  const [affirmationIndex, setAffirmationIndex] = useState(0);
 
-  // Breathing exercise logic
   useEffect(() => {
-    if (!breathingActive) return;
-    
-    const phases: ('inhale' | 'hold' | 'exhale' | 'rest')[] = ['inhale', 'hold', 'exhale', 'rest'];
-    const durations = [4, 4, 4, 2]; // Box breathing with short rest
-    
-    let phaseIndex = 0;
-    let count = durations[0];
-    
-    const interval = setInterval(() => {
-      count--;
-      setCountdown(count);
-      
-      if (count <= 0) {
-        phaseIndex = (phaseIndex + 1) % 4;
-        if (phaseIndex === 0) {
-          setBreathCount(prev => prev + 1);
-        }
-        setBreathPhase(phases[phaseIndex]);
-        count = durations[phaseIndex];
-        setCountdown(count);
-      }
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [breathingActive]);
+    setAffirmationIndex(Math.floor(Math.random() * AFFIRMATIONS.length));
+    return () => {
+      if (breathTimeout.current) clearTimeout(breathTimeout.current);
+    };
+  }, []);
+
+  // Cyclic Sighing - Stanford protocol
+  const runBreathCycle = () => {
+    setBreathPhase('inhale1');
+    breathTimeout.current = setTimeout(() => {
+      setBreathPhase('inhale2');
+      breathTimeout.current = setTimeout(() => {
+        setBreathPhase('exhale');
+        breathTimeout.current = setTimeout(() => {
+          setBreathPhase('rest');
+          setCycleCount(prev => prev + 1);
+          breathTimeout.current = setTimeout(() => {
+            if (isBreathing) runBreathCycle();
+          }, 1500);
+        }, 6000);
+      }, 1500);
+    }, 2500);
+  };
 
   const startBreathing = () => {
-    setBreathingActive(true);
-    setBreathPhase('inhale');
-    setCountdown(4);
-    setBreathCount(0);
+    setIsBreathing(true);
+    setCycleCount(0);
+    runBreathCycle();
   };
 
   const stopBreathing = () => {
-    setBreathingActive(false);
-    setBreathPhase('inhale');
-    setCountdown(4);
+    setIsBreathing(false);
+    setBreathPhase('ready');
+    if (breathTimeout.current) clearTimeout(breathTimeout.current);
   };
 
-  // Grounding steps
-  const groundingSteps = [
-    { count: 5, sense: 'SEE', prompt: 'Name 5 things you can see right now', icon: '👁️' },
-    { count: 4, sense: 'TOUCH', prompt: 'Name 4 things you can physically feel', icon: '✋' },
-    { count: 3, sense: 'HEAR', prompt: 'Name 3 things you can hear', icon: '👂' },
-    { count: 2, sense: 'SMELL', prompt: 'Name 2 things you can smell', icon: '👃' },
-    { count: 1, sense: 'TASTE', prompt: 'Name 1 thing you can taste', icon: '👅' },
-  ];
+  useEffect(() => {
+    if (!isBreathing && breathPhase !== 'ready') setBreathPhase('ready');
+  }, [isBreathing]);
 
-  const advanceGrounding = () => {
-    if (groundingStep < 4) {
+  const nextAffirmation = () => {
+    setAffirmationIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
+  };
+
+  const nextGroundingStep = () => {
+    if (groundingStep < GROUNDING_STEPS.length - 1) {
       setGroundingStep(prev => prev + 1);
     } else {
       setGroundingComplete(true);
@@ -81,818 +98,589 @@ export default function HealingPage() {
   const resetGrounding = () => {
     setGroundingStep(0);
     setGroundingComplete(false);
+    setActiveMode('home');
   };
 
-  // Affirmations for coercive control survivors
-  const affirmations = [
-    { text: "You are not crazy. What you experienced is real.", category: "validation" },
-    { text: "Your nervous system is doing exactly what it's supposed to do.", category: "education" },
-    { text: "You don't have to respond right now. Silence is a valid choice.", category: "boundaries" },
-    { text: "Their chaos does not require your participation.", category: "boundaries" },
-    { text: "You are breaking a cycle. That takes immense courage.", category: "empowerment" },
-    { text: "Your body remembers what your mind tries to forget. That's not weakness.", category: "validation" },
-    { text: "Healing is not linear. Hard days don't erase progress.", category: "healing" },
-    { text: "You are documenting the truth. That matters.", category: "empowerment" },
-    { text: "Your children are watching you choose yourself. That's the lesson.", category: "empowerment" },
-    { text: "The goal is peace, not winning.", category: "wisdom" },
-  ];
+  const getBreathText = () => {
+    switch (breathPhase) {
+      case 'ready': return 'tap to begin';
+      case 'inhale1': return 'breathe in';
+      case 'inhale2': return 'sip more air';
+      case 'exhale': return 'slowly out';
+      case 'rest': return 'rest';
+      default: return '';
+    }
+  };
 
-  const [currentAffirmation, setCurrentAffirmation] = useState(0);
-
-  const nextAffirmation = () => {
-    setCurrentAffirmation((prev) => (prev + 1) % affirmations.length);
+  const getCircleScale = () => {
+    switch (breathPhase) {
+      case 'inhale1': return 1.15;
+      case 'inhale2': return 1.35;
+      case 'exhale': return 1;
+      default: return 1;
+    }
   };
 
   return (
     <div className="container">
-      <header className="header">
-        <button onClick={() => router.back()} className="back-btn">← Back</button>
-        <h1>Healing Space</h1>
-      </header>
-
-      <div className="content">
-        
-        {/* Affirmation Card */}
-        <div className="affirmation-card" onClick={nextAffirmation}>
-          <div className="quote-mark">"</div>
-          <p>{affirmations[currentAffirmation].text}</p>
-          <span className="tap-hint">tap for another</span>
-        </div>
-
-        {/* Why This Matters - Nervous System Education */}
-        <div className="section education">
-          <h2>🧠 Why Your Body Reacts This Way</h2>
-          <div className="education-content">
-            <p className="intro">
-              If you feel your heart race when you see their name, if your stomach drops when a message comes in, if you freeze or can't think straight during conflict... <strong>your nervous system is working exactly as designed.</strong>
-            </p>
-            
-            <div className="nervous-system-box">
-              <h3>Your Nervous System on High Alert</h3>
-              <p>
-                When you've experienced coercive control, your brain learns to scan for danger constantly. This isn't anxiety or weakness. It's your body trying to protect you based on real experiences.
-              </p>
-              
-              <div className="response-types">
-                <div className="response">
-                  <span className="response-icon">⚔️</span>
-                  <div>
-                    <strong>Fight</strong>
-                    <span>Arguing back, defending yourself, the urge to "win"</span>
-                  </div>
-                </div>
-                <div className="response">
-                  <span className="response-icon">🏃</span>
-                  <div>
-                    <strong>Flight</strong>
-                    <span>Avoiding, escaping, wanting to run from the situation</span>
-                  </div>
-                </div>
-                <div className="response">
-                  <span className="response-icon">🧊</span>
-                  <div>
-                    <strong>Freeze</strong>
-                    <span>Shutting down, can't think, feeling paralyzed</span>
-                  </div>
-                </div>
-                <div className="response">
-                  <span className="response-icon">🎭</span>
-                  <div>
-                    <strong>Fawn</strong>
-                    <span>People-pleasing, giving in to keep peace, over-explaining</span>
-                  </div>
-                </div>
-              </div>
-              
-              <p className="key-insight">
-                <strong>The goal isn't to stop these responses.</strong> It's to recognize them, regulate your body first, then choose your response from a calm state.
-              </p>
-            </div>
-            
-            <div className="trauma-info">
-              <h3>Why Documentation Helps Healing</h3>
-              <p>
-                When you document patterns, you're doing two things: building evidence AND validating your own reality. Gaslighting makes you doubt yourself. Seeing the patterns in black and white helps your brain trust what it knows.
-              </p>
-              <p className="highlight">
-                You're not being dramatic. You're being strategic.
-              </p>
+      {/* HOME */}
+      {activeMode === 'home' && (
+        <>
+          <div className="scene">
+            <div className="scene-gradient" />
+            <div className="scene-content">
+              <h1>Take a moment</h1>
+              <p>What do you need right now?</p>
             </div>
           </div>
-        </div>
 
-        {/* The Hardest Part - Moral Injury */}
-        <div className="section moral-injury">
-          <h2>💔 The Hardest Part</h2>
-          <div className="moral-content">
-            <p className="intro">
-              If you feel like the system is forcing you to stay silent about what's really happening - you're not imagining it.
-            </p>
-            
-            <div className="reality-box">
-              <h3>The Unfair Truth</h3>
-              <p>
-                Courts reward restraint, not honesty. They measure structure, not harm. The person who creates chaos often benefits. The person who protects their child gets muted.
-              </p>
-              <p>
-                You're told: don't say "abusive." Don't say "narcissist." Don't say what your child actually feels. But that IS what's happening.
-              </p>
-              <p className="key-line">
-                <strong>This creates moral injury</strong> - the pain of being forced to act against your own values to survive.
-              </p>
-            </div>
-            
-            <div className="reframe-box">
-              <h3>The Reframe</h3>
-              <p className="big-truth">
-                You are not lying. You are translating.
-              </p>
-              <p>
-                You're converting lived reality into the only language the system accepts. That's not betrayal - it's strategy. It's the long game.
-              </p>
-              <p>
-                The truth will show itself through patterns, timelines, and documentation - not forbidden words. That's what Pattern 18 is for.
-              </p>
-            </div>
-            
-            <div className="validation-box">
-              <p>
-                You are not complicit. You are constrained.
-              </p>
-              <p>
-                You are choosing your child over validation. You are choosing outcomes over recognition. That's an ethical burden few people understand.
-              </p>
-              <p className="final-line">
-                <strong>Both things can be true:</strong> The system is wrong AND you are doing what you must to protect your child within it.
-              </p>
-            </div>
+          <div className="tools-container">
+            <button className="tool-btn breathe-btn" onClick={() => setActiveMode('breathe')}>
+              <span className="tool-emoji">🫁</span>
+              <span className="tool-name">Breathe</span>
+              <span className="tool-desc">Reduce stress quickly</span>
+            </button>
+
+            <button className="tool-btn ground-btn" onClick={() => setActiveMode('ground')}>
+              <span className="tool-emoji">🌿</span>
+              <span className="tool-name">Ground</span>
+              <span className="tool-desc">Come back to the present</span>
+            </button>
+
+            <button className="tool-btn affirm-btn" onClick={() => setActiveMode('affirm')}>
+              <span className="tool-emoji">💚</span>
+              <span className="tool-name">Remind Me</span>
+              <span className="tool-desc">Words you need to hear</span>
+            </button>
+
+            <button className="tool-btn learn-btn" onClick={() => setActiveMode('learn')}>
+              <span className="tool-emoji">🧠</span>
+              <span className="tool-name">Why This Helps</span>
+              <span className="tool-desc">Understand your body</span>
+            </button>
           </div>
-        </div>
 
-        {/* Box Breathing Exercise */}
-        <div className="section breathing">
-          <h2>🌿 Box Breathing</h2>
-          <p className="section-desc">
-            This technique activates your parasympathetic nervous system, the "rest and digest" mode that calms your body. Used by Navy SEALs for stress management.
-          </p>
+          <div className="home-footer">
+            <p>You don't have to respond right now.</p>
+          </div>
+        </>
+      )}
+
+      {/* BREATHE - Cyclic Sighing */}
+      {activeMode === 'breathe' && (
+        <div className="fullscreen breathe-screen">
+          <button className="back-btn" onClick={() => { stopBreathing(); setActiveMode('home'); }}>←</button>
           
-          <div className={`breath-circle ${breathingActive ? breathPhase : ''}`}>
-            {breathingActive ? (
-              <>
-                <span className="breath-countdown">{countdown}</span>
-                <span className="breath-text">
-                  {breathPhase === 'inhale' && 'Breathe in'}
-                  {breathPhase === 'hold' && 'Hold'}
-                  {breathPhase === 'exhale' && 'Breathe out'}
-                  {breathPhase === 'rest' && 'Rest'}
-                </span>
-              </>
-            ) : (
-              <span className="breath-text">Ready when you are</span>
+          <div className="breathe-content">
+            <div className="breathe-label">cyclic sighing</div>
+            
+            <div 
+              className={`breath-orb ${isBreathing ? 'active' : ''}`}
+              style={{ transform: `scale(${getCircleScale()})` }}
+              onClick={() => !isBreathing && startBreathing()}
+            >
+              <span className="breath-text">{getBreathText()}</span>
+            </div>
+
+            <div className="breath-guide">
+              {!isBreathing ? (
+                <p>Double inhale through your nose.<br/>Long exhale through your mouth.</p>
+              ) : (
+                <p className="breath-count">{cycleCount} breath{cycleCount !== 1 ? 's' : ''}</p>
+              )}
+            </div>
+
+            {isBreathing && (
+              <button className="done-btn" onClick={stopBreathing}>
+                I feel better
+              </button>
             )}
           </div>
-          
-          {breathingActive && (
-            <p className="breath-counter">Cycles completed: {breathCount}</p>
-          )}
-          
-          <button
-            className={`action-btn ${breathingActive ? 'stop' : ''}`}
-            onClick={breathingActive ? stopBreathing : startBreathing}
-          >
-            {breathingActive ? 'Stop' : 'Start Breathing Exercise'}
-          </button>
-          
-          <p className="pro-tip">
-            <strong>Pro tip:</strong> Try 4 cycles before responding to a triggering message.
-          </p>
-        </div>
 
-        {/* 5-4-3-2-1 Grounding */}
-        <div className="section grounding">
-          <h2>🌳 5-4-3-2-1 Grounding</h2>
-          <p className="section-desc">
-            When you feel panic rising or start to spiral, this technique brings you back to the present moment by engaging your senses.
-          </p>
+          <div className="breathe-footer">
+            <p>Stanford research found 5 min of cyclic sighing improved mood more than meditation. (Balban et al., 2023)</p>
+          </div>
+        </div>
+      )}
+
+      {/* GROUND - 5-4-3-2-1 */}
+      {activeMode === 'ground' && (
+        <div className="fullscreen ground-screen">
+          <button className="back-btn" onClick={resetGrounding}>←</button>
           
           {!groundingComplete ? (
-            <div className="grounding-exercise">
-              <div className="grounding-step">
-                <span className="step-icon">{groundingSteps[groundingStep].icon}</span>
-                <span className="step-count">{groundingSteps[groundingStep].count}</span>
-                <span className="step-sense">{groundingSteps[groundingStep].sense}</span>
-              </div>
-              <p className="step-prompt">{groundingSteps[groundingStep].prompt}</p>
+            <div className="ground-content">
+              <div className="ground-label">5-4-3-2-1 grounding</div>
               
-              <div className="grounding-progress">
-                {groundingSteps.map((_, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`progress-dot ${idx <= groundingStep ? 'active' : ''} ${idx < groundingStep ? 'complete' : ''}`}
-                  />
+              <div 
+                className="ground-card"
+                style={{ backgroundColor: GROUNDING_STEPS[groundingStep].color }}
+                onClick={nextGroundingStep}
+              >
+                <span className="ground-emoji">{GROUNDING_STEPS[groundingStep].icon}</span>
+                <span className="ground-number">{GROUNDING_STEPS[groundingStep].count}</span>
+                <span className="ground-sense">things you can {GROUNDING_STEPS[groundingStep].sense}</span>
+              </div>
+
+              <div className="ground-dots">
+                {GROUNDING_STEPS.map((_, i) => (
+                  <div key={i} className={`dot ${i <= groundingStep ? 'filled' : ''}`} />
                 ))}
               </div>
-              
-              <button className="action-btn" onClick={advanceGrounding}>
-                {groundingStep < 4 ? "Done - Next" : "Complete"}
-              </button>
+
+              <p className="ground-hint">tap when ready for next</p>
             </div>
           ) : (
-            <div className="grounding-complete">
-              <span className="complete-icon">💚</span>
-              <p>You're here. You're present. You're safe in this moment.</p>
-              <button className="action-btn secondary" onClick={resetGrounding}>
-                Start Over
-              </button>
+            <div className="ground-content complete">
+              <span className="complete-emoji">✨</span>
+              <h2>You did it</h2>
+              <p>Notice how you feel now.<br/>You can come back anytime.</p>
+              <button className="done-btn" onClick={resetGrounding}>Done</button>
             </div>
           )}
         </div>
+      )}
 
-        {/* Quick Resets */}
-        <div className="section quick-resets">
-          <h2>⚡ Quick Resets</h2>
-          <p className="section-desc">30-second techniques when you need to regulate fast.</p>
+      {/* AFFIRM */}
+      {activeMode === 'affirm' && (
+        <div className="fullscreen affirm-screen" onClick={nextAffirmation}>
+          <button className="back-btn light" onClick={(e) => { e.stopPropagation(); setActiveMode('home'); }}>←</button>
           
-          <div className="reset-cards">
-            <div className="reset-card">
-              <span className="reset-icon">🧊</span>
-              <h4>Cold Water Reset</h4>
-              <p>Splash cold water on your face or hold ice cubes. Activates your dive reflex and slows heart rate instantly.</p>
-            </div>
+          <div className="affirm-content">
+            <span className="affirm-heart">💚</span>
+            <p className="affirm-text">{AFFIRMATIONS[affirmationIndex]}</p>
+            <span className="affirm-hint">tap for another</span>
+          </div>
+        </div>
+      )}
+
+      {/* LEARN - The Science */}
+      {activeMode === 'learn' && (
+        <div className="fullscreen learn-screen">
+          <button className="back-btn" onClick={() => setActiveMode('home')}>←</button>
+          
+          <div className="learn-content">
+            <h2>Why your body reacts this way</h2>
             
-            <div className="reset-card">
-              <span className="reset-icon">💪</span>
-              <h4>Muscle Release</h4>
-              <p>Squeeze your fists tight for 5 seconds, then release. Repeat 3x. Your body can't be tense and relaxed at once.</p>
+            <div className="learn-section">
+              <p>
+                When you see their name and your heart races, when your stomach drops 
+                at a message notification, when you freeze during conflict — 
+                <strong> your nervous system is doing exactly what it evolved to do.</strong>
+              </p>
+              <p>
+                This isn't weakness. It's protection. Your body learned from real experiences 
+                that this person isn't safe, and it's trying to keep you alive.
+              </p>
             </div>
-            
-            <div className="reset-card">
-              <span className="reset-icon">👣</span>
-              <h4>Feet on Floor</h4>
-              <p>Press your feet firmly into the ground. Feel the support beneath you. You are grounded. You are here.</p>
+
+            <div className="learn-section">
+              <h3>The stress response</h3>
+              <div className="state safe">
+                <strong>🟢 Calm / Safe</strong>
+                <p>Clear thinking, steady heart rate, able to respond thoughtfully</p>
+              </div>
+              <div className="state fight">
+                <strong>🟡 Fight or Flight</strong>
+                <p>Racing heart, urge to argue or run, hypervigilance — your sympathetic nervous system is activated</p>
+              </div>
+              <div className="state freeze">
+                <strong>🔴 Freeze or Shutdown</strong>
+                <p>Numb, foggy, disconnected, unable to think — your body is conserving energy</p>
+              </div>
             </div>
-            
-            <div className="reset-card">
-              <span className="reset-icon">🗣️</span>
-              <h4>Name It to Tame It</h4>
-              <p>Say out loud: "I notice I'm feeling [scared/angry/overwhelmed]." Naming emotions reduces their intensity.</p>
+
+            <div className="learn-section">
+              <h3>Why these tools work</h3>
+              <p>
+                You can't think your way out of a stress response — it's faster 
+                than conscious thought. But you can send signals of safety through your body.
+              </p>
+              <p>
+                <strong>Breathing:</strong> Extended exhales activate your parasympathetic 
+                nervous system ("rest and digest"), slowing your heart rate and reducing cortisol. 
+                A Stanford study found cyclic sighing outperformed meditation for stress relief.
+              </p>
+              <p>
+                <strong>Grounding:</strong> Engaging your senses redirects your brain 
+                from internal distress to present-moment awareness — interrupting the fear response 
+                and reducing activity in brain regions associated with rumination.
+              </p>
+            </div>
+
+            <div className="learn-footer">
+              <p><strong>Research sources:</strong> Balban et al. (2023), Cell Reports Medicine (Stanford breathing study); 
+              Grabbe & Miller-Karas (2018) on grounding; van der Kolk, "The Body Keeps the Score."</p>
             </div>
           </div>
         </div>
-
-        {/* Before You Respond */}
-        <div className="section before-respond">
-          <h2>⏸️ Before You Respond</h2>
-          <div className="checklist">
-            <p className="checklist-intro">Ask yourself:</p>
-            <label className="check-item">
-              <input type="checkbox" />
-              <span>Have I taken 3 deep breaths?</span>
-            </label>
-            <label className="check-item">
-              <input type="checkbox" />
-              <span>Am I responding from calm or from fear?</span>
-            </label>
-            <label className="check-item">
-              <input type="checkbox" />
-              <span>Does this require a response at all?</span>
-            </label>
-            <label className="check-item">
-              <input type="checkbox" />
-              <span>Will this matter in court?</span>
-            </label>
-            <label className="check-item">
-              <input type="checkbox" />
-              <span>Is this about my child's needs or their control?</span>
-            </label>
-          </div>
-          <p className="reminder">
-            You can always respond later. "I'll get back to you" is a complete sentence.
-          </p>
-        </div>
-
-        {/* Crisis Resources */}
-        <div className="section crisis">
-          <h2>🆘 Need More Support?</h2>
-          <p className="section-desc">You don't have to do this alone.</p>
-          
-          <div className="resource-links">
-            <a href="tel:1-800-799-7233" className="resource-btn">
-              <span className="resource-icon">📞</span>
-              <div>
-                <strong>National DV Hotline</strong>
-                <span>1-800-799-7233 (24/7)</span>
-              </div>
-            </a>
-            <a href="sms:741741&body=HELLO" className="resource-btn">
-              <span className="resource-icon">💬</span>
-              <div>
-                <strong>Crisis Text Line</strong>
-                <span>Text HOME to 741741</span>
-              </div>
-            </a>
-            <a href="https://www.thehotline.org/get-help/" target="_blank" className="resource-btn">
-              <span className="resource-icon">💻</span>
-              <div>
-                <strong>Online Chat</strong>
-                <span>thehotline.org</span>
-              </div>
-            </a>
-          </div>
-          
-          <p className="safety-note">
-            If you're in immediate danger, call 911.
-          </p>
-        </div>
-
-      </div>
+      )}
 
       <BottomNav active="menu" />
 
       <style jsx>{`
         .container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
-          padding-bottom: 100px;
+          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 40%, #1a3a2f 100%);
+          padding-bottom: 80px;
         }
-        .header {
-          padding: 20px 24px;
+
+        /* HOME */
+        .scene {
+          position: relative;
+          height: 200px;
           display: flex;
           align-items: center;
-          gap: 16px;
-          background: #1a3a2f;
+          justify-content: center;
+          overflow: hidden;
+        }
+        .scene-gradient {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at 50% 100%, rgba(167, 243, 208, 0.15) 0%, transparent 70%);
+        }
+        .scene-content {
+          position: relative;
+          text-align: center;
           color: white;
+        }
+        .scene-content h1 {
+          font-size: 28px;
+          font-weight: 300;
+          margin: 0 0 8px;
+          letter-spacing: 0.5px;
+        }
+        .scene-content p {
+          font-size: 16px;
+          opacity: 0.7;
+          margin: 0;
+        }
+
+        .tools-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          padding: 0 24px;
+          max-width: 400px;
+          margin: 0 auto;
+        }
+        .tool-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 24px 16px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          cursor: pointer;
+          transition: all 0.3s;
+          backdrop-filter: blur(10px);
+        }
+        .tool-btn:hover {
+          background: rgba(255,255,255,0.12);
+          transform: translateY(-2px);
+        }
+        .tool-emoji {
+          font-size: 36px;
+          margin-bottom: 12px;
+        }
+        .tool-name {
+          font-size: 15px;
+          font-weight: 600;
+          color: white;
+          margin-bottom: 4px;
+        }
+        .tool-desc {
+          font-size: 12px;
+          color: rgba(255,255,255,0.5);
+          text-align: center;
+        }
+
+        .home-footer {
+          text-align: center;
+          padding: 32px 24px;
+        }
+        .home-footer p {
+          color: rgba(255,255,255,0.4);
+          font-size: 14px;
+          margin: 0;
+        }
+
+        /* FULLSCREEN MODES */
+        .fullscreen {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          z-index: 200;
         }
         .back-btn {
-          background: none;
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          background: rgba(255,255,255,0.1);
           border: none;
           color: white;
-          font-size: 16px;
+          width: 44px;
+          height: 44px;
+          border-radius: 22px;
+          font-size: 20px;
           cursor: pointer;
+          z-index: 10;
         }
-        .header h1 {
-          font-size: 20px;
-          margin: 0;
+        .back-btn.light {
+          background: rgba(0,0,0,0.1);
         }
-        .content {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
+
+        /* BREATHE */
+        .breathe-screen {
+          background: linear-gradient(180deg, #1e4a3f 0%, #0d1f18 100%);
+          align-items: center;
+          justify-content: center;
         }
-        
-        /* Affirmation Card */
-        .affirmation-card {
-          background: white;
-          border-radius: 16px;
-          padding: 28px 24px;
-          text-align: center;
-          margin-bottom: 20px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-        .affirmation-card:active {
-          transform: scale(0.98);
-        }
-        .quote-mark {
-          font-size: 48px;
-          color: #a7f3d0;
-          font-family: Georgia, serif;
-          line-height: 1;
-          margin-bottom: -8px;
-        }
-        .affirmation-card p {
-          font-size: 19px;
-          color: #1a3a2f;
-          line-height: 1.5;
-          margin: 0 0 12px 0;
-          font-weight: 500;
-        }
-        .tap-hint {
-          font-size: 12px;
-          color: #9ca3af;
-        }
-        
-        /* Sections */
-        .section {
-          background: white;
-          border-radius: 16px;
-          padding: 24px;
-          margin-bottom: 16px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-        }
-        .section h2 {
-          font-size: 20px;
-          color: #1a3a2f;
-          margin: 0 0 8px 0;
-        }
-        .section-desc {
-          color: #6b7280;
-          margin: 0 0 20px 0;
-          font-size: 15px;
-          line-height: 1.5;
-        }
-        
-        /* Education Section */
-        .education-content p {
-          color: #4b5563;
-          line-height: 1.7;
-          margin: 0 0 16px 0;
-        }
-        .education-content .intro {
-          font-size: 16px;
-        }
-        .education-content strong {
-          color: #1a3a2f;
-        }
-        .nervous-system-box {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 20px;
-          margin: 20px 0;
-          border-left: 4px solid #059669;
-        }
-        .nervous-system-box h3 {
-          color: #1a3a2f;
-          font-size: 17px;
-          margin: 0 0 12px 0;
-        }
-        .response-types {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin: 16px 0;
-        }
-        .response {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-        }
-        .response-icon {
-          font-size: 24px;
-          width: 32px;
-          text-align: center;
-        }
-        .response div {
-          flex: 1;
-        }
-        .response strong {
-          display: block;
-          color: #1a3a2f;
-          font-size: 15px;
-        }
-        .response span {
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .key-insight {
-          background: white;
-          padding: 14px;
-          border-radius: 8px;
-          margin-top: 16px;
-          font-size: 15px;
-        }
-        .trauma-info {
-          margin-top: 20px;
-        }
-        .trauma-info h3 {
-          color: #1a3a2f;
-          font-size: 17px;
-          margin: 0 0 12px 0;
-        }
-        .highlight {
-          background: linear-gradient(180deg, transparent 60%, #a7f3d0 60%);
-          display: inline;
-          font-weight: 600;
-          color: #1a3a2f;
-        }
-        
-        /* Moral Injury Section */
-        .moral-injury {
-          background: #fffbeb;
-          border: 2px solid #fcd34d;
-        }
-        .moral-content p {
-          color: #4b5563;
-          line-height: 1.7;
-          margin: 0 0 16px 0;
-        }
-        .moral-content .intro {
-          font-size: 16px;
-          color: #92400e;
-          font-weight: 500;
-        }
-        .reality-box {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          margin: 20px 0;
-          border-left: 4px solid #f59e0b;
-        }
-        .reality-box h3 {
-          color: #92400e;
-          font-size: 17px;
-          margin: 0 0 12px 0;
-        }
-        .reality-box .key-line {
-          color: #92400e;
-          font-size: 15px;
-        }
-        .reframe-box {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 20px;
-          margin: 20px 0;
-          border-left: 4px solid #059669;
-        }
-        .reframe-box h3 {
-          color: #1a3a2f;
-          font-size: 17px;
-          margin: 0 0 12px 0;
-        }
-        .reframe-box .big-truth {
-          font-size: 20px;
-          font-weight: 700;
-          color: #1a3a2f;
-          text-align: center;
-          padding: 16px;
-          background: white;
-          border-radius: 8px;
-          margin: 16px 0;
-        }
-        .validation-box {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          margin-top: 20px;
-          text-align: center;
-        }
-        .validation-box p {
-          color: #1a3a2f;
-          font-weight: 500;
-        }
-        .validation-box .final-line {
-          font-size: 15px;
-          color: #4b5563;
-          margin-bottom: 0;
-        }
-        
-        /* Breathing */
-        .breath-circle {
-          width: 200px;
-          height: 200px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        .breathe-content {
           display: flex;
           flex-direction: column;
           align-items: center;
+          text-align: center;
+        }
+        .breathe-label {
+          color: rgba(255,255,255,0.5);
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          margin-bottom: 48px;
+        }
+        .breath-orb {
+          width: 180px;
+          height: 180px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #6ee7b7, #059669);
+          display: flex;
+          align-items: center;
           justify-content: center;
-          margin: 24px auto;
-          transition: transform 0.5s ease-in-out;
-          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+          cursor: pointer;
+          transition: transform 2.5s ease-in-out;
+          box-shadow: 0 0 60px rgba(16, 185, 129, 0.3);
         }
-        .breath-circle.inhale {
-          transform: scale(1.15);
-          background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
-        }
-        .breath-circle.hold {
-          transform: scale(1.15);
-        }
-        .breath-circle.exhale {
-          transform: scale(1);
-          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        }
-        .breath-circle.rest {
-          transform: scale(0.95);
-        }
-        .breath-countdown {
-          font-size: 48px;
-          font-weight: 700;
-          color: #1a3a2f;
-          line-height: 1;
+        .breath-orb.active {
+          cursor: default;
         }
         .breath-text {
-          color: #1a3a2f;
-          font-weight: 600;
-          font-size: 16px;
-          margin-top: 4px;
-        }
-        .breath-counter {
-          text-align: center;
-          color: #6b7280;
-          font-size: 14px;
-          margin: 0 0 16px 0;
-        }
-        .pro-tip {
-          text-align: center;
-          font-size: 14px;
-          color: #6b7280;
-          margin: 16px 0 0 0;
-          font-style: italic;
-        }
-        
-        /* Action Buttons */
-        .action-btn {
-          display: block;
-          width: 100%;
-          padding: 16px;
-          background: #1a3a2f;
           color: white;
-          border: none;
-          border-radius: 12px;
-          font-weight: 600;
+          font-size: 18px;
+          font-weight: 500;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .breath-guide {
+          margin-top: 32px;
+          color: rgba(255,255,255,0.6);
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        .breath-count {
           font-size: 16px;
+          color: rgba(255,255,255,0.5);
+        }
+        .done-btn {
+          margin-top: 40px;
+          padding: 14px 32px;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 30px;
+          color: white;
+          font-size: 15px;
           cursor: pointer;
-          transition: all 0.2s;
         }
-        .action-btn:active {
-          transform: scale(0.98);
-        }
-        .action-btn.stop {
-          background: #dc2626;
-        }
-        .action-btn.secondary {
-          background: white;
-          color: #1a3a2f;
-          border: 2px solid #1a3a2f;
-        }
-        
-        /* Grounding */
-        .grounding-exercise {
+        .breathe-footer {
+          position: absolute;
+          bottom: 100px;
+          left: 0;
+          right: 0;
           text-align: center;
+          padding: 0 32px;
         }
-        .grounding-step {
+        .breathe-footer p {
+          color: rgba(255,255,255,0.3);
+          font-size: 13px;
+        }
+
+        /* GROUND */
+        .ground-screen {
+          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 100%);
+          align-items: center;
+          justify-content: center;
+        }
+        .ground-content {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 24px;
+          text-align: center;
+          padding: 0 24px;
         }
-        .step-icon {
+        .ground-content.complete {
+          color: white;
+        }
+        .ground-content.complete h2 {
+          font-size: 28px;
+          font-weight: 300;
+          margin: 16px 0;
+        }
+        .ground-content.complete p {
+          color: rgba(255,255,255,0.6);
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 32px;
+        }
+        .complete-emoji {
+          font-size: 64px;
+        }
+        .ground-label {
+          color: rgba(255,255,255,0.5);
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          margin-bottom: 32px;
+        }
+        .ground-card {
+          width: 220px;
+          height: 260px;
+          border-radius: 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.3s, background-color 0.5s;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .ground-card:active {
+          transform: scale(0.98);
+        }
+        .ground-emoji {
           font-size: 48px;
           margin-bottom: 8px;
         }
-        .step-count {
-          font-size: 64px;
-          font-weight: 800;
-          color: #1a3a2f;
+        .ground-number {
+          font-size: 80px;
+          font-weight: 200;
+          color: rgba(0,0,0,0.7);
           line-height: 1;
         }
-        .step-sense {
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          color: #059669;
-          margin-top: 4px;
-        }
-        .step-prompt {
-          font-size: 17px;
-          color: #4b5563;
-          margin: 0 0 24px 0;
-        }
-        .grounding-progress {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 24px;
-        }
-        .progress-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: #e5e7eb;
-          transition: all 0.3s;
-        }
-        .progress-dot.active {
-          background: #a7f3d0;
-        }
-        .progress-dot.complete {
-          background: #059669;
-        }
-        .grounding-complete {
-          text-align: center;
-          padding: 32px 0;
-        }
-        .complete-icon {
-          font-size: 64px;
-          display: block;
-          margin-bottom: 16px;
-        }
-        .grounding-complete p {
-          font-size: 18px;
-          color: #1a3a2f;
-          margin: 0 0 24px 0;
-          font-weight: 500;
-        }
-        
-        /* Quick Resets */
-        .reset-cards {
-          display: grid;
-          gap: 12px;
-        }
-        .reset-card {
-          background: #f0fdf4;
-          border-radius: 12px;
-          padding: 16px;
-        }
-        .reset-icon {
-          font-size: 28px;
-          display: block;
-          margin-bottom: 8px;
-        }
-        .reset-card h4 {
-          color: #1a3a2f;
-          margin: 0 0 6px 0;
+        .ground-sense {
           font-size: 16px;
+          color: rgba(0,0,0,0.5);
+          margin-top: 8px;
         }
-        .reset-card p {
-          color: #4b5563;
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-        
-        /* Before You Respond */
-        .checklist-intro {
-          font-weight: 600;
-          color: #1a3a2f;
-          margin: 0 0 16px 0;
-        }
-        .check-item {
+        .ground-dots {
           display: flex;
+          gap: 8px;
+          margin-top: 32px;
+        }
+        .dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.2);
+          transition: background 0.3s;
+        }
+        .dot.filled {
+          background: white;
+        }
+        .ground-hint {
+          color: rgba(255,255,255,0.3);
+          font-size: 13px;
+          margin-top: 24px;
+        }
+
+        /* AFFIRM */
+        .affirm-screen {
+          background: linear-gradient(180deg, #065f46 0%, #064e3b 100%);
           align-items: center;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid #f3f4f6;
+          justify-content: center;
           cursor: pointer;
         }
-        .check-item:last-of-type {
-          border-bottom: none;
-        }
-        .check-item input {
-          width: 22px;
-          height: 22px;
-          accent-color: #059669;
-        }
-        .check-item span {
-          color: #4b5563;
-          font-size: 15px;
-        }
-        .reminder {
-          background: #f0fdf4;
-          padding: 14px;
-          border-radius: 10px;
-          margin-top: 16px;
-          text-align: center;
-          color: #1a3a2f;
-          font-weight: 500;
-          font-size: 15px;
-        }
-        
-        /* Crisis Resources */
-        .crisis {
-          background: #f0fdf4;
-          border: 2px solid #a7f3d0;
-        }
-        .resource-links {
+        .affirm-content {
           display: flex;
           flex-direction: column;
-          gap: 12px;
-        }
-        .resource-btn {
-          display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 16px;
-          background: white;
-          border-radius: 12px;
-          text-decoration: none;
-          color: inherit;
-          border: 1px solid #d1fae5;
-          transition: all 0.2s;
-        }
-        .resource-btn:active {
-          transform: scale(0.98);
-        }
-        .resource-icon {
-          font-size: 28px;
-        }
-        .resource-btn div {
-          display: flex;
-          flex-direction: column;
-        }
-        .resource-btn strong {
-          color: #1a3a2f;
-          font-size: 16px;
-        }
-        .resource-btn span {
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .safety-note {
           text-align: center;
-          color: #6b7280;
+          padding: 0 32px;
+        }
+        .affirm-heart {
+          font-size: 56px;
+          margin-bottom: 24px;
+        }
+        .affirm-text {
+          font-size: 26px;
+          font-weight: 400;
+          color: white;
+          line-height: 1.4;
+          margin: 0 0 32px;
+          max-width: 320px;
+        }
+        .affirm-hint {
+          color: rgba(255,255,255,0.4);
           font-size: 14px;
-          margin: 16px 0 0 0;
+        }
+
+        /* LEARN */
+        .learn-screen {
+          background: #f5f7f6;
+          overflow-y: auto;
+          padding-bottom: 100px;
+        }
+        .learn-content {
+          max-width: 500px;
+          margin: 0 auto;
+          padding: 80px 24px 40px;
+        }
+        .learn-content h2 {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a3a2f;
+          margin: 0 0 24px;
+        }
+        .learn-section {
+          margin-bottom: 32px;
+        }
+        .learn-section h3 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1a3a2f;
+          margin: 0 0 16px;
+        }
+        .learn-section p {
+          font-size: 15px;
+          color: #4b5563;
+          line-height: 1.7;
+          margin: 0 0 12px;
+        }
+        .state {
+          padding: 12px 16px;
+          border-radius: 12px;
+          margin-bottom: 12px;
+        }
+        .state strong {
+          font-size: 14px;
+        }
+        .state p {
+          font-size: 13px;
+          margin: 4px 0 0;
+          color: #6b7280;
+        }
+        .state.safe { background: #d1fae5; }
+        .state.fight { background: #fef3c7; }
+        .state.freeze { background: #fee2e2; }
+        .learn-footer {
+          margin-top: 40px;
+          padding-top: 24px;
+          border-top: 1px solid #e5e7eb;
+        }
+        .learn-footer p {
+          font-size: 12px;
+          color: #9ca3af;
+          line-height: 1.6;
         }
       `}</style>
     </div>
