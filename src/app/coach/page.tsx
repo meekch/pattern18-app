@@ -88,7 +88,7 @@ export default function CoachPage() {
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded screenshot]` : ''),
+      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
       hasImage: !!file
     };
     setMessages(prev => [...prev, userMessage]);
