@@ -1,36 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Initialize Supabase with service role for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const SYSTEM_PROMPT = `You are Pattern 18 Coach - a knowledgeable, calm companion for parents in high-conflict custody situations. Think of yourself as that friend who happens to be an expert in coercive control and family court - someone they can text at 2am when they're shaking after getting a horrible message.
 
-const COERCIVE_PATTERNS = [
-  'Gaslighting',
-  'DARVO',
-  'Intimidation',
-  'Threats',
-  'Financial Abuse',
-  'Using Children as Weapons',
-  'Blame-Shifting',
-  'False Accusations',
-  'Emotional Blackmail',
-  'Stonewalling',
-  'Monitoring/Stalking',
-  'Isolation Tactics',
-  'Minimizing/Denying',
-  'Word Salad',
-  'Moving Goalposts',
-  'Projection',
-  'Hoovering',
-  'Gatekeeping',
-];
+HOW YOU COMMUNICATE:
+- Warm but direct. No fluff, no filler.
+- Natural paragraphs, like texting a smart friend. Never use markdown formatting - no **, no ##, no bullet points, no numbered lists.
+- Keep responses SHORT. 2-3 short paragraphs max unless they ask for more.
+- Be iterative. Offer to adjust: "Want that shorter?" or "I can make it firmer if you need."
+- Sometimes the best response is no response. Tell them when that's the case.
+
+WHEN THEY UPLOAD A SCREENSHOT OR PASTE A MESSAGE:
+
+First, ask what they need:
+"What would help most right now - do you need help responding, or do you just want to document what's happening?"
+
+Then wait for their answer. Don't dump analysis they didn't ask for.
+
+WHEN THEY WANT HELP RESPONDING:
+- Acknowledge briefly what you're seeing (one sentence, no drama)
+- Give ONE clean response they can copy/paste
+- Keep it child-focused and factual
+- Offer to adjust: "I can make this shorter/firmer/softer if you want"
+- If no response is needed, say so clearly and explain why
+
+Example:
+"He's blame-shifting - making his choices your fault. You don't need to engage with that. If you do want to respond, here's something short:
+
+'The exchange schedule is in the order. Let me know if you need the specific language.'
+
+Want me to adjust this, or would you rather just document and move on?"
+
+WHEN THEY WANT TO DOCUMENT:
+- Name the pattern(s) you see in plain language
+- Briefly explain why it matters (educational, not dramatic)
+- Confirm what to save
+
+Example:
+"This is financial coercion - using money and support as a threat to control you. Courts take this seriously because it shows a pattern of control, not co-parenting.
+
+Want me to save this? I captured: 'I'm withdrawing my support until the judge sees what kind of mother you are.'"
+
+WHEN THEY UPLOAD COURT DOCUMENTS:
+- Ask what they need help with first
+- Break it down: deadlines, action items, what to do first
+- Be specific and practical
+- Offer to help draft responses, declarations, etc.
+
+PATTERN RECOGNITION (use naturally, don't lecture):
+- Gaslighting: making them doubt their reality
+- DARVO: deny, attack, reverse victim and offender  
+- Blame-shifting: making his choices their fault
+- Financial coercion: using money as control
+- Intimidation: threats, references to court/lawyers as weapons
+- Using children as weapons: putting kids in the middle
+- Stonewalling: refusing to engage on legitimate issues
+
+EXTRACTING QUOTES - CRITICAL:
+When you see a message from the co-parent, you MUST identify and state the exact quote. This is essential for court documentation. Always clearly state what they wrote, like:
+"He wrote: '[exact quote here]'"
+
+This allows the system to save the actual evidence, not a summary.
+
+WHAT NOT TO DO:
+- Don't dump walls of text
+- Don't give multiple response options unless asked
+- Don't use dramatic language (toxic, narcissist, abusive monster)
+- Don't use any markdown formatting ever
+- Don't lecture about coercive control unprompted
+- Don't assume they want analysis - ask first
+- Don't be robotic or clinical
+
+THE TRANSFORMATION YOU'RE HELPING WITH:
+Before: Hours crafting responses, emotional, over-explaining, taking the bait, looking "crazy" to the court
+After: Confident, calm, strategic, sometimes not responding at all, power reclaimed
+
+You're helping them get their life back.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,75 +88,28 @@ export async function POST(req: NextRequest) {
     const caseContextJson = formData.get('caseContext') as string || '{}';
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
-    const userId = formData.get('userId') as string || '';
-    const fileCount = parseInt(formData.get('fileCount') as string || '0');
-    
-    // Collect all files
-    const files: File[] = [];
-    for (let i = 0; i < fileCount; i++) {
-      const file = formData.get(`file${i}`) as File | null;
-      if (file) files.push(file);
-    }
-    
-    // Also check for single file (backward compatibility)
-    const singleFile = formData.get('file') as File | null;
-    if (singleFile && files.length === 0) {
-      files.push(singleFile);
-    }
+    const file = formData.get('file') as File | null;
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
 
-    // Build system prompt
-    let systemPrompt = `You help people navigate co-parenting and family court situations.
-
-Be confident, clear, and warm. Read documents carefully to get the facts right.
-
-Your approach:
-- State what each document IS and what it MEANS for them
-- Identify who filed by reading signatures and content, not assuming
-- Highlight their strengths and current position
-- Give numbered next steps in priority order
-- Ask logical follow-up questions to guide them further
-
-Use short paragraphs, bullets when helpful, and bold headers for easy scanning.
-
-IMPORTANT FOR TEXT MESSAGE SCREENSHOTS:
-- First determine WHO sent the message - look at the bubble color/position
-- If you can't tell who sent it, ASK: "Which message would you like me to help you respond to?"
-- NEVER analyze the user's own messages as if they were from the co-parent
-- Only flag coercive patterns in messages FROM the co-parent
-
-COERCIVE CONTROL PATTERNS to watch for (in co-parent messages only):
-${COERCIVE_PATTERNS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-When you detect patterns, mention them naturally: "This message shows [Pattern] because..."
-Don't be dramatic or use inflammatory language. Just name the tactic and give practical help.`;
-
-    // Add case context if available
-    if (caseContext.user_role || caseContext.coparent_name || caseContext.state) {
-      systemPrompt += `\n\nUser's case context:`;
-      if (caseContext.user_role) {
-        const userRole = caseContext.user_role === 'petitioner' ? 'Petitioner' : 'Respondent';
-        systemPrompt += `\n- User is the ${userRole} (from original case filing)`;
-      }
-      if (caseContext.coparent_name) {
-        systemPrompt += `\n- Co-parent: ${caseContext.coparent_name}`;
-      }
-      if (caseContext.state) {
-        systemPrompt += `\n- State: ${caseContext.state}`;
-      }
-    }
-
-    // Add evidence stats
-    if (parseInt(evidenceCount) > 0) {
+    // Build context string - keep it minimal
+    let contextString = '';
+    
+    const totalEvidence = parseInt(evidenceCount) || 0;
+    if (totalEvidence > 0) {
       const topPatterns = Object.entries(patternCounts)
         .sort((a: any, b: any) => b[1] - a[1])
         .slice(0, 3)
         .map(([pattern, count]) => `${pattern}: ${count}`)
         .join(', ');
-      systemPrompt += `\n- ${evidenceCount} incidents documented (top patterns: ${topPatterns || 'none'})`;
+      
+      contextString = `\n\n[Context: ${totalEvidence} incidents documented. Top patterns: ${topPatterns || 'none yet'}]`;
+    }
+
+    if (caseContext.coparent_name) {
+      contextString += `\n[Co-parent: ${caseContext.coparent_name}]`;
     }
 
     // Build messages array
@@ -117,12 +118,10 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
       content: msg.content,
     }));
 
-    // Handle file uploads
+    // Handle file upload
     let userContent: any[] = [];
-    let hasImages = false;
-    const imageData: { base64: string; mediaType: string }[] = [];
     
-    for (const file of files) {
+    if (file) {
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
       
@@ -138,9 +137,10 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
           },
         });
       } else {
-        hasImages = true;
-        const mediaType = file.type.startsWith('image/') ? file.type : 'image/jpeg';
-        imageData.push({ base64, mediaType });
+        let mediaType = file.type;
+        if (!mediaType.startsWith('image/')) {
+          mediaType = 'image/jpeg';
+        }
         userContent.push({
           type: 'image',
           source: {
@@ -152,9 +152,15 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
       }
     }
 
+    // Natural message instead of robotic prompt
+    let userText = message;
+    if (file && (message === 'Please analyze this screenshot and help me respond.' || !message.trim())) {
+      userText = 'I just got this.';
+    }
+
     userContent.push({
       type: 'text',
-      text: message,
+      text: userText + contextString,
     });
 
     messages.push({
@@ -171,8 +177,8 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
         try {
           const response = await client.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 2000,
-            system: systemPrompt,
+            max_tokens: 1000,
+            system: SYSTEM_PROMPT,
             messages: messages,
             stream: true,
           });
@@ -193,96 +199,10 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
           }
 
-          // Auto-save if we have patterns, a user ID, and it's clearly analyzing a co-parent message
-          const askedForClarification = fullResponse.toLowerCase().includes('which message') || 
-                                        fullResponse.toLowerCase().includes('who sent') ||
-                                        fullResponse.toLowerCase().includes('which one');
-          
-          if (patterns.length > 0 && userId && !askedForClarification && hasImages) {
-            try {
-              // Quick extraction call to get the quote
-              // Build extraction content
-              const extractionContent: any[] = [];
-              for (const img of imageData) {
-                extractionContent.push({
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: img.mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-                    data: img.base64
-                  }
-                });
-              }
-              extractionContent.push({
-                type: 'text',
-                text: `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
-              });
-
-              const extractionResponse = await client.messages.create({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 300,
-                system: `Extract the co-parent's message text from the conversation. Return ONLY a JSON object:
-{"quote": "exact text of co-parent message", "date": "YYYY-MM-DD or null"}
-If you cannot determine the co-parent's message, return: {"quote": null, "date": null}`,
-                messages: [
-                  {
-                    role: 'user',
-                    content: imageData.length > 0 ? extractionContent : `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
-                  }
-                ],
-              });
-
-              const extractText = extractionResponse.content[0].type === 'text' 
-                ? extractionResponse.content[0].text 
-                : '';
-              
-              const jsonMatch = extractText.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const extracted = JSON.parse(jsonMatch[0]);
-                
-                if (extracted.quote) {
-                  // Determine severity
-                  const highSeverityPatterns = ['Threats', 'Intimidation', 'Monitoring/Stalking', 'Using Children as Weapons'];
-                  const criticalPatterns = ['Threats'];
-                  const severity = patterns.some(p => criticalPatterns.includes(p)) ? 'critical'
-                    : patterns.some(p => highSeverityPatterns.includes(p)) ? 'high'
-                    : 'medium';
-
-                  const primaryPattern = patterns[0];
-                  const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-
-                  // Save to database
-                  const { data: savedIncident, error } = await supabase
-                    .from('incidents')
-                    .insert({
-                      user_id: userId,
-                      title: primaryPattern,
-                      coparent_message: extracted.quote,
-                      category: categoryKey,
-                      patterns: patterns,
-                      severity: severity,
-                      incident_date: extracted.date 
-                        ? new Date(extracted.date).toISOString()
-                        : new Date().toISOString(),
-                      source: 'coach',
-                    })
-                    .select('id')
-                    .single();
-
-                  if (!error && savedIncident) {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                      saved: true, 
-                      incidentId: savedIncident.id,
-                      quote: extracted.quote.slice(0, 100),
-                      severity: severity
-                    })}\n\n`));
-                  }
-                }
-              }
-            } catch (extractError) {
-              console.error('Auto-save extraction error:', extractError);
-              // Don't fail the main request
-            }
+          // Extract quoted co-parent message
+          const extractedQuote = extractCoparentQuote(fullResponse);
+          if (extractedQuote) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ extractedQuote })}\n\n`));
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -312,33 +232,71 @@ If you cannot determine the co-parent's message, return: {"quote": null, "date":
 }
 
 function extractPatterns(text: string): string[] {
+  const coercivePatterns = [
+    { match: 'gaslighting', normalized: 'Gaslighting' },
+    { match: 'darvo', normalized: 'DARVO' },
+    { match: 'blame-shifting', normalized: 'Blame-Shifting' },
+    { match: 'blame shifting', normalized: 'Blame-Shifting' },
+    { match: 'financial coercion', normalized: 'Financial Coercion' },
+    { match: 'financial abuse', normalized: 'Financial Coercion' },
+    { match: 'intimidation', normalized: 'Intimidation' },
+    { match: 'threat', normalized: 'Intimidation' },
+    { match: 'using children', normalized: 'Using Children as Weapons' },
+    { match: 'children as weapons', normalized: 'Using Children as Weapons' },
+    { match: 'stonewalling', normalized: 'Stonewalling' },
+    { match: 'false accusations', normalized: 'False Accusations' },
+    { match: 'emotional blackmail', normalized: 'Emotional Blackmail' },
+    { match: 'monitoring', normalized: 'Monitoring/Stalking' },
+    { match: 'stalking', normalized: 'Monitoring/Stalking' },
+    { match: 'isolation', normalized: 'Isolation' },
+    { match: 'minimizing', normalized: 'Minimizing/Denying' },
+    { match: 'word salad', normalized: 'Word Salad' },
+    { match: 'moving goalposts', normalized: 'Moving Goalposts' },
+    { match: 'projection', normalized: 'Projection' },
+    { match: 'hoovering', normalized: 'Hoovering' },
+    { match: 'gatekeeping', normalized: 'Gatekeeping' },
+  ];
+
   const found: string[] = [];
   const lowerText = text.toLowerCase();
 
-  for (const pattern of COERCIVE_PATTERNS) {
-    if (lowerText.includes(pattern.toLowerCase())) {
-      if (!found.includes(pattern)) {
-        found.push(pattern);
-      }
+  for (const pattern of coercivePatterns) {
+    if (lowerText.includes(pattern.match) && !found.includes(pattern.normalized)) {
+      found.push(pattern.normalized);
     }
   }
 
-  // Catch variations
-  if (lowerText.includes('blame shifting') && !found.includes('Blame-Shifting')) {
-    found.push('Blame-Shifting');
-  }
-  if ((lowerText.includes('monitoring') || lowerText.includes('stalking')) && !found.includes('Monitoring/Stalking')) {
-    found.push('Monitoring/Stalking');
-  }
-  if ((lowerText.includes('minimizing') || lowerText.includes('denying')) && !found.includes('Minimizing/Denying')) {
-    found.push('Minimizing/Denying');
-  }
-  if (lowerText.includes('isolation') && !found.includes('Isolation Tactics')) {
-    found.push('Isolation Tactics');
-  }
-  if (lowerText.includes('financial') && (lowerText.includes('abuse') || lowerText.includes('manipulation') || lowerText.includes('coercion')) && !found.includes('Financial Abuse')) {
-    found.push('Financial Abuse');
-  }
+  return found.slice(0, 4);
+}
 
-  return found.slice(0, 5);
+function extractCoparentQuote(text: string): string | null {
+  // Look for patterns where coach quoted the co-parent's message
+  const patterns = [
+    /(?:he|she|they|co-?parent)\s+(?:wrote|said|sent|texted|messaged):\s*['"]([^'"]+)['"]/gi,
+    /I captured:\s*['"]([^'"]+)['"]/gi,
+    /['"]([^'"]{30,})['"]/g,
+  ];
+  
+  for (const pattern of patterns) {
+    const matches = [...text.matchAll(pattern)];
+    if (matches.length > 0) {
+      for (const match of matches) {
+        const quote = match[1]?.trim();
+        if (quote && quote.length > 15) {
+          // Filter out suggested responses
+          const lowerQuote = quote.toLowerCase();
+          if (!lowerQuote.startsWith('the exchange') && 
+              !lowerQuote.startsWith('the custody') &&
+              !lowerQuote.startsWith('per our') &&
+              !lowerQuote.startsWith('i will') &&
+              !lowerQuote.includes('please confirm') &&
+              !lowerQuote.includes('let me know')) {
+            return quote;
+          }
+        }
+      }
+    }
+  }
+  
+  return null;
 }

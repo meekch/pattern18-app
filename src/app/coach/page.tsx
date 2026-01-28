@@ -9,10 +9,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   patterns?: string[];
+  extractedQuote?: string;
   hasImage?: boolean;
-  saved?: boolean;
-  incidentId?: string;
-  quote?: string;
 }
 
 export default function CoachPage() {
@@ -26,6 +24,9 @@ export default function CoachPage() {
   const [caseContext, setCaseContext] = useState<any>(null);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
+  const [lastExtractedQuote, setLastExtractedQuote] = useState<string | null>(null);
+  const [lastPatterns, setLastPatterns] = useState<string[]>([]);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +39,6 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
-      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -47,7 +47,6 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
-      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -76,19 +75,21 @@ export default function CoachPage() {
   const topPattern = Object.entries(patternCounts)
     .sort((a, b) => b[1] - a[1])[0];
 
-  const handleSend = async (messageText?: string, files?: File[]) => {
+  const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
-    if (!text.trim() && (!files || files.length === 0)) return;
+    if (!text.trim() && !file) return;
 
     setShowHome(false);
     setSending(true);
     setInput('');
+    setLastExtractedQuote(null);
+    setLastPatterns([]);
+    setShowSavePrompt(false);
 
-    const fileNames = files?.map(f => f.name).join(', ') || '';
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (fileNames ? `[Uploaded: ${fileNames}]` : ''),
-      hasImage: files && files.length > 0
+      content: text || (file ? `[Uploaded screenshot]` : ''),
+      hasImage: !!file
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -99,13 +100,9 @@ export default function CoachPage() {
       if (caseContext) formData.append('caseContext', JSON.stringify(caseContext));
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
-      formData.append('userId', user.id);
       
-      if (files && files.length > 0) {
-        formData.append('fileCount', String(files.length));
-        files.forEach((file, i) => {
-          formData.append(`file${i}`, file);
-        });
+      if (file) {
+        formData.append('file', file);
       }
 
       const response = await fetch('/api/coach', {
@@ -120,9 +117,7 @@ export default function CoachPage() {
 
       let assistantContent = '';
       let patterns: string[] = [];
-      let saved = false;
-      let incidentId = '';
-      let quote = '';
+      let extractedQuote: string | null = null;
       
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -134,10 +129,9 @@ export default function CoachPage() {
         const lines = text.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
               if (data.content) {
                 assistantContent += data.content;
                 setMessages(prev => {
@@ -146,44 +140,31 @@ export default function CoachPage() {
                   return newMessages;
                 });
               }
-              
               if (data.patterns) {
                 patterns = data.patterns;
+                setLastPatterns(patterns);
               }
-              
-              if (data.saved) {
-                saved = true;
-                incidentId = data.incidentId;
-                quote = data.quote || '';
-                // Update evidence count
-                setEvidenceCount(prev => prev + 1);
-                // Update pattern counts
-                if (patterns.length > 0) {
-                  setPatternCounts(prev => {
-                    const newCounts = { ...prev };
-                    patterns.forEach((p: string) => {
-                      const key = p.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-                      newCounts[key] = (newCounts[key] || 0) + 1;
-                    });
-                    return newCounts;
-                  });
-                }
+              if (data.extractedQuote) {
+                extractedQuote = data.extractedQuote;
+                setLastExtractedQuote(extractedQuote);
               }
             } catch (e) {}
           }
         }
       }
 
-      // Update final message with all metadata
+      // Update final message with patterns and extracted quote
       setMessages(prev => {
         const newMessages = [...prev];
-        const lastMsg = newMessages[newMessages.length - 1];
-        lastMsg.patterns = patterns;
-        lastMsg.saved = saved;
-        lastMsg.incidentId = incidentId;
-        lastMsg.quote = quote;
+        newMessages[newMessages.length - 1].patterns = patterns;
+        newMessages[newMessages.length - 1].extractedQuote = extractedQuote || undefined;
         return newMessages;
       });
+
+      // Show save prompt if we have a quote and patterns
+      if (extractedQuote && patterns.length > 0) {
+        setShowSavePrompt(true);
+      }
 
     } catch (error) {
       console.error('Error:', error);
@@ -214,31 +195,64 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || fileList.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    const files = Array.from(fileList);
-    
-    // Check for PDF - redirect to docs
-    if (files.some(f => f.type === 'application/pdf')) {
+    if (file.type === 'application/pdf') {
       router.push('/docs');
       return;
     }
     
-    // Check for CSV - redirect to bulk import
-    if (files.some(f => f.type === 'text/csv' || f.name.endsWith('.csv'))) {
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
       return;
     }
 
-    // Handle images
-    const imageFiles = files.filter(f => f.type.startsWith('image/'));
-    if (imageFiles.length > 0) {
-      await handleSend('Please analyze this screenshot and help me respond.', imageFiles);
+    if (file.type.startsWith('image/')) {
+      await handleSend('', file);
     }
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSaveEvidence = async () => {
+    if (!lastExtractedQuote || !user) return;
+
+    try {
+      const primaryPattern = lastPatterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      const severity = lastPatterns.some(p => 
+        ['intimidation', 'threats', 'stalking', 'monitoring', 'financial'].some(t => 
+          p.toLowerCase().includes(t)
+        )
+      ) ? 'high' : 'medium';
+
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: lastExtractedQuote,
+        category: categoryKey,
+        patterns: lastPatterns,
+        severity: severity,
+        incident_date: new Date().toISOString(),
+      });
+
+      setShowSavePrompt(false);
+      setLastExtractedQuote(null);
+      setLastPatterns([]);
+      setEvidenceCount(prev => prev + 1);
+      
+      // Update pattern counts
+      setPatternCounts(prev => {
+        const updated = { ...prev };
+        updated[categoryKey] = (updated[categoryKey] || 0) + 1;
+        return updated;
+      });
+
+    } catch (error) {
+      console.error('Failed to save:', error);
+    }
   };
 
   if (loading) {
@@ -264,7 +278,7 @@ export default function CoachPage() {
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
-        <button className="evidence-badge" onClick={() => router.push('/evidence')}>
+        <button className="evidence-badge" onClick={() => router.push('/my-case')}>
           📁 {evidenceCount}
         </button>
       </header>
@@ -275,10 +289,9 @@ export default function CoachPage() {
             <div className="welcome">
               <div className="heart">💚</div>
               <h1>Hey, I'm glad you're here.</h1>
-              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe — I've got you.</p>
+              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I've got you.</p>
             </div>
 
-            {/* Stats Bar */}
             {evidenceCount > 0 && (
               <div className="stats-bar">
                 <div className="stat">
@@ -295,30 +308,29 @@ export default function CoachPage() {
                     <div className="stat-divider" />
                     <div className="stat">
                       <span className="stat-pattern">{topPattern[0].replace(/_/g, ' ')}</span>
-                      <span className="stat-label">TOP ({topPattern[1]}×)</span>
+                      <span className="stat-label">TOP ({topPattern[1]}x)</span>
                     </div>
                   </>
                 )}
               </div>
             )}
 
-            {/* Quick Actions */}
             <div className="quick-actions">
-              <h3>WHAT CAN I HELP WITH?</h3>
+              <h3>WHAT DO YOU NEED?</h3>
               
               <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
                 <span className="action-icon">📸</span>
                 <div className="action-text">
-                  <span className="action-title">Analyze a screenshot</span>
-                  <span className="action-desc">Upload image of a message</span>
+                  <span className="action-title">I just got a message</span>
+                  <span className="action-desc">Upload screenshot, get help responding</span>
                 </div>
               </button>
 
               <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
                 <span className="action-icon">📄</span>
                 <div className="action-text">
-                  <span className="action-title">Court doc help</span>
-                  <span className="action-desc">Understand, respond, or prepare filings</span>
+                  <span className="action-title">Court document help</span>
+                  <span className="action-desc">Upload, understand, prepare filings</span>
                 </div>
               </button>
 
@@ -326,7 +338,7 @@ export default function CoachPage() {
                 <span className="action-icon">📤</span>
                 <div className="action-text">
                   <span className="action-title">Import message history</span>
-                  <span className="action-desc">Bulk analyze CSV export</span>
+                  <span className="action-desc">Bulk analyze exported messages</span>
                 </div>
               </button>
 
@@ -344,34 +356,6 @@ export default function CoachPage() {
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
                 <div className="message-content">{msg.content}</div>
-                
-                {/* Pattern tags */}
-                {msg.patterns && msg.patterns.length > 0 && (
-                  <div className="patterns-detected">
-                    {msg.patterns.map((p, j) => (
-                      <span key={j} className="pattern-tag">{p}</span>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Auto-saved indicator */}
-                {msg.saved && (
-                  <div className="saved-indicator">
-                    <span className="saved-icon">✓</span>
-                    <div className="saved-text">
-                      <span className="saved-title">Saved to evidence</span>
-                      {msg.quote && (
-                        <span className="saved-quote">"{msg.quote.slice(0, 50)}{msg.quote.length > 50 ? '...' : ''}"</span>
-                      )}
-                    </div>
-                    <button 
-                      className="view-btn"
-                      onClick={() => router.push('/evidence')}
-                    >
-                      View
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
             {sending && (
@@ -382,9 +366,25 @@ export default function CoachPage() {
             <div ref={messagesEndRef} />
           </div>
         )}
+
+        {/* Save Evidence Prompt */}
+        {showSavePrompt && lastExtractedQuote && (
+          <div className="save-prompt">
+            <div className="save-prompt-content">
+              <div className="save-quote">"{lastExtractedQuote.slice(0, 80)}{lastExtractedQuote.length > 80 ? '...' : ''}"</div>
+              <div className="save-actions">
+                <button className="save-btn" onClick={handleSaveEvidence}>
+                  Save to Evidence
+                </button>
+                <button className="dismiss-btn" onClick={() => setShowSavePrompt(false)}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
@@ -408,7 +408,6 @@ export default function CoachPage() {
           ref={fileInputRef}
           type="file"
           accept="image/*,.pdf,.csv"
-          multiple
           onChange={handleFileSelect}
           hidden
         />
@@ -464,10 +463,6 @@ export default function CoachPage() {
           color: white;
           font-size: 14px;
           cursor: pointer;
-          transition: background 0.2s;
-        }
-        .evidence-badge:hover {
-          background: rgba(255,255,255,0.25);
         }
         .content {
           flex: 1;
@@ -519,7 +514,7 @@ export default function CoachPage() {
         }
         .stat-pattern {
           display: block;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           color: #1a3a2f;
           text-transform: capitalize;
@@ -612,78 +607,54 @@ export default function CoachPage() {
           white-space: pre-wrap;
           line-height: 1.5;
         }
-        .patterns-detected {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 8px;
-          margin-right: 40px;
-        }
-        .pattern-tag {
-          background: #fef3c7;
-          color: #92400e;
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .saved-indicator {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: 10px;
-          margin-right: 40px;
-          padding: 12px 14px;
-          background: #d1fae5;
-          border-radius: 12px;
-          border: 1px solid #a7f3d0;
-        }
-        .saved-icon {
-          width: 24px;
-          height: 24px;
-          background: #059669;
-          color: white;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 14px;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
-        .saved-text {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .saved-title {
-          font-size: 13px;
-          font-weight: 600;
-          color: #065f46;
-        }
-        .saved-quote {
-          font-size: 12px;
-          color: #047857;
-          font-style: italic;
-        }
-        .view-btn {
-          background: #059669;
-          color: white;
-          border: none;
-          padding: 6px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        .view-btn:hover {
-          background: #047857;
-        }
         .typing {
           color: #9ca3af;
           font-style: italic;
+        }
+        .save-prompt {
+          position: fixed;
+          bottom: 130px;
+          left: 16px;
+          right: 16px;
+          max-width: 500px;
+          margin: 0 auto;
+          z-index: 50;
+        }
+        .save-prompt-content {
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          border: 2px solid #1a3a2f;
+        }
+        .save-quote {
+          font-size: 14px;
+          color: #374151;
+          font-style: italic;
+          margin-bottom: 12px;
+          line-height: 1.4;
+        }
+        .save-actions {
+          display: flex;
+          gap: 12px;
+        }
+        .save-btn {
+          flex: 1;
+          padding: 12px;
+          background: #1a3a2f;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .dismiss-btn {
+          padding: 12px 16px;
+          background: #f3f4f6;
+          color: #6b7280;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
         }
         .input-area {
           position: fixed;
@@ -705,10 +676,6 @@ export default function CoachPage() {
           border-radius: 22px;
           font-size: 20px;
           cursor: pointer;
-          transition: background 0.2s;
-        }
-        .attach-btn:hover {
-          background: #e5e7eb;
         }
         .input-area input[type="text"] {
           flex: 1;
@@ -730,7 +697,6 @@ export default function CoachPage() {
           border-radius: 22px;
           font-size: 18px;
           cursor: pointer;
-          transition: opacity 0.2s;
         }
         .send-btn:disabled {
           opacity: 0.5;
@@ -740,4 +706,3 @@ export default function CoachPage() {
     </div>
   );
 }
-
