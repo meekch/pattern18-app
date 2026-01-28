@@ -13,7 +13,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
   const navItems = [
     { id: 'coach', label: 'Coach', icon: '💬', path: '/coach' },
-    { id: 'case', label: 'My Case', icon: '📊', path: '/my-case' },
+    { id: 'case', label: 'My Case', icon: '📁', path: '/case-file' },
     { id: 'docs', label: 'Docs', icon: '📄', path: '/docs' },
     { id: 'menu', label: 'Menu', icon: '☰', path: null },
   ];
@@ -41,7 +41,6 @@ export default function BottomNav({ active }: BottomNavProps) {
         ))}
       </nav>
 
-      {/* Slide-up Menu */}
       {showMenu && (
         <div className="menu-overlay" onClick={() => setShowMenu(false)}>
           <div className="menu-sheet" onClick={(e) => e.stopPropagation()}>
@@ -50,6 +49,7 @@ export default function BottomNav({ active }: BottomNavProps) {
               <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
             </div>
             
+            {/* Case & Evidence */}
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/case-setup'); }} className="menu-item">
                 <span className="menu-icon">⚙️</span>
@@ -59,16 +59,16 @@ export default function BottomNav({ active }: BottomNavProps) {
                 </div>
               </button>
               
-              <button onClick={() => { setShowMenu(false); router.push('/court-prep'); }} className="menu-item">
-                <span className="menu-icon">⚖️</span>
+              <button onClick={() => { setShowMenu(false); router.push('/case-file/upload'); }} className="menu-item">
+                <span className="menu-icon">📤</span>
                 <div className="menu-text">
-                  <span className="menu-title">Court Prep</span>
-                  <span className="menu-desc">Prepare for your hearing</span>
+                  <span className="menu-title">Add to Case File</span>
+                  <span className="menu-desc">Upload screenshots, docs, evidence</span>
                 </div>
               </button>
-              
+
               <button onClick={() => { setShowMenu(false); router.push('/evidence/upload'); }} className="menu-item">
-                <span className="menu-icon">📤</span>
+                <span className="menu-icon">📋</span>
                 <div className="menu-text">
                   <span className="menu-title">Bulk Import</span>
                   <span className="menu-desc">Import message history (CSV)</span>
@@ -78,35 +78,8 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             <div className="menu-divider" />
 
+            {/* Support & Wellness */}
             <div className="menu-section">
-              <button onClick={() => { setShowMenu(false); router.push('/faq'); }} className="menu-item">
-                <span className="menu-icon">❓</span>
-                <div className="menu-text">
-                  <span className="menu-title">Help & FAQ</span>
-                  <span className="menu-desc">How to use Pattern 18</span>
-                </div>
-              </button>
-              
-              <button onClick={() => { 
-                setShowMenu(false); 
-                const currentMonth = new Date().toISOString().slice(0, 7);
-                const lastExport = localStorage.getItem('p18_last_export');
-                if (lastExport === currentMonth) {
-                  localStorage.removeItem('p18_last_export');
-                  alert('Export reminder reset. You\'ll see the 📲 indicator again.');
-                } else {
-                  localStorage.setItem('p18_last_export', currentMonth);
-                  alert('Nice! Monthly export marked as done. ✓');
-                }
-                window.location.reload();
-              }} className="menu-item">
-                <span className="menu-icon">📲</span>
-                <div className="menu-text">
-                  <span className="menu-title">Monthly Export</span>
-                  <span className="menu-desc">Mark as done / see instructions</span>
-                </div>
-              </button>
-              
               <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
                 <span className="menu-icon">💚</span>
                 <div className="menu-text">
@@ -114,15 +87,16 @@ export default function BottomNav({ active }: BottomNavProps) {
                   <span className="menu-desc">Breathing, grounding, support</span>
                 </div>
               </button>
-              
-              <button onClick={() => { 
-                setShowMenu(false); 
-                const feedback = window.prompt('Bug? Idea? Confusion? Let us know:');
-                if (feedback && feedback.trim()) {
-                  console.log('Feedback:', feedback);
-                  alert('Thank you for your feedback!');
-                }
-              }} className="menu-item">
+
+              <button onClick={() => { setShowMenu(false); router.push('/faq'); }} className="menu-item">
+                <span className="menu-icon">❓</span>
+                <div className="menu-text">
+                  <span className="menu-title">Help & FAQ</span>
+                  <span className="menu-desc">How to use Pattern 18</span>
+                </div>
+              </button>
+
+              <button onClick={() => { setShowMenu(false); window.location.href = 'mailto:hello@pattern18.com?subject=Feedback'; }} className="menu-item">
                 <span className="menu-icon">💡</span>
                 <div className="menu-text">
                   <span className="menu-title">Send Feedback</span>
@@ -133,6 +107,7 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             <div className="menu-divider" />
 
+            {/* Account */}
             <div className="menu-section">
               <button onClick={async () => { 
                 const { supabase } = await import('@/lib/supabase');
@@ -142,44 +117,6 @@ export default function BottomNav({ active }: BottomNavProps) {
                 <span className="menu-icon">🚪</span>
                 <div className="menu-text">
                   <span className="menu-title">Log Out</span>
-                </div>
-              </button>
-              <button onClick={async () => {
-                const confirmed = window.confirm(
-                  'Are you sure you want to delete ALL your data? This includes all incidents, case info, and uploaded documents. This cannot be undone.'
-                );
-                if (!confirmed) return;
-                
-                const typed = window.prompt(
-                  'This is permanent. Type DELETE to confirm:'
-                );
-                if (typed !== 'DELETE') {
-                  if (typed !== null) alert('You must type DELETE exactly to proceed.');
-                  return;
-                }
-
-                try {
-                  const { supabase } = await import('@/lib/supabase');
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session?.user) return;
-
-                  // Delete all user data
-                  await supabase.from('incidents').delete().eq('user_id', session.user.id);
-                  await supabase.from('case_context').delete().eq('user_id', session.user.id);
-                  await supabase.from('court_documents').delete().eq('user_id', session.user.id);
-                  
-                  alert('All data deleted. You will now be logged out.');
-                  await supabase.auth.signOut();
-                  router.push('/login');
-                } catch (error) {
-                  console.error('Delete failed:', error);
-                  alert('Delete failed. Please try again or contact support.');
-                }
-              }} className="menu-item delete-all">
-                <span className="menu-icon">🗑️</span>
-                <div className="menu-text">
-                  <span className="menu-title">Delete All Data</span>
-                  <span className="menu-desc">Permanently remove everything</span>
                 </div>
               </button>
             </div>
@@ -223,7 +160,6 @@ export default function BottomNav({ active }: BottomNavProps) {
           font-weight: 600;
         }
         
-        /* Menu Overlay */
         .menu-overlay {
           position: fixed;
           inset: 0;
@@ -306,15 +242,6 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .menu-item.logout .menu-title {
           color: #dc2626;
-        }
-        .menu-item.delete-all {
-          margin-top: 8px;
-        }
-        .menu-item.delete-all .menu-title {
-          color: #dc2626;
-        }
-        .menu-item.delete-all .menu-desc {
-          color: #f87171;
         }
         .menu-desc {
           font-size: 13px;
