@@ -201,6 +201,23 @@ Don't be dramatic or use inflammatory language. Just name the tactic and give pr
           if (patterns.length > 0 && userId && !askedForClarification && hasImages) {
             try {
               // Quick extraction call to get the quote
+              // Build extraction content
+              const extractionContent: any[] = [];
+              for (const img of imageData) {
+                extractionContent.push({
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: img.mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                    data: img.base64
+                  }
+                });
+              }
+              extractionContent.push({
+                type: 'text',
+                text: `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
+              });
+
               const extractionResponse = await client.messages.create({
                 model: 'claude-sonnet-4-20250514',
                 max_tokens: 300,
@@ -210,15 +227,7 @@ If you cannot determine the co-parent's message, return: {"quote": null, "date":
                 messages: [
                   {
                     role: 'user',
-                    content: imageData.length > 0 
-                      ? [
-                          ...imageData.map(img => ({
-                            type: 'image' as const,
-                            source: { type: 'base64' as const, media_type: img.mediaType, data: img.base64 }
-                          })),
-                          { type: 'text' as const, text: `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."` }
-                        ]
-                      : `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
+                    content: imageData.length > 0 ? extractionContent : `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
                   }
                 ],
               });
