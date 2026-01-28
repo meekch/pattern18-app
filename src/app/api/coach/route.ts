@@ -1,326 +1,335 @@
-export const dynamic = 'force-dynamic';
-import Anthropic from "@anthropic-ai/sdk";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach. You help parents in high-conflict custody situations respond to manipulative messages and build court documentation.
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
-YOUR APPROACH:
-Lead with court-ready responses. No drama. No emotion. No lengthy analysis first.
+// Initialize Supabase with service role for server-side operations
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-WHEN USER UPLOADS A SCREENSHOT OR MESSAGE:
+const COERCIVE_PATTERNS = [
+  'Gaslighting',
+  'DARVO',
+  'Intimidation',
+  'Threats',
+  'Financial Abuse',
+  'Using Children as Weapons',
+  'Blame-Shifting',
+  'False Accusations',
+  'Emotional Blackmail',
+  'Stonewalling',
+  'Monitoring/Stalking',
+  'Isolation Tactics',
+  'Minimizing/Denying',
+  'Word Salad',
+  'Moving Goalposts',
+  'Projection',
+  'Hoovering',
+  'Gatekeeping',
+];
 
-IMMEDIATELY provide:
-
-1. COURT-SAFE RESPONSE OPTIONS
-Give 2-3 copy-paste responses they can send right now. Each should be:
-- 1-2 sentences maximum
-- Neutral and factual
-- No emotion, no defense, no explanation
-- Nothing the other party can twist or react to
-
-Example responses:
-"I am acting within the court order. I will not engage further on this topic."
-"I do not agree with your characterization. Any concerns can be addressed through proper legal channels."
-"This trip is during my parenting time per our order."
-
-2. BRIEF TACTICAL ANALYSIS
-In 2-3 sentences, clinically label what the message is doing:
-- "This message contains: accusation, intimidation, record-building attempt."
-- "Tactics present: false accusation about time, legal posturing, blame-shifting."
-
-3. GUIDANCE (brief)
-- "Do not explain or defend."
-- "Do not respond more than once."
-- "Your job is to create a clean record, not convince him."
-
-4. OFFER NEXT STEPS
-- "Want me to help you label this for your evidence file?"
-- "I can draft an even shorter response if needed."
-- "Want help deciding if no response is better here?"
-
-FORMATTING:
-- Short paragraphs only
-- No bullet points or numbered lists in analysis
-- Response options can be numbered for clarity
-- No headers except "Response options:" when giving responses
-- No bold text
-- No em dashes
-
-TONE:
-- Clinical, not dramatic
-- Calm, not reactive
-- Strategic, not emotional
-- Brief, not verbose
-
-WHAT NOT TO DO:
-- Don't say "Oh this gets worse" or "This is nasty"
-- Don't use words like "theater", "weaponizing", "escalating badly"
-- Don't ask multiple questions before giving responses
-- Don't write lengthy analysis paragraphs
-- Don't validate anger or add fuel
-- Don't say "I understand your concerns" in suggested responses
-- Don't include "this will be documented" in responses
-
-PATTERN LABELING:
-When you identify patterns, state them simply:
-- "This contains a false accusation."
-- "This is intimidation."
-- "This is blame-shifting."
-
-Not: "He's weaponizing the rules against you in a nasty escalation."
-
-CRITICAL PATTERNS (mention severity):
-Threats, violence, harm to child, kidnapping threats - flag as critical, offer safety resources
-
-HIGH PATTERNS:
-False accusations, intimidation, coercive control, parental alienation
-
-MEDIUM PATTERNS:
-Gaslighting, guilt-inducing language, DARVO, manipulation
-
-STATE AWARENESS:
-If you know their state, mention relevant law briefly. Example: "In Arizona, travel during your parenting time typically doesn't require advance notice unless your order specifically requires it."
-
-CASE CONTEXT:
-If you have their case history (pattern counts), mention it factually: "This is the 4th false accusation I've documented."
-
-WHEN USER SAYS "HELP ME RESPOND":
-Skip all analysis. Give them 2-3 copy-paste responses immediately. Keep each under 2 sentences.
-
----
-
-FOR COURT DOCUMENTS (orders, motions, filings):
-
-This is the ONE exception where you provide detailed, structured guidance:
-- Read the entire document
-- Explain what it means in plain English
-- Give step-by-step action plan with deadlines
-- Provide exact templates they can copy
-- Warn about common mistakes
-
-Use numbered steps and clear structure for court documents only.`;
-
-export async function POST(request: NextRequest) {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+export async function POST(req: NextRequest) {
   try {
-    const contentType = request.headers.get('content-type') || '';
+    const formData = await req.formData();
+    const message = formData.get('message') as string || '';
+    const historyJson = formData.get('history') as string || '[]';
+    const caseContextJson = formData.get('caseContext') as string || '{}';
+    const patternCountsJson = formData.get('patternCounts') as string || '{}';
+    const evidenceCount = formData.get('evidenceCount') as string || '0';
+    const userId = formData.get('userId') as string || '';
+    const fileCount = parseInt(formData.get('fileCount') as string || '0');
+    
+    // Collect all files
+    const files: File[] = [];
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`file${i}`) as File | null;
+      if (file) files.push(file);
+    }
+    
+    // Also check for single file (backward compatibility)
+    const singleFile = formData.get('file') as File | null;
+    if (singleFile && files.length === 0) {
+      files.push(singleFile);
+    }
 
-    let message: string = '';
-    let fileCount = 0;
-    let history: any[] = [];
-    let caseContext: any = null;
-    let patternCounts: Record<string, number> = {};
-    let evidenceCount: number = 0;
-    const imageContents: Anthropic.ImageBlockParam[] = [];
+    const history = JSON.parse(historyJson);
+    const caseContext = JSON.parse(caseContextJson);
+    const patternCounts = JSON.parse(patternCountsJson);
 
-    if (contentType.includes('application/json')) {
-      const body = await request.json();
-      message = body.message || '';
-      history = body.history || [];
-      caseContext = body.caseContext || null;
-      patternCounts = body.patternCounts || {};
-      evidenceCount = body.evidenceCount || 0;
-    } else {
-      const formData = await request.formData();
-      message = formData.get("message") as string || '';
-      fileCount = parseInt(formData.get("fileCount") as string) || 0;
+    // Build system prompt
+    let systemPrompt = `You help people navigate co-parenting and family court situations.
 
-      const historyStr = formData.get("history") as string;
-      history = historyStr ? JSON.parse(historyStr) : [];
+Be confident, clear, and warm. Read documents carefully to get the facts right.
 
-      const caseContextStr = formData.get("caseContext") as string;
-      caseContext = caseContextStr ? JSON.parse(caseContextStr) : null;
-      
-      const patternCountsStr = formData.get("patternCounts") as string;
-      patternCounts = patternCountsStr ? JSON.parse(patternCountsStr) : {};
-      evidenceCount = parseInt(formData.get("evidenceCount") as string) || 0;
-      
-      const singleFile = formData.get('file') as File | null;
-      if (singleFile) {
-        const bytes = await singleFile.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
-        const fileName = singleFile.name.toLowerCase();
-        const isPdf = singleFile.type === 'application/pdf' || fileName.endsWith('.pdf');
+Your approach:
+- State what each document IS and what it MEANS for them
+- Identify who filed by reading signatures and content, not assuming
+- Highlight their strengths and current position
+- Give numbered next steps in priority order
+- Ask logical follow-up questions to guide them further
 
-        if (isPdf) {
-          imageContents.push({
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: base64,
-            },
-          } as any);
-        } else if (singleFile.type.startsWith('image/')) {
-          let mediaType = singleFile.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-          if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
-          const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-          if (!validTypes.includes(mediaType)) {
-            const ext = fileName.split('.').pop();
-            if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
-            else if (ext === 'png') mediaType = "image/png";
-            else if (ext === 'gif') mediaType = "image/gif";
-            else if (ext === 'webp') mediaType = "image/webp";
-            else mediaType = "image/jpeg";
-          }
-          imageContents.push({
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64,
-            },
-          });
-        }
+Use short paragraphs, bullets when helpful, and bold headers for easy scanning.
+
+IMPORTANT FOR TEXT MESSAGE SCREENSHOTS:
+- First determine WHO sent the message - look at the bubble color/position
+- If you can't tell who sent it, ASK: "Which message would you like me to help you respond to?"
+- NEVER analyze the user's own messages as if they were from the co-parent
+- Only flag coercive patterns in messages FROM the co-parent
+
+COERCIVE CONTROL PATTERNS to watch for (in co-parent messages only):
+${COERCIVE_PATTERNS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+When you detect patterns, mention them naturally: "This message shows [Pattern] because..."
+Don't be dramatic or use inflammatory language. Just name the tactic and give practical help.`;
+
+    // Add case context if available
+    if (caseContext.user_role || caseContext.coparent_name || caseContext.state) {
+      systemPrompt += `\n\nUser's case context:`;
+      if (caseContext.user_role) {
+        const userRole = caseContext.user_role === 'petitioner' ? 'Petitioner' : 'Respondent';
+        systemPrompt += `\n- User is the ${userRole} (from original case filing)`;
       }
-
-      for (let i = 0; i < fileCount; i++) {
-        const file = formData.get(`file${i}`) as File | null;
-        if (file && file.type.startsWith('image/')) {
-          const bytes = await file.arrayBuffer();
-          const base64 = Buffer.from(bytes).toString("base64");
-
-          let mediaType = file.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-          if (mediaType === "image/jpg" as any) mediaType = "image/jpeg";
-
-          const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-          if (!validTypes.includes(mediaType)) {
-            const ext = file.name.split('.').pop()?.toLowerCase();
-            if (ext === 'jpg' || ext === 'jpeg') mediaType = "image/jpeg";
-            else if (ext === 'png') mediaType = "image/png";
-            else if (ext === 'gif') mediaType = "image/gif";
-            else if (ext === 'webp') mediaType = "image/webp";
-            else mediaType = "image/jpeg";
-          }
-
-          imageContents.push({
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64,
-            },
-          });
-        }
+      if (caseContext.coparent_name) {
+        systemPrompt += `\n- Co-parent: ${caseContext.coparent_name}`;
+      }
+      if (caseContext.state) {
+        systemPrompt += `\n- State: ${caseContext.state}`;
       }
     }
 
-    const conversationMessages: Anthropic.MessageParam[] = [];
-
-    for (const msg of history) {
-      if ((msg.role === 'user' || msg.role === 'assistant') && msg.content && msg.content.trim()) {
-        conversationMessages.push({
-          role: msg.role,
-          content: msg.content,
-        });
-      }
-    }
-
-    const userContent: Anthropic.ContentBlockParam[] = [];
-
-    for (const img of imageContents) {
-      userContent.push(img);
-    }
-
-    let contextPrefix = '';
-    if (caseContext) {
-      const parts = [];
-      if (caseContext.coparentName || caseContext.coparent_name) parts.push(`Co-parent: ${caseContext.coparentName || caseContext.coparent_name}`);
-      if (caseContext.childAge || caseContext.children_ages) parts.push(`Child age: ${caseContext.childAge || caseContext.children_ages}`);
-      if (caseContext.userRole || caseContext.user_role) parts.push(`User is: ${caseContext.userRole || caseContext.user_role}`);
-      if (caseContext.state) parts.push(`State: ${caseContext.state}`);
-      if (parts.length > 0) {
-        contextPrefix = `[Context: ${parts.join(', ')}]\n\n`;
-      }
-    }
-
-    if (Object.keys(patternCounts).length > 0) {
-      const patternList = Object.entries(patternCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
+    // Add evidence stats
+    if (parseInt(evidenceCount) > 0) {
+      const topPatterns = Object.entries(patternCounts)
+        .sort((a: any, b: any) => b[1] - a[1])
+        .slice(0, 3)
         .map(([pattern, count]) => `${pattern}: ${count}`)
         .join(', ');
-      contextPrefix += `[Case history: ${evidenceCount} incidents. Top patterns: ${patternList}]\n\n`;
+      systemPrompt += `\n- ${evidenceCount} incidents documented (top patterns: ${topPatterns || 'none'})`;
+    }
+
+    // Build messages array
+    const messages: any[] = history.map((msg: any) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Handle file uploads
+    let userContent: any[] = [];
+    let hasImages = false;
+    const imageData: { base64: string; mediaType: string }[] = [];
+    
+    for (const file of files) {
+      const bytes = await file.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString('base64');
+      
+      const isPdf = file.type === 'application/pdf';
+      
+      if (isPdf) {
+        userContent.push({
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: base64,
+          },
+        });
+      } else {
+        hasImages = true;
+        const mediaType = file.type.startsWith('image/') ? file.type : 'image/jpeg';
+        imageData.push({ base64, mediaType });
+        userContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: base64,
+          },
+        });
+      }
     }
 
     userContent.push({
-      type: "text",
-      text: contextPrefix + message,
+      type: 'text',
+      text: message,
     });
 
-    conversationMessages.push({
-      role: "user",
+    messages.push({
+      role: 'user',
       content: userContent,
     });
 
-    const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
-      system: SYSTEM_PROMPT,
-      messages: conversationMessages,
-    });
-
+    // Call Claude
+    const client = new Anthropic();
+    
     const encoder = new TextEncoder();
-    const readable = new ReadableStream({
+    const stream = new ReadableStream({
       async start(controller) {
-        let detectedPatterns: string[] = [];
+        try {
+          const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 2000,
+            system: systemPrompt,
+            messages: messages,
+            stream: true,
+          });
 
-        stream.on("text", (text) => {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`)
-          );
-
-          const patternKeywords = [
-            'threat', 'intimidation', 'false accusation', 'coercive control',
-            'parental alienation', 'gaslighting', 'darvo', 'guilt trip',
-            'manipulation', 'blame-shifting', 'stalking', 'financial abuse',
-            'verbal abuse', 'contempt', 'baiting'
-          ];
-
-          const lowerText = text.toLowerCase();
-          for (const pattern of patternKeywords) {
-            if (lowerText.includes(pattern) && !detectedPatterns.includes(pattern)) {
-              detectedPatterns.push(pattern);
+          let fullResponse = '';
+          
+          for await (const event of response) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              const text = event.delta.text;
+              fullResponse += text;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`));
             }
           }
-        });
 
-        stream.on("end", () => {
-          if (detectedPatterns.length > 0) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ patterns: detectedPatterns })}\n\n`)
-            );
+          // Extract patterns from response
+          const patterns = extractPatterns(fullResponse);
+          if (patterns.length > 0) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
           }
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+
+          // Auto-save if we have patterns, a user ID, and it's clearly analyzing a co-parent message
+          const askedForClarification = fullResponse.toLowerCase().includes('which message') || 
+                                        fullResponse.toLowerCase().includes('who sent') ||
+                                        fullResponse.toLowerCase().includes('which one');
+          
+          if (patterns.length > 0 && userId && !askedForClarification && hasImages) {
+            try {
+              // Quick extraction call to get the quote
+              const extractionResponse = await client.messages.create({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 300,
+                system: `Extract the co-parent's message text from the conversation. Return ONLY a JSON object:
+{"quote": "exact text of co-parent message", "date": "YYYY-MM-DD or null"}
+If you cannot determine the co-parent's message, return: {"quote": null, "date": null}`,
+                messages: [
+                  {
+                    role: 'user',
+                    content: imageData.length > 0 
+                      ? [
+                          ...imageData.map(img => ({
+                            type: 'image' as const,
+                            source: { type: 'base64' as const, media_type: img.mediaType, data: img.base64 }
+                          })),
+                          { type: 'text' as const, text: `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."` }
+                        ]
+                      : `User said: "${message}"\n\nAssistant response: "${fullResponse.slice(0, 500)}..."`
+                  }
+                ],
+              });
+
+              const extractText = extractionResponse.content[0].type === 'text' 
+                ? extractionResponse.content[0].text 
+                : '';
+              
+              const jsonMatch = extractText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const extracted = JSON.parse(jsonMatch[0]);
+                
+                if (extracted.quote) {
+                  // Determine severity
+                  const highSeverityPatterns = ['Threats', 'Intimidation', 'Monitoring/Stalking', 'Using Children as Weapons'];
+                  const criticalPatterns = ['Threats'];
+                  const severity = patterns.some(p => criticalPatterns.includes(p)) ? 'critical'
+                    : patterns.some(p => highSeverityPatterns.includes(p)) ? 'high'
+                    : 'medium';
+
+                  const primaryPattern = patterns[0];
+                  const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+
+                  // Save to database
+                  const { data: savedIncident, error } = await supabase
+                    .from('incidents')
+                    .insert({
+                      user_id: userId,
+                      title: primaryPattern,
+                      coparent_message: extracted.quote,
+                      category: categoryKey,
+                      patterns: patterns,
+                      severity: severity,
+                      incident_date: extracted.date 
+                        ? new Date(extracted.date).toISOString()
+                        : new Date().toISOString(),
+                      source: 'coach',
+                    })
+                    .select('id')
+                    .single();
+
+                  if (!error && savedIncident) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                      saved: true, 
+                      incidentId: savedIncident.id,
+                      quote: extracted.quote.slice(0, 100),
+                      severity: severity
+                    })}\n\n`));
+                  }
+                }
+              }
+            } catch (extractError) {
+              console.error('Auto-save extraction error:', extractError);
+              // Don't fail the main request
+            }
+          }
+
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
-        });
-
-        stream.on("error", (error) => {
-          console.error("Stream error:", error);
+        } catch (error) {
+          console.error('Stream error:', error);
           controller.error(error);
-        });
+        }
       },
     });
 
-    return new Response(readable, {
+    return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     });
+
   } catch (error) {
-    console.error("Coach API error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process request" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    console.error('Coach API error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process message' },
+      { status: 500 }
     );
   }
 }
 
-export async function GET() {
-  return new Response(
-    JSON.stringify({ status: "Pattern 18 Coach API is running" }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+function extractPatterns(text: string): string[] {
+  const found: string[] = [];
+  const lowerText = text.toLowerCase();
+
+  for (const pattern of COERCIVE_PATTERNS) {
+    if (lowerText.includes(pattern.toLowerCase())) {
+      if (!found.includes(pattern)) {
+        found.push(pattern);
+      }
+    }
+  }
+
+  // Catch variations
+  if (lowerText.includes('blame shifting') && !found.includes('Blame-Shifting')) {
+    found.push('Blame-Shifting');
+  }
+  if ((lowerText.includes('monitoring') || lowerText.includes('stalking')) && !found.includes('Monitoring/Stalking')) {
+    found.push('Monitoring/Stalking');
+  }
+  if ((lowerText.includes('minimizing') || lowerText.includes('denying')) && !found.includes('Minimizing/Denying')) {
+    found.push('Minimizing/Denying');
+  }
+  if (lowerText.includes('isolation') && !found.includes('Isolation Tactics')) {
+    found.push('Isolation Tactics');
+  }
+  if (lowerText.includes('financial') && (lowerText.includes('abuse') || lowerText.includes('manipulation') || lowerText.includes('coercion')) && !found.includes('Financial Abuse')) {
+    found.push('Financial Abuse');
+  }
+
+  return found.slice(0, 5);
 }
