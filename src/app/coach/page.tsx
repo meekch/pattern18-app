@@ -69,6 +69,43 @@ export default function CoachPage() {
 
   const topPattern = Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0];
 
+  // Format message content with proper bullets and paragraphs
+  const formatMessage = (content: string) => {
+    const lines = content.split('\n');
+    const elements: JSX.Element[] = [];
+    let currentList: string[] = [];
+    let key = 0;
+
+    const flushList = () => {
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={key++}>
+            {currentList.map((item, i) => <li key={i}>{item}</li>)}
+          </ul>
+        );
+        currentList = [];
+      }
+    };
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Check if it's a bullet point
+      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.match(/^\d+\.\s/)) {
+        const text = trimmed.replace(/^[•\-]\s*/, '').replace(/^\d+\.\s*/, '');
+        currentList.push(text);
+      } else if (trimmed === '') {
+        flushList();
+      } else {
+        flushList();
+        elements.push(<p key={key++}>{trimmed}</p>);
+      }
+    }
+    
+    flushList();
+    return elements;
+  };
+
   const handleSend = async (messageText?: string, files?: FileList | File[]) => {
     const text = messageText || input;
     const fileArray = files ? Array.from(files) : [];
@@ -297,7 +334,9 @@ export default function CoachPage() {
                   </div>
                 )}
                 {msg.content && (
-                  <div className="message-content">{msg.content}</div>
+                  <div className="message-content">
+                    {msg.role === 'assistant' ? formatMessage(msg.content) : msg.content}
+                  </div>
                 )}
               </div>
             ))}
@@ -554,8 +593,20 @@ export default function CoachPage() {
           padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
           max-width: 85%;
-          white-space: pre-wrap;
           line-height: 1.6;
+        }
+        .message.assistant .message-content :global(ul) {
+          margin: 8px 0;
+          padding-left: 20px;
+        }
+        .message.assistant .message-content :global(li) {
+          margin-bottom: 4px;
+        }
+        .message.assistant .message-content :global(p) {
+          margin: 0 0 12px 0;
+        }
+        .message.assistant .message-content :global(p:last-child) {
+          margin-bottom: 0;
         }
         .typing {
           color: #9ca3af;
