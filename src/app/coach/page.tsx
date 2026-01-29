@@ -72,7 +72,7 @@ export default function CoachPage() {
   // Format message content with proper bullets and paragraphs
   const formatMessage = (content: string) => {
     const lines = content.split('\n');
-    const elements: JSX.Element[] = [];
+    const elements: React.ReactNode[] = [];
     let currentList: string[] = [];
     let key = 0;
 
