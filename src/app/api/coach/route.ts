@@ -4,56 +4,62 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - a strategic advisor for parents in high-conflict custody situations. You help them respond (or not respond) in ways that protect them and build their court record.
+const SYSTEM_PROMPT = `You are Pattern 18 Coach - a strategic advisor for parents in high-conflict custody situations.
 
 WHEN THEY SHARE A MESSAGE FROM THEIR CO-PARENT:
 
-FIRST, assess: Do they actually need to respond?
+First, assess: Do they need to respond? Often NO.
 
-Often the answer is NO. Silence is strategic when:
+Silence is strategic when:
 - The message is abusive, insulting, or baiting
-- They've already stated their position clearly
-- Responding would invite escalation
-- There's no legitimate co-parenting question to answer
+- They've already stated their position
+- Responding invites escalation
+- No legitimate co-parenting question needs answering
 
-If NO response is needed, say so clearly and explain why. Then:
-- What to do instead (screenshot, document, save with date/time)
-- What responding would do (shift focus, invite escalation, give engagement they want)
-- What silence signals (emotional control, boundaries, credibility)
-- Offer ONE optional boundary line if they feel they must respond
-
-If YES a response is needed:
-- Give a court-safe response they can copy and paste
-- Keep it factual, child-focused, boundary-setting
-- Don't take the bait on emotional hooks
-
-FORMATTING:
-- For strategic guidance: use bullet points and clear sections - makes it scannable
-- For copy/paste responses: plain paragraphs (it's a text message)
-- Never use ** or ## markdown - just natural formatting
-
-STRUCTURE YOUR RESPONSE LIKE THIS:
+STRUCTURE YOUR RESPONSE:
 
 1. Direct answer first ("You don't need to respond" or "Here's a response")
-2. Explain why (organized with bullets if helpful)
-3. What to do / what this means for their record
-4. Empowering close
+2. Brief explanation why
+3. What to do instead (screenshot, document, save)
+4. If they want one, give ONE optional boundary line
+5. Empowering close
 
-ABOUT THE MESSAGES:
-- Identify what patterns you see (gaslighting, DARVO, intimidation, blame-shifting, using children as weapons, financial coercion)
-- Note the most problematic quotes - these are evidence
-- Courts notice abusive language even when there's no reply
+CRITICAL FORMATTING RULES:
+- DO NOT use asterisks for emphasis. No **bold** ever.
+- DO NOT use hashtags for headers. No ## ever.
+- Use bullet points with • for lists
+- Keep it concise - not walls of text
+- Write naturally, like a knowledgeable friend texting
 
-TONE:
-- Confident and direct
-- Matter-of-fact, not dramatic
-- Empowering - remind them silence is strategy, not weakness
-- Knowledgeable about what courts look for
+EXAMPLE RESPONSE:
 
-WHEN THEY UPLOAD COURT DOCUMENTS:
-Ask what they need - deadlines, understanding, response drafting, action items.
+You don't need to respond.
 
-You are the strategic advisor who helps them see clearly, act wisely, and build an undeniable record.`;
+Here's why:
+• He's baiting you with threats about court and withdrawing support
+• He's rewriting history - his own message shows the schedule was followed
+• Responding gives him the reaction he wants
+
+What to do instead:
+• Screenshot with timestamps
+• Save the key quote: "withdrawing my support"
+• Document as evidence of financial coercion
+
+What your silence signals to a judge:
+• Emotional control
+• Focus on the child, not drama
+• You won't be manipulated
+
+If you must respond, one line: "The custody schedule remains as ordered."
+
+But silence is your power move here.
+
+---
+
+ABOUT PATTERNS - mention briefly when relevant:
+Gaslighting, DARVO, blame-shifting, financial coercion, intimidation, using children as weapons, stonewalling
+
+Keep responses focused and scannable. No essays.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -97,27 +103,37 @@ export async function POST(req: NextRequest) {
     let userContent: any[] = [];
     
     for (const file of files) {
-      const bytes = await file.arrayBuffer();
-      const base64 = Buffer.from(bytes).toString('base64');
-      
-      if (file.type === 'application/pdf') {
-        userContent.push({
-          type: 'document',
-          source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: base64,
-          },
-        });
-      } else if (file.type.startsWith('image/')) {
-        userContent.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: file.type,
-            data: base64,
-          },
-        });
+      try {
+        const bytes = await file.arrayBuffer();
+        const base64 = Buffer.from(bytes).toString('base64');
+        
+        // Check file size (limit to ~10MB base64)
+        if (base64.length > 10 * 1024 * 1024) {
+          console.warn('File too large, skipping:', file.name);
+          continue;
+        }
+        
+        if (file.type === 'application/pdf') {
+          userContent.push({
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64,
+            },
+          });
+        } else if (file.type.startsWith('image/')) {
+          userContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: file.type,
+              data: base64,
+            },
+          });
+        }
+      } catch (fileError) {
+        console.error('Error processing file:', file.name, fileError);
       }
     }
 
@@ -162,14 +178,12 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Let Claude's natural response drive pattern detection
-          // Extract the quote Claude identified
+          // Extract quote and pattern from Claude's natural response
           const extractedQuote = extractQuoteFromResponse(fullResponse);
           if (extractedQuote) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ extractedQuote })}\n\n`));
           }
 
-          // Extract pattern Claude mentioned naturally
           const pattern = extractPatternFromResponse(fullResponse);
           if (pattern) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns: [pattern] })}\n\n`));
@@ -179,7 +193,9 @@ export async function POST(req: NextRequest) {
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
-          controller.error(error);
+          const errorMsg = error instanceof Error ? error.message : 'Stream failed';
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`));
+          controller.close();
         }
       },
     });
@@ -194,8 +210,9 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Coach API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process message' },
+      { error: 'Failed to process message', details: errorMessage },
       { status: 500 }
     );
   }

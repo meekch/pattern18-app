@@ -71,7 +71,10 @@ export default function CoachPage() {
 
   // Format message content with proper bullets and paragraphs
   const formatMessage = (content: string) => {
-    const lines = content.split('\n');
+    // Strip any ** markdown Claude might still use
+    const cleanContent = content.replace(/\*\*([^*]+)\*\*/g, '$1');
+    
+    const lines = cleanContent.split('\n');
     const elements: React.ReactNode[] = [];
     let currentList: string[] = [];
     let key = 0;
@@ -91,8 +94,8 @@ export default function CoachPage() {
       const trimmed = line.trim();
       
       // Check if it's a bullet point
-      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.match(/^\d+\.\s/)) {
-        const text = trimmed.replace(/^[•\-]\s*/, '').replace(/^\d+\.\s*/, '');
+      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.match(/^\d+\.\s/)) {
+        const text = trimmed.replace(/^[•\-\*]\s*/, '').replace(/^\d+\.\s*/, '');
         currentList.push(text);
       } else if (trimmed === '') {
         flushList();
@@ -168,6 +171,9 @@ export default function CoachPage() {
           if (line.startsWith('data: ') && !line.includes('[DONE]')) {
             try {
               const data = JSON.parse(line.slice(6));
+              if (data.error) {
+                throw new Error(data.error);
+              }
               if (data.content) {
                 assistantContent += data.content;
                 setMessages(prev => {
@@ -176,7 +182,11 @@ export default function CoachPage() {
                   return newMessages;
                 });
               }
-            } catch (e) {}
+            } catch (e) {
+              if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                console.error('Parse error:', e);
+              }
+            }
           }
         }
       }
