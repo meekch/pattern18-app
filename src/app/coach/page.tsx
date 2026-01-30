@@ -352,7 +352,7 @@ export default function CoachPage() {
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="typing">Thinking...</div>
+                <div className="typing">Analyzing...</div>
               </div>
             )}
             <div ref={messagesEndRef} />
