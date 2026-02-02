@@ -4,54 +4,79 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - a calm, strategic advisor for parents in high-conflict custody situations.
+const SYSTEM_PROMPT = `You are a knowledgeable co-parenting strategist. You've helped hundreds of parents navigate high-conflict custody situations. You understand manipulation tactics deeply, and you help people respond in ways that protect them and look good to a judge.
 
-WHEN THEY SHARE A MESSAGE AND WANT HELP RESPONDING:
+HOW YOU COMMUNICATE:
+- Like a smart friend who happens to know family law
+- Warm but direct - no fluff, no lectures
+- Confident when you see manipulation - name it clearly
+- One good answer, then offer to adjust
 
-Go straight to the response. Don't lecture about patterns or list every type of abuse - that's what the evidence system is for. They're in the moment and need help NOW.
+WHEN SOMEONE SHARES A MESSAGE:
 
-Format:
-1. One calm intro line (optional)
-2. The response they can copy and send
-3. Offer variations: "Want a firmer version?" or "I can make it shorter"
+1. ACKNOWLEDGE what's happening (1-2 sentences, confident)
+   "This is blame-shifting. He didn't follow through, now he's making it your problem."
+   "Classic DARVO - deny, attack, reverse victim. You're not crazy."
+   "He's putting your child in the middle. That's not okay."
 
-The response you write should:
-• Be calm, factual, child-focused
-• Set a clear boundary
-• Not take the bait
-• Be ready to copy and send
+2. GIVE ONE RESPONSE they can send (or tell them not to respond)
+   Keep it brief, factual, court-safe. Something they'd actually send.
+   No dramatic headers. Just the response, ready to copy.
 
-IF THEY ASK WHETHER TO RESPOND:
+3. OFFER TO ITERATE
+   "Want a shorter version?" 
+   "Need something firmer?"
+   "Want me to adjust the tone?"
 
-Sometimes silence is better. Tell them directly:
-"You don't need to respond to this."
+WHAT MAKES A GOOD RESPONSE:
+- Sounds like the reasonable parent
+- States facts, not feelings
+- Doesn't defend or over-explain
+- Doesn't take the bait
+- Brief - 1-3 sentences usually
 
-Then briefly explain why and what to do instead (screenshot, save, document).
+EXAMPLE INTERACTION:
 
-FORMATTING:
-• No asterisks for bold. No ** ever.
-• No hashtags for headers. No ## ever.
-• Use bullet points with • when listing things
-• Keep it SHORT - they're stressed, not reading an essay
+User: [shares screenshot of co-parent blaming them for schedule conflict]
 
-TONE:
-• Calm and confident, like ChatGPT
-• Matter-of-fact, not dramatic
-• Supportive without being preachy
+You: "He's blame-shifting. He made the choice, now he's framing it as your fault. Don't bite.
 
-Example good response:
+Here's a response:
 
-Here is a calm, court safe response. It sets a boundary and shuts down the attack.
+'I followed our Friday schedule as agreed. Let me know if you'd like to discuss changes in writing.'
 
-Response you can send:
+That's it. Brief, factual, references the agreement. Want a different version?"
 
-I will not engage with personal attacks or abusive language. Hawk's schedule change was made at his request and based on how he was feeling. I supported him and communicated clearly. Schedule changes should be handled in writing between adults. Please keep future communication focused on logistics only.
+WHEN THEY ASK FOR HELP WITH DOCUMENTS:
+- Help them create it, don't just explain
+- Go back and forth until it's right
+- Ask what tone they want
+- Offer specific language they can copy
 
-If you want a firmer version or one that documents the harassment more explicitly for records, say the word.
+WHEN SOMETHING IS UNCLEAR:
+Ask ONE quick question to clarify, then help.
+"Quick question - is this about the existing order or a new request?"
 
----
+USE THEIR CONTEXT:
+- Use co-parent's name if provided
+- Reference their state if relevant
+- Note pattern history: "This is the 5th time you've documented schedule interference"
 
-That's it. Short, useful, done.`;
+YOUR TONE:
+- Confident, not hedging ("This IS manipulation" not "This might be")
+- Warm, not clinical
+- Empowering, not victimizing
+- Brief, not lecturing
+
+NEVER:
+- Give three response options (overwhelming)
+- Use bold headers for everything (robotic)
+- Lecture about patterns before helping
+- Say "I'm sorry you're going through this" (patronizing)
+- Hedge when the pattern is obvious
+- Over-explain why something is manipulation
+
+Remember: They came to you in a hard moment. Help them feel calm, clear, and confident. One good answer. Offer to adjust. That's it.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,15 +86,7 @@ export async function POST(req: NextRequest) {
     const caseContextJson = formData.get('caseContext') as string || '{}';
     const patternCountsJson = formData.get('patternCounts') as string || '{}';
     const evidenceCount = formData.get('evidenceCount') as string || '0';
-    
-    // Handle multiple files
-    const files: File[] = [];
-    const fileEntries = formData.getAll('file');
-    for (const entry of fileEntries) {
-      if (entry instanceof File && entry.size > 0) {
-        files.push(entry);
-      }
-    }
+    const file = formData.get('file') as File | null;
 
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
@@ -77,67 +94,73 @@ export async function POST(req: NextRequest) {
 
     // Build context string
     let contextString = '';
-    const totalEvidence = parseInt(evidenceCount) || 0;
-    if (totalEvidence > 0) {
-      contextString = `\n\n[${totalEvidence} incidents documented so far]`;
-    }
+    
     if (caseContext.coparent_name) {
-      contextString += `\n[Co-parent: ${caseContext.coparent_name}]`;
+      contextString += `\n\n[Co-parent's name: ${caseContext.coparent_name}]`;
+    }
+    if (caseContext.user_name) {
+      contextString += `\n[User's name: ${caseContext.user_name}]`;
+    }
+    if (caseContext.state) {
+      contextString += `\n[State: ${caseContext.state}]`;
+    }
+    
+    if (Object.keys(patternCounts).length > 0 || parseInt(evidenceCount) > 0) {
+      const topPatterns = Object.entries(patternCounts)
+        .sort((a: any, b: any) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([pattern, count]) => `${pattern}: ${count}x`)
+        .join(', ');
+      
+      contextString += `\n[Case history: ${evidenceCount} incidents documented. Patterns: ${topPatterns || 'None yet'}]`;
     }
 
     // Build messages array
-    const messages: any[] = history.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const messages: any[] = history
+      .filter((msg: any) => msg.content && msg.content.trim())
+      .map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-    // Build user content with files
+    // Handle file upload
     let userContent: any[] = [];
     
-    for (const file of files) {
-      try {
-        const bytes = await file.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString('base64');
-        
-        // Check file size (limit to ~10MB base64)
-        if (base64.length > 10 * 1024 * 1024) {
-          console.warn('File too large, skipping:', file.name);
-          continue;
+    if (file) {
+      const bytes = await file.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString('base64');
+      
+      const isPdf = file.type === 'application/pdf';
+      
+      if (isPdf) {
+        userContent.push({
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: base64,
+          },
+        });
+      } else {
+        let mediaType = file.type;
+        if (!mediaType.startsWith('image/')) {
+          mediaType = 'image/jpeg';
         }
-        
-        if (file.type === 'application/pdf') {
-          userContent.push({
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: base64,
-            },
-          });
-        } else if (file.type.startsWith('image/')) {
-          userContent.push({
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: file.type,
-              data: base64,
-            },
-          });
-        }
-      } catch (fileError) {
-        console.error('Error processing file:', file.name, fileError);
+        userContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: base64,
+          },
+        });
       }
     }
 
-    // Natural message
-    let userText = message;
-    if (files.length > 0 && (!message.trim() || message === 'Please analyze this screenshot and help me respond.')) {
-      userText = files.length > 1 ? 'Help me with these.' : 'Help me respond to this.';
-    }
-
+    // Add message with context
     userContent.push({
       type: 'text',
-      text: userText + contextString,
+      text: message + contextString,
     });
 
     messages.push({
@@ -154,7 +177,7 @@ export async function POST(req: NextRequest) {
         try {
           const response = await client.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 1500,
+            max_tokens: 2000,
             system: SYSTEM_PROMPT,
             messages: messages,
             stream: true,
@@ -170,24 +193,17 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Extract quote and pattern from Claude's natural response
-          const extractedQuote = extractQuoteFromResponse(fullResponse);
-          if (extractedQuote) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ extractedQuote })}\n\n`));
-          }
-
-          const pattern = extractPatternFromResponse(fullResponse);
-          if (pattern) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns: [pattern] })}\n\n`));
+          // Extract patterns from response for evidence saving
+          const patterns = extractPatterns(fullResponse);
+          if (patterns.length > 0) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
-          const errorMsg = error instanceof Error ? error.message : 'Stream failed';
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`));
-          controller.close();
+          controller.error(error);
         }
       },
     });
@@ -202,56 +218,60 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Coach API error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process message', details: errorMessage },
+      { error: 'Failed to process message' },
       { status: 500 }
     );
   }
 }
 
-function extractQuoteFromResponse(text: string): string | null {
-  // Look for "He wrote:" or "She wrote:" or "They wrote:" patterns
-  const writePatterns = [
-    /(?:he|she|they)\s+wrote:\s*["']([^"']+)["']/gi,
-    /(?:he|she|they)\s+said:\s*["']([^"']+)["']/gi,
-    /(?:he|she|they)\s+sent:\s*["']([^"']+)["']/gi,
+function extractPatterns(text: string): string[] {
+  const coercivePatterns = [
+    'Gaslighting',
+    'DARVO',
+    'Intimidation',
+    'Threats',
+    'Financial Abuse',
+    'Financial Manipulation',
+    'Using Children',
+    'Blame-Shifting',
+    'Blame Shifting',
+    'False Accusations',
+    'Emotional Blackmail',
+    'Stonewalling',
+    'Monitoring',
+    'Stalking',
+    'Surveillance',
+    'Isolation',
+    'Minimizing',
+    'Denying',
+    'Word Salad',
+    'Moving Goalposts',
+    'Projection',
+    'Hoovering',
+    'Gatekeeping',
+    'Schedule Interference',
+    'Parental Alienation',
+    'Coercive Control',
+    'Manipulation',
   ];
-  
-  for (const pattern of writePatterns) {
-    const match = pattern.exec(text);
-    if (match && match[1] && match[1].length > 10) {
-      return match[1].trim();
-    }
-  }
-  
-  return null;
-}
 
-function extractPatternFromResponse(text: string): string | null {
-  // Look for natural pattern mentions in Claude's response
+  const found: string[] = [];
   const lowerText = text.toLowerCase();
-  
-  const patterns = [
-    { search: 'financial coercion', name: 'Financial Coercion' },
-    { search: 'financial abuse', name: 'Financial Coercion' },
-    { search: 'intimidation', name: 'Intimidation' },
-    { search: 'gaslighting', name: 'Gaslighting' },
-    { search: 'darvo', name: 'DARVO' },
-    { search: 'blame-shifting', name: 'Blame-Shifting' },
-    { search: 'blame shifting', name: 'Blame-Shifting' },
-    { search: 'using children', name: 'Using Children as Weapons' },
-    { search: 'stonewalling', name: 'Stonewalling' },
-    { search: 'court threats', name: 'Intimidation' },
-    { search: 'using court', name: 'Intimidation' },
-    { search: 'threatening', name: 'Intimidation' },
-  ];
-  
-  for (const p of patterns) {
-    if (lowerText.includes(p.search)) {
-      return p.name;
+
+  for (const pattern of coercivePatterns) {
+    if (lowerText.includes(pattern.toLowerCase())) {
+      let normalizedPattern = pattern;
+      if (pattern === 'Blame Shifting') normalizedPattern = 'Blame-Shifting';
+      if (pattern === 'Financial Manipulation') normalizedPattern = 'Financial Abuse';
+      if (pattern === 'Using Children') normalizedPattern = 'Using Children as Weapons';
+      if (pattern === 'Surveillance') normalizedPattern = 'Monitoring/Stalking';
+      
+      if (!found.includes(normalizedPattern)) {
+        found.push(normalizedPattern);
+      }
     }
   }
-  
-  return null;
+
+  return found.slice(0, 5);
 }
