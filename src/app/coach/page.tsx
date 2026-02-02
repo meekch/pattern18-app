@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,9 @@ import BottomNav from '@/components/BottomNav';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  images?: string[]; // URLs for image previews
+  patterns?: string[];
+  hasImage?: boolean;
+  saved?: boolean;
 }
 
 export default function CoachPage() {
@@ -20,8 +22,9 @@ export default function CoachPage() {
   const [sending, setSending] = useState(false);
   const [showHome, setShowHome] = useState(true);
   const [caseContext, setCaseContext] = useState<any>(null);
-  const [evidenceCount, setEvidenceCount] = useState(0);
   const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
+  const [evidenceCount, setEvidenceCount] = useState(0);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +37,7 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
+      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -42,6 +46,7 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
+      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -67,70 +72,65 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const topPattern = Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0];
-
-  // Format message content with proper bullets and paragraphs
-  const formatMessage = (content: string) => {
-    // Strip any ** markdown Claude might still use
-    const cleanContent = content.replace(/\*\*([^*]+)\*\*/g, '$1');
-    
-    const lines = cleanContent.split('\n');
-    const elements: React.ReactNode[] = [];
-    let currentList: string[] = [];
-    let key = 0;
-
-    const flushList = () => {
-      if (currentList.length > 0) {
-        elements.push(
-          <ul key={key++}>
-            {currentList.map((item, i) => <li key={i}>{item}</li>)}
-          </ul>
-        );
-        currentList = [];
-      }
-    };
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      
-      // Check if it's a bullet point
-      if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.match(/^\d+\.\s/)) {
-        const text = trimmed.replace(/^[•\-\*]\s*/, '').replace(/^\d+\.\s*/, '');
-        currentList.push(text);
-      } else if (trimmed === '') {
-        flushList();
-      } else {
-        flushList();
-        elements.push(<p key={key++}>{trimmed}</p>);
-      }
+  // Clear "saved" indicator after 3 seconds
+  useEffect(() => {
+    if (lastSaved) {
+      const timer = setTimeout(() => setLastSaved(null), 3000);
+      return () => clearTimeout(timer);
     }
-    
-    flushList();
-    return elements;
+  }, [lastSaved]);
+
+  const topPattern = Object.entries(patternCounts)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  // Auto-save function
+  const autoSaveEvidence = async (userContent: string, patterns: string[], hasImage: boolean) => {
+    if (!user || patterns.length === 0) return;
+
+    try {
+      const primaryPattern = patterns[0] || 'Uncategorized';
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: userContent,
+        category: categoryKey,
+        patterns: patterns,
+        severity: patterns.some(p => 
+          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse', 'hostile'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
+        ) ? 'high' : 'medium',
+        incident_date: new Date().toISOString(),
+        source: hasImage ? 'screenshot' : 'text',
+      });
+
+      setEvidenceCount(prev => prev + 1);
+      setLastSaved(primaryPattern);
+      
+      // Update pattern counts
+      setPatternCounts(prev => ({
+        ...prev,
+        [categoryKey]: (prev[categoryKey] || 0) + 1
+      }));
+
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
   };
 
-  const handleSend = async (messageText?: string, files?: FileList | File[]) => {
+  const handleSend = async (messageText?: string, file?: File) => {
     const text = messageText || input;
-    const fileArray = files ? Array.from(files) : [];
-    
-    if (!text.trim() && fileArray.length === 0) return;
+    if (!text.trim() && !file) return;
 
     setShowHome(false);
     setSending(true);
     setInput('');
-
-    // Create image preview URLs
-    const imageUrls: string[] = [];
-    for (const file of fileArray) {
-      if (file.type.startsWith('image/')) {
-        imageUrls.push(URL.createObjectURL(file));
-      }
-    }
+    setLastSaved(null);
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || '',
-      images: imageUrls.length > 0 ? imageUrls : undefined
+      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
+      hasImage: !!file
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -142,8 +142,7 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      // Append all files
-      for (const file of fileArray) {
+      if (file) {
         formData.append('file', file);
       }
 
@@ -158,6 +157,8 @@ export default function CoachPage() {
       if (!reader) throw new Error('No reader');
 
       let assistantContent = '';
+      let patterns: string[] = [];
+      
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (true) {
@@ -168,12 +169,9 @@ export default function CoachPage() {
         const lines = text.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+          if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.error) {
-                throw new Error(data.error);
-              }
               if (data.content) {
                 assistantContent += data.content;
                 setMessages(prev => {
@@ -182,13 +180,24 @@ export default function CoachPage() {
                   return newMessages;
                 });
               }
-            } catch (e) {
-              if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
-                console.error('Parse error:', e);
+              if (data.patterns) {
+                patterns = data.patterns;
               }
-            }
+            } catch (e) {}
           }
         }
+      }
+
+      // Update final message with patterns
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1].patterns = patterns;
+        return newMessages;
+      });
+
+      // AUTO-SAVE when patterns detected
+      if (patterns.length > 0) {
+        await autoSaveEvidence(userMessage.content, patterns, !!file);
       }
 
     } catch (error) {
@@ -220,19 +229,27 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    // Check for CSV - redirect to bulk import
-    const hasCSV = Array.from(files).some(f => f.type === 'text/csv' || f.name.endsWith('.csv'));
-    if (hasCSV) {
+    // Check if PDF - redirect to docs
+    if (file.type === 'application/pdf') {
+      router.push('/docs');
+      return;
+    }
+    
+    // Check if CSV - redirect to bulk import
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
       router.push('/evidence/upload');
       return;
     }
 
-    // Send all files to coach
-    await handleSend('', files);
+    // Handle image
+    if (file.type.startsWith('image/')) {
+      await handleSend('Please analyze this screenshot and help me respond.', file);
+    }
 
+    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -264,15 +281,23 @@ export default function CoachPage() {
         </button>
       </header>
 
+      {/* Saved indicator */}
+      {lastSaved && (
+        <div className="saved-toast">
+          ✓ Saved to evidence
+        </div>
+      )}
+
       <div className="content">
         {showHome ? (
           <div className="home">
             <div className="welcome">
               <div className="heart">💚</div>
-              <h1>Hey, I'm glad you're here.</h1>
-              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I've got you.</p>
+              <h1>Hey, I am glad you are here.</h1>
+              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
             </div>
 
+            {/* Stats Bar */}
             {evidenceCount > 0 && (
               <div className="stats-bar">
                 <div className="stat">
@@ -288,30 +313,31 @@ export default function CoachPage() {
                   <>
                     <div className="stat-divider" />
                     <div className="stat">
-                      <span className="stat-pattern">{topPattern[0].replace(/_/g, ' ')}</span>
-                      <span className="stat-label">TOP ({topPattern[1]}x)</span>
+                      <span className="stat-pattern">{topPattern[0]}</span>
+                      <span className="stat-label">MOST COMMON</span>
                     </div>
                   </>
                 )}
               </div>
             )}
 
+            {/* Quick Actions */}
             <div className="quick-actions">
-              <h3>WHAT DO YOU NEED?</h3>
+              <h3>WHAT CAN I HELP WITH?</h3>
               
               <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
                 <span className="action-icon">📸</span>
                 <div className="action-text">
-                  <span className="action-title">I just got a message</span>
-                  <span className="action-desc">Upload screenshot, get help responding</span>
+                  <span className="action-title">Analyze a screenshot</span>
+                  <span className="action-desc">Upload image of a message</span>
                 </div>
               </button>
 
               <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
                 <span className="action-icon">📄</span>
                 <div className="action-text">
-                  <span className="action-title">Court document help</span>
-                  <span className="action-desc">Upload, understand, prepare filings</span>
+                  <span className="action-title">Court doc help</span>
+                  <span className="action-desc">Understand, respond, or prepare filings</span>
                 </div>
               </button>
 
@@ -319,7 +345,7 @@ export default function CoachPage() {
                 <span className="action-icon">📤</span>
                 <div className="action-text">
                   <span className="action-title">Import message history</span>
-                  <span className="action-desc">Bulk analyze exported messages</span>
+                  <span className="action-desc">Bulk analyze CSV export</span>
                 </div>
               </button>
 
@@ -336,23 +362,19 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                {msg.images && msg.images.length > 0 && (
-                  <div className="message-images">
-                    {msg.images.map((url, j) => (
-                      <img key={j} src={url} alt="Uploaded" className="message-image" />
+                <div className="message-content">{msg.content}</div>
+                {msg.patterns && msg.patterns.length > 0 && (
+                  <div className="patterns-detected">
+                    {msg.patterns.map((p, j) => (
+                      <span key={j} className="pattern-tag">{p}</span>
                     ))}
-                  </div>
-                )}
-                {msg.content && (
-                  <div className="message-content">
-                    {msg.role === 'assistant' ? formatMessage(msg.content) : msg.content}
                   </div>
                 )}
               </div>
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="typing">Analyzing...</div>
+                <div className="typing">Thinking...</div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -360,6 +382,7 @@ export default function CoachPage() {
         )}
       </div>
 
+      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
@@ -383,7 +406,6 @@ export default function CoachPage() {
           ref={fileInputRef}
           type="file"
           accept="image/*,.pdf,.csv"
-          multiple
           onChange={handleFileSelect}
           hidden
         />
@@ -440,6 +462,26 @@ export default function CoachPage() {
           font-size: 14px;
           cursor: pointer;
         }
+        .saved-toast {
+          position: fixed;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #059669;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          z-index: 200;
+          animation: fadeInOut 3s ease-in-out;
+        }
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+          15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
         .content {
           flex: 1;
           overflow-y: auto;
@@ -490,10 +532,9 @@ export default function CoachPage() {
         }
         .stat-pattern {
           display: block;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 700;
           color: #1a3a2f;
-          text-transform: capitalize;
         }
         .stat-label {
           font-size: 10px;
@@ -567,63 +608,39 @@ export default function CoachPage() {
         .message {
           margin-bottom: 16px;
         }
-        .message.user {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-        .message.assistant {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-        .message-images {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 8px;
-          justify-content: flex-end;
-        }
-        .message-image {
-          max-width: 200px;
-          max-height: 300px;
-          border-radius: 12px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
         .message.user .message-content {
           background: #1a3a2f;
           color: white;
           padding: 14px 18px;
           border-radius: 18px 18px 4px 18px;
-          max-width: 85%;
+          margin-left: 40px;
         }
         .message.assistant .message-content {
           background: white;
           color: #1a3a2f;
           padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
-          max-width: 85%;
-          line-height: 1.6;
+          margin-right: 40px;
+          white-space: pre-wrap;
         }
-        .message.assistant .message-content :global(ul) {
-          margin: 8px 0;
-          padding-left: 20px;
+        .patterns-detected {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 8px;
+          margin-right: 40px;
         }
-        .message.assistant .message-content :global(li) {
-          margin-bottom: 4px;
-        }
-        .message.assistant .message-content :global(p) {
-          margin: 0 0 12px 0;
-        }
-        .message.assistant .message-content :global(p:last-child) {
-          margin-bottom: 0;
+        .pattern-tag {
+          background: #fef3c7;
+          color: #92400e;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
         }
         .typing {
           color: #9ca3af;
           font-style: italic;
-          padding: 14px 18px;
-          background: white;
-          border-radius: 18px;
         }
         .input-area {
           position: fixed;
