@@ -8,9 +8,9 @@ import BottomNav from '@/components/BottomNav';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  images?: string[];
   patterns?: string[];
-  hasImage?: boolean;
-  saved?: boolean;
+  riskLevel?: string;
 }
 
 export default function CoachPage() {
@@ -22,9 +22,12 @@ export default function CoachPage() {
   const [sending, setSending] = useState(false);
   const [showHome, setShowHome] = useState(true);
   const [caseContext, setCaseContext] = useState<any>(null);
-  const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [patternCounts, setPatternCounts] = useState<Record<string, number>>({});
+  const [currentPatterns, setCurrentPatterns] = useState<string[]>([]);
+  const [currentQuote, setCurrentQuote] = useState<string>('');
+  const [currentRiskLevel, setCurrentRiskLevel] = useState<string>('');
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +40,6 @@ export default function CoachPage() {
       }
       setUser(session.user);
 
-      // Load case context
       const { data: caseData } = await supabase
         .from('case_context')
         .select('*')
@@ -46,7 +48,6 @@ export default function CoachPage() {
       
       if (caseData) setCaseContext(caseData);
 
-      // Load evidence stats
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
@@ -72,65 +73,32 @@ export default function CoachPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Clear "saved" indicator after 3 seconds
-  useEffect(() => {
-    if (lastSaved) {
-      const timer = setTimeout(() => setLastSaved(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastSaved]);
+  const topPattern = Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0];
 
-  const topPattern = Object.entries(patternCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-
-  // Auto-save function
-  const autoSaveEvidence = async (userContent: string, patterns: string[], hasImage: boolean) => {
-    if (!user || patterns.length === 0) return;
-
-    try {
-      const primaryPattern = patterns[0] || 'Uncategorized';
-      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: userContent,
-        category: categoryKey,
-        patterns: patterns,
-        severity: patterns.some(p => 
-          ['threats', 'intimidation', 'stalking', 'monitoring', 'financial_abuse', 'hostile'].includes(p.toLowerCase().replace(/[\s\/]+/g, '_'))
-        ) ? 'high' : 'medium',
-        incident_date: new Date().toISOString(),
-        source: hasImage ? 'screenshot' : 'text',
-      });
-
-      setEvidenceCount(prev => prev + 1);
-      setLastSaved(primaryPattern);
-      
-      // Update pattern counts
-      setPatternCounts(prev => ({
-        ...prev,
-        [categoryKey]: (prev[categoryKey] || 0) + 1
-      }));
-
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-    }
-  };
-
-  const handleSend = async (messageText?: string, file?: File) => {
+  const handleSend = async (messageText?: string, files?: FileList | File[]) => {
     const text = messageText || input;
-    if (!text.trim() && !file) return;
+    const fileArray = files ? Array.from(files) : [];
+    
+    if (!text.trim() && fileArray.length === 0) return;
 
     setShowHome(false);
     setSending(true);
     setInput('');
-    setLastSaved(null);
+    setCurrentPatterns([]);
+    setCurrentQuote('');
+    setShowSavePrompt(false);
+
+    const imageUrls: string[] = [];
+    for (const file of fileArray) {
+      if (file.type.startsWith('image/')) {
+        imageUrls.push(URL.createObjectURL(file));
+      }
+    }
 
     const userMessage: Message = { 
       role: 'user', 
-      content: text || (file ? `[Uploaded: ${file.name}]` : ''),
-      hasImage: !!file
+      content: text || '',
+      images: imageUrls.length > 0 ? imageUrls : undefined
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -142,7 +110,7 @@ export default function CoachPage() {
       formData.append('patternCounts', JSON.stringify(patternCounts));
       formData.append('evidenceCount', String(evidenceCount));
       
-      if (file) {
+      for (const file of fileArray) {
         formData.append('file', file);
       }
 
@@ -157,7 +125,9 @@ export default function CoachPage() {
       if (!reader) throw new Error('No reader');
 
       let assistantContent = '';
-      let patterns: string[] = [];
+      let detectedPatterns: string[] = [];
+      let extractedQuote = '';
+      let riskLevel = '';
       
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -169,9 +139,12 @@ export default function CoachPage() {
         const lines = text.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
             try {
               const data = JSON.parse(line.slice(6));
+              if (data.error) {
+                throw new Error(data.error);
+              }
               if (data.content) {
                 assistantContent += data.content;
                 setMessages(prev => {
@@ -180,24 +153,35 @@ export default function CoachPage() {
                   return newMessages;
                 });
               }
-              if (data.patterns) {
-                patterns = data.patterns;
+              // Capture pattern data
+              if (data.patternLabels && data.patternLabels.length > 0) {
+                detectedPatterns = data.patternLabels;
+                setCurrentPatterns(detectedPatterns);
               }
-            } catch (e) {}
+              if (data.extractedQuote) {
+                extractedQuote = data.extractedQuote;
+                setCurrentQuote(extractedQuote);
+              }
+              if (data.riskLevel) {
+                riskLevel = data.riskLevel;
+                setCurrentRiskLevel(riskLevel);
+              }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+            }
           }
         }
       }
 
-      // Update final message with patterns
-      setMessages(prev => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1].patterns = patterns;
-        return newMessages;
-      });
-
-      // AUTO-SAVE when patterns detected
-      if (patterns.length > 0) {
-        await autoSaveEvidence(userMessage.content, patterns, !!file);
+      // Update the last message with patterns
+      if (detectedPatterns.length > 0) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].patterns = detectedPatterns;
+          newMessages[newMessages.length - 1].riskLevel = riskLevel;
+          return newMessages;
+        });
+        setShowSavePrompt(true);
       }
 
     } catch (error) {
@@ -208,6 +192,36 @@ export default function CoachPage() {
       }]);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSaveEvidence = async () => {
+    if (!user || currentPatterns.length === 0) return;
+
+    try {
+      const primaryPattern = currentPatterns[0];
+      const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
+      
+      await supabase.from('incidents').insert({
+        user_id: user.id,
+        title: primaryPattern,
+        coparent_message: currentQuote || 'Screenshot analysis',
+        category: categoryKey,
+        patterns: currentPatterns,
+        severity: currentRiskLevel || 'medium',
+        incident_date: new Date().toISOString(),
+      });
+
+      setEvidenceCount(prev => prev + 1);
+      setShowSavePrompt(false);
+      setCurrentPatterns([]);
+      setCurrentQuote('');
+      
+      // Brief confirmation
+      alert('✓ Saved to evidence');
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save. Please try again.');
     }
   };
 
@@ -229,28 +243,36 @@ export default function CoachPage() {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
-    // Check if PDF - redirect to docs
-    if (file.type === 'application/pdf') {
-      router.push('/docs');
-      return;
-    }
-    
-    // Check if CSV - redirect to bulk import
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+    const hasCSV = Array.from(files).some(f => f.type === 'text/csv' || f.name.endsWith('.csv'));
+    if (hasCSV) {
       router.push('/evidence/upload');
       return;
     }
 
-    // Handle image
-    if (file.type.startsWith('image/')) {
-      await handleSend('Please analyze this screenshot and help me respond.', file);
-    }
+    await handleSend('', files);
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    // Could add a toast notification here
+  };
+
+  // Extract the suggested response from assistant message for easy copying
+  const getResponseToCopy = (content: string): string | null => {
+    // Look for content between common markers
+    const lines = content.split('\n').filter(l => l.trim());
+    // Usually the actual response is a paragraph that looks like a message
+    for (const line of lines) {
+      if (line.length > 20 && line.length < 500 && !line.includes('Want it') && !line.includes('?')) {
+        return line.trim();
+      }
+    }
+    return null;
   };
 
   if (loading) {
@@ -281,23 +303,15 @@ export default function CoachPage() {
         </button>
       </header>
 
-      {/* Saved indicator */}
-      {lastSaved && (
-        <div className="saved-toast">
-          ✓ Saved to evidence
-        </div>
-      )}
-
       <div className="content">
         {showHome ? (
           <div className="home">
             <div className="welcome">
               <div className="heart">💚</div>
-              <h1>Hey, I am glad you are here.</h1>
-              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I have got you.</p>
+              <h1>Hey, I'm glad you're here.</h1>
+              <p>Whether you just got a message that made your stomach drop, need help with a court document, or simply need a moment to breathe - I've got you.</p>
             </div>
 
-            {/* Stats Bar */}
             {evidenceCount > 0 && (
               <div className="stats-bar">
                 <div className="stat">
@@ -313,31 +327,30 @@ export default function CoachPage() {
                   <>
                     <div className="stat-divider" />
                     <div className="stat">
-                      <span className="stat-pattern">{topPattern[0]}</span>
-                      <span className="stat-label">MOST COMMON</span>
+                      <span className="stat-pattern">{topPattern[0].replace(/_/g, ' ')}</span>
+                      <span className="stat-label">TOP ({topPattern[1]}x)</span>
                     </div>
                   </>
                 )}
               </div>
             )}
 
-            {/* Quick Actions */}
             <div className="quick-actions">
-              <h3>WHAT CAN I HELP WITH?</h3>
+              <h3>WHAT DO YOU NEED?</h3>
               
               <button className="action-btn primary" onClick={() => handleQuickAction('screenshot')}>
                 <span className="action-icon">📸</span>
                 <div className="action-text">
-                  <span className="action-title">Analyze a screenshot</span>
-                  <span className="action-desc">Upload image of a message</span>
+                  <span className="action-title">I just got a message</span>
+                  <span className="action-desc">Upload screenshot, get help responding</span>
                 </div>
               </button>
 
               <button className="action-btn" onClick={() => handleQuickAction('courtdoc')}>
                 <span className="action-icon">📄</span>
                 <div className="action-text">
-                  <span className="action-title">Court doc help</span>
-                  <span className="action-desc">Understand, respond, or prepare filings</span>
+                  <span className="action-title">Court document help</span>
+                  <span className="action-desc">Upload, understand, prepare filings</span>
                 </div>
               </button>
 
@@ -345,7 +358,7 @@ export default function CoachPage() {
                 <span className="action-icon">📤</span>
                 <div className="action-text">
                   <span className="action-title">Import message history</span>
-                  <span className="action-desc">Bulk analyze CSV export</span>
+                  <span className="action-desc">Bulk analyze exported messages</span>
                 </div>
               </button>
 
@@ -362,27 +375,62 @@ export default function CoachPage() {
           <div className="chat">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role}`}>
-                <div className="message-content">{msg.content}</div>
-                {msg.patterns && msg.patterns.length > 0 && (
-                  <div className="patterns-detected">
-                    {msg.patterns.map((p, j) => (
-                      <span key={j} className="pattern-tag">{p}</span>
+                {msg.images && msg.images.length > 0 && (
+                  <div className="message-images">
+                    {msg.images.map((url, j) => (
+                      <img key={j} src={url} alt="Uploaded" className="message-image" />
                     ))}
+                  </div>
+                )}
+                {msg.content && (
+                  <div className="message-content">
+                    {msg.content}
+                  </div>
+                )}
+                {msg.role === 'assistant' && msg.patterns && msg.patterns.length > 0 && (
+                  <div className="pattern-section">
+                    <div className="pattern-tags">
+                      {msg.patterns.map((p, j) => (
+                        <span key={j} className={`pattern-tag ${msg.riskLevel || 'medium'}`}>{p}</span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
             {sending && (
               <div className="message assistant">
-                <div className="typing">Thinking...</div>
+                <div className="typing">Analyzing...</div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
         )}
+
+        {/* Save to Evidence Prompt */}
+        {showSavePrompt && currentPatterns.length > 0 && (
+          <div className="save-prompt">
+            <div className="save-header">
+              <span className="save-icon">📋</span>
+              <span>{currentPatterns.length} pattern{currentPatterns.length > 1 ? 's' : ''} detected</span>
+            </div>
+            <div className="save-patterns">
+              {currentPatterns.slice(0, 3).map((p, i) => (
+                <span key={i} className="save-pattern-tag">{p}</span>
+              ))}
+            </div>
+            <div className="save-actions">
+              <button className="save-btn" onClick={handleSaveEvidence}>
+                💾 Save to Evidence
+              </button>
+              <button className="dismiss-btn" onClick={() => setShowSavePrompt(false)}>
+                Skip
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Input Area */}
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
           📎
@@ -406,6 +454,7 @@ export default function CoachPage() {
           ref={fileInputRef}
           type="file"
           accept="image/*,.pdf,.csv"
+          multiple
           onChange={handleFileSelect}
           hidden
         />
@@ -462,26 +511,6 @@ export default function CoachPage() {
           font-size: 14px;
           cursor: pointer;
         }
-        .saved-toast {
-          position: fixed;
-          top: 80px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #059669;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: 600;
-          z-index: 200;
-          animation: fadeInOut 3s ease-in-out;
-        }
-        @keyframes fadeInOut {
-          0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-          15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-          85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        }
         .content {
           flex: 1;
           overflow-y: auto;
@@ -532,9 +561,10 @@ export default function CoachPage() {
         }
         .stat-pattern {
           display: block;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 700;
           color: #1a3a2f;
+          text-transform: capitalize;
         }
         .stat-label {
           font-size: 10px;
@@ -608,39 +638,140 @@ export default function CoachPage() {
         .message {
           margin-bottom: 16px;
         }
+        .message.user {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+        }
+        .message.assistant {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .message-images {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 8px;
+          justify-content: flex-end;
+        }
+        .message-image {
+          max-width: 200px;
+          max-height: 300px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
         .message.user .message-content {
           background: #1a3a2f;
           color: white;
           padding: 14px 18px;
           border-radius: 18px 18px 4px 18px;
-          margin-left: 40px;
+          max-width: 85%;
+          white-space: pre-wrap;
         }
         .message.assistant .message-content {
           background: white;
           color: #1a3a2f;
           padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
-          margin-right: 40px;
+          max-width: 85%;
+          line-height: 1.6;
           white-space: pre-wrap;
         }
-        .patterns-detected {
+        .pattern-section {
+          margin-top: 8px;
+        }
+        .pattern-tags {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 8px;
-          margin-right: 40px;
         }
         .pattern-tag {
-          background: #fef3c7;
-          color: #92400e;
-          padding: 4px 10px;
-          border-radius: 12px;
+          padding: 6px 12px;
+          border-radius: 16px;
           font-size: 12px;
           font-weight: 600;
+        }
+        .pattern-tag.low {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+        .pattern-tag.medium {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        .pattern-tag.high {
+          background: #fed7aa;
+          color: #c2410c;
+        }
+        .pattern-tag.critical {
+          background: #fecaca;
+          color: #dc2626;
         }
         .typing {
           color: #9ca3af;
           font-style: italic;
+          padding: 14px 18px;
+          background: white;
+          border-radius: 18px;
+        }
+        .save-prompt {
+          position: fixed;
+          bottom: 130px;
+          left: 16px;
+          right: 16px;
+          background: #1a3a2f;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          z-index: 50;
+        }
+        .save-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: white;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+        .save-icon {
+          font-size: 20px;
+        }
+        .save-patterns {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+        .save-pattern-tag {
+          background: rgba(255,255,255,0.2);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+        }
+        .save-actions {
+          display: flex;
+          gap: 12px;
+        }
+        .save-btn {
+          flex: 1;
+          padding: 12px;
+          background: #059669;
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-weight: 600;
+          cursor: pointer;
+          font-size: 15px;
+        }
+        .dismiss-btn {
+          padding: 12px 20px;
+          background: transparent;
+          color: rgba(255,255,255,0.7);
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 10px;
+          cursor: pointer;
         }
         .input-area {
           position: fixed;
