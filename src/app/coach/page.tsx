@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -72,6 +72,26 @@ export default function CoachPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+  // Auto-send prompt from court orders page
+  useEffect(() => {
+    if (!loading && user) {
+      const prompt = sessionStorage.getItem('coachPrompt');
+      if (prompt) {
+        sessionStorage.removeItem('coachPrompt');
+        handleSend(prompt);
+      }
+    }
+  }, [loading, user]);
+  // Auto-send prompt from court orders page
+  useEffect(() => {
+    if (!loading && user) {
+      const prompt = sessionStorage.getItem('coachPrompt');
+      if (prompt) {
+        sessionStorage.removeItem('coachPrompt');
+        handleSend(prompt);
+      }
+    }
+  }, [loading, user]);
 
   const topPattern = Object.entries(patternCounts).sort((a, b) => b[1] - a[1])[0];
 
