@@ -9,7 +9,6 @@ const resourceNav = [
   { href: "/resources/glossary", label: "Glossary", icon: "📖" },
   { href: "/resources/language", label: "Court Language", icon: "⚖️" },
   { href: "/resources/research", label: "Research", icon: "🎓" },
-  { href: "/resources/faq", label: "FAQ", icon: "❓" },
 ];
 
 export default function ResourcesLayout({

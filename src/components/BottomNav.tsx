@@ -88,10 +88,10 @@ export default function BottomNav({ active }: BottomNavProps) {
                 </div>
               </button>
 
-              <button onClick={() => { setShowMenu(false); router.push('/faq'); }} className="menu-item">
+              <button onClick={() => { setShowMenu(false); router.push('/getting-started'); }} className="menu-item">
                 <span className="menu-icon">❓</span>
                 <div className="menu-text">
-                  <span className="menu-title">Help & FAQ</span>
+                  <span className="menu-title">Getting Started</span>
                   <span className="menu-desc">How to use Pattern 18</span>
                 </div>
               </button>

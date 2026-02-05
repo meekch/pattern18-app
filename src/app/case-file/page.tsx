@@ -424,7 +424,7 @@ export default function CaseFilePage() {
       {selectedForExhibit.size > 0 && (
         <div className="exhibit-bar">
           <span>{selectedForExhibit.size} selected for exhibit</span>
-          <button onClick={() => router.push('/exhibit-builder')}>
+          <button onClick={() => router.push('/doc-builder')}>
             Build Exhibit →
           </button>
         </div>

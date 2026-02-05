@@ -129,7 +129,7 @@ export default function GettingStarted({ userId, onDismiss }: ChecklistProps) {
           title="Import text messages"
           description="Bulk analyze for patterns"
           completed={steps.messages}
-          onClick={() => router.push("/upload")}
+          onClick={() => router.push("/evidence/upload")}
         />
         <StepItem
           number={4}
