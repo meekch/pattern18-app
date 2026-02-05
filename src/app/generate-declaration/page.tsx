@@ -464,6 +464,32 @@ export default function GenerateDeclarationPage() {
                   </label>
                 </div>
               </div>
+
+              {(!yourName || !coparentName) && (
+                <div style={{
+                  marginTop: 16,
+                  padding: 12,
+                  background: '#fef2f2',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span>⚠️</span>
+                  <span>
+                    Missing names will appear as placeholders in your document.
+                    {' '}
+                    <button
+                      onClick={() => router.push('/case-setup')}
+                      style={{ background: 'none', border: 'none', color: '#dc2626', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}
+                    >
+                      Set up in Case Settings
+                    </button>
+                  </span>
+                </div>
+              )}
             </div>
 
             {error && (
