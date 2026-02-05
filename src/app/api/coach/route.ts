@@ -209,7 +209,16 @@ export async function POST(req: NextRequest) {
           // Extract patterns from response for evidence saving
           const patterns = extractPatterns(fullResponse);
           if (patterns.length > 0) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ patterns })}\n\n`));
+            // Get the user's message text for the quote
+            const extractedQuote = message.substring(0, 500);
+            // Determine risk level based on patterns
+            const riskLevel = determineRiskLevel(patterns);
+
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              patternLabels: patterns,
+              extractedQuote,
+              riskLevel
+            })}\n\n`));
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -289,4 +298,15 @@ function extractPatterns(text: string): string[] {
   }
 
   return found.slice(0, 5);
+}
+
+function determineRiskLevel(patterns: string[]): string {
+  const criticalPatterns = ['Threats', 'Intimidation', 'Stalking', 'Monitoring/Stalking', 'Surveillance'];
+  const highPatterns = ['DARVO', 'Gaslighting', 'Using Children as Weapons', 'False Accusations', 'Emotional Blackmail'];
+
+  if (patterns.some(p => criticalPatterns.some(cp => p.includes(cp)))) return 'critical';
+  if (patterns.some(p => highPatterns.some(hp => p.includes(hp)))) return 'high';
+  if (patterns.length >= 3) return 'high';
+  if (patterns.length >= 1) return 'medium';
+  return 'low';
 }
