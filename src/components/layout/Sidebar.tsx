@@ -11,12 +11,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", icon: "📊", path: "/dashboard" },
-  { 
-    label: "Capture", 
+  {
+    label: "Capture",
     icon: "✏️",
     children: [
-      { label: "Log Incident", icon: "🆘", path: "/log" },
       { label: "Bulk Import", icon: "📤", path: "/evidence/upload" },
     ]
   },
