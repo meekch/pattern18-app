@@ -160,7 +160,7 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, includeExhibitOnly } = await request.json();
+    const { userId, includeExhibitOnly, caseContext } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
@@ -184,12 +184,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No incidents found' }, { status: 404 });
     }
 
-    // Fetch case context
-    const { data: caseData } = await supabase
-      .from('case_context')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    // Use passed caseContext if available, otherwise fetch from database
+    let caseData = caseContext ? {
+      case_number: caseContext.caseNumber,
+      court: caseContext.court,
+      county: caseContext.county,
+      state: caseContext.state,
+      petitioner_name: caseContext.petitionerName,
+      respondent_name: caseContext.respondentName,
+      user_role: caseContext.userRole,
+    } : null;
+
+    if (!caseData) {
+      const { data: dbCaseData } = await supabase
+        .from('case_context')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      caseData = dbCaseData;
+    }
 
     // Filter out incidents without a co-parent message
     const validIncidents = incidents.filter(i => i.coparent_message && i.coparent_message.trim());

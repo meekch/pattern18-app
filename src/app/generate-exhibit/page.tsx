@@ -15,6 +15,15 @@ export default function GenerateExhibitPage() {
   const [useAll, setUseAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Case context
+  const [caseNumber, setCaseNumber] = useState('');
+  const [courtName, setCourtName] = useState('');
+  const [county, setCounty] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [petitionerName, setPetitionerName] = useState('');
+  const [respondentName, setRespondentName] = useState('');
+  const [userRole, setUserRole] = useState<'petitioner' | 'respondent'>('respondent');
+
   useEffect(() => {
     loadData();
   }, []);
@@ -38,6 +47,32 @@ export default function GenerateExhibitPage() {
       if (incidents) {
         setAllIncidents(incidents);
         setExhibitIncidents(incidents.filter(i => i.include_in_exhibit));
+      }
+
+      // Load case context
+      const { data: caseContext } = await supabase
+        .from('case_context')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (caseContext) {
+        setCaseNumber(caseContext.case_number || '');
+        setCourtName(caseContext.court || '');
+        setCounty(caseContext.county || '');
+        setStateName(caseContext.state || '');
+
+        const role = caseContext.user_role || 'respondent';
+        setUserRole(role);
+
+        // Set names - use formal names if available, fallback to coparent_name
+        if (role === 'petitioner') {
+          setPetitionerName(caseContext.petitioner_name || '');
+          setRespondentName(caseContext.respondent_name || caseContext.coparent_name || '');
+        } else {
+          setPetitionerName(caseContext.petitioner_name || caseContext.coparent_name || '');
+          setRespondentName(caseContext.respondent_name || '');
+        }
       }
     } catch (err) {
       console.error('Load error:', err);
@@ -64,6 +99,15 @@ export default function GenerateExhibitPage() {
         body: JSON.stringify({
           userId: user.id,
           includeExhibitOnly: !useAll,
+          caseContext: {
+            caseNumber,
+            court: courtName,
+            county,
+            state: stateName,
+            petitionerName,
+            respondentName,
+            userRole,
+          },
         }),
       });
 
@@ -276,6 +320,68 @@ export default function GenerateExhibitPage() {
               </button>
             </div>
           )}
+
+          {/* Case Information */}
+          <div style={{
+            background: '#f9fafb',
+            borderRadius: 10,
+            padding: 16,
+            marginBottom: 16
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 14, color: '#374151' }}>Case Information</h3>
+              <button
+                onClick={() => router.push('/case-setup')}
+                style={{ background: 'none', border: 'none', color: '#059669', fontSize: 13, cursor: 'pointer' }}
+              >
+                Edit →
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
+              <div>
+                <span style={{ color: '#6b7280' }}>Petitioner: </span>
+                <span style={{ color: petitionerName ? '#1f2937' : '#dc2626' }}>
+                  {petitionerName || '(not set)'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280' }}>Respondent: </span>
+                <span style={{ color: respondentName ? '#1f2937' : '#dc2626' }}>
+                  {respondentName || '(not set)'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280' }}>Case #: </span>
+                <span style={{ color: caseNumber ? '#1f2937' : '#9ca3af' }}>
+                  {caseNumber || '(not set)'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280' }}>Court: </span>
+                <span style={{ color: courtName ? '#1f2937' : '#9ca3af' }}>
+                  {courtName || '(not set)'}
+                </span>
+              </div>
+            </div>
+            {(!petitionerName || !respondentName) && (
+              <div style={{
+                marginTop: 12,
+                padding: 10,
+                background: '#fef2f2',
+                borderRadius: 6,
+                fontSize: 12,
+                color: '#dc2626'
+              }}>
+                ⚠️ Missing party names will show as placeholders in the document.{' '}
+                <button
+                  onClick={() => router.push('/case-setup')}
+                  style={{ background: 'none', border: 'none', color: '#dc2626', textDecoration: 'underline', cursor: 'pointer', fontSize: 12 }}
+                >
+                  Add them now
+                </button>
+              </div>
+            )}
+          </div>
 
           {error && (
             <div style={{
