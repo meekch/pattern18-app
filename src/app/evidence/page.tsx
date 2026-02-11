@@ -325,7 +325,7 @@ function EvidenceContent() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 100 }}>
+    <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 180 }}>
       {/* Header */}
       <header style={{
         background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
@@ -341,7 +341,7 @@ function EvidenceContent() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button 
             onClick={() => router.push("/my-case")}
-            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
+            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             ←
           </button>
@@ -613,6 +613,17 @@ function EvidenceContent() {
                             toggleExhibit(incident.id, !!incident.include_in_exhibit);
                           }}
                           style={{
+                            width: 44,
+                            height: 44,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            flexShrink: 0,
+                            margin: "-12px -6px -12px -12px"
+                          }}
+                        >
+                          <div style={{
                             width: 20,
                             height: 20,
                             borderRadius: 4,
@@ -621,13 +632,11 @@ function EvidenceContent() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            cursor: "pointer",
-                            flexShrink: 0
-                          }}
-                        >
-                          {incident.include_in_exhibit && (
-                            <span style={{ color: "white", fontSize: 12 }}>✓</span>
-                          )}
+                          }}>
+                            {incident.include_in_exhibit && (
+                              <span style={{ color: "white", fontSize: 12 }}>✓</span>
+                            )}
+                          </div>
                         </div>
 
                         <div style={{ width: 50, flexShrink: 0, fontSize: 13, color: "#6b7280" }}>

@@ -322,7 +322,7 @@ export default function HealingPage() {
         .container {
           min-height: 100vh;
           background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 40%, #1a3a2f 100%);
-          padding-bottom: 80px;
+          padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
 
         /* HOME */
@@ -628,7 +628,7 @@ export default function HealingPage() {
         .learn-screen {
           background: #f5f7f6;
           overflow-y: auto;
-          padding-bottom: 100px;
+          padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
         .learn-content {
           max-width: 500px;

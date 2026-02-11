@@ -291,9 +291,9 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
                   style={{
                     background: '#f3f4f6',
                     border: 'none',
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     fontSize: 16,
                     cursor: 'pointer',
                     color: '#6b7280',

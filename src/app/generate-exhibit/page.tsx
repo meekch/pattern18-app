@@ -145,7 +145,7 @@ export default function GenerateExhibitPage() {
   // No incidents selected - prompt to go select
   if (exhibitIncidents.length === 0 && !useAll) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
+      <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
         <header style={{
           background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
           padding: '16px 24px',
@@ -220,7 +220,7 @@ export default function GenerateExhibitPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       <header style={{
         background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
         padding: '16px 24px',

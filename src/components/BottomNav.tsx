@@ -196,9 +196,9 @@ export default function BottomNav({ active }: BottomNavProps) {
         .close-btn {
           background: #f3f4f6;
           border: none;
-          width: 32px;
-          height: 32px;
-          border-radius: 16px;
+          width: 44px;
+          height: 44px;
+          border-radius: 22px;
           font-size: 16px;
           cursor: pointer;
           color: #6b7280;

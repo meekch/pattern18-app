@@ -62,7 +62,7 @@ export default function DocsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       {/* Header */}
       <header style={{
         background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',

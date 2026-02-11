@@ -322,7 +322,7 @@ export default function MyCasePage() {
         .container {
           min-height: 100vh;
           background: #f8faf9;
-          padding-bottom: 100px;
+          padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
         .header {
           display: flex;
@@ -362,9 +362,9 @@ export default function MyCasePage() {
         .settings-btn {
           background: rgba(255,255,255,0.1);
           border: none;
-          width: 36px;
-          height: 36px;
-          border-radius: 18px;
+          width: 44px;
+          height: 44px;
+          border-radius: 22px;
           font-size: 18px;
           cursor: pointer;
         }

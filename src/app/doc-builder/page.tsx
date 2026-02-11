@@ -248,7 +248,7 @@ export default function DocBuilderPage() {
         flex: 1, 
         display: 'flex', 
         overflow: 'hidden',
-        paddingBottom: 70
+        paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))'
       }}>
         {/* File Panel */}
         {showFilePanel && (

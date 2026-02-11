@@ -163,8 +163,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           gap: 12px;
         }
         .user-btn {
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: #1a3a2f;
           color: white;

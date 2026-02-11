@@ -87,7 +87,7 @@ export default function GettingStartedPage() {
         .container {
           min-height: 100vh;
           background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
-          padding-bottom: 100px;
+          padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
         .header {
           padding: 20px 24px;
@@ -103,6 +103,11 @@ export default function GettingStartedPage() {
           color: white;
           font-size: 16px;
           cursor: pointer;
+          min-width: 44px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .header h1 {
           font-size: 20px;

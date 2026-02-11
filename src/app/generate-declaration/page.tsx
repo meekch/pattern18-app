@@ -237,7 +237,7 @@ export default function GenerateDeclarationPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       {/* Toast Notification */}
       {showToast && (
         <div style={{

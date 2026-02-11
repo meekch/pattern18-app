@@ -349,29 +349,30 @@ export default function CoachPage() {
           </div>
         )}
 
-        {/* Save to Evidence Prompt */}
-        {showSavePrompt && currentPatterns.length > 0 && (
-          <div className="save-prompt">
-            <div className="save-header">
-              <span className="save-icon">📋</span>
-              <span>{currentPatterns.length} pattern{currentPatterns.length > 1 ? 's' : ''} detected</span>
-            </div>
-            <div className="save-patterns">
-              {currentPatterns.slice(0, 3).map((p, i) => (
-                <span key={i} className="save-pattern-tag">{p}</span>
-              ))}
-            </div>
-            <div className="save-actions">
-              <button className="save-btn" onClick={handleSaveEvidence}>
-                💾 Save to Evidence
-              </button>
-              <button className="dismiss-btn" onClick={() => setShowSavePrompt(false)}>
-                Skip
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Save to Evidence Prompt */}
+      {showSavePrompt && currentPatterns.length > 0 && (
+        <div className="save-prompt">
+          <div className="save-header">
+            <span className="save-icon">📋</span>
+            <span>{currentPatterns.length} pattern{currentPatterns.length > 1 ? 's' : ''} detected</span>
+          </div>
+          <div className="save-patterns">
+            {currentPatterns.slice(0, 3).map((p, i) => (
+              <span key={i} className="save-pattern-tag">{p}</span>
+            ))}
+          </div>
+          <div className="save-actions">
+            <button className="save-btn" onClick={handleSaveEvidence}>
+              💾 Save to Evidence
+            </button>
+            <button className="dismiss-btn" onClick={() => setShowSavePrompt(false)}>
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="input-area">
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
@@ -406,7 +407,7 @@ export default function CoachPage() {
 
       <style jsx>{`
         .container {
-          min-height: 100vh;
+          height: 100dvh;
           background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
           display: flex;
           flex-direction: column;
@@ -456,7 +457,7 @@ export default function CoachPage() {
         .content {
           flex: 1;
           overflow-y: auto;
-          padding-bottom: 140px;
+          padding-bottom: 16px;
         }
         .home {
           max-width: 600px;
@@ -567,11 +568,9 @@ export default function CoachPage() {
           border-radius: 18px;
         }
         .save-prompt {
-          position: fixed;
-          bottom: 130px;
-          left: 16px;
-          right: 16px;
+          margin: 0 16px;
           background: #1a3a2f;
+          flex-shrink: 0;
           border-radius: 16px;
           padding: 16px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.3);
@@ -625,16 +624,14 @@ export default function CoachPage() {
           cursor: pointer;
         }
         .input-area {
-          position: fixed;
-          bottom: 70px;
-          left: 0;
-          right: 0;
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 12px 16px;
+          padding-bottom: calc(70px + env(safe-area-inset-bottom) + 12px);
           background: white;
           border-top: 1px solid #e5e7eb;
+          flex-shrink: 0;
         }
         .attach-btn {
           background: #f3f4f6;

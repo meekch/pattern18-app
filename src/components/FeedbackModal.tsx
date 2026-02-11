@@ -134,8 +134,8 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
         .x-btn {
           background: #f5f5f5;
           border: none;
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           font-size: 18px;
           cursor: pointer;
