@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -66,11 +67,16 @@ Respond with JSON only:
 Be CONSERVATIVE. Normal co-parenting is not abuse. When in doubt, mark as normal.`;
 
 export async function POST(req: NextRequest) {
-  try {
-    const { incidentId, userId } = await req.json();
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!incidentId || !userId) {
-      return NextResponse.json({ error: 'Missing incidentId or userId' }, { status: 400 });
+  try {
+    const { incidentId } = await req.json();
+
+    if (!incidentId) {
+      return NextResponse.json({ error: 'Missing incidentId' }, { status: 400 });
     }
 
     // Fetch incident

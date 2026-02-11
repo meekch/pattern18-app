@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120; // 2 minutes for large imports
@@ -115,6 +116,11 @@ OUTPUT FORMAT (JSON):
 Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 
 export async function POST(req: NextRequest) {
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { messages, coparentName } = await req.json();
 

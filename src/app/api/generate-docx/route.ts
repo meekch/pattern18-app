@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, PageNumber } from "docx";
+import { requireAuth } from "@/lib/auth";
 
 // Parse text with **bold** markers into TextRun array
 function parseTextWithBold(text: string, baseSize: number = 24): TextRun[] {
@@ -29,6 +30,11 @@ function parseTextWithBold(text: string, baseSize: number = 24): TextRun[] {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { content, documentType, caseInfo } = await req.json();
 

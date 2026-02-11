@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   Header, Footer, AlignmentType, BorderStyle, WidthType,
@@ -159,12 +160,13 @@ const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; so
 };
 
 export async function POST(request: NextRequest) {
-  try {
-    const { userId, includeExhibitOnly, caseContext } = await request.json();
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
+  try {
+    const { includeExhibitOnly, caseContext } = await request.json();
 
     // Fetch incidents
     let query = supabase

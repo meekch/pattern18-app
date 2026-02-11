@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -120,6 +121,11 @@ Let me know if you'd like any changes."
 Remember: You're helping someone who is likely stressed and may be dealing with an abusive co-parent. Be efficient, accurate, and supportive.`;
 
 export async function POST(req: NextRequest) {
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { message, history, caseContext, files, uploadedFiles } = body as {

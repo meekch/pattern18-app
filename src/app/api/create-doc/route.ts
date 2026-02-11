@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -357,6 +358,11 @@ Match the situation. Simple question = short answer. Crisis with multiple messag
 Court prep can be longer - they need tactical detail. But organize it clearly with headers they can scan.`;
 
 export async function POST(req: NextRequest) {
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const message = formData.get('message') as string || '';

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -144,6 +145,11 @@ OUTPUT FORMAT (JSON only, no markdown):
 Remember: Your analysis may be used in family court. Be accurate. Be conservative. Let the evidence speak for itself.`;
 
 export async function POST(request: NextRequest) {
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { messages, context } = await request.json() as {
       messages: Message[];
@@ -222,6 +228,11 @@ Provide your analysis in the specified JSON format. Be accurate - do not flag no
 
 // Batch analysis endpoint for bulk import
 export async function PUT(request: NextRequest) {
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { incidents } = await request.json() as {
       incidents: {

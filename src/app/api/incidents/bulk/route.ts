@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,13 +12,14 @@ const supabase = createClient(
  * Save multiple incidents from bulk message import
  */
 export async function POST(request: NextRequest) {
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { userId, incidents, importId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 400 });
-    }
+    const { incidents, importId } = body;
 
     if (!incidents || !Array.isArray(incidents) || incidents.length === 0) {
       return NextResponse.json({ error: "No incidents to save" }, { status: 400 });
@@ -82,14 +84,14 @@ export async function POST(request: NextRequest) {
  * Get all incidents from a specific import batch
  */
 export async function GET(request: NextRequest) {
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
     const importId = searchParams.get("importId");
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 400 });
-    }
 
     let query = supabase
       .from("incidents")
@@ -130,14 +132,18 @@ export async function GET(request: NextRequest) {
  * Delete all incidents from a specific import batch
  */
 export async function DELETE(request: NextRequest) {
+  const userId = await requireAuth(request);
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
     const importId = searchParams.get("importId");
 
-    if (!userId || !importId) {
+    if (!importId) {
       return NextResponse.json(
-        { error: "User ID and Import ID required" },
+        { error: "Import ID required" },
         { status: 400 }
       );
     }

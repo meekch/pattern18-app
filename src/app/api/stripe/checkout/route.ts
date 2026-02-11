@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-11-17.clover',
@@ -12,11 +13,16 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  try {
-    const { priceId, userId } = await req.json();
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!priceId || !userId) {
-      return NextResponse.json({ error: 'Missing priceId or userId' }, { status: 400 });
+  try {
+    const { priceId } = await req.json();
+
+    if (!priceId) {
+      return NextResponse.json({ error: 'Missing priceId' }, { status: 400 });
     }
 
     // Get user email from Supabase

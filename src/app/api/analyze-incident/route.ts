@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-
-
+import { requireAuth } from "@/lib/auth";
 
 const PATTERNS = [
   'Gaslighting',
@@ -20,8 +19,13 @@ const PATTERNS = [
 ];
 
 export async function POST(req: NextRequest) {
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  
+
   try {
     const { text, category } = await req.json();
     

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,10 +8,14 @@ const supabase = createClient(
 );
 
 export async function POST(request: NextRequest) {
+  const user_id = await requireAuth(request);
+  if (!user_id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { 
-      user_id,
+    const {
       images,              // Array of base64 image strings
       patterns,            // Array of pattern tags
       coaching_summary,    // The AI's analysis
@@ -22,10 +27,6 @@ export async function POST(request: NextRequest) {
       auto_saved = true,   // Was this auto-saved?
       needs_review = true  // Should user review this?
     } = body;
-
-    if (!user_id) {
-      return NextResponse.json({ error: "User ID required" }, { status: 400 });
-    }
 
     // Upload images to Supabase Storage
     const imageUrls: string[] = [];
@@ -93,14 +94,14 @@ export async function POST(request: NextRequest) {
 
 // Get user's evidence timeline
 export async function GET(request: NextRequest) {
+  const user_id = await requireAuth(request);
+  if (!user_id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
-    const user_id = searchParams.get('user_id');
     const pattern = searchParams.get('pattern'); // Optional filter
-
-    if (!user_id) {
-      return NextResponse.json({ error: "User ID required" }, { status: 400 });
-    }
 
     let query = supabase
       .from('evidence_timeline')

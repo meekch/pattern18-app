@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-11-17.clover',
@@ -12,25 +13,21 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  try {
-    // Get user from session cookie/header
-    const authHeader = req.headers.get('authorization');
-    
-    // For now, get the user from the request body
-    const { userId } = await req.json().catch(() => ({}));
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    // Or try to get from Supabase session
+  try {
     let customerId: string | null = null;
 
-    if (userId) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('stripe_customer_id')
-        .eq('id', userId)
-        .single();
-      
-      customerId = profile?.stripe_customer_id;
-    }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', userId)
+      .single();
+
+    customerId = profile?.stripe_customer_id;
 
     if (!customerId) {
       return NextResponse.json({ error: 'No subscription found' }, { status: 404 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes
@@ -55,12 +56,13 @@ If no clear coercive pattern is present, use:
 }`;
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId, batchSize = 10, offset = 0 } = await req.json();
+  const userId = await requireAuth(req);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
+  try {
+    const { batchSize = 10, offset = 0 } = await req.json();
 
     // Fetch batch of incidents
     const { data: incidents, error: fetchError } = await supabaseAdmin
