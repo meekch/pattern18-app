@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         .trim();
       extractedData = JSON.parse(cleanJson);
     } catch (parseError) {
-      console.error('Failed to parse Claude response:', responseText);
+      console.error('Failed to parse Claude response (length:', responseText.length, ')');
       return NextResponse.json({ 
         error: 'Failed to parse document. Please try again or upload a clearer scan.' 
       }, { status: 422 });
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
     if (extractedData.case_number || extractedData.petitioner_name || extractedData.respondent_name) {
       const { data: existingContext } = await supabase
         .from('case_context')
-        .select('*')
+        .select('case_number, court, county, state, petitioner_name, respondent_name')
         .eq('user_id', userId)
         .single();
 

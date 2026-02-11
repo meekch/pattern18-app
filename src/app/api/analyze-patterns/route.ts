@@ -203,7 +203,7 @@ Provide your analysis in the specified JSON format. Be accurate - do not flag no
       }
       analysis = JSON.parse(jsonStr.trim());
     } catch (parseError) {
-      console.error('Failed to parse AI response:', content.text);
+      console.error('Failed to parse AI response (length:', content.text.length, ')');
       // Return a safe default if parsing fails
       analysis = {
         isAbusive: false,

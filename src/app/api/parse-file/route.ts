@@ -192,7 +192,7 @@ Respond with ONLY valid JSON, no other text.`;
       const cleanJson = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       parsed = JSON.parse(cleanJson);
     } catch (e) {
-      console.error('Failed to parse AI response:', responseText);
+      console.error('Failed to parse AI response (length:', responseText.length, ')');
       parsed = {};
     }
 

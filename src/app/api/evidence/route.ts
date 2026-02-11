@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('evidence_timeline')
-      .select('*')
+      .select('id, incident_date, patterns_detected, coaching_summary, user_response_chosen, co_parent_name, user_notes, screenshot_urls, created_at')
       .eq('user_id', user_id)
       .order('incident_date', { ascending: false });
 

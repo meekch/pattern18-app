@@ -188,8 +188,7 @@ Remember: Output ONLY valid JSON.`
       const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
       analysis = JSON.parse(jsonStr.trim());
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      console.error('Response was:', responseText.substring(0, 500));
+      console.error('Failed to parse AI response (length:', responseText.length, ')');
       return NextResponse.json({ 
         error: 'Failed to parse analysis',
         parseError: true

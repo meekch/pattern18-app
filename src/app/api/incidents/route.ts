@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: incidents, error } = await supabase
       .from("incidents")
-      .select("*")
+      .select("id, patterns, severity, category, coparent_message, incident_date, incident_type, source, created_at, include_in_exhibit, title, messages_json")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

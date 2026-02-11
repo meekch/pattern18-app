@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     // Fetch incidents
     let query = supabase
       .from('incidents')
-      .select('*')
+      .select('id, incident_date, severity, patterns, category, coparent_message, source_name, source_type, include_in_exhibit')
       .eq('user_id', userId)
       .order('incident_date', { ascending: true });
 
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     if (!caseData) {
       const { data: dbCaseData } = await supabase
         .from('case_context')
-        .select('*')
+        .select('case_number, court, county, state, petitioner_name, respondent_name, user_role, coparent_name')
         .eq('user_id', userId)
         .single();
       caseData = dbCaseData;

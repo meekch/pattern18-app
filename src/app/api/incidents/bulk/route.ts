@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("incidents")
-      .select("*")
+      .select("id, title, category, patterns, severity, incident_date, message_count, evidence_strength, source, import_id, is_court_ready, created_at")
       .eq("user_id", userId)
       .eq("source", "bulk_import")
       .order("incident_date", { ascending: false });
