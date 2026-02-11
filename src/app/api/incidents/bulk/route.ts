@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Error saving bulk incidents:", error);
       return NextResponse.json(
-        { error: "Failed to save incidents", details: error.message },
+        { error: "Failed to save incidents" },
         { status: 500 }
       );
     }

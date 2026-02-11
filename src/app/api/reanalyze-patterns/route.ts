@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Re-analysis error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to re-analyze' },
+      { error: 'Failed to re-analyze' },
       { status: 500 }
     );
   }

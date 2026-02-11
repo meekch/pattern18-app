@@ -220,7 +220,7 @@ Provide your analysis in the specified JSON format. Be accurate - do not flag no
   } catch (error: any) {
     console.error('Pattern analysis error:', error);
     return NextResponse.json(
-      { error: error.message || 'Analysis failed' },
+      { error: 'Analysis failed' },
       { status: 500 }
     );
   }
@@ -302,7 +302,7 @@ ${formattedMessages}`
   } catch (error: any) {
     console.error('Batch analysis error:', error);
     return NextResponse.json(
-      { error: error.message || 'Batch analysis failed' },
+      { error: 'Batch analysis failed' },
       { status: 500 }
     );
   }

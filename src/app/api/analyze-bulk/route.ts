@@ -188,7 +188,7 @@ Remember: Output ONLY valid JSON.`
       console.error('Response was:', responseText.substring(0, 500));
       return NextResponse.json({ 
         error: 'Failed to parse analysis',
-        rawResponse: responseText.substring(0, 1000)
+        parseError: true
       }, { status: 500 });
     }
 

@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Exhibit generation error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to generate exhibit' },
+      { error: 'Failed to generate exhibit' },
       { status: 500 }
     );
   }

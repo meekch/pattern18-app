@@ -158,13 +158,23 @@ export async function POST(req: NextRequest) {
 
     // Handle file upload
     let userContent: any[] = [];
-    
+
     if (file) {
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 413 });
+      }
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        return NextResponse.json({ error: 'File type not allowed. Supported: JPEG, PNG, GIF, WebP, PDF.' }, { status: 400 });
+      }
+
       const bytes = await file.arrayBuffer();
       const base64 = Buffer.from(bytes).toString('base64');
-      
+
       const isPdf = file.type === 'application/pdf';
-      
+
       if (isPdf) {
         userContent.push({
           type: 'document',
