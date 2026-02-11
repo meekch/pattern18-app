@@ -163,7 +163,14 @@ export default function CoachPage() {
               if (data.error) {
                 throw new Error(data.error);
               }
-              if (data.content) {
+              if (data.replaceContent !== undefined) {
+                assistantContent = data.replaceContent;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1].content = assistantContent;
+                  return newMessages;
+                });
+              } else if (data.content) {
                 assistantContent += data.content;
                 setMessages(prev => {
                   const newMessages = [...prev];

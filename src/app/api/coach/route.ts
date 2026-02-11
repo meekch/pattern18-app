@@ -80,11 +80,21 @@ RULES:
 
 NEVER:
 - Use words like "nasty", "toxic", "abuser", "harassment", "playbook"
-- Say "Classic [anything]" 
+- Say "Classic [anything]"
 - Be dramatic or alarming
 - Write long explanations
 - Lecture about manipulation tactics
 - Make them feel worse
+
+PATTERN DETECTION:
+At the very end of your response, on its own line, output detected patterns in this exact format:
+PATTERNS_FOUND: pattern1, pattern2, pattern3
+
+Only list patterns you found IN THE MESSAGE the user is asking you to analyze. Do not list patterns from case history, your own summary text, or prior conversation context.
+If the user is greeting you, asking a question, or not sharing a co-parent message to analyze, output:
+PATTERNS_FOUND: none
+
+Valid pattern names: Gaslighting, DARVO, Blame-Shifting, Intimidation, Threats, Financial Manipulation, Using Children as Weapons, False Accusations, Emotional Blackmail, Stonewalling, Monitoring/Stalking, Isolation, Minimizing/Denying, Word Salad, Moving Goalposts, Projection, Hoovering, Gatekeeping, Schedule Interference, Hostile Communication
 
 Remember: They came to you overwhelmed. Help them feel calm, clear, and in control. Less is more.`;
 
@@ -206,12 +216,16 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Strip the PATTERNS_FOUND line from visible response
+          const cleanedResponse = fullResponse.replace(/\n*PATTERNS_FOUND:\s*.+/i, '').trimEnd();
+          if (cleanedResponse !== fullResponse) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ replaceContent: cleanedResponse })}\n\n`));
+          }
+
           // Extract patterns from response for evidence saving
           const patterns = extractPatterns(fullResponse);
           if (patterns.length > 0) {
-            // Get the user's message text for the quote
             const extractedQuote = message.substring(0, 500);
-            // Determine risk level based on patterns
             const riskLevel = determineRiskLevel(patterns);
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
@@ -247,56 +261,28 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const VALID_PATTERNS = new Set([
+  'gaslighting', 'darvo', 'blame-shifting', 'intimidation', 'threats',
+  'financial manipulation', 'using children as weapons', 'false accusations',
+  'emotional blackmail', 'stonewalling', 'monitoring/stalking', 'isolation',
+  'minimizing/denying', 'word salad', 'moving goalposts', 'projection',
+  'hoovering', 'gatekeeping', 'schedule interference', 'hostile communication',
+]);
+
 function extractPatterns(text: string): string[] {
-  const patterns = [
-    'Gaslighting',
-    'DARVO',
-    'Blame-Shifting',
-    'Blame Shifting',
-    'Blaming',
-    'Intimidation',
-    'Threats',
-    'Financial',
-    'Children as Weapons',
-    'Using Children',
-    'Child in the Middle',
-    'False Accusations',
-    'Emotional Blackmail',
-    'Stonewalling',
-    'Monitoring',
-    'Stalking',
-    'Surveillance',
-    'Isolation',
-    'Minimizing',
-    'Denying',
-    'Word Salad',
-    'Moving Goalposts',
-    'Projection',
-    'Hoovering',
-    'Gatekeeping',
-    'Schedule',
-    'Hostile',
-    'Manipulation',
-  ];
+  const match = text.match(/PATTERNS_FOUND:\s*(.+)/i);
+  if (!match) return [];
+
+  const raw = match[1].trim();
+  if (raw.toLowerCase() === 'none') return [];
 
   const found: string[] = [];
-  const lowerText = text.toLowerCase();
-
-  for (const pattern of patterns) {
-    if (lowerText.includes(pattern.toLowerCase())) {
-      let normalized = pattern;
-      if (pattern === 'Blame Shifting' || pattern === 'Blaming') normalized = 'Blame-Shifting';
-      if (pattern === 'Using Children' || pattern === 'Child in the Middle') normalized = 'Using Children as Weapons';
-      if (pattern === 'Surveillance') normalized = 'Monitoring/Stalking';
-      if (pattern === 'Schedule') normalized = 'Schedule Interference';
-      if (pattern === 'Hostile') normalized = 'Hostile Communication';
-      
-      if (!found.includes(normalized)) {
-        found.push(normalized);
-      }
+  for (const name of raw.split(',')) {
+    const trimmed = name.trim();
+    if (trimmed && VALID_PATTERNS.has(trimmed.toLowerCase())) {
+      found.push(trimmed);
     }
   }
-
   return found.slice(0, 5);
 }
 
