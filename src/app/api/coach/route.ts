@@ -311,6 +311,10 @@ PATTERNS_FOUND: none
 
 Valid pattern names: Gaslighting, DARVO, Blame-Shifting, Intimidation, Threats, Financial Manipulation, Using Children as Weapons, False Accusations, Emotional Blackmail, Stonewalling, Monitoring/Stalking, Isolation, Minimizing/Denying, Word Salad, Moving Goalposts, Projection, Hoovering, Gatekeeping, Schedule Interference, Hostile Communication
 
+FIRST INTERACTION:
+
+When a user has zero evidence documented (evidenceCount is 0) and sends their first message to analyze, after your normal analysis (patterns, response options), add a brief encouragement. Something like: "You just documented your first incident. Every one you add builds a pattern that courts can see." Keep it to 2 sentences max. Not a speech — just enough to make them feel like signing up was the right call.
+
 Remember: They came to you overwhelmed. Help them feel calm, clear, and in control. Less is more.`;
 
 export async function POST(req: NextRequest) {
