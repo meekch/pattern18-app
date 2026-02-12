@@ -334,7 +334,9 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!checkRateLimit(userId)) {
+  const rateLimitAllowed = checkRateLimit(userId);
+  console.log(`Rate limit check for user: ${userId}, allowed: ${rateLimitAllowed}`);
+  if (!rateLimitAllowed) {
     return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
   }
 
@@ -449,7 +451,7 @@ export async function POST(req: NextRequest) {
         try {
           const response = await client.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 1500,
+            max_tokens: 4000,
             system: SYSTEM_PROMPT,
             messages: messages,
             stream: true,
@@ -486,8 +488,12 @@ export async function POST(req: NextRequest) {
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
-        } catch (error) {
-          console.error('Stream error:', error);
+        } catch (error: any) {
+          console.error('Coach stream error:', error?.status, error?.message, JSON.stringify(error?.error || error, null, 2));
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: error?.message || 'Stream failed' })}\n\n`));
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          } catch {}
           controller.error(error);
         }
       },
@@ -501,8 +507,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('Coach API error:', error);
+  } catch (error: any) {
+    console.error('Coach API error:', error?.status, error?.message, JSON.stringify(error?.error || error, null, 2));
     return NextResponse.json(
       { error: 'Failed to process message' },
       { status: 500 }
