@@ -270,7 +270,53 @@ export default function CoachPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // Could add a toast notification here
+  };
+
+  const DOCUMENT_MARKERS = ['SUPERIOR COURT', 'PRETRIAL STATEMENT', 'DECLARATION', 'PROPOSED ORDER', 'FAMILY COURT', 'DISTRICT COURT', 'CIRCUIT COURT', 'PETITION', 'MOTION TO', 'RESPONDENT\'S', 'PETITIONER\'S'];
+
+  const isCourtDocument = (content: string): boolean => {
+    const upper = content.toUpperCase();
+    return DOCUMENT_MARKERS.some(marker => upper.includes(marker));
+  };
+
+  const getDocumentTitle = (content: string): string => {
+    const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      if (line === line.toUpperCase() && line.length > 5 && line.length < 80 && /[A-Z]/.test(line)) {
+        if (/(STATEMENT|DECLARATION|ORDER|MOTION|PETITION|RESPONSE)/.test(line)) {
+          return line;
+        }
+      }
+    }
+    return 'Court Document';
+  };
+
+  const handleDocumentDownload = async (content: string) => {
+    try {
+      const title = getDocumentTitle(content);
+      const res = await fetch('/api/coach-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentContent: content,
+          documentTitle: title,
+          caseContext: caseContext || {},
+        }),
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download document. Please try again.');
+    }
   };
 
   // Extract the suggested response from assistant message for easy copying
@@ -347,6 +393,11 @@ export default function CoachPage() {
                       ))}
                     </div>
                   </div>
+                )}
+                {msg.role === 'assistant' && msg.content && isCourtDocument(msg.content) && (
+                  <button className="download-doc-btn" onClick={() => handleDocumentDownload(msg.content)}>
+                    ⬇ Download as Word Document
+                  </button>
                 )}
               </div>
             ))}
@@ -547,6 +598,17 @@ export default function CoachPage() {
           max-width: 85%;
           line-height: 1.6;
           white-space: pre-wrap;
+        }
+        .download-doc-btn {
+          margin-top: 10px;
+          background: #059669;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
         }
         .pattern-section {
           margin-top: 8px;
