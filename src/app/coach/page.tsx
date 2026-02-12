@@ -28,6 +28,7 @@ export default function CoachPage() {
   const [currentQuote, setCurrentQuote] = useState<string>('');
   const [currentRiskLevel, setCurrentRiskLevel] = useState<string>('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,10 +95,11 @@ export default function CoachPage() {
   }, [loading, user]);
 
   const handleSend = async (messageText?: string, files?: FileList | File[]) => {
-    const text = messageText || input;
-    const fileArray = files ? Array.from(files) : [];
-    
+    const fileArray = files ? Array.from(files) : pendingFile ? [pendingFile] : [];
+    const text = messageText || input || (fileArray.length > 0 ? 'Please analyze this document.' : '');
+
     if (!text.trim() && fileArray.length === 0) return;
+    setPendingFile(null);
 
     setShowHome(false);
     setSending(true);
@@ -250,18 +252,19 @@ export default function CoachPage() {
     }
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
-    const hasCSV = Array.from(files).some(f => f.type === 'text/csv' || f.name.endsWith('.csv'));
+
+    const file = files[0];
+    const hasCSV = file.type === 'text/csv' || file.name.endsWith('.csv');
     if (hasCSV) {
       router.push('/evidence/upload');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
-    await handleSend('', files);
-
+    setPendingFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -382,32 +385,40 @@ export default function CoachPage() {
       )}
 
       <div className="input-area">
-        <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
-          📎
-        </button>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="What's going on?"
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          disabled={sending}
-        />
-        <button 
-          className="send-btn" 
-          onClick={() => handleSend()}
-          disabled={sending || !input.trim()}
-        >
-          ➤
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf,.csv"
-          multiple
-          onChange={handleFileSelect}
-          hidden
-        />
+        {pendingFile && (
+          <div className="file-preview">
+            <span className="file-icon">{pendingFile.type === 'application/pdf' ? '📄' : '🖼️'}</span>
+            <span className="file-name">{pendingFile.name.length > 25 ? pendingFile.name.substring(0, 22) + '...' : pendingFile.name}</span>
+            <button className="file-remove" onClick={() => setPendingFile(null)}>✕</button>
+          </div>
+        )}
+        <div className="input-row">
+          <button className="attach-btn" onClick={() => fileInputRef.current?.click()}>
+            📎
+          </button>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={pendingFile ? "Add a message or hit send..." : "What's going on?"}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            disabled={sending}
+          />
+          <button
+            className="send-btn"
+            onClick={() => handleSend()}
+            disabled={sending || (!input.trim() && !pendingFile)}
+          >
+            ➤
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf,.csv"
+            onChange={handleFileSelect}
+            hidden
+          />
+        </div>
       </div>
 
       <BottomNav active="coach" />
@@ -632,13 +643,44 @@ export default function CoachPage() {
         }
         .input-area {
           display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          padding-bottom: calc(70px + env(safe-area-inset-bottom) + 12px);
+          flex-direction: column;
+          padding: 8px 16px;
+          padding-bottom: calc(70px + env(safe-area-inset-bottom) + 8px);
           background: white;
           border-top: 1px solid #e5e7eb;
           flex-shrink: 0;
+          gap: 8px;
+        }
+        .file-preview {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 10px;
+          padding: 8px 12px;
+        }
+        .file-icon {
+          font-size: 18px;
+        }
+        .file-name {
+          flex: 1;
+          font-size: 13px;
+          color: #1a3a2f;
+          font-weight: 500;
+        }
+        .file-remove {
+          background: none;
+          border: none;
+          color: #9ca3af;
+          font-size: 16px;
+          cursor: pointer;
+          padding: 2px 6px;
+        }
+        .input-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
         .attach-btn {
           background: #f3f4f6;
@@ -648,8 +690,9 @@ export default function CoachPage() {
           border-radius: 22px;
           font-size: 20px;
           cursor: pointer;
+          flex-shrink: 0;
         }
-        .input-area input[type="text"] {
+        .input-row input[type="text"] {
           flex: 1;
           padding: 12px 16px;
           border: 2px solid #e5e7eb;
@@ -657,7 +700,7 @@ export default function CoachPage() {
           font-size: 16px;
           outline: none;
         }
-        .input-area input[type="text"]:focus {
+        .input-row input[type="text"]:focus {
           border-color: #1a3a2f;
         }
         .send-btn {
@@ -669,6 +712,7 @@ export default function CoachPage() {
           border-radius: 22px;
           font-size: 18px;
           cursor: pointer;
+          flex-shrink: 0;
         }
         .send-btn:disabled {
           opacity: 0.5;
