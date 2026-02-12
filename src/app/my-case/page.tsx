@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
@@ -44,8 +44,6 @@ export default function MyCasePage() {
   const [highCriticalCount, setHighCriticalCount] = useState(0);
   const [exhibitCount, setExhibitCount] = useState(0);
   const [patternCounts, setPatternCounts] = useState<PatternCount[]>([]);
-  const [messageInput, setMessageInput] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -109,22 +107,6 @@ export default function MyCasePage() {
   const topPattern = patternCounts[0];
   const patternIsStrong = topPattern && topPattern.count >= 5;
 
-  const handleAnalyze = () => {
-    if (messageInput.trim()) {
-      // Navigate to coach with the message pre-filled
-      sessionStorage.setItem('pendingMessage', messageInput);
-      router.push('/coach');
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Store file reference and go to coach
-      sessionStorage.setItem('pendingFileName', file.name);
-      router.push('/coach');
-    }
-  };
 
   if (loading) {
     return (
@@ -224,15 +206,15 @@ export default function MyCasePage() {
             </div>
 
             <div className="stats-row">
-              <div className="stat">
+              <div className="stat" onClick={() => router.push('/evidence')} style={{ cursor: 'pointer' }}>
                 <div className="stat-value">{totalIncidents}</div>
                 <div className="stat-label">Total</div>
               </div>
-              <div className="stat highlight-red">
+              <div className="stat highlight-red" onClick={() => router.push('/evidence?severity=high')} style={{ cursor: 'pointer' }}>
                 <div className="stat-value">{highCriticalCount}</div>
                 <div className="stat-label">High/Critical</div>
               </div>
-              <div className="stat highlight-green">
+              <div className="stat highlight-green" onClick={() => router.push('/evidence?exhibit=true')} style={{ cursor: 'pointer' }}>
                 <div className="stat-value">{exhibitCount}</div>
                 <div className="stat-label">In Exhibit</div>
               </div>
@@ -243,7 +225,7 @@ export default function MyCasePage() {
               <div className="patterns-section">
                 <div className="patterns-header">TOP PATTERNS</div>
                 {patternCounts.map((p, i) => (
-                  <div key={p.pattern} className="pattern-row">
+                  <div key={p.pattern} className="pattern-row" onClick={() => router.push('/evidence?pattern=' + encodeURIComponent(p.label))} style={{ cursor: 'pointer' }}>
                     <span className="pattern-rank">{i + 1}</span>
                     <span className="pattern-name">{p.label}</span>
                     <div className="pattern-bar-wrap">
@@ -259,8 +241,14 @@ export default function MyCasePage() {
                   </div>
                 ))}
                 {patternIsStrong && (
-                  <div className="pattern-note success">
-                    ✓ {topPattern.count}+ instances = provable pattern for court
+                  <div className="pattern-note success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <span>✓ {topPattern.count}+ instances = provable pattern for court</span>
+                    <button
+                      onClick={() => router.push('/docs')}
+                      style={{ background: '#059669', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}
+                    >
+                      Generate Report →
+                    </button>
                   </div>
                 )}
               </div>
@@ -268,39 +256,16 @@ export default function MyCasePage() {
           </div>
         )}
 
-        {/* Quick Message Input */}
-        <div className="quick-input-card">
-          <div className="quick-label">Got a new message?</div>
-          <div className="input-row">
-            <button 
-              className="upload-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              📎
-            </button>
-            <input
-              type="text"
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              placeholder="Paste message or upload screenshot..."
-              className="message-input"
-              onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-            />
-            <button 
-              className="analyze-btn"
-              onClick={handleAnalyze}
-              disabled={!messageInput.trim()}
-            >
-              Analyze
-            </button>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            hidden
-          />
+        {/* Go to Coach */}
+        <div className="quick-input-card" style={{ textAlign: 'center' }}>
+          <div className="quick-label">Ready to document more evidence?</div>
+          <button
+            className="primary-btn"
+            onClick={() => router.push('/coach')}
+            style={{ marginTop: 8 }}
+          >
+            Go to Coach →
+          </button>
         </div>
 
         {/* Secondary Actions */}
@@ -563,43 +528,13 @@ export default function MyCasePage() {
           color: #6b7280;
           margin-bottom: 10px;
         }
-        .input-row {
-          display: flex;
-          gap: 8px;
+        .stat:hover {
+          transform: translateY(-1px);
+          transition: transform 0.15s;
         }
-        .upload-btn {
-          width: 44px;
-          height: 44px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 10px;
-          font-size: 18px;
-          cursor: pointer;
-        }
-        .message-input {
-          flex: 1;
-          padding: 12px 14px;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 14px;
-        }
-        .message-input:focus {
-          outline: none;
-          border-color: #1a3a2f;
-        }
-        .analyze-btn {
-          padding: 12px 16px;
-          background: #1a3a2f;
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 14px;
-          cursor: pointer;
-        }
-        .analyze-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        .pattern-row:hover {
+          background: #f9fafb;
+          border-radius: 6px;
         }
 
         /* Secondary Actions */

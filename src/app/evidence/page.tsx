@@ -62,6 +62,34 @@ const AVAILABLE_PATTERNS = [
   "Name-Calling/Verbal Abuse", "Triangulating Child", "Schedule Manipulation"
 ];
 
+const patternExplanations: Record<string, string> = {
+  "Gaslighting": "Making you question your own reality or memory",
+  "DARVO": "Deny, Attack, Reverse Victim and Offender",
+  "Intimidation": "Using fear, aggression, or threats of harm",
+  "Threats": "Explicit or implied threats to control behavior",
+  "Financial Manipulation": "Using money or resources as a tool of control",
+  "Financial Abuse": "Using money or resources as a tool of control",
+  "Using Children as Weapons": "Weaponizing children to manipulate or punish",
+  "Blame-Shifting": "Avoiding accountability by redirecting blame to you",
+  "False Accusations": "Making untrue claims to damage credibility",
+  "Emotional Blackmail": "Using guilt, fear, or obligation to control",
+  "Stonewalling": "Refusing to communicate or engage constructively",
+  "Monitoring/Stalking": "Tracking, surveilling, or monitoring activities",
+  "Isolation Tactics": "Cutting off from support networks or resources",
+  "Minimizing/Denying": "Downplaying abuse or denying it happened",
+  "Word Salad": "Confusing, circular, or contradictory communication",
+  "Moving Goalposts": "Constantly changing expectations or requirements",
+  "Projection": "Accusing you of behaviors they themselves exhibit",
+  "Hoovering": "Attempts to pull you back after setting boundaries",
+  "Gatekeeping": "Controlling access to children, information, or resources",
+  "Verbal Abuse": "Name-calling, insults, or degrading language",
+  "Legal/Court Threats": "Using the legal system as a weapon of control",
+  "Name-Calling/Verbal Abuse": "Insults or degrading language to demean",
+  "Triangulating Child": "Using children as messengers or informants",
+  "Schedule Manipulation": "Deliberately disrupting custody schedules",
+  "Escalation": "Increasing intensity of controlling behaviors over time",
+};
+
 const SOURCE_TYPES = [
   { value: 'coparent', label: 'Co-parent message', description: 'Message FROM your co-parent' },
   { value: 'child', label: 'Child statement', description: 'Statement from child about co-parent behavior' },
@@ -97,13 +125,20 @@ function EvidenceContent() {
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [copySuccess, setCopySuccess] = useState(false);
+
   const allPatterns = [...new Set(incidents.flatMap(i => i.patterns || []))].sort();
 
   useEffect(() => {
     const pattern = searchParams.get('pattern');
-    if (pattern) {
-      setPatternFilter(pattern);
-    }
+    if (pattern) setPatternFilter(pattern);
+    const severity = searchParams.get('severity');
+    if (severity === 'high') setSeverityFilter('high+');
+    else if (severity === 'critical') setSeverityFilter('critical');
+    const exhibit = searchParams.get('exhibit');
+    if (exhibit === 'true') setSeverityFilter('exhibit');
     loadEvidence();
   }, []);
 
@@ -306,6 +341,72 @@ function EvidenceContent() {
       patternCounts[p] = (patternCounts[p] || 0) + 1;
     });
   });
+
+  const sortedPatterns = Object.entries(patternCounts)
+    .sort((a, b) => b[1] - a[1]);
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    const allVisible = filteredIncidents.map(i => i.id);
+    const allSelected = allVisible.length > 0 && allVisible.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allVisible));
+    }
+  };
+
+  const addSelectedToExhibit = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from("incidents")
+        .update({ include_in_exhibit: true })
+        .in("id", ids)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      setIncidents(prev => prev.map(inc =>
+        selectedIds.has(inc.id) ? { ...inc, include_in_exhibit: true } : inc
+      ));
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error("Batch exhibit update error:", err);
+    }
+  };
+
+  const copySelectedToClipboard = async () => {
+    const selected = incidents.filter(i => selectedIds.has(i.id));
+    const text = selected.map(inc => {
+      const date = new Date(inc.incident_date).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const patterns = inc.patterns?.join(', ') || 'None';
+      const messages = inc.messages_json?.map((m: any) =>
+        `[${m.sender === 'coparent' ? 'Co-parent' : 'You'}] ${m.text}`
+      ).join('\n') || inc.coparent_message || '';
+      return `Date: ${date}\nSeverity: ${inc.severity}\nPatterns: ${patterns}\n${messages}\n`;
+    }).join('\n---\n\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      console.error("Clipboard copy failed");
+    }
+  };
 
   // Get source type label for display
   const getSourceTypeLabel = (sourceType?: string) => {
@@ -530,14 +631,59 @@ function EvidenceContent() {
                 Clear
               </button>
             )}
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#3b82f6', fontWeight: 500, marginLeft: 'auto' }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.size > 0 && filteredIncidents.length > 0 && filteredIncidents.every(i => selectedIds.has(i.id))}
+                onChange={selectAllVisible}
+                style={{ accentColor: '#3b82f6', width: 16, height: 16 }}
+              />
+              Select All
+            </label>
           </div>
 
-          {filteredIncidents.length !== incidents.length && (
-            <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
-              Showing {filteredIncidents.length} of {incidents.length} incidents
-            </div>
-          )}
+          <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>
+            Showing {filteredIncidents.length} of {incidents.length} incidents
+          </div>
         </div>
+
+        {/* Pattern Chips */}
+        {sortedPatterns.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+            {sortedPatterns.map(([pattern, count]) => (
+              <button
+                key={pattern}
+                onClick={() => setPatternFilter(patternFilter === pattern ? 'all' : pattern)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  border: '1px solid',
+                  borderColor: patternFilter === pattern ? '#f59e0b' : '#e5e7eb',
+                  background: patternFilter === pattern ? '#fef3c7' : 'white',
+                  color: patternFilter === pattern ? '#92400e' : '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                {pattern}
+                <span style={{
+                  background: patternFilter === pattern ? '#fcd34d' : '#f3f4f6',
+                  padding: '1px 6px',
+                  borderRadius: 10,
+                  fontSize: 11,
+                  fontWeight: 700
+                }}>
+                  {count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Grouped List */}
         {Object.keys(groupedIncidents).length === 0 ? (
@@ -610,7 +756,7 @@ function EvidenceContent() {
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleExhibit(incident.id, !!incident.include_in_exhibit);
+                            toggleSelected(incident.id);
                           }}
                           style={{
                             width: 44,
@@ -621,6 +767,38 @@ function EvidenceContent() {
                             cursor: "pointer",
                             flexShrink: 0,
                             margin: "-12px -6px -12px -12px"
+                          }}
+                        >
+                          <div style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: 4,
+                            border: `2px solid ${selectedIds.has(incident.id) ? "#3b82f6" : "#d1d5db"}`,
+                            background: selectedIds.has(incident.id) ? "#3b82f6" : "white",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}>
+                            {selectedIds.has(incident.id) && (
+                              <span style={{ color: "white", fontSize: 12 }}>✓</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExhibit(incident.id, !!incident.include_in_exhibit);
+                          }}
+                          style={{
+                            width: 44,
+                            height: 44,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            flexShrink: 0,
+                            margin: "-12px -6px -12px -6px"
                           }}
                         >
                           <div style={{
@@ -854,53 +1032,88 @@ function EvidenceContent() {
                               📨 MESSAGES ({incident.messages_json?.length || 1})
                             </div>
                             <div style={{
-                              background: "white",
+                              background: "#f9fafb",
                               borderRadius: 8,
-                              border: "1px solid #e5e7eb",
                               maxHeight: 400,
-                              overflowY: "auto"
+                              overflowY: "auto",
+                              padding: 12
                             }}>
                               {incident.messages_json && incident.messages_json.length > 0 ? (
-                                incident.messages_json.map((msg: any, idx: number) => (
-                                  <div 
-                                    key={idx}
-                                    style={{
-                                      padding: 12,
-                                      borderBottom: idx < incident.messages_json!.length - 1 ? "1px solid #f3f4f6" : "none",
-                                      background: msg.sender === 'coparent' ? "#fff" : "#f0fdf4"
-                                    }}
-                                  >
-                                    <div style={{ 
-                                      display: "flex", 
-                                      justifyContent: "space-between",
-                                      marginBottom: 4,
-                                      fontSize: 11,
-                                      color: "#9ca3af"
-                                    }}>
-                                      <span style={{ 
-                                        fontWeight: 600,
-                                        color: msg.sender === 'coparent' ? "#dc2626" : "#059669"
-                                      }}>
-                                        {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
-                                      </span>
-                                      <span>
-                                        {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          hour: 'numeric',
-                                          minute: '2-digit'
-                                        }) : ''}
-                                      </span>
-                                    </div>
-                                    <div style={{ 
-                                      fontSize: 14, 
-                                      color: "#374151",
-                                      lineHeight: 1.5
-                                    }}>
-                                      {msg.text}
-                                    </div>
-                                  </div>
-                                ))
+                                (() => {
+                                  const firstCoparentIdx = incident.messages_json.findIndex((m: any) => m.sender === 'coparent');
+                                  return incident.messages_json.map((msg: any, idx: number) => {
+                                    const isCoparent = msg.sender === 'coparent';
+                                    return (
+                                      <div key={idx}>
+                                        <div style={{
+                                          display: "flex",
+                                          justifyContent: isCoparent ? "flex-start" : "flex-end",
+                                          marginBottom: 12
+                                        }}>
+                                          <div style={{
+                                            maxWidth: "85%",
+                                            background: isCoparent ? "#fef2f2" : "#f0fdf4",
+                                            borderLeft: `4px solid ${isCoparent ? "#dc2626" : "#059669"}`,
+                                            borderRadius: 8,
+                                            padding: 12
+                                          }}>
+                                            <div style={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                              marginBottom: 4,
+                                              fontSize: 11,
+                                              color: "#9ca3af"
+                                            }}>
+                                              <span style={{
+                                                fontWeight: 600,
+                                                color: isCoparent ? "#dc2626" : "#059669"
+                                              }}>
+                                                {isCoparent ? 'Co-parent' : 'You'}
+                                              </span>
+                                              <span style={{ marginLeft: 12 }}>
+                                                {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-US', {
+                                                  month: 'short',
+                                                  day: 'numeric',
+                                                  hour: 'numeric',
+                                                  minute: '2-digit'
+                                                }) : ''}
+                                              </span>
+                                            </div>
+                                            <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.5 }}>
+                                              {msg.text}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        {idx === firstCoparentIdx && incident.patterns?.length > 0 && (
+                                          <div style={{ marginBottom: 12, paddingLeft: 4 }}>
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                              {incident.patterns.map((pattern: string, pi: number) => (
+                                                <div key={pi} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                  <span style={{
+                                                    padding: "4px 10px",
+                                                    background: "#fef3c7",
+                                                    border: "1px solid #fcd34d",
+                                                    borderRadius: 12,
+                                                    fontSize: 11,
+                                                    color: "#92400e",
+                                                    fontWeight: 600
+                                                  }}>
+                                                    {pattern}
+                                                  </span>
+                                                  {patternExplanations[pattern] && (
+                                                    <span style={{ fontSize: 10, color: "#9ca3af", paddingLeft: 4 }}>
+                                                      {patternExplanations[pattern]}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  });
+                                })()
                               ) : (
                                 <div style={{ padding: 16, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
                                   {incident.coparent_message || "No message content"}
@@ -918,6 +1131,73 @@ function EvidenceContent() {
           ))
         )}
       </main>
+
+      {/* Selection Action Bar */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: exhibitCount > 0 ? 170 : 100,
+          left: 20,
+          right: 20,
+          background: '#3b82f6',
+          borderRadius: 16,
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: 1000
+        }}>
+          <div style={{ color: 'white', fontSize: 15 }}>
+            <span style={{ fontWeight: 700 }}>{selectedIds.size}</span> selected
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={addSelectedToExhibit}
+              style={{
+                background: 'white',
+                color: '#3b82f6',
+                border: 'none',
+                borderRadius: 10,
+                padding: '10px 16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 13
+              }}
+            >
+              Add to Exhibit
+            </button>
+            <button
+              onClick={copySelectedToClipboard}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: 10,
+                padding: '10px 16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 13
+              }}
+            >
+              {copySuccess ? 'Copied!' : 'Copy Text'}
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: 18,
+                padding: '4px 8px'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating Action Bar */}
       {exhibitCount > 0 && (
