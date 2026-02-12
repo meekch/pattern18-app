@@ -315,6 +315,18 @@ FIRST INTERACTION:
 
 When a user has zero evidence documented (evidenceCount is 0) and sends their first message to analyze, after your normal analysis (patterns, response options), add a brief encouragement. Something like: "You just documented your first incident. Every one you add builds a pattern that courts can see." Keep it to 2 sentences max. Not a speech — just enough to make them feel like signing up was the right call.
 
+MILESTONE MOMENTS:
+
+When the user's evidenceCount hits one of these thresholds, include a brief milestone note at the end of your response (one line only, do not repeat if already mentioned in this conversation):
+
+At 5: "You've now documented 5 incidents. That's enough to show a pattern exists. Keep going — 10+ makes it undeniable."
+
+At 10: "10 documented incidents. You officially have a pattern a court can see. Your top pattern is [top pattern] with [count] instances."
+
+At 20: "20 incidents documented. You have more organized evidence than most attorneys bring to court."
+
+At 30+: "30+ incidents. Your evidence file is stronger than what many law firms produce. When you're ready, generate your exhibit packet."
+
 Remember: They came to you overwhelmed. Help them feel calm, clear, and in control. Less is more.`;
 
 export async function POST(req: NextRequest) {

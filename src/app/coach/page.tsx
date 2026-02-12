@@ -365,8 +365,34 @@ export default function CoachPage() {
           <div className="home">
             <div className="welcome">
               <div className="heart">💚</div>
-              <h1>Hey, I'm glad you're here.</h1>
-              <p>Paste a message, upload a screenshot, or just tell me what's going on.</p>
+              {(() => {
+                const courtDate = caseContext?.next_court_date;
+                const daysUntil = courtDate ? Math.ceil((new Date(courtDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                const uniquePatterns = Object.keys(patternCounts).length;
+
+                if (daysUntil && daysUntil > 0) {
+                  return (
+                    <>
+                      <h1>You have {daysUntil} days until your hearing.</h1>
+                      <p>What do you need to work on today?</p>
+                    </>
+                  );
+                } else if (evidenceCount > 0) {
+                  return (
+                    <>
+                      <h1>You've documented {evidenceCount} incident{evidenceCount !== 1 ? 's' : ''}{uniquePatterns > 0 ? ` across ${uniquePatterns} pattern${uniquePatterns !== 1 ? 's' : ''}` : ''}.</h1>
+                      <p>Ready to add more or generate a document?</p>
+                    </>
+                  );
+                } else {
+                  return (
+                    <>
+                      <h1>Hey, I'm glad you're here.</h1>
+                      <p>First time? Tell me what's going on or paste a message you need help with.</p>
+                    </>
+                  );
+                }
+              })()}
             </div>
           </div>
         ) : (
