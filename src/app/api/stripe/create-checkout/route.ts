@@ -20,41 +20,34 @@ export async function POST(req: NextRequest) {
     // Check if customer already exists with active subscription
     const existingCustomers = await stripe.customers.list({
       email: email,
-      limit: 1,
+      limit: 5,
     });
 
-    if (existingCustomers.data.length > 0) {
-      const customerId = existingCustomers.data[0].id;
-      
-      // Check for active subscriptions
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: 'active',
-        limit: 1,
+    console.log('Stripe checkout: found', existingCustomers.data.length, 'existing customers for', email);
+
+    for (const customer of existingCustomers.data) {
+      console.log('Stripe checkout: checking customer', customer.id, 'created', new Date(customer.created * 1000).toISOString());
+
+      const allSubs = await stripe.subscriptions.list({
+        customer: customer.id,
       });
 
-      if (subscriptions.data.length > 0) {
-        // Already has active subscription - redirect to coach
-        return NextResponse.json({ 
-          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach`,
+      for (const sub of allSubs.data) {
+        console.log('Stripe checkout: subscription', sub.id, 'status:', sub.status, 'created:', new Date(sub.created * 1000).toISOString());
+      }
+
+      const hasActiveSub = allSubs.data.some(s => s.status === 'active' || s.status === 'trialing');
+
+      if (hasActiveSub) {
+        console.log('Stripe checkout: SKIPPING checkout — active/trialing subscription found for customer', customer.id);
+        return NextResponse.json({
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach?success=true`,
           message: 'You already have an active subscription'
         });
       }
-
-      // Also check for trialing subscriptions
-      const trialingSubs = await stripe.subscriptions.list({
-        customer: customerId,
-        status: 'trialing',
-        limit: 1,
-      });
-
-      if (trialingSubs.data.length > 0) {
-        return NextResponse.json({ 
-          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach`,
-          message: 'You already have an active trial'
-        });
-      }
     }
+
+    console.log('Stripe checkout: no active/trialing subscription found, creating new checkout session');
 
     // Get the price ID from environment
     const priceId = process.env.STRIPE_PRICE_ID;
