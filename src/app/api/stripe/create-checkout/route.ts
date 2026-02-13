@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
 
-    // Check if customer already exists with active subscription
+    // Check if customer already exists with active/trialing subscription
     const existingCustomers = await stripe.customers.list({
       email: email,
       limit: 5,
@@ -25,29 +25,42 @@ export async function POST(req: NextRequest) {
 
     console.log('Stripe checkout: found', existingCustomers.data.length, 'existing customers for', email);
 
+    let skipCheckout = false;
     for (const customer of existingCustomers.data) {
-      console.log('Stripe checkout: checking customer', customer.id, 'created', new Date(customer.created * 1000).toISOString());
-
-      const allSubs = await stripe.subscriptions.list({
+      // Fetch active subs
+      const activeSubs = await stripe.subscriptions.list({
         customer: customer.id,
+        status: 'active',
+      });
+      // Fetch trialing subs
+      const trialingSubs = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'trialing',
       });
 
-      for (const sub of allSubs.data) {
-        console.log('Stripe checkout: subscription', sub.id, 'status:', sub.status, 'created:', new Date(sub.created * 1000).toISOString());
-      }
+      const validSubs = [...activeSubs.data, ...trialingSubs.data];
 
-      const hasActiveSub = allSubs.data.some(s => s.status === 'active' || s.status === 'trialing');
+      console.log('Stripe checkout: customer', customer.id,
+        '| active:', activeSubs.data.length,
+        '| trialing:', trialingSubs.data.length,
+        '| statuses:', validSubs.map(s => `${s.id}=${s.status}`).join(', ') || 'none'
+      );
 
-      if (hasActiveSub) {
-        console.log('Stripe checkout: SKIPPING checkout — active/trialing subscription found for customer', customer.id);
-        return NextResponse.json({
-          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach?success=true`,
-          message: 'You already have an active subscription'
-        });
+      if (validSubs.length > 0) {
+        console.log('Stripe checkout: SKIP — active/trialing sub found for customer', customer.id);
+        skipCheckout = true;
+        break;
       }
     }
 
-    console.log('Stripe checkout: no active/trialing subscription found, creating new checkout session');
+    if (skipCheckout) {
+      return NextResponse.json({
+        url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com'}/coach?success=true`,
+        message: 'You already have an active subscription'
+      });
+    }
+
+    console.log('Stripe checkout: PROCEED — no active/trialing subscription, creating checkout session');
 
     // Get the price ID from environment
     const priceId = process.env.STRIPE_PRICE_ID;
@@ -63,7 +76,7 @@ export async function POST(req: NextRequest) {
     // Build checkout session options
     const sessionOptions: any = {
       mode: 'subscription',
-      payment_method_collection: 'always',
+      payment_method_collection: 'if_required',
       customer_email: email,
       line_items: [
         {
