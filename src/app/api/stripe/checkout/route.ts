@@ -79,6 +79,11 @@ export async function POST(req: NextRequest) {
       metadata: { userId },
     });
 
+    if (!session.url) {
+      console.error('Stripe checkout session created but url is null. Session ID:', session.id);
+      return NextResponse.json({ error: 'Checkout session created but no redirect URL returned' }, { status: 500 });
+    }
+
     return NextResponse.json({ url: session.url });
 
   } catch (error: any) {

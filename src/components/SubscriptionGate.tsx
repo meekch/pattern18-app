@@ -7,6 +7,7 @@ interface SubscriptionGateProps {
 
 export default function SubscriptionGate({ status, email }: SubscriptionGateProps) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleManageSubscription = async () => {
     setLoading(true)
@@ -28,6 +29,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
 
   const handleStartTrial = async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -35,13 +37,24 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         body: JSON.stringify({ email }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        console.error('Stripe checkout API error:', res.status, data)
+        setError(data.error || 'Failed to start checkout. Please try again.')
+        setLoading(false)
+        return
+      }
       if (data.url) {
         window.location.href = data.url
+      } else {
+        console.error('Stripe checkout returned no URL:', data)
+        setError(data.error || 'Something went wrong setting up checkout.')
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Error starting checkout:', error)
+    } catch (err) {
+      console.error('Checkout fetch failed:', err)
+      setError('Failed to connect to checkout. Please try again.')
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const getContent = () => {
@@ -84,6 +97,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         <button onClick={content.primaryHandler} disabled={loading} className="primary-btn">
           {loading ? 'Loading...' : content.primaryAction}
         </button>
+        {error && <p className="error-msg">{error}</p>}
         {status === 'canceled' && (
           <p className="note">
             Questions? Email us at <a href="mailto:hello@pattern18.com">hello@pattern18.com</a>
@@ -148,6 +162,15 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         .primary-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+        }
+        .error-msg {
+          background: #fef2f2;
+          color: #dc2626;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 14px;
+          margin: 16px 0 0 0;
+          text-align: center;
         }
         .note {
           font-size: 14px;

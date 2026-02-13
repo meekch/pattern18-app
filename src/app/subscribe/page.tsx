@@ -11,6 +11,7 @@ export default function SubscribePage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [showPromo, setShowPromo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -44,6 +45,7 @@ export default function SubscribePage() {
   const handleCheckout = async () => {
     if (!user) return;
     setCheckoutLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/stripe/create-checkout', {
@@ -57,15 +59,23 @@ export default function SubscribePage() {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        console.error('Stripe checkout API error:', response.status, data);
+        setError(data.error || 'Failed to create checkout session. Please try again.');
+        setCheckoutLoading(false);
+        return;
+      }
+
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert('Error creating checkout session');
+        console.error('Stripe checkout returned no URL:', data);
+        setError(data.error || 'Something went wrong setting up checkout.');
         setCheckoutLoading(false);
       }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Error creating checkout session');
+    } catch (err) {
+      console.error('Checkout fetch failed:', err);
+      setError('Failed to connect to checkout. Please try again.');
       setCheckoutLoading(false);
     }
   };
@@ -205,6 +215,10 @@ export default function SubscribePage() {
             <>Start My Free Trial →</>
           )}
         </button>
+
+        {error && (
+          <div className="error-msg">{error}</div>
+        )}
 
         <p className="secure-note">🔒 Secure checkout powered by Stripe</p>
 
@@ -419,6 +433,16 @@ export default function SubscribePage() {
         .cta-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+        }
+
+        .error-msg {
+          background: #fef2f2;
+          color: #dc2626;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 14px;
+          margin-top: 12px;
+          text-align: center;
         }
 
         .secure-note {

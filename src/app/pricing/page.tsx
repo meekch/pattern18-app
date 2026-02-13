@@ -31,13 +31,23 @@ export default function PricingPage() {
         body: JSON.stringify({ priceId, userId: user.id }),
       });
 
-      const { url, error } = await response.json();
-      if (error) throw new Error(error);
-      
-      window.location.href = url;
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Stripe checkout API error:', response.status, data);
+        alert(data.error || 'Failed to start checkout. Please try again.');
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Stripe checkout returned no URL:', data);
+        alert(data.error || 'Something went wrong setting up checkout.');
+      }
     } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Something went wrong. Please try again.');
+      console.error('Checkout fetch failed:', error);
+      alert('Failed to connect to checkout. Please try again.');
     } finally {
       setLoading(false);
     }

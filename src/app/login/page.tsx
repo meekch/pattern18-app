@@ -84,6 +84,7 @@ function LoginContent() {
       setLoading(false)
       setLoadingState('')
     } else if (data.session) {
+      // Middleware handles subscription check — redirects to /subscribe if needed
       router.push('/coach')
     }
   }
@@ -110,11 +111,11 @@ function LoginContent() {
     // Then redirect to Stripe checkout
     try {
       setLoadingState('Preparing secure checkout...')
-      
+
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email,
           promoCode: promoCode.trim() || undefined
         }),
@@ -122,15 +123,25 @@ function LoginContent() {
 
       const data = await response.json()
 
+      if (!response.ok) {
+        console.error('Stripe checkout API error:', response.status, data)
+        setError(data.error || 'Failed to start checkout. Please try again.')
+        setLoading(false)
+        setLoadingState('')
+        return
+      }
+
       if (data.url) {
         setLoadingState('Redirecting to checkout...')
         window.location.href = data.url
       } else {
-        setError(data.error || 'Something went wrong')
+        console.error('Stripe checkout returned no URL:', data)
+        setError(data.error || 'Something went wrong setting up checkout.')
         setLoading(false)
         setLoadingState('')
       }
     } catch (err) {
+      console.error('Stripe checkout fetch failed:', err)
       setError('Failed to start checkout. Please try again.')
       setLoading(false)
       setLoadingState('')

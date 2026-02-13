@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     // Get the price ID from environment
     const priceId = process.env.STRIPE_PRICE_ID;
+    console.log('Stripe checkout: using price ID:', priceId || 'NOT SET');
     if (!priceId) {
       console.error('STRIPE_PRICE_ID not configured');
       return NextResponse.json({ error: 'Payment not configured' }, { status: 500 });
@@ -105,6 +106,11 @@ export async function POST(req: NextRequest) {
     sessionOptions.allow_promotion_codes = true;
   }
     const session = await stripe.checkout.sessions.create(sessionOptions);
+
+    if (!session.url) {
+      console.error('Stripe checkout session created but url is null. Session ID:', session.id);
+      return NextResponse.json({ error: 'Checkout session created but no redirect URL returned' }, { status: 500 });
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
