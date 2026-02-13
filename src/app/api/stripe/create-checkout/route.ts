@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // Build checkout session options
     const sessionOptions: any = {
       mode: 'subscription',
-      payment_method_collection: 'if_required',
+      payment_method_collection: 'always',
       customer_email: email,
       line_items: [
         {
