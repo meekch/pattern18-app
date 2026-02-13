@@ -22,15 +22,14 @@ export default function SubscribePage() {
         return;
       }
 
-      // Check if already subscribed
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('email', session.user.email?.toLowerCase())
-        .in('status', ['active', 'trialing'])
+      // Check if already subscribed (same table/field as middleware)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', session.user.id)
         .single();
 
-      if (subscription) {
+      if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
         router.push('/coach');
         return;
       }
