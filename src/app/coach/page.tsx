@@ -63,6 +63,16 @@ export default function CoachPage() {
           }
         });
         setPatternCounts(counts);
+
+        // Send welcome email for brand new users (no evidence, no case context)
+        if (evidence.length === 0 && !caseData && !localStorage.getItem('welcome_email_sent')) {
+          localStorage.setItem('welcome_email_sent', 'true');
+          fetch('/api/welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session.user.email })
+          }).catch(() => {});
+        }
       }
 
       setLoading(false);
