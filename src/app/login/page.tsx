@@ -108,6 +108,13 @@ function LoginContent() {
       return
     }
 
+    // Send welcome email (fire and forget)
+    fetch('/api/welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    }).catch(err => console.error('Welcome email failed:', err))
+
     // Then redirect to Stripe checkout
     try {
       setLoadingState('Preparing secure checkout...')
