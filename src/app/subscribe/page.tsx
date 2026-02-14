@@ -181,7 +181,7 @@ export default function SubscribePage() {
           </div>
           <div className="price-row future">
             <span>After 7 days</span>
-            <span>$89/month</span>
+            <span>$29/month</span>
           </div>
           <p className="cancel-note">Cancel anytime. No questions asked.</p>
         </div>
