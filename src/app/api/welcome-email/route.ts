@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  console.log('All env vars with RESEND:', Object.keys(process.env).filter(k => k.includes('RESEND')));
   console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
