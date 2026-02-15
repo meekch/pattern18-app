@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -23,7 +24,16 @@ export default function RootLayout({
           rel="stylesheet" 
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script strategy="afterInteractive" src="https://connect.facebook.net/en_US/fbevents.js" />
+        <Script id="facebook-pixel" strategy="afterInteractive">
+          {`
+            fbq('init', '1405174431383478');
+            fbq('track', 'PageView');
+          `}
+        </Script>
+      </body>
     </html>
   );
 }
