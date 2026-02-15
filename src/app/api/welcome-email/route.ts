@@ -1,16 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { requireAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function POST(req: NextRequest) {
-  console.log('All env vars with RESEND:', Object.keys(process.env).filter(k => k.includes('RESEND')));
   console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const userId = await requireAuth(req);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 
+    // Check if welcome email already sent for this user
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('welcome_email_sent')
+      .eq('id', userId)
+      .single();
+
+    if (profile?.welcome_email_sent) {
+      console.log('Welcome email already sent for user:', userId);
+      return NextResponse.json({ success: true, skipped: true });
+    }
+
+    // Mark as sent BEFORE sending (prevents race condition with concurrent requests)
+    await supabase
+      .from('profiles')
+      .upsert({ id: userId, welcome_email_sent: true }, { onConflict: 'id' });
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: 'Pattern 18 <hello@pattern18.com>',
       to: email,
@@ -32,6 +60,7 @@ You have 7 days free. Every message you analyze makes your evidence stronger.
 - Pattern 18`
     });
 
+    console.log('Welcome email sent to:', email);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Welcome email error:', error);
