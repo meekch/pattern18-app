@@ -7,7 +7,11 @@
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
       "Bash(xargs:*)",
-      "Bash(npx next build:*)"
+      "Bash(npx next build:*)",
+      "Bash(cd:*)",
+      "Bash(findstr:*)",
+      "Bash(git -C C:/Users/Huddy/pattern18-app log --all --full-history -- \"*.env\" \".env*\")",
+      "Bash(grep:*)"
     ]
   }
 }
