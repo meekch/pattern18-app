@@ -63,3 +63,21 @@ Pattern 18 is a $89/month SaaS platform helping protective parents document coer
 - AI-powered pattern detection accuracy
 - Court document generation
 - Beta tester onboarding (Dr. Liane Leedom, Donna from Love Fraud)
+
+## AI Automation & Reporting (Added March 2026)
+
+### n8n Workflow
+Report generation runs entirely in n8n — NOT in this codebase.
+Workflow: Receive Lead Data → Generate AI Report (Claude API) → Send via Resend → Save to Supabase
+To update the report prompt: edit the n8n node directly.
+
+### Social Media
+- TikTok: @thecounterparent
+- Facebook: Pattern18 Coach page
+- Never cross-post with Opalite Systems accounts
+- Content managed via Blotato
+
+### Critical Rules (do not change)
+- Supabase service role key: server-side only, never client components
+- Chat flow is deterministic — Claude API generates acknowledgement text only
+- Keep Pattern18 code completely separate from Opalite Systems
