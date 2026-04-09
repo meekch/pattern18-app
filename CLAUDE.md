@@ -81,3 +81,12 @@ To update the report prompt: edit the n8n node directly.
 - Supabase service role key: server-side only, never client components
 - Chat flow is deterministic — Claude API generates acknowledgement text only
 - Keep Pattern18 code completely separate from Opalite Systems
+
+## Engineering Skills
+The following skills are available in .claude/skills/
+Load them when relevant:
+- spec-driven-development — before any new feature
+- incremental-implementation — for large builds
+- test-driven-development — when writing testable code
+- security-hardening — before any auth or data handling
+- code-review — before pushing to main
