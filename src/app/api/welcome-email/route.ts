@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { requireAuth } from '@/lib/auth';
+import { checkIpRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,11 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
   try {
+    const rl = checkIpRateLimit(req, 'welcome-email', 2);
+    if (!rl.ok) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const userId = await requireAuth(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

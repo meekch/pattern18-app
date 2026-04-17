@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { checkIpRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,11 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = checkIpRateLimit(req, 'submit-lead', 5);
+    if (!rl.ok) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { treatment_interest, prior_experience, timeline, name, phone, email, utm_source, utm_medium, utm_campaign, referrer } = body;
 
