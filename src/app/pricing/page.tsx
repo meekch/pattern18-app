@@ -68,7 +68,7 @@ export default function PricingPage() {
           <div className="comparison-grid">
             <div className="compare-item attorney">
               <div className="compare-label">Family Attorney</div>
-              <div className="compare-price">$300–400/hr</div>
+              <div className="compare-price">$300-400/hr</div>
               <div className="compare-note">Initial consultation alone</div>
             </div>
             <div className="compare-vs">vs</div>

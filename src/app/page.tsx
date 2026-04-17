@@ -109,7 +109,7 @@ export default function HomePage() {
           <p>Before I go, I'm building the tool I needed from day one.</p>
           <p>Pattern18 is for every parent who came after me. Every mom, dad, grandparent staring at a message asking, "is this as bad as I think it is?"</p>
           <p>I built it so you don't have to wait 16 years to know.</p>
-          <p className="founder-sign">— Rae</p>
+          <p className="founder-sign">Rae</p>
         </div>
       </section>
 
@@ -133,7 +133,7 @@ export default function HomePage() {
             <li>
               <span className="check">✓</span>
               <div>
-                <div className="stack-main">24/7 AI coach — unlimited message analysis</div>
+                <div className="stack-main">24/7 AI coach. Unlimited message analysis.</div>
                 <div className="stack-value">Worth $300+/mo at $10/analysis</div>
               </div>
             </li>
@@ -187,7 +187,7 @@ export default function HomePage() {
           </div>
 
           <p className="pricing-why">Why so low? Because I waited 16 years for a tool like this.<br />I built it so no one else has to.</p>
-          <p className="pricing-sign">— Rae</p>
+          <p className="pricing-sign">Rae</p>
         </div>
 
         <div className="pricing-cta-wrap">
@@ -210,7 +210,7 @@ export default function HomePage() {
 
       {/* ============ FREE COMMUNITY ============ */}
       <section className="community">
-        <h3 className="community-head">Not ready to subscribe? Join the community — free, forever.</h3>
+        <h3 className="community-head">Not ready to subscribe? Join the community. Free, forever.</h3>
         <p>5,000+ parents navigating high-conflict custody together. No cost. Ever.</p>
         <p>Glossary of the terms. Pattern recognition guides. Safe space to ask questions.</p>
         <a href={SKOOL_URL} target="_blank" rel="noopener noreferrer" className="btn-outline">

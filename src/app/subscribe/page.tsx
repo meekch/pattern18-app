@@ -176,7 +176,7 @@ export default function SubscribePage() {
 
       <div className="trust">
         <p>"This tool helped me see what I couldn't see for years."</p>
-        <span>— Pattern18 user</span>
+        <span>Pattern18 user</span>
       </div>
 
       <style jsx>{`

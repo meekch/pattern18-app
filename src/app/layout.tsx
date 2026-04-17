@@ -4,12 +4,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://pattern18.com'),
-  title: 'Pattern18 — Your 24/7 AI Coach for High-Conflict Custody',
+  title: 'Pattern18. Your 24/7 AI Coach for High-Conflict Custody',
   description:
     'AI coach for parents surviving high-conflict custody and coercive control. Analyze messages, document patterns, prepare for court. $97/month. 7-day free trial. Less than 20 minutes with a family lawyer.',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   openGraph: {
-    title: 'Pattern18 — When their text makes your stomach drop, your 24/7 AI coach is here.',
+    title: 'Pattern18. When their text makes your stomach drop. Your 24/7 AI coach is here.',
     description:
       'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
     url: 'https://pattern18.com',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pattern18 — Your 24/7 AI Coach for High-Conflict Custody',
+    title: 'Pattern18. Your 24/7 AI Coach for High-Conflict Custody',
     description:
       'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
   },
