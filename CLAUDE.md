@@ -90,3 +90,6 @@ Load them when relevant:
 - test-driven-development — when writing testable code
 - security-hardening — before any auth or data handling
 - code-review — before pushing to main
+
+## Technical Debt (flagged April 2026)
+- Repo root has 35 legacy scripts matching `fix-*.js`, `add-*.js`, `update-*.js` (one-shot migrations, emoji cleanups, duplicate-detection patches, etc.). They are not imported anywhere and clutter the root listing. Next sprint: move to `scripts/archive/` or delete after confirming none are referenced by package.json or CI. Do not ship new one-off scripts to the repo root.
