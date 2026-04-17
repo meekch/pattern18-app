@@ -3,26 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL } from '@/lib/stripe-links';
 
 export default function SubscribePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
-  const [showPromo, setShowPromo] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session?.user) {
         router.push('/login');
         return;
       }
 
-      // Check if already subscribed (same table/field as middleware)
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status')
@@ -41,42 +37,10 @@ export default function SubscribePage() {
     init();
   }, [router]);
 
-  const handleCheckout = async () => {
-    if (!user) return;
-    setCheckoutLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          promoCode: promoCode || undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Stripe checkout API error:', response.status, data);
-        setError(data.error || 'Failed to create checkout session. Please try again.');
-        setCheckoutLoading(false);
-        return;
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error('Stripe checkout returned no URL:', data);
-        setError(data.error || 'Something went wrong setting up checkout.');
-        setCheckoutLoading(false);
-      }
-    } catch (err) {
-      console.error('Checkout fetch failed:', err);
-      setError('Failed to connect to checkout. Please try again.');
-      setCheckoutLoading(false);
-    }
+  const checkoutHref = (base: string) => {
+    if (!user?.email) return base;
+    const sep = base.includes('?') ? '&' : '?';
+    return `${base}${sep}prefilled_email=${encodeURIComponent(user.email)}`;
   };
 
   const handleLogout = async () => {
@@ -88,27 +52,38 @@ export default function SubscribePage() {
     return (
       <div className="container">
         <div className="loading">
-          <div className="loading-icon">💚</div>
+          <div className="loading-badge">18</div>
           <p>Loading...</p>
         </div>
         <style jsx>{`
           .container {
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
+            background: var(--warm-white);
+            font-family: var(--sans);
           }
-          .loading {
-            text-align: center;
-          }
-          .loading-icon {
-            font-size: 48px;
+          .loading { text-align: center; }
+          .loading-badge {
+            background: var(--teal);
+            color: var(--warm-white);
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--serif);
+            font-weight: 800;
+            font-size: 24px;
+            margin: 0 auto 14px;
             animation: pulse 1.5s ease-in-out infinite;
           }
+          p { color: var(--charcoal-70); }
           @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
           }
         `}</style>
       </div>
@@ -117,63 +92,60 @@ export default function SubscribePage() {
 
   return (
     <div className="container">
+      <div className="teal-accent" />
       <div className="card">
-        {/* Header */}
         <div className="header">
           <div className="logo">18</div>
-          <h1>Pattern 18 Coach</h1>
-          <p className="tagline">Your 24/7 Strategic Partner</p>
+          <h1>Pattern18 Coach</h1>
+          <p className="tagline">Your 24/7 AI coach for high-conflict custody.</p>
         </div>
 
-        {/* Trial Badge */}
         <div className="trial-badge">
           <span className="trial-text">7-DAY FREE TRIAL</span>
           <span className="trial-price">$0 today</span>
         </div>
 
-        {/* What You Get */}
         <div className="benefits">
           <h2>What's included:</h2>
           <ul>
             <li>
               <span className="check">✓</span>
               <div>
-                <strong>24/7 AI Coach</strong>
-                <span>Analyze messages, draft responses, get support anytime</span>
+                <strong>24/7 AI coach</strong>
+                <span>Unlimited message analysis. Pattern detection. BIFF responses.</span>
               </div>
             </li>
             <li>
               <span className="check">✓</span>
               <div>
-                <strong>Pattern Recognition</strong>
-                <span>Instantly identify manipulation tactics</span>
+                <strong>Pattern recognition</strong>
+                <span>DARVO, gaslighting, coercive control, named instantly.</span>
               </div>
             </li>
             <li>
               <span className="check">✓</span>
               <div>
-                <strong>Evidence Documentation</strong>
-                <span>Build your case with organized, timestamped records</span>
+                <strong>Evidence documentation</strong>
+                <span>Timestamped case file. Automatic timeline.</span>
               </div>
             </li>
             <li>
               <span className="check">✓</span>
               <div>
-                <strong>Court Document Generation</strong>
-                <span>Create declarations, timelines, and exhibits</span>
+                <strong>Court-ready exports</strong>
+                <span>Declarations, exhibits, attorney-ready packets.</span>
               </div>
             </li>
             <li>
               <span className="check">✓</span>
               <div>
-                <strong>Healing & Grounding Tools</strong>
-                <span>Breathing exercises, affirmations, and support</span>
+                <strong>Healing module</strong>
+                <span>Grounding tools, affirmations, community.</span>
               </div>
             </li>
           </ul>
         </div>
 
-        {/* Pricing */}
         <div className="pricing">
           <div className="price-row">
             <span>Today</span>
@@ -181,321 +153,239 @@ export default function SubscribePage() {
           </div>
           <div className="price-row future">
             <span>After 7 days</span>
-            <span>$29/month</span>
+            <span>$97/month</span>
           </div>
           <p className="cancel-note">Cancel anytime. No questions asked.</p>
         </div>
 
-        {/* Promo Code */}
-        {!showPromo ? (
-          <button className="promo-toggle" onClick={() => setShowPromo(true)}>
-            Have a promo code?
-          </button>
-        ) : (
-          <div className="promo-input">
-            <input
-              type="text"
-              placeholder="Enter promo code"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            />
-          </div>
-        )}
+        <a href={checkoutHref(STRIPE_MONTHLY_URL)} className="cta-button">
+          Start My Free Trial →
+        </a>
 
-        {/* CTA Button */}
-        <button
-          onClick={handleCheckout}
-          disabled={checkoutLoading}
-          className="cta-button"
-        >
-          {checkoutLoading ? (
-            'Loading...'
-          ) : (
-            <>Start My Free Trial →</>
-          )}
-        </button>
+        <p className="yearly-line">
+          Prefer to pay yearly? <a href={checkoutHref(STRIPE_ANNUAL_URL)} className="yearly-link">$697/year</a> <span className="save">(save $467)</span>.
+        </p>
 
-        {error && (
-          <div className="error-msg">{error}</div>
-        )}
+        <p className="secure-note">Secure checkout powered by Stripe.</p>
 
-        <p className="secure-note">🔒 Secure checkout powered by Stripe</p>
-
-        {/* User Info */}
         <div className="user-info">
           <span>Signed in as {user?.email}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            Sign out
-          </button>
+          <button onClick={handleLogout} className="logout-btn">Sign out</button>
         </div>
       </div>
 
-      {/* Trust Elements */}
       <div className="trust">
         <p>"This tool helped me see what I couldn't see for years."</p>
-        <span>— Pattern 18 User</span>
+        <span>— Pattern18 user</span>
       </div>
 
       <style jsx>{`
         .container {
-          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           padding: 24px;
-          background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: var(--warm-white);
+          font-family: var(--sans);
+          color: var(--charcoal);
         }
-
+        .teal-accent {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: var(--teal);
+        }
         .card {
-          background: white;
-          border-radius: 24px;
+          background: var(--warm-white);
+          border: 1px solid var(--teal-border);
+          border-radius: 20px;
           padding: 32px;
-          max-width: 440px;
+          max-width: 460px;
           width: 100%;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 24px rgba(31, 41, 55, 0.06);
         }
-
-        .header {
-          text-align: center;
-          margin-bottom: 24px;
-        }
-
+        .header { text-align: center; margin-bottom: 20px; }
         .logo {
-          display: inline-block;
-          background: #1a3a2f;
-          color: white;
-          padding: 12px 20px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--teal);
+          color: var(--warm-white);
+          width: 54px;
+          height: 54px;
           border-radius: 12px;
-          font-weight: 700;
-          font-size: 24px;
-          margin-bottom: 16px;
-        }
-
-        .header h1 {
-          font-size: 24px;
-          color: #1a3a2f;
-          margin-bottom: 4px;
-        }
-
-        .tagline {
-          color: #666;
-          font-size: 14px;
-        }
-
-        .trial-badge {
-          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-          border: 2px solid #10b981;
-          border-radius: 16px;
-          padding: 16px;
-          text-align: center;
-          margin-bottom: 24px;
-        }
-
-        .trial-text {
-          display: block;
-          color: #059669;
-          font-weight: 700;
-          font-size: 14px;
-          letter-spacing: 1px;
-          margin-bottom: 4px;
-        }
-
-        .trial-price {
-          font-size: 32px;
-          font-weight: 700;
-          color: #1a3a2f;
-        }
-
-        .benefits h2 {
-          font-size: 14px;
-          color: #888;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 16px;
-        }
-
-        .benefits ul {
-          list-style: none;
-          padding: 0;
-          margin: 0 0 24px 0;
-        }
-
-        .benefits li {
-          display: flex;
-          gap: 12px;
+          font-family: var(--serif);
+          font-weight: 800;
+          font-size: 26px;
           margin-bottom: 14px;
         }
-
-        .check {
-          color: #10b981;
+        .header h1 {
+          font-family: var(--serif);
           font-weight: 700;
-          font-size: 16px;
-          margin-top: 2px;
+          font-size: 24px;
+          color: var(--charcoal);
+          margin-bottom: 4px;
         }
-
+        .tagline {
+          color: var(--charcoal-70);
+          font-size: 14px;
+        }
+        .trial-badge {
+          background: var(--teal-tint);
+          border: 2px solid var(--teal);
+          border-radius: 14px;
+          padding: 14px;
+          text-align: center;
+          margin-bottom: 22px;
+        }
+        .trial-text {
+          display: block;
+          color: var(--deep-teal);
+          font-weight: 700;
+          font-size: 13px;
+          letter-spacing: 0.08em;
+          margin-bottom: 4px;
+        }
+        .trial-price {
+          font-family: var(--serif);
+          font-size: 30px;
+          font-weight: 800;
+          color: var(--charcoal);
+        }
+        .benefits h2 {
+          font-size: 12px;
+          color: var(--charcoal-70);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 14px;
+        }
+        .benefits ul { list-style: none; padding: 0; margin: 0 0 22px; }
+        .benefits li { display: flex; gap: 10px; margin-bottom: 12px; }
+        .check {
+          color: var(--teal);
+          font-weight: 800;
+          font-size: 16px;
+          margin-top: 1px;
+        }
         .benefits li strong {
           display: block;
-          color: #1a3a2f;
-          font-size: 15px;
+          color: var(--charcoal);
+          font-size: 14px;
+          margin-bottom: 2px;
         }
-
         .benefits li span {
-          color: #666;
+          color: var(--charcoal-70);
           font-size: 13px;
+          line-height: 1.5;
         }
-
         .pricing {
-          background: #f9fafb;
+          background: var(--teal-tint);
           border-radius: 12px;
           padding: 16px;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
-
         .price-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 0;
+          padding: 6px 0;
+          color: var(--charcoal);
         }
-
         .price-row.future {
-          border-top: 1px solid #e5e7eb;
-          margin-top: 8px;
-          padding-top: 16px;
-          color: #666;
+          border-top: 1px solid var(--teal-border);
+          margin-top: 6px;
+          padding-top: 14px;
+          color: var(--charcoal-70);
           font-size: 14px;
         }
-
         .price-free {
+          font-family: var(--serif);
           font-size: 24px;
-          font-weight: 700;
-          color: #10b981;
+          font-weight: 800;
+          color: var(--teal);
         }
-
         .cancel-note {
           text-align: center;
           font-size: 12px;
-          color: #888;
-          margin-top: 12px;
+          color: var(--charcoal-50);
+          margin-top: 10px;
         }
-
-        .promo-toggle {
-          background: none;
-          border: none;
-          color: #14b8a6;
-          font-size: 14px;
-          cursor: pointer;
-          width: 100%;
-          padding: 8px;
-          margin-bottom: 16px;
-        }
-
-        .promo-input {
-          margin-bottom: 16px;
-        }
-
-        .promo-input input {
-          width: 100%;
-          padding: 12px 16px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 16px;
-          text-align: center;
-          letter-spacing: 2px;
-        }
-
-        .promo-input input:focus {
-          outline: none;
-          border-color: #14b8a6;
-        }
-
         .cta-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           width: 100%;
           padding: 18px;
-          background: #1a3a2f;
-          color: white;
+          background: var(--teal);
+          color: var(--warm-white);
           border: none;
           border-radius: 14px;
-          font-size: 18px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
+          font-size: 17px;
+          font-weight: 700;
+          text-decoration: none;
+          min-height: 52px;
+          transition: background 0.15s ease;
         }
-
-        .cta-button:hover:not(:disabled) {
-          background: #2d5a4a;
-          transform: translateY(-2px);
-        }
-
-        .cta-button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .error-msg {
-          background: #fef2f2;
-          color: #dc2626;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 14px;
-          margin-top: 12px;
+        .cta-button:hover { background: var(--deep-teal); }
+        .yearly-line {
           text-align: center;
+          margin-top: 14px;
+          color: var(--charcoal);
+          font-size: 14px;
         }
-
+        .yearly-link {
+          color: var(--deep-teal);
+          font-weight: 600;
+          text-decoration: underline;
+        }
+        .save { color: var(--coral); font-weight: 700; }
         .secure-note {
           text-align: center;
           font-size: 12px;
-          color: #888;
-          margin-top: 12px;
+          color: var(--charcoal-50);
+          margin-top: 14px;
         }
-
         .user-info {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid #eee;
+          padding-top: 18px;
+          border-top: 1px solid var(--teal-border);
           font-size: 13px;
-          color: #888;
+          color: var(--charcoal-70);
         }
-
         .logout-btn {
           background: none;
           border: none;
-          color: #ef4444;
+          color: var(--coral);
           cursor: pointer;
           font-size: 13px;
+          min-height: 32px;
         }
-
         .trust {
-          margin-top: 24px;
+          margin-top: 22px;
           text-align: center;
-          max-width: 300px;
+          max-width: 320px;
         }
-
         .trust p {
+          font-family: var(--serif);
           font-style: italic;
-          color: #666;
+          color: var(--charcoal-70);
           font-size: 14px;
           margin-bottom: 4px;
         }
-
         .trust span {
-          color: #888;
+          color: var(--charcoal-50);
           font-size: 12px;
         }
-
         @media (max-width: 480px) {
-          .card {
-            padding: 24px;
-          }
-
-          .trial-price {
-            font-size: 28px;
-          }
+          .card { padding: 24px; }
+          .trial-price { font-size: 26px; }
         }
       `}</style>
     </div>

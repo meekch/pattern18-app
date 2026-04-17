@@ -46,8 +46,8 @@ export default function AdminMetricsPage() {
 
   // Pricing for calculations
   const PRICES = {
-    survivor: 29,
-    litigation: 99,
+    survivor: 97,
+    litigation: 97,
     firm_solo: 299,
     firm_small: 799,
     firm_full: 1999,
@@ -289,23 +289,23 @@ export default function AdminMetricsPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             borderLeft: '4px solid #3b82f6'
           }}>
-            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Survivor ($29)</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#1a3a2f' }}>{metrics.survivorCount}</div>
-            <div style={{ fontSize: 13, color: '#059669', marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Pattern18 ($97)</div>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#1F2937' }}>{metrics.survivorCount}</div>
+            <div style={{ fontSize: 13, color: '#2F9D94', marginTop: 4 }}>
               {formatCurrency(metrics.survivorCount * PRICES.survivor)}/mo
             </div>
           </div>
 
-          <div style={{ 
-            background: 'white', 
-            borderRadius: 16, 
-            padding: 24, 
+          <div style={{
+            background: 'white',
+            borderRadius: 16,
+            padding: 24,
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            borderLeft: '4px solid #8b5cf6'
+            borderLeft: '4px solid #1A5F5A'
           }}>
-            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Litigation ($99)</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#1a3a2f' }}>{metrics.litigationCount}</div>
-            <div style={{ fontSize: 13, color: '#059669', marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Legacy Litigation ($97)</div>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#1F2937' }}>{metrics.litigationCount}</div>
+            <div style={{ fontSize: 13, color: '#2F9D94', marginTop: 4 }}>
               {formatCurrency(metrics.litigationCount * PRICES.litigation)}/mo
             </div>
           </div>

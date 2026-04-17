@@ -1,542 +1,493 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
+import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL } from '@/lib/stripe-links';
 
 export default function PricingPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-    };
-    checkUser();
-  }, []);
-
-  const handleSelectPlan = async (priceId: string, tier: string) => {
-    if (!user) {
-      router.push(`/signup?plan=${tier}`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, userId: user.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Stripe checkout API error:', response.status, data);
-        alert(data.error || 'Failed to start checkout. Please try again.');
-        return;
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error('Stripe checkout returned no URL:', data);
-        alert(data.error || 'Something went wrong setting up checkout.');
-      }
-    } catch (error) {
-      console.error('Checkout fetch failed:', error);
-      alert('Failed to connect to checkout. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="container">
-      <header className="header">
-        <button onClick={() => router.push('/')} className="back-btn">
-          ← Back
-        </button>
-        <div className="logo">💚</div>
-      </header>
+      <div className="teal-accent" />
+
+      <nav className="nav">
+        <div className="nav-inner">
+          <Link href="/" className="brand">
+            <span className="brand-badge">18</span>
+            <span className="brand-name">Pattern18</span>
+          </Link>
+          <div className="nav-links">
+            <Link href="/faq" className="nav-link">FAQ</Link>
+            <Link href="/login" className="nav-link">Sign in</Link>
+            <a href={STRIPE_MONTHLY_URL} className="nav-cta">Start Free Trial</a>
+          </div>
+        </div>
+      </nav>
 
       <main className="main">
+        {/* HERO */}
         <div className="hero">
-          <h1>Document the Truth. Build Your Case.</h1>
-          <p>Family attorneys charge $300-400/hour. Pattern 18 gives you court-ready documentation for less than a single consultation.</p>
+          <h1>One price. Everything included.</h1>
+          <p>$97/month. Cancel anytime. 7-day free trial.</p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="pricing-grid">
-          
-          {/* Survivor Tier */}
-          <div className="pricing-card survivor">
-            <div className="card-header">
-              <h2>Survivor</h2>
-              <div className="price">
-                <span className="amount">$29</span>
-                <span className="period">/month</span>
-              </div>
+        {/* CONSUMER PLAN */}
+        <div className="plan">
+          <div className="plan-head">
+            <span className="plan-brand">PATTERN18</span>
+            <div className="plan-price">
+              <span className="amount">$97</span>
+              <span className="period">/month</span>
             </div>
-            <p className="card-desc">Everything you need to document patterns and build your case.</p>
-            <ul className="features">
-              <li>✓ <strong>Unlimited</strong> evidence saves</li>
-              <li>✓ <strong>Unlimited</strong> coach messages</li>
-              <li>✓ Pattern detection & tracking</li>
-              <li>✓ Full case dashboard</li>
-              <li>✓ Court exhibit packets</li>
-              <li>✓ Declaration generator</li>
-              <li>✓ Timeline documents</li>
-              <li>✓ Bulk message import</li>
-              <li>✓ Court Prep Mode</li>
-              <li>✓ Healing Space</li>
-            </ul>
-            <button 
-              className="cta-btn primary"
-              onClick={() => handleSelectPlan(process.env.NEXT_PUBLIC_STRIPE_SURVIVOR_MONTHLY!, 'survivor')}
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Start 7-Day Free Trial'}
-            </button>
-            <p className="trial-note">Cancel anytime. No charge for 7 days.</p>
           </div>
 
-          {/* Litigation Tier - Most Popular */}
-          <div className="pricing-card litigation popular">
-            <div className="popular-badge">MOST POPULAR</div>
-            <div className="card-header">
-              <h2>Litigation</h2>
-              <div className="price">
-                <span className="amount">$99</span>
-                <span className="period">/month</span>
-              </div>
-            </div>
-            <p className="card-desc">For active court cases. Priority support when you need it most.</p>
-            <ul className="features">
-              <li>✓ Everything in Survivor</li>
-              <li className="highlight">✓ <strong>Priority</strong> AI responses</li>
-              <li>✓ Attorney export package</li>
-              <li>✓ Case summary generator</li>
-              <li>✓ Court-formatted filings</li>
-              <li>✓ Deposition prep guides</li>
-              <li>✓ Pattern expert summary</li>
-              <li>✓ Email support</li>
-              <li>✓ Exclusive video library</li>
-            </ul>
-            <button 
-              className="cta-btn primary"
-              onClick={() => handleSelectPlan(process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY!, 'litigation')}
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Start 7-Day Free Trial'}
-            </button>
-            <p className="trial-note">Cancel anytime. No charge for 7 days.</p>
-          </div>
+          <p className="plan-label">What you get:</p>
+          <ul className="features">
+            <li><span className="check">✓</span> <strong>24/7 AI coach</strong>, unlimited message analysis</li>
+            <li><span className="check">✓</span> <strong>Real-time pattern detection</strong> (DARVO, gaslighting, coercive control)</li>
+            <li><span className="check">✓</span> <strong>Automatic case file and incident timeline</strong></li>
+            <li><span className="check">✓</span> <strong>BIFF response generator</strong></li>
+            <li><span className="check">✓</span> <strong>Court-ready documentation export</strong></li>
+            <li><span className="check">✓</span> <strong>Pattern timeline</strong> across months or years</li>
+            <li><span className="check">✓</span> <strong>Healing module</strong>, grounding tools, community</li>
+          </ul>
 
-          {/* Law Firms */}
-          <div className="pricing-card firms">
-            <div className="card-header">
-              <h2>Law Firms</h2>
-              <div className="price">
-                <span className="amount-small">Custom</span>
-              </div>
-            </div>
-            <p className="card-desc">Become a Pattern 18 Certified Firm. Your clients arrive prepared.</p>
-            <ul className="features">
-              <li>✓ Multi-attorney dashboard</li>
-              <li>✓ Client account management</li>
-              <li>✓ <strong>Sponsor survivor accounts</strong></li>
-              <li>✓ White-label reports</li>
-              <li>✓ "Pattern 18 Certified" badge</li>
-              <li>✓ Listed as trusted referral</li>
-              <li>✓ Staff training session</li>
-              <li>✓ Priority support</li>
-            </ul>
-            <div className="firm-tiers">
-              <div className="firm-tier">
-                <span className="tier-name">Solo</span>
-                <span className="tier-price">$299/mo</span>
-              </div>
-              <div className="firm-tier">
-                <span className="tier-name">Small Firm</span>
-                <span className="tier-price">$799/mo</span>
-              </div>
-              <div className="firm-tier">
-                <span className="tier-name">Full Firm</span>
-                <span className="tier-price">$1,999/mo</span>
-              </div>
-            </div>
-            <button 
-              className="cta-btn secondary"
-              onClick={() => window.location.href = 'mailto:hello@pattern18.com?subject=Law Firm Inquiry'}
-            >
-              Contact Us
-            </button>
-          </div>
-
+          <a href={STRIPE_MONTHLY_URL} className="btn-primary btn-block">
+            Start 7-Day Free Trial
+          </a>
+          <p className="trial-note">No credit card charged during trial.</p>
         </div>
 
-        {/* The Mission */}
-        <div className="mission-block">
-          <h3>Our Mission</h3>
-          <p>Every law firm subscription sponsors free access for survivors who can't afford it. When firms pay, victims get helped. That's how we change the system together.</p>
+        <div className="yearly-wrap">
+          <p className="yearly">
+            Prefer to pay yearly? <a href={STRIPE_ANNUAL_URL} className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
+          </p>
         </div>
 
-        {/* Comparison to Attorney */}
+        {/* COMPARISON */}
         <div className="comparison">
-          <h3>Compare the Cost</h3>
+          <h2>Compare the cost.</h2>
           <div className="comparison-grid">
-            <div className="comparison-item attorney">
-              <div className="comparison-label">Family Attorney</div>
-              <div className="comparison-price">$300-400/hr</div>
-              <div className="comparison-note">Initial consultation alone</div>
+            <div className="compare-item attorney">
+              <div className="compare-label">Family Attorney</div>
+              <div className="compare-price">$300–400/hr</div>
+              <div className="compare-note">Initial consultation alone</div>
             </div>
-            <div className="comparison-vs">vs</div>
-            <div className="comparison-item pattern18">
-              <div className="comparison-label">Pattern 18</div>
-              <div className="comparison-price">$29/mo</div>
-              <div className="comparison-note">Unlimited documentation & court docs</div>
+            <div className="compare-vs">vs</div>
+            <div className="compare-item p18">
+              <div className="compare-label">Pattern18</div>
+              <div className="compare-price">$97/mo</div>
+              <div className="compare-note">Unlimited analysis, documentation, court exports</div>
             </div>
           </div>
         </div>
 
-        {/* FAQ */}
-        <div className="faq">
-          <h3>Questions?</h3>
-          
-          <div className="faq-item">
-            <h4>Can I cancel anytime?</h4>
-            <p>Yes. Cancel with one click, no questions asked. Your data stays yours.</p>
-          </div>
-          
-          <div className="faq-item">
-            <h4>Is my data secure?</h4>
-            <p>Bank-level encryption. We never share your data. You can export or delete everything anytime.</p>
-          </div>
-          
-          <div className="faq-item">
-            <h4>Is this legal advice?</h4>
-            <p>No. Pattern 18 helps you document and organize evidence. We recommend working with an attorney for legal strategy.</p>
+        {/* FIRMS SECTION */}
+        <div id="firms" className="firms">
+          <div className="firms-head">
+            <h2>For Law Firms.</h2>
+            <p>Become a Pattern18 Certified Firm. Your clients arrive prepared.</p>
           </div>
 
-          <div className="faq-item">
-            <h4>What if I can't afford this?</h4>
-            <p>Start with the 7-day free trial. If you're in financial hardship, reach out to us - we have sponsored accounts available through our law firm partners.</p>
+          <div className="firms-grid">
+            <div className="firm-card">
+              <h3>Solo</h3>
+              <div className="firm-price"><span className="firm-amount">$299</span><span className="firm-period">/mo</span></div>
+              <ul>
+                <li>✓ Single-attorney dashboard</li>
+                <li>✓ Client account management</li>
+                <li>✓ "Pattern18 Certified" badge</li>
+                <li>✓ White-label reports</li>
+                <li>✓ Staff training session</li>
+              </ul>
+              <a href="mailto:pro@pattern18.com?subject=Pattern18 Solo Firm Inquiry" className="btn-outline">Contact us</a>
+            </div>
+
+            <div className="firm-card featured">
+              <div className="firm-badge">MOST POPULAR</div>
+              <h3>Small Firm</h3>
+              <div className="firm-price"><span className="firm-amount">$799</span><span className="firm-period">/mo</span></div>
+              <ul>
+                <li>✓ Up to 5 attorneys</li>
+                <li>✓ Sponsor survivor accounts</li>
+                <li>✓ Listed as trusted referral</li>
+                <li>✓ Priority support</li>
+                <li>✓ Everything in Solo</li>
+              </ul>
+              <a href="mailto:pro@pattern18.com?subject=Pattern18 Small Firm Inquiry" className="btn-primary">Contact us</a>
+            </div>
+
+            <div className="firm-card">
+              <h3>Full Firm</h3>
+              <div className="firm-price"><span className="firm-amount">$1,999</span><span className="firm-period">/mo</span></div>
+              <ul>
+                <li>✓ Unlimited attorneys</li>
+                <li>✓ Sponsor survivor accounts at scale</li>
+                <li>✓ Custom training and onboarding</li>
+                <li>✓ Dedicated account manager</li>
+                <li>✓ Everything in Small Firm</li>
+              </ul>
+              <a href="mailto:pro@pattern18.com?subject=Pattern18 Full Firm Inquiry" className="btn-outline">Contact us</a>
+            </div>
+          </div>
+
+          <div className="mission">
+            <h3>Our mission.</h3>
+            <p>Every firm subscription sponsors free access for survivors who can't afford it. When firms pay, victims get helped. That's how we change the system.</p>
           </div>
         </div>
 
+        {/* FAQ LINK */}
+        <div className="faq-cta">
+          <Link href="/faq" className="faq-link">See frequently asked questions →</Link>
+        </div>
       </main>
 
       <style jsx>{`
         .container {
-          min-height: 100vh;
-          background: linear-gradient(180deg, #f0fdf4 0%, #f5f7f6 100%);
+          min-height: 100dvh;
+          background: var(--warm-white);
+          color: var(--charcoal);
+          font-family: var(--sans);
         }
-        .header {
+        .teal-accent { height: 4px; background: var(--teal); }
+
+        .nav {
+          background: var(--warm-white);
+          border-bottom: 1px solid var(--teal-border);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+        }
+        .nav-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 16px 24px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 20px 24px;
+          gap: 16px;
         }
-        .back-btn {
-          background: none;
-          border: none;
-          color: #1a3a2f;
-          font-size: 16px;
-          cursor: pointer;
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          color: var(--charcoal);
         }
-        .logo {
-          font-size: 32px;
+        .brand-badge {
+          background: var(--teal);
+          color: var(--warm-white);
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--serif);
+          font-weight: 800;
+          font-size: 18px;
         }
+        .brand-name {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: 20px;
+        }
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        .nav-link { color: var(--charcoal); text-decoration: none; font-size: 15px; font-weight: 500; }
+        .nav-link:hover { color: var(--teal); }
+        .nav-cta {
+          background: var(--teal);
+          color: var(--warm-white);
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 14px;
+          text-decoration: none;
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+        }
+        .nav-cta:hover { background: var(--deep-teal); }
+        @media (max-width: 720px) { .nav-link { display: none; } }
+
         .main {
           max-width: 1100px;
           margin: 0 auto;
-          padding: 0 24px 80px;
+          padding: 64px 24px 80px;
         }
-        .hero {
-          text-align: center;
-          margin-bottom: 48px;
-        }
+
+        .hero { text-align: center; margin-bottom: 48px; }
         .hero h1 {
-          font-size: 36px;
-          color: #1a3a2f;
-          margin: 0 0 16px;
-          line-height: 1.2;
+          font-family: var(--serif);
+          font-weight: 800;
+          font-size: clamp(32px, 5vw, 48px);
+          color: var(--charcoal);
+          line-height: 1.1;
+          margin-bottom: 14px;
+          letter-spacing: -0.02em;
         }
         .hero p {
           font-size: 18px;
-          color: #4b5563;
+          color: var(--charcoal-70);
           max-width: 600px;
           margin: 0 auto;
           line-height: 1.6;
         }
-        .pricing-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-          margin-bottom: 48px;
-        }
-        @media (max-width: 900px) {
-          .pricing-grid {
-            grid-template-columns: 1fr;
-            max-width: 420px;
-            margin: 0 auto 48px;
-          }
-          .pricing-card.popular {
-            order: -1;
-          }
-        }
-        .pricing-card {
-          background: white;
+
+        /* CONSUMER PLAN */
+        .plan {
+          max-width: 560px;
+          margin: 0 auto;
+          background: var(--warm-white);
+          border: 2px solid var(--teal);
           border-radius: 20px;
-          padding: 32px 28px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-          position: relative;
+          padding: 36px 32px;
+        }
+        .plan-head {
           display: flex;
-          flex-direction: column;
-        }
-        .pricing-card.popular {
-          border: 3px solid #059669;
-          transform: scale(1.02);
-        }
-        @media (max-width: 900px) {
-          .pricing-card.popular {
-            transform: none;
-          }
-        }
-        .popular-badge {
-          position: absolute;
-          top: -14px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #059669;
-          color: white;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 6px 16px;
-          border-radius: 20px;
-          letter-spacing: 0.5px;
-        }
-        .card-header {
-          margin-bottom: 16px;
-        }
-        .card-header h2 {
-          font-size: 22px;
-          color: #1a3a2f;
-          margin: 0 0 12px;
-        }
-        .price {
-          display: flex;
+          justify-content: space-between;
           align-items: baseline;
-          gap: 4px;
+          padding-bottom: 18px;
+          border-bottom: 1px solid var(--teal-border);
+          margin-bottom: 22px;
+          flex-wrap: wrap;
+          gap: 12px;
         }
+        .plan-brand {
+          font-family: var(--serif);
+          font-weight: 800;
+          color: var(--teal);
+          letter-spacing: 0.05em;
+          font-size: 18px;
+        }
+        .plan-price { display: flex; align-items: baseline; gap: 4px; }
         .amount {
-          font-size: 48px;
+          font-family: var(--serif);
           font-weight: 800;
-          color: #1a3a2f;
+          font-size: 52px;
+          color: var(--charcoal);
+          line-height: 1;
         }
-        .amount-small {
-          font-size: 36px;
-          font-weight: 800;
-          color: #1a3a2f;
-        }
-        .period {
-          font-size: 16px;
-          color: #6b7280;
-        }
-        .card-desc {
-          color: #6b7280;
-          font-size: 14px;
-          margin-bottom: 24px;
-          line-height: 1.5;
+        .period { font-size: 16px; color: var(--charcoal-70); }
+        .plan-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--charcoal-70);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 14px;
         }
         .features {
           list-style: none;
           padding: 0;
           margin: 0 0 24px;
-          flex: 1;
         }
         .features li {
           padding: 10px 0;
-          border-bottom: 1px solid #f3f4f6;
-          font-size: 14px;
-          color: #374151;
-        }
-        .features li:last-child {
-          border-bottom: none;
-        }
-        .features li.highlight {
-          background: #fef3c7;
-          margin: 0 -12px;
-          padding: 10px 12px;
-          border-radius: 8px;
-          border-bottom: none;
-        }
-        .features li strong {
-          color: #059669;
-        }
-        .firm-tiers {
+          border-bottom: 1px solid var(--teal-border);
+          font-size: 15px;
+          color: var(--charcoal);
           display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-bottom: 24px;
-          background: #f9fafb;
-          padding: 16px;
-          border-radius: 12px;
+          gap: 10px;
+          align-items: flex-start;
         }
-        .firm-tier {
-          display: flex;
-          justify-content: space-between;
-          font-size: 14px;
-        }
-        .tier-name {
-          color: #6b7280;
-        }
-        .tier-price {
-          font-weight: 700;
-          color: #1a3a2f;
-        }
-        .cta-btn {
-          width: 100%;
-          padding: 16px;
-          border-radius: 12px;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .cta-btn.primary {
-          background: #059669;
-          color: white;
-          border: none;
-        }
-        .cta-btn.primary:hover {
-          background: #047857;
-        }
-        .cta-btn.secondary {
-          background: white;
-          color: #1a3a2f;
-          border: 2px solid #1a3a2f;
-        }
-        .cta-btn.secondary:hover {
-          background: #f0fdf4;
-        }
-        .cta-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+        .features li:last-child { border-bottom: none; }
+        .check { color: var(--teal); font-weight: 800; }
+        .btn-block { width: 100%; }
         .trial-note {
           text-align: center;
-          font-size: 12px;
-          color: #6b7280;
-          margin-top: 12px;
+          font-size: 13px;
+          color: var(--charcoal-50);
+          margin-top: 14px;
         }
-        .mission-block {
-          background: #1a3a2f;
-          color: white;
-          border-radius: 16px;
-          padding: 32px 40px;
-          text-align: center;
-          margin-bottom: 40px;
-        }
-        .mission-block h3 {
-          font-size: 20px;
-          margin: 0 0 12px;
-        }
-        .mission-block p {
-          font-size: 16px;
-          margin: 0;
-          opacity: 0.9;
-          line-height: 1.6;
-          max-width: 600px;
-          margin: 0 auto;
-        }
+
+        .yearly-wrap { text-align: center; margin: 24px auto 72px; }
+        .yearly { color: var(--charcoal); font-size: 15px; }
+        .yearly-link { color: var(--deep-teal); font-weight: 600; text-decoration: underline; }
+        .save { color: var(--coral); font-weight: 700; }
+
+        /* COMPARISON */
         .comparison {
-          background: white;
-          border-radius: 16px;
-          padding: 40px;
+          background: var(--teal-tint);
+          border-radius: 20px;
+          padding: 48px 32px;
           text-align: center;
-          margin-bottom: 40px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          margin-bottom: 80px;
         }
-        .comparison h3 {
-          font-size: 24px;
-          color: #1a3a2f;
-          margin: 0 0 32px;
+        .comparison h2 {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: clamp(26px, 4vw, 36px);
+          color: var(--charcoal);
+          margin-bottom: 32px;
         }
         .comparison-grid {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 40px;
+          gap: 32px;
         }
-        @media (max-width: 600px) {
-          .comparison-grid {
-            flex-direction: column;
-            gap: 24px;
-          }
+        @media (max-width: 640px) {
+          .comparison-grid { flex-direction: column; gap: 20px; }
         }
-        .comparison-item {
-          padding: 24px 40px;
+        .compare-item {
+          padding: 24px 32px;
           border-radius: 12px;
+          min-width: 220px;
         }
-        .comparison-item.attorney {
-          background: #fef2f2;
-          border: 2px solid #fecaca;
+        .compare-item.attorney {
+          background: var(--warm-white);
+          border: 2px solid var(--teal-border);
         }
-        .comparison-item.pattern18 {
-          background: #f0fdf4;
-          border: 2px solid #059669;
+        .compare-item.p18 {
+          background: var(--warm-white);
+          border: 2px solid var(--teal);
         }
-        .comparison-label {
-          font-size: 14px;
-          color: #6b7280;
-          margin-bottom: 8px;
-        }
-        .comparison-price {
-          font-size: 32px;
+        .compare-label { font-size: 13px; color: var(--charcoal-70); margin-bottom: 6px; }
+        .compare-price {
+          font-family: var(--serif);
+          font-size: 30px;
           font-weight: 800;
-          color: #1a3a2f;
+          color: var(--charcoal);
         }
-        .comparison-note {
-          font-size: 12px;
-          color: #6b7280;
-          margin-top: 4px;
+        .compare-note { font-size: 12px; color: var(--charcoal-50); margin-top: 6px; }
+        .compare-vs { font-size: 18px; font-weight: 600; color: var(--charcoal-50); }
+
+        /* FIRMS */
+        .firms { scroll-margin-top: 80px; }
+        .firms-head { text-align: center; margin-bottom: 40px; }
+        .firms-head h2 {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: clamp(28px, 4vw, 40px);
+          color: var(--charcoal);
+          margin-bottom: 12px;
         }
-        .comparison-vs {
-          font-size: 18px;
-          font-weight: 600;
-          color: #9ca3af;
-        }
-        .faq {
-          max-width: 600px;
+        .firms-head p {
+          color: var(--charcoal-70);
+          font-size: 16px;
+          max-width: 540px;
           margin: 0 auto;
         }
-        .faq h3 {
-          text-align: center;
-          font-size: 24px;
-          color: #1a3a2f;
-          margin: 0 0 32px;
+        .firms-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin-bottom: 48px;
         }
-        .faq-item {
-          background: white;
-          border-radius: 12px;
-          padding: 20px 24px;
-          margin-bottom: 16px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        @media (max-width: 900px) {
+          .firms-grid { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+          .firm-card.featured { order: -1; }
         }
-        .faq-item h4 {
-          font-size: 16px;
-          color: #1a3a2f;
-          margin: 0 0 8px;
+        .firm-card {
+          background: var(--warm-white);
+          border: 1px solid var(--teal-border);
+          border-radius: 16px;
+          padding: 28px 24px;
+          position: relative;
+          display: flex;
+          flex-direction: column;
         }
-        .faq-item p {
+        .firm-card.featured { border: 2px solid var(--teal); }
+        .firm-badge {
+          position: absolute;
+          top: -12px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--teal);
+          color: var(--warm-white);
+          font-size: 11px;
+          font-weight: 700;
+          padding: 5px 14px;
+          border-radius: 20px;
+          letter-spacing: 0.05em;
+        }
+        .firm-card h3 {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: 22px;
+          color: var(--charcoal);
+          margin-bottom: 10px;
+        }
+        .firm-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 18px; }
+        .firm-amount {
+          font-family: var(--serif);
+          font-weight: 800;
+          font-size: 36px;
+          color: var(--charcoal);
+          line-height: 1;
+        }
+        .firm-period { font-size: 15px; color: var(--charcoal-70); }
+        .firm-card ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 24px;
+          flex: 1;
+        }
+        .firm-card li {
+          padding: 8px 0;
           font-size: 14px;
-          color: #6b7280;
-          margin: 0;
-          line-height: 1.6;
+          color: var(--charcoal);
+          line-height: 1.5;
+        }
+        .mission {
+          background: var(--deep-teal);
+          color: var(--warm-white);
+          border-radius: 16px;
+          padding: 32px;
+          text-align: center;
+          max-width: 720px;
+          margin: 0 auto;
+        }
+        .mission h3 {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: 22px;
+          margin-bottom: 10px;
+        }
+        .mission p { line-height: 1.6; opacity: 0.92; max-width: 580px; margin: 0 auto; }
+
+        /* FAQ CTA */
+        .faq-cta { text-align: center; margin-top: 64px; }
+        .faq-link { color: var(--teal); text-decoration: none; font-weight: 600; font-size: 16px; }
+        .faq-link:hover { color: var(--deep-teal); }
+      `}</style>
+
+      <style jsx global>{`
+        .btn-primary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--teal);
+          color: var(--warm-white);
+          padding: 16px 32px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 16px;
+          text-decoration: none;
+          min-height: 52px;
+          transition: background 0.15s ease;
+          border: none;
+          cursor: pointer;
+        }
+        .btn-primary:hover { background: var(--deep-teal); }
+        .btn-outline {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--warm-white);
+          color: var(--teal);
+          border: 2px solid var(--teal);
+          padding: 14px 28px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 15px;
+          text-decoration: none;
+          min-height: 48px;
+          transition: all 0.15s ease;
+        }
+        .btn-outline:hover {
+          background: var(--teal);
+          color: var(--warm-white);
         }
       `}</style>
     </div>
