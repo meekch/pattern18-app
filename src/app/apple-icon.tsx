@@ -12,15 +12,16 @@ export default function Icon() {
       <div
         style={{
           fontSize: 80,
-          background: '#1a3a2f',
+          background: '#2F9D94',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#2dd4a8',
+          color: '#FAFAF7',
           fontWeight: 700,
           borderRadius: 32,
+          fontFamily: 'serif',
         }}
       >
         18

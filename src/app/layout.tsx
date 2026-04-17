@@ -3,9 +3,25 @@ import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Pattern 18',
-  description: 'Document coercive control. Build your case. Reclaim your power.',
+  metadataBase: new URL('https://pattern18.com'),
+  title: 'Pattern18 — Your 24/7 AI Coach for High-Conflict Custody',
+  description:
+    'AI coach for parents surviving high-conflict custody and coercive control. Analyze messages, document patterns, prepare for court. $97/month. 7-day free trial. Less than 20 minutes with a family lawyer.',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  openGraph: {
+    title: 'Pattern18 — When their text makes your stomach drop, your 24/7 AI coach is here.',
+    description:
+      'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
+    url: 'https://pattern18.com',
+    siteName: 'Pattern18',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pattern18 — Your 24/7 AI Coach for High-Conflict Custody',
+    description:
+      'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
+  },
 };
 
 export default function RootLayout({
@@ -16,13 +32,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💚</text></svg>" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" 
-          rel="stylesheet" 
-        />
       </head>
       <body>
         {children}
