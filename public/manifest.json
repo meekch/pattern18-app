@@ -1,24 +1,24 @@
 {
-    "name": "Pattern 18 Coach",
-    "short_name": "Pattern 18",
-    "description": "Your 24/7 strategic partner for high-conflict co-parenting",
-    "start_url": "/coach",
-    "display": "standalone",
-    "background_color": "#1a3a2f",
-    "theme_color": "#1a3a2f",
-    "orientation": "portrait",
-    "icons": [
-      {
-        "src": "/icons/icon-192.png",
-        "sizes": "192x192",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-512.png",
-        "sizes": "512x512",
-        "type": "image/png",
-        "purpose": "any maskable"
-      }
-    ]
-  }
+  "name": "Pattern18",
+  "short_name": "Pattern18",
+  "description": "Your 24/7 AI coach for high-conflict custody.",
+  "start_url": "/coach",
+  "display": "standalone",
+  "background_color": "#FAFAF7",
+  "theme_color": "#2F9D94",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
