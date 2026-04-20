@@ -6,9 +6,9 @@ import { checkRateLimit } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getAnthropic() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 interface Message {
   text: string;
@@ -178,7 +178,7 @@ ${formattedMessages}
 
 Provide your analysis in the specified JSON format. Be accurate - do not flag normal communication as abuse.`;
 
-    const response = await client.messages.create({
+    const response = await getAnthropic().messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [
@@ -263,7 +263,7 @@ export async function PUT(request: NextRequest) {
           return `[${sender}]: ${m.text}`;
         }).join('\n\n');
 
-        const response = await client.messages.create({
+        const response = await getAnthropic().messages.create({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1500,
           messages: [

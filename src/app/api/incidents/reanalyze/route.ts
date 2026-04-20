@@ -6,11 +6,6 @@ import { requireAuth } from '@/lib/auth';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 interface DetectedPattern {
   pattern: string;
   severity: 'medium' | 'high' | 'critical';
@@ -73,6 +68,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { incidentId } = await req.json();
 
     if (!incidentId) {

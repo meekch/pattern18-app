@@ -4,11 +4,7 @@ import { Resend } from 'resend';
 import { checkIpRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
-
-const supabase = createClient(
-  process.env.DEMO_SUPABASE_URL!,
-  process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +12,11 @@ export async function POST(req: NextRequest) {
     if (!rl.ok) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
+
+    const supabase = createClient(
+      process.env.DEMO_SUPABASE_URL!,
+      process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const body = await req.json();
     const { treatment_interest, prior_experience, timeline, name, phone, email, utm_source, utm_medium, utm_campaign, referrer } = body;

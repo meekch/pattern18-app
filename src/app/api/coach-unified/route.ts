@@ -7,12 +7,6 @@ import { checkRateLimit } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Initialize Supabase for auto-saving
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const COERCIVE_PATTERNS = [
   'Gaslighting',
   'DARVO', 
@@ -88,6 +82,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const formData = await req.formData();
     const message = formData.get('message') as string || '';
     const historyJson = formData.get('history') as string || '[]';

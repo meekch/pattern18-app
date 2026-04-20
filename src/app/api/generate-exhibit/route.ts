@@ -10,11 +10,6 @@ import {
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // Pattern definitions for appendix
 const PATTERN_DEFINITIONS: Record<string, { name: string; definition: string; source: string }> = {
   'Gaslighting': {
@@ -166,6 +161,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { includeExhibitOnly, caseContext } = await request.json();
 
     // Fetch incidents

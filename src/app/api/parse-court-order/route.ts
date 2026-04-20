@@ -6,11 +6,6 @@ import { requireAuth } from '@/lib/auth';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const EXTRACTION_PROMPT = `You are a legal document analyst. Extract key information from this court order/custody document.
 
 Return a JSON object with these fields (use null if not found):
@@ -45,6 +40,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 

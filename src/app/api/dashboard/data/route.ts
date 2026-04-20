@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-
-const supabase = createClient(
-  process.env.DEMO_SUPABASE_URL!,
-  process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = 'nodejs';
 
 function scoreLead(lead: Record<string, unknown>): number {
   let score = 5;
@@ -66,6 +62,11 @@ export async function POST(req: NextRequest) {
     if (!dashboardKey || dashboardKey !== process.env.DASHBOARD_ACCESS_KEY) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = createClient(
+      process.env.DEMO_SUPABASE_URL!,
+      process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { data: leads, error } = await supabase
       .from('leads')

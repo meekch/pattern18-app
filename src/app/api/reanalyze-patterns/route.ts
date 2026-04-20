@@ -7,11 +7,6 @@ import { checkRateLimit } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const PATTERN_ANALYSIS_PROMPT = `Analyze this message from a high-conflict co-parenting situation. Identify which coercive control patterns are present.
 
 THE 18 PATTERNS OF COERCIVE CONTROL:
@@ -66,6 +61,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { batchSize = 10, offset = 0 } = await req.json();
 
     // Fetch batch of incidents

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireAuth } from '@/lib/auth';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 export async function POST(req: NextRequest) {
   const userId = await requireAuth(req);
   if (!userId) {
@@ -11,6 +9,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
     const { email, promoCode } = await req.json();
     
     if (!email) {
