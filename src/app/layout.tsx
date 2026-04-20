@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     title: 'Pattern18',
     statusBarStyle: 'default',
   },
+  icons: {
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
     title: 'Pattern18. When their text makes your stomach drop. Your 24/7 AI coach is here.',
     description:

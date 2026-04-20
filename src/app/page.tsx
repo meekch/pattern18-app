@@ -226,6 +226,10 @@ export default function HomePage() {
             <summary>What if I can't afford this right now?</summary>
             <p>A few options. Gift subscriptions are available — a friend, family member, or advocate can purchase an annual plan for someone they love. We're also building a sponsored access program funded by our family law firm partners. If you're working with an attorney, ask them about Pattern18 — when firms subscribe, their clients get free access. If none of those fit, email hello@pattern18.com.</p>
           </details>
+          <details className="faq-item">
+            <summary>Can I use Pattern18 like an app on my phone?</summary>
+            <p>Yes. Pattern18 works as a Progressive Web App, which means you can save it to your phone's home screen and use it like any other app, with no App Store download needed. On iPhone, open pattern18.com in Safari, tap the share icon at the bottom, scroll down and tap "Add to Home Screen." On Android, open in Chrome and you'll see an install prompt automatically. Once installed, the app opens instantly and stays signed in, so when their next text comes through you can respond in seconds, not minutes.</p>
+          </details>
         </div>
         <div className="faq-more">
           <Link href="/faq" className="faq-more-link">See all FAQs →</Link>
