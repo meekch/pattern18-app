@@ -192,8 +192,12 @@ export default function PricingPage() {
           font-size: 20px;
         }
         .nav-links { display: flex; align-items: center; gap: 20px; }
-        .nav-link { color: var(--charcoal); text-decoration: none; font-size: 15px; font-weight: 500; }
-        .nav-link:hover { color: var(--teal); }
+        .nav-link { color: var(--teal); text-decoration: none; font-size: 15px; font-weight: 600; }
+        .nav-link:hover {
+          color: var(--deep-teal);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
         .nav-cta {
           background: var(--teal);
           color: var(--warm-white);
@@ -208,6 +212,12 @@ export default function PricingPage() {
         }
         .nav-cta:hover { background: var(--deep-teal); }
         @media (max-width: 720px) { .nav-link { display: none; } }
+        @media (max-width: 480px) {
+          .nav-inner { padding: 12px 16px; gap: 10px; }
+          .brand-badge { width: 32px; height: 32px; font-size: 16px; }
+          .brand-name { font-size: 18px; }
+          .nav-cta { padding: 9px 14px; font-size: 13px; }
+        }
 
         .main {
           max-width: 1100px;

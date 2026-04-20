@@ -26,7 +26,7 @@ export default function HomePage() {
 
       {/* ============ HERO ============ */}
       <section className="hero">
-        <p className="eyebrow">F O R &nbsp;&nbsp;P A R E N T S &nbsp;&nbsp;S U R V I V I N G &nbsp;&nbsp;H I G H - C O N F L I C T &nbsp;&nbsp;C U S T O D Y</p>
+        <p className="eyebrow">For parents surviving high-conflict custody</p>
         <h1 className="hero-h1">
           When their text<br />makes your stomach drop.
         </h1>
@@ -367,12 +367,16 @@ export default function HomePage() {
           gap: 20px;
         }
         .nav-link {
-          color: var(--charcoal);
+          color: var(--teal);
           text-decoration: none;
           font-size: 15px;
-          font-weight: 500;
+          font-weight: 600;
         }
-        .nav-link:hover { color: var(--teal); }
+        .nav-link:hover {
+          color: var(--deep-teal);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
         .nav-cta {
           background: var(--teal);
           color: var(--warm-white);
@@ -391,6 +395,12 @@ export default function HomePage() {
           .nav-link { display: none; }
           .nav-links { gap: 12px; }
         }
+        @media (max-width: 480px) {
+          .nav-inner { padding: 12px 16px; gap: 10px; }
+          .brand-badge { width: 32px; height: 32px; font-size: 16px; }
+          .brand-name { font-size: 18px; }
+          .nav-cta { padding: 9px 14px; font-size: 13px; }
+        }
 
         /* HERO */
         .hero {
@@ -402,9 +412,10 @@ export default function HomePage() {
         .eyebrow {
           color: var(--teal);
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           margin-bottom: 28px;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
         }
         .hero-h1 {
           font-family: var(--serif);
@@ -470,6 +481,13 @@ export default function HomePage() {
           background: var(--teal-border);
           max-width: 600px;
           margin: 40px auto 0;
+        }
+        @media (max-width: 720px) {
+          .strip-inner {
+            flex-direction: column;
+            gap: 14px;
+          }
+          .strip-inner .dot { display: none; }
         }
 
         /* SECTIONS */
