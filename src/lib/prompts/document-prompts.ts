@@ -1,12 +1,12 @@
 /**
  * Pattern 18 Document Generation Prompts v2
- * 
- * Based on the actual court documents Christy created with ChatGPT:
+ *
+ * Based on real court documents:
  * - Petition to Modify Parenting Time
  * - 4th Affidavit in Support
  * - Exhibit E (Mexico Trip)
  * - Pattern-based exhibits with academic citations
- * 
+ *
  * These prompts produce COURT-READY documents, not templates.
  */
 

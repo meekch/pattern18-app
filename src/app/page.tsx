@@ -30,21 +30,18 @@ export default function HomePage() {
         <h1 className="hero-h1">
           When their text<br />makes your stomach drop.
         </h1>
-        <p className="hero-sub">Your 24/7 AI coach is here.</p>
+        <p className="hero-sub">Spot the bait. Build the record. Win in court.</p>
         <a href={STRIPE_MONTHLY_URL} className="btn-primary hero-cta">Start 7-Day Free Trial</a>
+        <p className="hero-anchor">$97/month after trial. Cancel anytime, no charge.</p>
         <Link href="/login" className="hero-secondary">Already a member? Sign in →</Link>
-        <p className="hero-anchor">$97/month. Less than 20 minutes with a family lawyer. Cancel anytime.</p>
-        <p className="hero-trust">No credit card charged during trial.</p>
       </section>
 
       {/* ============ SOCIAL PROOF STRIP ============ */}
       <section className="strip">
         <div className="strip-inner">
-          <span>Over 75% of mothers who report abuse lose custody when their abuser fights for it.</span>
-          <span className="dot">·</span>
-          <span>Patterns win cases. Documentation wins patterns.</span>
-          <span className="dot">·</span>
-          <span>16 years in family court. The tool I wish I'd had from day one.</span>
+          <span className="stat">Over 75% of mothers who report abuse lose custody when their abuser fights for it.</span>
+          <span className="stat">Patterns win cases. Documentation wins patterns.</span>
+          <span className="stat">16 years in family court. The tool I wish I'd had from day one.</span>
         </div>
         <div className="strip-divider" />
       </section>
@@ -90,14 +87,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ PRODUCT DEMO ============ */}
-      <section className="section">
-        <div className="demo-box">
-          <span className="demo-caption">[Product screenshot: real message analyzed with patterns detected]</span>
-        </div>
-        <p className="demo-sub">A real message. Analyzed in 8 seconds. Saved forever.</p>
-      </section>
-
       {/* ============ FOUNDER STORY ============ */}
       <section className="section">
         <h2 className="section-h2 center">Why Pattern18 exists.</h2>
@@ -109,7 +98,7 @@ export default function HomePage() {
           <p>Before I go, I'm building the tool I needed from day one.</p>
           <p>Pattern18 is for every parent who came after me. Every mom, dad, grandparent staring at a message asking, "is this as bad as I think it is?"</p>
           <p>I built it so you don't have to wait 16 years to know.</p>
-          <p className="founder-sign">Rae</p>
+          <p className="founder-sign">A mother who spent 16 years in family court.</p>
         </div>
       </section>
 
@@ -187,7 +176,6 @@ export default function HomePage() {
           </div>
 
           <p className="pricing-why">Why so low? Because I waited 16 years for a tool like this.<br />I built it so no one else has to.</p>
-          <p className="pricing-sign">Rae</p>
         </div>
 
         <div className="pricing-cta-wrap">
@@ -248,8 +236,8 @@ export default function HomePage() {
             <p>No. Pattern18 helps you document and organize evidence. We recommend working with an attorney for legal strategy.</p>
           </details>
           <details className="faq-item">
-            <summary>What if I can't afford this?</summary>
-            <p>Start with the 7-day free trial. If you're in financial hardship, reach out to us, we have sponsored accounts available through our law firm partners.</p>
+            <summary>What if I can't afford this right now?</summary>
+            <p>A few options. Gift subscriptions are available — a friend, family member, or advocate can purchase an annual plan for someone they love. We're also building a sponsored access program funded by our family law firm partners. If you're working with an attorney, ask them about Pattern18 — when firms subscribe, their clients get free access. If none of those fit, email hello@pattern18.com.</p>
           </details>
         </div>
         <div className="faq-more">
@@ -262,31 +250,31 @@ export default function HomePage() {
         <div className="footer-inner">
           <div className="footer-brand">
             <div className="footer-title">PATTERN18</div>
-            <p className="footer-tag">Find your way through.</p>
+            <p className="footer-tag">Spot the bait. Stay in control.</p>
           </div>
           <div className="footer-cols">
             <div className="footer-col">
               <h4>Product</h4>
-              <a href={STRIPE_MONTHLY_URL}>Try Pattern18</a>
-              <Link href="/pricing">Pricing</Link>
-              <Link href="/login">Sign in</Link>
+              <a className="footer-link" href={STRIPE_MONTHLY_URL}>Try Pattern18</a>
+              <Link className="footer-link" href="/pricing">Pricing</Link>
+              <Link className="footer-link" href="/login">Sign in</Link>
             </div>
             <div className="footer-col">
               <h4>Learn</h4>
-              <Link href="/faq">FAQ</Link>
-              <Link href="/about">About</Link>
-              <Link href="/safety">Safety</Link>
+              <Link className="footer-link" href="/faq">FAQ</Link>
+              <Link className="footer-link" href="/about">About</Link>
+              <Link className="footer-link" href="/safety">Safety</Link>
             </div>
             <div className="footer-col">
               <h4>For Attorneys</h4>
-              <Link href="/pricing#firms">Pattern18 for Firms</Link>
-              <Link href="/compass-certification">Compass Certification</Link>
-              <a href="mailto:pro@pattern18.com">pro@pattern18.com</a>
+              <Link className="footer-link" href="/pricing#firms">Pattern18 for Firms</Link>
+              <Link className="footer-link" href="/compass-certification">Compass Certification</Link>
+              <a className="footer-link" href="mailto:hello@pattern18.com">hello@pattern18.com</a>
             </div>
             <div className="footer-col">
               <h4>Community</h4>
-              <a href={SKOOL_URL} target="_blank" rel="noopener noreferrer">Pattern18 Community (Skool)</a>
-              <a href="https://www.tiktok.com/@pattern18app" target="_blank" rel="noopener noreferrer">TikTok: @pattern18app</a>
+              <a className="footer-link" href={SKOOL_URL} target="_blank" rel="noopener noreferrer">Pattern18 Community (Skool)</a>
+              <a className="footer-link nowrap" href="https://www.tiktok.com/@pattern18app" target="_blank" rel="noopener noreferrer">TikTok: @pattern18app</a>
             </div>
           </div>
           <div className="footer-crisis">
@@ -420,39 +408,40 @@ export default function HomePage() {
         .hero-h1 {
           font-family: var(--serif);
           font-weight: 800;
-          font-size: clamp(40px, 7vw, 76px);
-          line-height: 1.05;
+          font-size: clamp(32px, 5vw, 58px);
+          line-height: 1.08;
           color: var(--charcoal);
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           letter-spacing: -0.02em;
         }
         .hero-sub {
-          font-size: clamp(18px, 2.2vw, 22px);
+          font-size: clamp(17px, 2vw, 20px);
           color: var(--charcoal);
-          margin-bottom: 40px;
+          margin-bottom: 32px;
           line-height: 1.5;
         }
         .hero-cta {
           min-width: 280px;
         }
-        .hero-secondary {
-          display: block;
-          margin-top: 20px;
-          color: var(--charcoal);
-          text-decoration: none;
-          font-size: 15px;
-          font-weight: 500;
-        }
-        .hero-secondary:hover { color: var(--teal); }
         .hero-anchor {
-          margin-top: 28px;
+          margin-top: 18px;
           color: var(--charcoal-70);
           font-size: 14px;
         }
-        .hero-trust {
-          margin-top: 8px;
-          color: var(--charcoal-50);
-          font-size: 12px;
+        .hero-secondary {
+          display: block;
+          margin-top: 14px;
+          color: var(--charcoal-70);
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 400;
+          opacity: 0.8;
+        }
+        .hero-secondary:hover {
+          color: var(--teal);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          opacity: 1;
         }
 
         /* SOCIAL PROOF STRIP */
@@ -462,32 +451,29 @@ export default function HomePage() {
           padding: 24px 24px 40px;
         }
         .strip-inner {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          align-items: center;
-          gap: 10px 18px;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 32px;
+          align-items: start;
           text-align: center;
           font-size: 14px;
           color: var(--charcoal);
           line-height: 1.5;
+          max-width: 1000px;
+          margin: 0 auto;
         }
-        .dot {
-          color: var(--teal);
-          font-weight: 700;
-        }
+        .stat { display: block; }
         .strip-divider {
           height: 1px;
           background: var(--teal-border);
           max-width: 600px;
           margin: 40px auto 0;
         }
-        @media (max-width: 720px) {
+        @media (max-width: 768px) {
           .strip-inner {
-            flex-direction: column;
-            gap: 14px;
+            grid-template-columns: 1fr;
+            gap: 16px;
           }
-          .strip-inner .dot { display: none; }
         }
 
         /* SECTIONS */
@@ -593,33 +579,6 @@ export default function HomePage() {
           opacity: 0.85;
         }
 
-        /* DEMO */
-        .demo-box {
-          max-width: 900px;
-          margin: 0 auto;
-          aspect-ratio: 16 / 9;
-          border: 2px dashed var(--teal-border);
-          border-radius: 16px;
-          background: var(--warm-white);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 24px;
-        }
-        .demo-caption {
-          color: var(--charcoal-50);
-          font-size: 14px;
-          text-align: center;
-        }
-        .demo-sub {
-          text-align: center;
-          font-style: italic;
-          color: var(--charcoal);
-          opacity: 0.75;
-          margin-top: 20px;
-          font-size: 15px;
-        }
-
         /* FOUNDER */
         .founder {
           max-width: 720px;
@@ -637,8 +596,9 @@ export default function HomePage() {
           font-family: var(--serif);
           font-style: italic;
           color: var(--teal);
-          font-size: 22px;
-          margin-top: 12px;
+          font-size: 16px;
+          margin-top: 16px;
+          line-height: 1.4;
         }
 
         /* PRICING CARD */
@@ -967,19 +927,20 @@ export default function HomePage() {
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
-        .footer-col a {
+        .footer-link {
           display: block;
           color: var(--warm-white);
           opacity: 0.8;
           text-decoration: none;
           font-size: 14px;
-          padding: 4px 0;
+          padding: 6px 0;
           min-height: 28px;
         }
-        .footer-col a:hover {
+        .footer-link:hover {
           color: var(--teal);
           opacity: 1;
         }
+        .footer-link.nowrap { white-space: nowrap; }
         .footer-crisis {
           background: rgba(244, 132, 107, 0.08);
           border-left: 3px solid var(--coral);

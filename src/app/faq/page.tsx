@@ -50,8 +50,8 @@ export default function FAQPage() {
           </details>
 
           <details className="faq-item">
-            <summary>What if I can't afford this?</summary>
-            <p>Start with the 7-day free trial. If you're in financial hardship, reach out to us, we have sponsored accounts available through our law firm partners.</p>
+            <summary>What if I can't afford this right now?</summary>
+            <p>A few options. Gift subscriptions are available — a friend, family member, or advocate can purchase an annual plan for someone they love. We're also building a sponsored access program funded by our family law firm partners. If you're working with an attorney, ask them about Pattern18 — when firms subscribe, their clients get free access. If none of those fit, email hello@pattern18.com.</p>
           </details>
         </div>
 

@@ -98,7 +98,7 @@ export default function PricingPage() {
                 <li>✓ White-label reports</li>
                 <li>✓ Staff training session</li>
               </ul>
-              <a href="mailto:pro@pattern18.com?subject=Pattern18 Solo Firm Inquiry" className="btn-outline">Contact us</a>
+              <a href="mailto:hello@pattern18.com?subject=Pattern18 Solo Firm Inquiry" className="btn-outline">Contact us</a>
             </div>
 
             <div className="firm-card featured">
@@ -112,7 +112,7 @@ export default function PricingPage() {
                 <li>✓ Priority support</li>
                 <li>✓ Everything in Solo</li>
               </ul>
-              <a href="mailto:pro@pattern18.com?subject=Pattern18 Small Firm Inquiry" className="btn-primary">Contact us</a>
+              <a href="mailto:hello@pattern18.com?subject=Pattern18 Small Firm Inquiry" className="btn-primary">Contact us</a>
             </div>
 
             <div className="firm-card">
@@ -125,7 +125,7 @@ export default function PricingPage() {
                 <li>✓ Dedicated account manager</li>
                 <li>✓ Everything in Small Firm</li>
               </ul>
-              <a href="mailto:pro@pattern18.com?subject=Pattern18 Full Firm Inquiry" className="btn-outline">Contact us</a>
+              <a href="mailto:hello@pattern18.com?subject=Pattern18 Full Firm Inquiry" className="btn-outline">Contact us</a>
             </div>
           </div>
 
