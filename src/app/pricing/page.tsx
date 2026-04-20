@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import SiteNav from '@/components/SiteNav';
 import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL } from '@/lib/stripe-links';
 
 export default function PricingPage() {
@@ -8,19 +9,7 @@ export default function PricingPage() {
     <div className="container">
       <div className="teal-accent" />
 
-      <nav className="nav">
-        <div className="nav-inner">
-          <Link href="/" className="brand">
-            <span className="brand-badge">18</span>
-            <span className="brand-name">Pattern18</span>
-          </Link>
-          <div className="nav-links">
-            <Link href="/faq" className="nav-link">FAQ</Link>
-            <Link href="/login" className="nav-link">Sign in</Link>
-            <a href={STRIPE_MONTHLY_URL} className="nav-cta">Start Free Trial</a>
-          </div>
-        </div>
-      </nav>
+      <SiteNav />
 
       <main className="main">
         {/* HERO */}
@@ -149,75 +138,6 @@ export default function PricingPage() {
           font-family: var(--sans);
         }
         .teal-accent { height: 4px; background: var(--teal); }
-
-        .nav {
-          background: var(--warm-white);
-          border-bottom: 1px solid var(--teal-border);
-          position: sticky;
-          top: 0;
-          z-index: 50;
-        }
-        .nav-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 16px 24px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-        }
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          color: var(--charcoal);
-        }
-        .brand-badge {
-          background: var(--teal);
-          color: var(--warm-white);
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--serif);
-          font-weight: 800;
-          font-size: 18px;
-        }
-        .brand-name {
-          font-family: var(--serif);
-          font-weight: 700;
-          font-size: 20px;
-        }
-        .nav-links { display: flex; align-items: center; gap: 20px; }
-        .nav-link { color: var(--teal); text-decoration: none; font-size: 15px; font-weight: 600; }
-        .nav-link:hover {
-          color: var(--deep-teal);
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
-        .nav-cta {
-          background: var(--teal);
-          color: var(--warm-white);
-          padding: 10px 18px;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 14px;
-          text-decoration: none;
-          min-height: 44px;
-          display: inline-flex;
-          align-items: center;
-        }
-        .nav-cta:hover { background: var(--deep-teal); }
-        @media (max-width: 720px) { .nav-link { display: none; } }
-        @media (max-width: 480px) {
-          .nav-inner { padding: 12px 16px; gap: 10px; }
-          .brand-badge { width: 32px; height: 32px; font-size: 16px; }
-          .brand-name { font-size: 18px; }
-          .nav-cta { padding: 9px 14px; font-size: 13px; }
-        }
 
         .main {
           max-width: 1100px;

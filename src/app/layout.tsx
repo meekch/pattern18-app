@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   description:
     'AI coach for parents surviving high-conflict custody and coercive control. Analyze messages, document patterns, prepare for court. $97/month. 7-day free trial. Less than 20 minutes with a family lawyer.',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'Pattern18',
+    statusBarStyle: 'default',
+  },
   openGraph: {
     title: 'Pattern18. When their text makes your stomach drop. Your 24/7 AI coach is here.',
     description:

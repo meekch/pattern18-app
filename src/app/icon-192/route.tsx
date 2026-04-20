@@ -1,17 +1,14 @@
-import { ImageResponse } from 'next/og'
+import { ImageResponse } from 'next/og';
 
-export const size = {
-  width: 180,
-  height: 180,
-}
-export const contentType = 'image/png'
+export const runtime = 'edge';
+export const contentType = 'image/png';
 
-export default function Icon() {
+export async function GET() {
   return new ImageResponse(
     (
       <div
         style={{
-          fontSize: 96,
+          fontSize: 104,
           background: '#2F9D94',
           width: '100%',
           height: '100%',
@@ -26,8 +23,6 @@ export default function Icon() {
         18
       </div>
     ),
-    {
-      ...size,
-    }
-  )
+    { width: 192, height: 192 }
+  );
 }
