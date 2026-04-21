@@ -251,7 +251,7 @@ export default function SettingsPage() {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  border: `2px solid ${userRole === 'petitioner' ? '#1F2937' : '#e5e7eb'}`,
+                  border: `2px solid ${userRole === 'petitioner' ? '#2F9D94' : '#e5e7eb'}`,
                   borderRadius: 10,
                   background: userRole === 'petitioner' ? '#EAF5F3' : 'white',
                   cursor: 'pointer',
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  border: `2px solid ${userRole === 'respondent' ? '#1F2937' : '#e5e7eb'}`,
+                  border: `2px solid ${userRole === 'respondent' ? '#2F9D94' : '#e5e7eb'}`,
                   borderRadius: 10,
                   background: userRole === 'respondent' ? '#EAF5F3' : 'white',
                   cursor: 'pointer',
@@ -345,12 +345,13 @@ export default function SettingsPage() {
           style={{
             width: '100%',
             padding: '16px',
-            background: saved ? '#2F9D94' : '#1F2937',
-            color: 'white',
+            background: saved ? '#1A5F5A' : '#2F9D94',
+            color: '#FAFAF7',
             border: 'none',
             borderRadius: 12,
             fontSize: 16,
-            fontWeight: 600,
+            fontWeight: 700,
+            minHeight: 52,
             cursor: saving ? 'not-allowed' : 'pointer',
             marginBottom: 16
           }}

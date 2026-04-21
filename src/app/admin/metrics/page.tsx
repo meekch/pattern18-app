@@ -324,12 +324,12 @@ export default function AdminMetricsPage() {
         </div>
 
         {/* Exit Milestones */}
-        <div style={{ 
-          background: '#1F2937', 
-          borderRadius: 16, 
-          padding: 24, 
+        <div style={{
+          background: '#1A5F5A',
+          borderRadius: 16,
+          padding: 24,
           marginBottom: 32,
-          color: 'white'
+          color: '#FAFAF7'
         }}>
           <h3 style={{ margin: '0 0 20px', fontSize: 18 }}>🎯 Exit Milestones</h3>
           <div style={{ display: 'flex', gap: 16 }}>
