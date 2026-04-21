@@ -161,16 +161,19 @@ export default function Sidebar({
             left: 0;
             bottom: 0;
             width: 260px;
-            background: linear-gradient(180deg, #1A5F5A 0%, #1F2937 100%);
-            color: white;
+            background: var(--warm-white);
+            border-right: 1px solid var(--teal-border);
+            color: var(--charcoal);
             z-index: 999;
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease;
+            font-family: var(--sans);
           }
           @media (max-width: 768px) {
             .sidebar {
               transform: translateX(-100%);
+              box-shadow: 0 0 40px rgba(31, 41, 55, 0.15);
             }
             .sidebar.open {
               transform: translateX(0);
@@ -182,7 +185,7 @@ export default function Sidebar({
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--teal-border);
           }
           .logo {
             display: flex;
@@ -192,32 +195,36 @@ export default function Sidebar({
           .logo-icon {
             width: 40px;
             height: 40px;
-            background: #2dd4a8;
-            color: #1A5F5A;
+            background: var(--teal);
+            color: var(--warm-white);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: var(--serif);
             font-weight: 800;
-            font-size: 16px;
+            font-size: 18px;
+            flex-shrink: 0;
           }
           .logo-text {
             display: flex;
             flex-direction: column;
           }
           .logo-title {
+            font-family: var(--serif);
             font-weight: 700;
-            font-size: 16px;
+            font-size: 17px;
+            color: var(--charcoal);
           }
           .logo-subtitle {
             font-size: 11px;
-            opacity: 0.7;
+            color: var(--charcoal-70);
           }
           .close-btn {
             display: none;
             background: none;
             border: none;
-            color: white;
+            color: var(--charcoal);
             font-size: 24px;
             cursor: pointer;
           }
@@ -228,7 +235,7 @@ export default function Sidebar({
           .nav {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 8px;
+            padding: 16px 10px;
           }
           .nav-section {
             margin-bottom: 4px;
@@ -236,28 +243,30 @@ export default function Sidebar({
           .nav-parent,
           .nav-item {
             width: 100%;
-            padding: 12px 16px;
+            padding: 11px 14px;
             background: none;
             border: none;
             border-radius: 8px;
-            color: rgba(255,255,255,0.7);
+            color: var(--charcoal);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 12px;
             text-align: left;
-            transition: all 0.2s;
+            transition: background 0.15s ease, color 0.15s ease;
           }
           .nav-parent:hover,
           .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
+            background: var(--teal-tint);
+            color: var(--deep-teal);
           }
           .nav-parent.active,
           .nav-item.active {
-            background: rgba(45, 212, 168, 0.2);
-            color: #2dd4a8;
+            background: var(--teal-tint);
+            color: var(--deep-teal);
+            font-weight: 600;
           }
           .nav-item.top-level {
             font-weight: 500;
@@ -272,17 +281,20 @@ export default function Sidebar({
           }
           .nav-arrow {
             font-size: 16px;
+            color: var(--charcoal-50);
             transition: transform 0.2s;
           }
           .nav-arrow.expanded {
             transform: rotate(90deg);
+            color: var(--teal);
           }
           .nav-children {
             padding-left: 20px;
           }
           .nav-children .nav-item {
-            padding: 10px 16px;
+            padding: 9px 14px;
             font-size: 13px;
+            color: var(--charcoal-70);
           }
           .nav-children .nav-icon {
             font-size: 14px;
@@ -290,21 +302,27 @@ export default function Sidebar({
 
           .sidebar-footer {
             padding: 16px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid var(--teal-border);
           }
           .help-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            padding: 12px;
+            background: var(--teal-tint);
+            border-radius: 10px;
+            padding: 14px;
             font-size: 12px;
           }
           .help-card p {
             margin: 0 0 4px;
-            opacity: 0.7;
+            color: var(--charcoal-70);
+            font-weight: 500;
           }
           .help-card a {
-            color: #2dd4a8;
+            color: var(--teal);
             text-decoration: none;
+            font-weight: 600;
+          }
+          .help-card a:hover {
+            color: var(--deep-teal);
+            text-decoration: underline;
           }
         `}</style>
       </aside>
