@@ -181,7 +181,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .type-btn.active {
           background: #EAF5F3;
-          border-color: #2dd4a8;
+          border-color: #2F9D94;
         }
 
         .type-icon {
@@ -211,29 +211,29 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .feedback-input:focus {
           outline: none;
-          border-color: #2dd4a8;
+          border-color: #2F9D94;
         }
 
         .submit-btn {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          border-radius: 14px;
+          border-radius: 12px;
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
+          min-height: 52px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background 0.15s ease;
         }
 
         .submit-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(26, 58, 47, 0.25);
+          background: #1A5F5A;
         }
 
         .submit-btn:disabled {
-          background: #ccc;
+          background: #9ca3af;
           cursor: not-allowed;
         }
 
@@ -269,18 +269,19 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .close-btn {
           padding: 16px 48px;
-          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          border-radius: 14px;
+          border-radius: 12px;
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
+          min-height: 52px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background 0.15s ease;
         }
 
         .close-btn:hover {
-          transform: translateY(-2px);
+          background: #1A5F5A;
         }
 
         @media (max-width: 500px) {

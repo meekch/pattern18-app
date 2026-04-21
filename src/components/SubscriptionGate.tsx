@@ -151,13 +151,18 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         .primary-btn {
           width: 100%;
           padding: 18px 32px;
-          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          border-radius: 14px;
-          font-size: 18px;
-          font-weight: 600;
+          border-radius: 12px;
+          font-size: 17px;
+          font-weight: 700;
+          min-height: 52px;
           cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .primary-btn:hover:not(:disabled) {
+          background: #1A5F5A;
         }
         .primary-btn:disabled {
           opacity: 0.7;

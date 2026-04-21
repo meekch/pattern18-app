@@ -195,8 +195,10 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
 
           .modal-header {
             padding: 20px 24px;
-            background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
-            color: white;
+            background: #EAF5F3;
+            color: #1F2937;
+            border-top: 4px solid #2F9D94;
+            border-bottom: 1px solid #C7E4E0;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
