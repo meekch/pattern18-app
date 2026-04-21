@@ -38,7 +38,7 @@ export default function ThankYouPage() {
       </div>
 
       <div className="card">
-        <div className="heart">💚</div>
+        <div className="hero-badge">18</div>
         <h1>You're in. Let's build your case.</h1>
         <p className="subtitle">
           Your 7-day free trial is active. Every message you document makes your case stronger.
@@ -72,7 +72,7 @@ export default function ThankYouPage() {
       <style jsx>{`
         .container {
           min-height: 100dvh;
-          background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
+          background: linear-gradient(135deg, #EAF5F3 0%, #EAF5F3 50%, #FAFAF7 100%);
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           display: flex;
           flex-direction: column;
@@ -85,32 +85,48 @@ export default function ThankYouPage() {
           justify-content: center;
         }
         .logo {
-          background: #1a3a2f;
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           padding: 10px 18px;
-          border-radius: 12px;
-          font-weight: 700;
+          border-radius: 10px;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 800;
           font-size: 22px;
+          letter-spacing: 0.02em;
         }
         .card {
-          background: white;
-          border-radius: 24px;
+          background: #FAFAF7;
+          border: 1px solid #C7E4E0;
+          border-radius: 20px;
           padding: 40px 32px;
           max-width: 480px;
           width: 100%;
           margin: 0 24px;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 12px 40px rgba(31, 41, 55, 0.06);
           text-align: center;
         }
-        .heart {
-          font-size: 56px;
-          margin-bottom: 20px;
+        .hero-badge {
+          background: #2F9D94;
+          color: #FAFAF7;
+          width: 64px;
+          height: 64px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 800;
+          font-size: 30px;
+          margin: 0 auto 20px;
         }
         h1 {
-          font-size: 26px;
-          color: #1a3a2f;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 800;
+          font-size: 28px;
+          color: #1F2937;
           margin: 0 0 12px 0;
-          line-height: 1.2;
+          line-height: 1.15;
+          letter-spacing: -0.01em;
         }
         .subtitle {
           font-size: 15px;
@@ -138,19 +154,20 @@ export default function ThankYouPage() {
           width: 100%;
         }
         .step:hover {
-          background: #f0fdf4;
-          border-color: #059669;
+          background: #EAF5F3;
+          border-color: #2F9D94;
         }
         .step-number {
           width: 32px;
           height: 32px;
-          background: #1a3a2f;
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 700;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 800;
           font-size: 14px;
           flex-shrink: 0;
         }
@@ -160,7 +177,7 @@ export default function ThankYouPage() {
         .step-content strong {
           display: block;
           font-size: 15px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 2px;
         }
         .step-content span {
@@ -168,26 +185,26 @@ export default function ThankYouPage() {
           color: #666;
         }
         .step-arrow {
-          color: #059669;
+          color: #2F9D94;
           font-size: 18px;
           font-weight: 600;
           flex-shrink: 0;
         }
         .cta {
           width: 100%;
-          padding: 18px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
-          color: white;
+          padding: 16px;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          border-radius: 14px;
-          font-size: 18px;
-          font-weight: 600;
+          border-radius: 12px;
+          font-size: 17px;
+          font-weight: 700;
+          min-height: 52px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background 0.15s ease;
         }
         .cta:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(26, 58, 47, 0.3);
+          background: #1A5F5A;
         }
         @media (max-width: 480px) {
           .card {

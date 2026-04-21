@@ -16,7 +16,7 @@ export default function GettingStartedPage() {
       <div className="content">
         <div className="welcome-card">
           <div className="icon">👋</div>
-          <h2>Welcome to Pattern 18</h2>
+          <h2>Welcome to Pattern18</h2>
           <p>Your strategic partner for navigating high-conflict co-parenting. Here's how to get the most out of it.</p>
         </div>
 
@@ -76,7 +76,7 @@ export default function GettingStartedPage() {
 
         <div className="help-card">
           <h3>Need Help?</h3>
-          <p>Pattern 18 is in beta. Your feedback helps us improve!</p>
+          <p>Pattern18 is in beta. Your feedback helps us improve!</p>
           <p className="email">Questions? Email <a href="mailto:hello@pattern18.com">support@pattern18.com</a></p>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function GettingStartedPage() {
       <style jsx>{`
         .container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
+          background: linear-gradient(180deg, #EAF5F3 0%, #FAFAF7 100%);
           padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
         .header {
@@ -94,7 +94,7 @@ export default function GettingStartedPage() {
           display: flex;
           align-items: center;
           gap: 16px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
         }
         .back-btn {
@@ -131,7 +131,7 @@ export default function GettingStartedPage() {
           margin-bottom: 12px;
         }
         .welcome-card h2 {
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 8px 0;
           font-size: 22px;
         }
@@ -152,7 +152,7 @@ export default function GettingStartedPage() {
         .step-number {
           width: 36px;
           height: 36px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border-radius: 50%;
           display: flex;
@@ -166,7 +166,7 @@ export default function GettingStartedPage() {
           flex: 1;
         }
         .step-content h3 {
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 6px 0;
           font-size: 16px;
         }
@@ -177,9 +177,9 @@ export default function GettingStartedPage() {
           line-height: 1.4;
         }
         .step-btn {
-          background: #f0fdf4;
-          border: 2px solid #1a3a2f;
-          color: #1a3a2f;
+          background: #EAF5F3;
+          border: 2px solid #1F2937;
+          color: #1F2937;
           padding: 8px 16px;
           border-radius: 8px;
           font-weight: 600;
@@ -187,7 +187,7 @@ export default function GettingStartedPage() {
           cursor: pointer;
         }
         .step-btn:hover {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
         }
         .tips-card {
@@ -222,7 +222,7 @@ export default function GettingStartedPage() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .help-card h3 {
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 8px 0;
         }
         .help-card p {

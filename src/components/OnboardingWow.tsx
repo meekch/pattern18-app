@@ -73,7 +73,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
       {/* Step 1: Welcome */}
       {step === 1 && (
         <div className="step step-welcome">
-          <div className="welcome-icon">💚</div>
+          <div className="welcome-icon"></div>
           <h1>You're not alone anymore.</h1>
           <p>
             I'm here 24/7 to help you navigate this. 
@@ -180,7 +180,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         .onboarding-container {
           position: fixed;
           inset: 0;
-          background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f5f7f6 100%);
+          background: linear-gradient(135deg, #EAF5F3 0%, #EAF5F3 50%, #FAFAF7 100%);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -206,7 +206,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .dot.active {
-          background: #14b8a6;
+          background: #2F9D94;
           width: 24px;
           border-radius: 4px;
         }
@@ -237,7 +237,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
 
         .step-welcome h1 {
           font-size: 32px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 16px;
           font-weight: 600;
         }
@@ -257,13 +257,13 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .tagline-mini span {
-          color: #14b8a6;
+          color: #2F9D94;
           font-weight: 600;
           font-size: 14px;
         }
 
         .continue-btn {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 16px 48px;
@@ -275,7 +275,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .continue-btn:hover {
-          background: #2d5a4a;
+          background: #1A5F5A;
           transform: translateY(-2px);
         }
 
@@ -292,7 +292,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
 
         .step-setup h1 {
           font-size: 28px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 8px;
         }
 
@@ -331,7 +331,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
 
         .field input:focus {
           outline: none;
-          border-color: #14b8a6;
+          border-color: #2F9D94;
         }
 
         .skip-btn {
@@ -356,7 +356,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
 
         .step-action h1 {
           font-size: 28px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 8px;
         }
 
@@ -386,7 +386,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .first-action-btn:hover {
-          border-color: #14b8a6;
+          border-color: #2F9D94;
           background: #f0fdfa;
           transform: translateX(4px);
         }
@@ -401,7 +401,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .action-text strong {
-          color: #1a3a2f;
+          color: #1F2937;
           font-size: 16px;
         }
 
@@ -420,7 +420,7 @@ export default function OnboardingWow({ userId, onComplete }: OnboardingProps) {
         }
 
         .explore-btn:hover {
-          color: #14b8a6;
+          color: #2F9D94;
         }
 
         @media (max-width: 480px) {

@@ -147,7 +147,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         }
         .stat-number {
           font-weight: 700;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .stat-pill.critical .stat-number {
           color: #dc2626;
@@ -166,7 +166,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           width: 44px;
           height: 44px;
           border-radius: 50%;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           font-weight: 600;

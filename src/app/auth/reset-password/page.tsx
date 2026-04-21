@@ -128,16 +128,30 @@ export default function ResetPasswordPage() {
   if (loading) {
     return (
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%)',
-        color: 'white'
+        background: '#FAFAF7',
+        color: '#1F2937',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔐</div>
-          <p>Verifying reset link...</p>
+          <div style={{
+            background: '#2F9D94',
+            color: '#FAFAF7',
+            width: '56px',
+            height: '56px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontWeight: 800,
+            fontSize: '26px',
+            margin: '0 auto 16px'
+          }}>18</div>
+          <p>Verifying reset link…</p>
         </div>
       </div>
     )
@@ -145,27 +159,42 @@ export default function ResetPasswordPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%)',
-      padding: '20px'
+      background: '#FAFAF7',
+      padding: '20px',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '24px',
-        padding: '48px',
+        background: '#FAFAF7',
+        border: '1px solid #C7E4E0',
+        borderRadius: '20px',
+        padding: '40px 32px',
         maxWidth: '420px',
         width: '100%',
         textAlign: 'center',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.3)'
+        boxShadow: '0 12px 40px rgba(31,41,55,0.06)'
       }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔐</div>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#1a3a2f' }}>
-          Reset Password
+        <div style={{
+          background: '#2F9D94',
+          color: '#FAFAF7',
+          width: '56px',
+          height: '56px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontWeight: 800,
+          fontSize: '26px',
+          margin: '0 auto 20px'
+        }}>18</div>
+        <h1 style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 800, fontSize: '28px', marginBottom: '8px', color: '#1F2937' }}>
+          Reset password
         </h1>
-        <p style={{ color: '#666', marginBottom: '32px' }}>
+        <p style={{ color: '#1F2937', opacity: 0.7, marginBottom: '28px' }}>
           {sessionReady ? 'Enter your new password below.' : 'There was a problem with your reset link.'}
         </p>
 
@@ -215,7 +244,7 @@ export default function ResetPasswordPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: updating ? '#ccc' : 'linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)',
+                background: updating ? '#ccc' : 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -233,7 +262,7 @@ export default function ResetPasswordPage() {
             style={{
               width: '100%',
               padding: '16px',
-              background: 'linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)',
+              background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
               color: 'white',
               border: 'none',
               borderRadius: '12px',
@@ -250,7 +279,7 @@ export default function ResetPasswordPage() {
           <p style={{
             marginTop: '20px',
             padding: '16px',
-            background: '#e8f5e9',
+            background: '#EAF5F3',
             borderRadius: '12px',
             color: '#2e7d32'
           }}>

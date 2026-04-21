@@ -148,13 +148,13 @@ export default function RespondToFilingPage() {
 
       <style jsx>{`
         .respond-page { max-width: 700px; margin: 0 auto; }
-        h1 { margin: 0 0 8px; font-size: 28px; color: #1a3a2f; }
+        h1 { margin: 0 0 8px; font-size: 28px; color: #1F2937; }
         .subtitle { color: #666; margin: 0 0 24px; }
         .progress { display: flex; gap: 8px; margin-bottom: 24px; }
         .step { flex: 1; padding: 12px; text-align: center; background: #eee; border-radius: 8px; font-size: 13px; color: #666; }
-        .step.active { background: #1a3a2f; color: white; }
+        .step.active { background: #1F2937; color: white; }
         .card { background: white; border-radius: 16px; padding: 24px; }
-        .card h2 { margin: 0 0 8px; font-size: 18px; color: #1a3a2f; }
+        .card h2 { margin: 0 0 8px; font-size: 18px; color: #1F2937; }
         .helper { color: #666; font-size: 14px; margin: 0 0 20px; }
         .upload-area { margin-bottom: 16px; }
         .upload-label { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; border: 2px dashed #ddd; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
@@ -162,27 +162,27 @@ export default function RespondToFilingPage() {
         .upload-icon { font-size: 48px; margin-bottom: 12px; }
         .upload-text { color: #333; font-weight: 500; }
         .upload-hint { color: #999; font-size: 13px; margin-top: 4px; }
-        .file-name { color: #1a3a2f; font-weight: 600; }
+        .file-name { color: #1F2937; font-weight: 600; }
         .divider { text-align: center; margin: 20px 0; color: #999; font-size: 13px; }
         .divider span { background: white; padding: 0 12px; }
         textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 20px; resize: vertical; }
-        .primary-btn { background: #2dd4a8; color: #1a3a2f; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+        .primary-btn { background: #2dd4a8; color: #1F2937; border: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
         .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .secondary-btn { background: white; border: 1px solid #ddd; padding: 14px 28px; border-radius: 8px; cursor: pointer; }
         .btn-row { display: flex; justify-content: space-between; margin-top: 20px; }
         .btn-row .primary-btn { width: auto; }
         .claims-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
         .claim-item { background: #f8f8f8; padding: 16px; border-radius: 10px; }
-        .claim-category { font-size: 11px; background: #1a3a2f; color: white; padding: 2px 10px; border-radius: 10px; }
+        .claim-category { font-size: 11px; background: #1F2937; color: white; padding: 2px 10px; border-radius: 10px; }
         .claim-item p { margin: 8px 0 0; }
         .responses-list { display: flex; flex-direction: column; gap: 16px; }
         .response-item { border: 1px solid #eee; padding: 16px; border-radius: 10px; }
         .claim-text { margin: 0 0 12px; font-style: italic; color: #555; }
         .response-options { display: flex; gap: 8px; flex-wrap: wrap; }
         .response-options button { padding: 8px 16px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; }
-        .response-options button.selected { background: #1a3a2f; color: white; border-color: #1a3a2f; }
+        .response-options button.selected { background: #1F2937; color: white; border-color: #1F2937; }
         .success { text-align: center; }
-        .success-icon { width: 60px; height: 60px; background: #2dd4a8; color: #1a3a2f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px; }
+        .success-icon { width: 60px; height: 60px; background: #2dd4a8; color: #1F2937; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px; }
         .doc-list { margin: 24px 0; text-align: left; }
         .doc-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f8f8; border-radius: 8px; margin-bottom: 8px; }
       `}</style>

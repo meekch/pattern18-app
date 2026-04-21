@@ -63,13 +63,13 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         return {
           icon: '⚠️',
           title: 'Payment Issue',
-          message: 'We could not process your last payment. Please update your payment method to continue using Pattern 18.',
+          message: 'We could not process your last payment. Please update your payment method to continue using Pattern18.',
           primaryAction: 'Update Payment Method',
           primaryHandler: handleManageSubscription,
         }
       case 'canceled':
         return {
-          icon: '💚',
+          icon: '',
           title: 'We Miss You',
           message: 'Your subscription has ended, but your account and conversation history are still here whenever you are ready to come back.',
           primaryAction: 'Resubscribe',
@@ -77,7 +77,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         }
       default:
         return {
-          icon: '💚',
+          icon: '',
           title: 'Subscription Required',
           message: 'Start your 7-day free trial to access your 24/7 strategic partner for navigating high-conflict co-parenting.',
           primaryAction: 'Start Free Trial',
@@ -104,7 +104,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
           </p>
         )}
         <div className="features">
-          <h3>What you get with Pattern 18:</h3>
+          <h3>What you get with Pattern18:</h3>
           <ul>
             <li>24/7 AI coaching for high-conflict situations</li>
             <li>Recognize manipulation patterns instantly</li>
@@ -121,7 +121,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(180deg, #f5f7f6 0%, #e8f5e9 100%);
+          background: linear-gradient(180deg, #FAFAF7 0%, #EAF5F3 100%);
           padding: 24px;
         }
         .gate-card {
@@ -139,7 +139,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         }
         h1 {
           font-size: 28px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 16px 0;
         }
         p {
@@ -151,7 +151,7 @@ export default function SubscriptionGate({ status, email }: SubscriptionGateProp
         .primary-btn {
           width: 100%;
           padding: 18px 32px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
           color: white;
           border: none;
           border-radius: 14px;

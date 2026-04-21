@@ -83,7 +83,7 @@ export default function GettingStarted({ userId, onDismiss }: ChecklistProps) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, color: "#1a3a2f" }}>Getting Started</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: "#1F2937" }}>Getting Started</h2>
           <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: 14 }}>
             {completedCount === totalSteps ? "You're all set!" : `${completedCount} of ${totalSteps} complete`}
           </p>
@@ -101,7 +101,7 @@ export default function GettingStarted({ userId, onDismiss }: ChecklistProps) {
         <div style={{
           height: "100%",
           width: `${(completedCount / totalSteps) * 100}%`,
-          background: "linear-gradient(90deg, #059669, #10b981)",
+          background: "linear-gradient(90deg, #2F9D94, #2F9D94)",
           borderRadius: 3,
           transition: "width 0.3s"
         }} />
@@ -147,7 +147,7 @@ export default function GettingStarted({ userId, onDismiss }: ChecklistProps) {
             style={{
               width: "100%",
               padding: "14px 20px",
-              background: "#1a3a2f",
+              background: "#1F2937",
               color: "white",
               border: "none",
               borderRadius: 10,
@@ -184,8 +184,8 @@ function StepItem({ number, title, description, completed, onClick, optional }: 
         alignItems: "center",
         gap: 14,
         padding: "14px 16px",
-        background: completed ? "#f0fdf4" : "#f9fafb",
-        border: completed ? "1px solid #bbf7d0" : "1px solid #e5e7eb",
+        background: completed ? "#EAF5F3" : "#f9fafb",
+        border: completed ? "1px solid #C7E4E0" : "1px solid #e5e7eb",
         borderRadius: 12,
         cursor: "pointer",
         textAlign: "left",
@@ -196,7 +196,7 @@ function StepItem({ number, title, description, completed, onClick, optional }: 
         width: 32,
         height: 32,
         borderRadius: "50%",
-        background: completed ? "#059669" : "white",
+        background: completed ? "#2F9D94" : "white",
         border: completed ? "none" : "2px solid #d1d5db",
         display: "flex",
         alignItems: "center",
@@ -209,7 +209,7 @@ function StepItem({ number, title, description, completed, onClick, optional }: 
         {completed ? "✓" : number}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: "#1a3a2f", fontSize: 15 }}>
+        <div style={{ fontWeight: 600, color: "#1F2937", fontSize: 15 }}>
           {title}
           {optional && <span style={{ fontWeight: 400, color: "#9ca3af", fontSize: 12, marginLeft: 6 }}>(optional)</span>}
         </div>

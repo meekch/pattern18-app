@@ -40,13 +40,13 @@ export default function PatternsByPage() {
   return (
     <AppLayout>
       <div style={{maxWidth:"900px",margin:"0 auto"}}>
-        <h1 style={{fontSize:"28px",color:"#1a3a2f",marginBottom:"24px"}}>Evidence by Pattern</h1>
+        <h1 style={{fontSize:"28px",color:"#1F2937",marginBottom:"24px"}}>Evidence by Pattern</h1>
         <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
           {patternGroups.map((g) => (
             <div key={g.pattern} style={{background:"white",borderRadius:"12px",overflow:"hidden"}}>
               <button onClick={() => setExpandedPattern(expandedPattern === g.pattern ? null : g.pattern)} style={{width:"100%",padding:"20px",background:"none",border:"none",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",textAlign:"left"}}>
                 <div>
-                  <div style={{fontWeight:600,color:"#1a3a2f"}}>{g.pattern}</div>
+                  <div style={{fontWeight:600,color:"#1F2937"}}>{g.pattern}</div>
                   <div style={{fontSize:"13px",color:"#666"}}>{g.count} incidents</div>
                 </div>
                 <span>{expandedPattern === g.pattern ? "▼" : "▶"}</span>

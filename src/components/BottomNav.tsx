@@ -81,7 +81,7 @@ export default function BottomNav({ active }: BottomNavProps) {
             {/* Support & Wellness */}
             <div className="menu-section">
               <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
-                <span className="menu-icon">💚</span>
+                <span className="menu-icon"></span>
                 <div className="menu-text">
                   <span className="menu-title">Healing Space</span>
                   <span className="menu-desc">Breathing, grounding, support</span>
@@ -92,7 +92,7 @@ export default function BottomNav({ active }: BottomNavProps) {
                 <span className="menu-icon">❓</span>
                 <div className="menu-text">
                   <span className="menu-title">Getting Started</span>
-                  <span className="menu-desc">How to use Pattern 18</span>
+                  <span className="menu-desc">How to use Pattern18</span>
                 </div>
               </button>
 
@@ -150,7 +150,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           transition: color 0.2s;
         }
         .nav-item.active {
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .nav-icon {
           font-size: 24px;
@@ -191,7 +191,7 @@ export default function BottomNav({ active }: BottomNavProps) {
         .menu-header h3 {
           margin: 0;
           font-size: 20px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .close-btn {
           background: #f3f4f6;
@@ -237,7 +237,7 @@ export default function BottomNav({ active }: BottomNavProps) {
         }
         .menu-title {
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           font-size: 15px;
         }
         .menu-item.logout .menu-title {

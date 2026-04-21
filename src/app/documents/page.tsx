@@ -218,7 +218,7 @@ export default function DocumentsPage() {
         .page-header h1 {
           margin: 0 0 8px;
           font-size: 28px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .page-header p {
           margin: 0;
@@ -248,7 +248,7 @@ export default function DocumentsPage() {
         }
         .warning-banner button {
           margin-left: auto;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 10px 20px;
@@ -280,7 +280,7 @@ export default function DocumentsPage() {
         .upload-btn {
           background: #f0f9f6;
           border: 1px solid #2dd4a8;
-          color: #1a3a2f;
+          color: #1F2937;
           padding: 8px 16px;
           border-radius: 8px;
           cursor: pointer;
@@ -317,7 +317,7 @@ export default function DocumentsPage() {
         .doc-info h3 {
           margin: 0 0 4px;
           font-size: 15px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .doc-info p {
           margin: 0;
@@ -336,7 +336,7 @@ export default function DocumentsPage() {
         }
         .empty-state button {
           margin-top: 12px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 12px 24px;
@@ -382,7 +382,7 @@ export default function DocumentsPage() {
         }
         .respond-btn {
           background: #2dd4a8;
-          color: #1a3a2f;
+          color: #1F2937;
           border: none;
           padding: 8px 16px;
           border-radius: 6px;

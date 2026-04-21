@@ -33,7 +33,7 @@ const sections = [
     href: "/resources/faq",
     icon: "❓",
     title: "FAQ",
-    description: "Frequently asked questions about Pattern 18, documentation strategies, legal considerations, and safety.",
+    description: "Frequently asked questions about Pattern18, documentation strategies, legal considerations, and safety.",
     count: "20+ questions",
   },
 ];
@@ -47,7 +47,7 @@ export default function ResourcesPage() {
           Evidence-Based Framework for Recognizing Coercive Control
         </h2>
         <p className="text-gray-600 mb-4">
-          Pattern 18 is built on research from leading experts in domestic violence, coercive control, 
+          Pattern18 is built on research from leading experts in domestic violence, coercive control, 
           and family court dynamics. This resource library provides the knowledge foundation for 
           recognizing, documenting, and presenting patterns that courts often miss.
         </p>
@@ -109,7 +109,7 @@ export default function ResourcesPage() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
         <h3 className="font-semibold text-yellow-800 mb-2">Important Notice</h3>
         <p className="text-sm text-yellow-700">
-          Pattern 18 is an organizational tool, not a law firm. This information is educational and 
+          Pattern18 is an organizational tool, not a law firm. This information is educational and 
           does not constitute legal advice. Always consult with a licensed attorney in your jurisdiction 
           before making legal decisions. The pattern framework helps you organize and recognize behaviors 
           but court strategy should be developed with professional legal guidance.

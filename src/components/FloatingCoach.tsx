@@ -203,7 +203,7 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
             width: 56,
             height: 56,
             borderRadius: 28,
-            background: 'linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)',
+            background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
             border: 'none',
             boxShadow: '0 4px 20px rgba(26, 58, 47, 0.4)',
             cursor: 'pointer',
@@ -268,8 +268,8 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
               alignItems: 'center',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 20 }}>💚</span>
-                <span style={{ fontWeight: 600, color: '#1a3a2f' }}>Coach</span>
+                <span style={{ fontSize: 20 }}></span>
+                <span style={{ fontWeight: 600, color: '#1F2937' }}>Coach</span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -314,7 +314,7 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
             }}>
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>💚</div>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}></div>
                   <div style={{ color: '#6b7280', marginBottom: 16 }}>
                     How can I help?
                   </div>
@@ -328,8 +328,8 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
                           setTimeout(() => handleSend(), 100);
                         }}
                         style={{
-                          background: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
+                          background: '#EAF5F3',
+                          border: '1px solid #C7E4E0',
                           padding: '8px 14px',
                           borderRadius: 20,
                           fontSize: 13,
@@ -357,8 +357,8 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
                         maxWidth: '85%',
                         padding: '10px 14px',
                         borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                        background: msg.role === 'user' ? '#1a3a2f' : '#f3f4f6',
-                        color: msg.role === 'user' ? 'white' : '#1a3a2f',
+                        background: msg.role === 'user' ? '#1F2937' : '#f3f4f6',
+                        color: msg.role === 'user' ? 'white' : '#1F2937',
                         fontSize: 14,
                         lineHeight: 1.5,
                         whiteSpace: 'pre-wrap',
@@ -404,7 +404,7 @@ export default function FloatingCoach({ pageContext, courtDate, evidenceCount }:
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  background: sending || !input.trim() ? '#9ca3af' : '#1a3a2f',
+                  background: sending || !input.trim() ? '#9ca3af' : '#1F2937',
                   color: 'white',
                   border: 'none',
                   fontSize: 18,

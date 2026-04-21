@@ -336,9 +336,9 @@ export default function CoachPage() {
   if (loading) {
     return (
       <div className="loading">
-        <div className="spinner">💚</div>
+        <div className="spinner"></div>
         <style jsx>{`
-          .loading { display: flex; align-items: center; justify-content: center; height: 100vh; background: #f5f7f6; }
+          .loading { display: flex; align-items: center; justify-content: center; height: 100vh; background: #FAFAF7; }
           .spinner { font-size: 48px; animation: pulse 1.5s infinite; }
           @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         `}</style>
@@ -352,7 +352,7 @@ export default function CoachPage() {
         <div className="header-left">
           <span className="logo">18</span>
           <div className="header-text">
-            <span className="app-name">Pattern 18</span>
+            <span className="app-name">Pattern18</span>
             <span className="tagline">Your 24/7 Strategic Partner</span>
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function CoachPage() {
         {showHome ? (
           <div className="home">
             <div className="welcome">
-              <div className="heart">💚</div>
+              <div className="heart"></div>
               {(() => {
                 const courtDate = caseContext?.next_court_date;
                 const daysUntil = courtDate ? Math.ceil((new Date(courtDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -504,7 +504,7 @@ export default function CoachPage() {
       <style jsx>{`
         .container {
           height: 100dvh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
+          background: linear-gradient(180deg, #EAF5F3 0%, #FAFAF7 100%);
           display: flex;
           flex-direction: column;
         }
@@ -513,7 +513,7 @@ export default function CoachPage() {
           justify-content: space-between;
           align-items: center;
           padding: 16px 20px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
         }
         .header-left {
@@ -523,7 +523,7 @@ export default function CoachPage() {
         }
         .logo {
           background: white;
-          color: #1a3a2f;
+          color: #1F2937;
           font-weight: 800;
           padding: 6px 10px;
           border-radius: 8px;
@@ -570,7 +570,7 @@ export default function CoachPage() {
         }
         .welcome h1 {
           font-size: 24px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 12px 0;
         }
         .welcome p {
@@ -610,7 +610,7 @@ export default function CoachPage() {
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .message.user .message-content {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           padding: 14px 18px;
           border-radius: 18px 18px 4px 18px;
@@ -619,7 +619,7 @@ export default function CoachPage() {
         }
         .message.assistant .message-content {
           background: white;
-          color: #1a3a2f;
+          color: #1F2937;
           padding: 14px 18px;
           border-radius: 18px 18px 18px 4px;
           max-width: 85%;
@@ -628,7 +628,7 @@ export default function CoachPage() {
         }
         .download-doc-btn {
           margin-top: 10px;
-          background: #059669;
+          background: #2F9D94;
           color: white;
           border: none;
           padding: 10px 20px;
@@ -676,7 +676,7 @@ export default function CoachPage() {
         }
         .save-prompt {
           margin: 0 16px;
-          background: #1a3a2f;
+          background: #1F2937;
           flex-shrink: 0;
           border-radius: 16px;
           padding: 16px;
@@ -714,7 +714,7 @@ export default function CoachPage() {
         .save-btn {
           flex: 1;
           padding: 12px;
-          background: #059669;
+          background: #2F9D94;
           color: white;
           border: none;
           border-radius: 10px;
@@ -744,8 +744,8 @@ export default function CoachPage() {
           display: flex;
           align-items: center;
           gap: 8px;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+          background: #EAF5F3;
+          border: 1px solid #C7E4E0;
           border-radius: 10px;
           padding: 8px 12px;
         }
@@ -755,7 +755,7 @@ export default function CoachPage() {
         .file-name {
           flex: 1;
           font-size: 13px;
-          color: #1a3a2f;
+          color: #1F2937;
           font-weight: 500;
         }
         .file-remove {
@@ -790,10 +790,10 @@ export default function CoachPage() {
           outline: none;
         }
         .input-row input[type="text"]:focus {
-          border-color: #1a3a2f;
+          border-color: #1F2937;
         }
         .send-btn {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           width: 44px;

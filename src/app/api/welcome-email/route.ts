@@ -46,24 +46,24 @@ export async function POST(req: NextRequest) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: 'Pattern 18 <hello@pattern18.com>',
+      from: 'Pattern18 <hello@pattern18.com>',
       to: email,
-      subject: 'Your first 60 seconds in Pattern 18',
+      subject: 'Your first 60 seconds in Pattern18',
       text: `You just took the hardest step — you signed up.
 
-Here's how to use Pattern 18 in 60 seconds:
+Here's how to use Pattern18 in 60 seconds:
 
 1. Open the app: https://pattern18.com/coach
 2. Paste the last message from your co-parent
 3. Hit send
 
-Pattern 18 will name the manipulation tactic, give you a response to copy/paste, and save it as evidence automatically.
+Pattern18 will name the manipulation tactic, give you a response to copy/paste, and save it as evidence automatically.
 
 That's it. You just started building your case.
 
 You have 7 days free. Every message you analyze makes your evidence stronger.
 
-- Pattern 18`
+- Pattern18`
     });
 
     console.log('Welcome email sent to:', email);

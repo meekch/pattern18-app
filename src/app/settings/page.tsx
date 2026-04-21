@@ -133,7 +133,7 @@ export default function SettingsPage() {
         >
           ←
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 600, color: '#1a3a2f', margin: 0 }}>Settings</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 600, color: '#1F2937', margin: 0 }}>Settings</h1>
       </header>
 
       <main style={{ maxWidth: 500, margin: '0 auto', padding: 20 }}>
@@ -251,9 +251,9 @@ export default function SettingsPage() {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  border: `2px solid ${userRole === 'petitioner' ? '#1a3a2f' : '#e5e7eb'}`,
+                  border: `2px solid ${userRole === 'petitioner' ? '#1F2937' : '#e5e7eb'}`,
                   borderRadius: 10,
-                  background: userRole === 'petitioner' ? '#f0fdf4' : 'white',
+                  background: userRole === 'petitioner' ? '#EAF5F3' : 'white',
                   cursor: 'pointer',
                   fontWeight: userRole === 'petitioner' ? 600 : 400
                 }}
@@ -265,9 +265,9 @@ export default function SettingsPage() {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  border: `2px solid ${userRole === 'respondent' ? '#1a3a2f' : '#e5e7eb'}`,
+                  border: `2px solid ${userRole === 'respondent' ? '#1F2937' : '#e5e7eb'}`,
                   borderRadius: 10,
-                  background: userRole === 'respondent' ? '#f0fdf4' : 'white',
+                  background: userRole === 'respondent' ? '#EAF5F3' : 'white',
                   cursor: 'pointer',
                   fontWeight: userRole === 'respondent' ? 600 : 400
                 }}
@@ -345,7 +345,7 @@ export default function SettingsPage() {
           style={{
             width: '100%',
             padding: '16px',
-            background: saved ? '#059669' : '#1a3a2f',
+            background: saved ? '#2F9D94' : '#1F2937',
             color: 'white',
             border: 'none',
             borderRadius: 12,
@@ -448,7 +448,7 @@ export default function SettingsPage() {
           color: '#9ca3af',
           fontSize: 13 
         }}>
-          Pattern 18 • Built by survivors, for survivors
+          Pattern18 • Built by survivors, for survivors
         </div>
       </main>
     </div>

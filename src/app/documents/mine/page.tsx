@@ -36,7 +36,7 @@ export default function MyFilingsPage() {
         }
         h1 {
           margin: 0 0 12px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         p {
           color: #666;
@@ -61,7 +61,7 @@ export default function MyFilingsPage() {
         }
         .primary {
           background: #2dd4a8;
-          color: #1a3a2f;
+          color: #1F2937;
           border: none;
           font-weight: 600;
         }

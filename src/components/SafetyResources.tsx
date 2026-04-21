@@ -39,7 +39,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
             margin: "0 0 12px",
             fontSize: "20px",
             fontWeight: "600",
-            color: "#1a3a2f"
+            color: "#1F2937"
           }}>
             Checking in
           </h2>
@@ -57,7 +57,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               onClick={onClose}
               style={{
                 padding: "14px 24px",
-                background: "#1a3a2f",
+                background: "#1F2937",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -132,7 +132,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               margin: 0, 
               fontSize: "18px", 
               fontWeight: "600",
-              color: "#1a3a2f"
+              color: "#1F2937"
             }}>
               Support Resources
             </h2>
@@ -222,7 +222,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               <div style={{
                 width: "36px",
                 height: "36px",
-                background: "#1a3a2f",
+                background: "#1F2937",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -254,7 +254,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               <div style={{
                 width: "36px",
                 height: "36px",
-                background: "#1a3a2f",
+                background: "#1F2937",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -286,7 +286,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               <div style={{
                 width: "36px",
                 height: "36px",
-                background: "#1a3a2f",
+                background: "#1F2937",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -321,7 +321,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
               <div style={{
                 width: "36px",
                 height: "36px",
-                background: "#1a3a2f",
+                background: "#1F2937",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -376,7 +376,7 @@ export default function SafetyResources({ isOpen, onClose, triggered }: SafetyRe
             style={{
               width: "100%",
               padding: "14px",
-              background: "#1a3a2f",
+              background: "#1F2937",
               color: "white",
               border: "none",
               borderRadius: "8px",

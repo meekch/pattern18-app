@@ -84,7 +84,7 @@ export default function Sidebar({
           <div className="logo">
             <span className="logo-icon">18</span>
             <div className="logo-text">
-              <span className="logo-title">Pattern 18</span>
+              <span className="logo-title">Pattern18</span>
               <span className="logo-subtitle">Strategic Partner</span>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function Sidebar({
             left: 0;
             bottom: 0;
             width: 260px;
-            background: linear-gradient(180deg, #0d1f18 0%, #1a3a2f 100%);
+            background: linear-gradient(180deg, #1A5F5A 0%, #1F2937 100%);
             color: white;
             z-index: 999;
             display: flex;
@@ -193,7 +193,7 @@ export default function Sidebar({
             width: 40px;
             height: 40px;
             background: #2dd4a8;
-            color: #0d1f18;
+            color: #1A5F5A;
             border-radius: 10px;
             display: flex;
             align-items: center;

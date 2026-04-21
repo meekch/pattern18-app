@@ -562,14 +562,14 @@ const dashboardStyles = `
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #059669;
+    color: #2F9D94;
     font-weight: 500;
     letter-spacing: 0.5px;
   }
   .live-dot {
     width: 8px;
     height: 8px;
-    background: #059669;
+    background: #2F9D94;
     border-radius: 50%;
     animation: pulse 2s infinite;
   }

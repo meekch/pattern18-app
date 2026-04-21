@@ -1,5 +1,5 @@
 // src/lib/court-documents.ts
-// Pattern 18 Court Document Generator
+// Pattern18 Court Document Generator
 // NOT LEGAL ADVICE - Organizational tool only
 
 import {
@@ -31,7 +31,7 @@ import {
   export const LEGAL_DISCLAIMER = `
   IMPORTANT LEGAL NOTICE
   
-  Pattern 18 Coach is an ORGANIZATIONAL TOOL, not a law firm.
+  Pattern18 Coach is an ORGANIZATIONAL TOOL, not a law firm.
   
   - We do NOT provide legal advice
   - We are NOT a substitute for an attorney
@@ -413,7 +413,7 @@ import {
             size: 20,
           }),
           new TextRun({
-            text: "This document was prepared using Pattern 18 Coach, an organizational tool. Pattern 18 is not a law firm and does not provide legal advice. Review all content, verify local court requirements, and consider consulting an attorney before filing.",
+            text: "This document was prepared using Pattern18 Coach, an organizational tool. Pattern18 is not a law firm and does not provide legal advice. Review all content, verify local court requirements, and consider consulting an attorney before filing.",
             font: COURT_CONFIG.font,
             size: 20,
             italics: true,

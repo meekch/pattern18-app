@@ -31,7 +31,7 @@ export default function TimelinePage() {
         }
         h1 {
           margin: 0 0 12px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         p {
           color: #666;
@@ -43,7 +43,7 @@ export default function TimelinePage() {
           margin-bottom: 32px;
         }
         button {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 12px 24px;

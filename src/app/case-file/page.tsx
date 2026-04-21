@@ -444,7 +444,7 @@ export default function CaseFilePage() {
           justify-content: space-between;
           align-items: center;
           padding: 16px 20px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
         }
         .header h1 {
@@ -454,7 +454,7 @@ export default function CaseFilePage() {
         }
         .upload-btn {
           background: white;
-          color: #1a3a2f;
+          color: #1F2937;
           border: none;
           padding: 8px 16px;
           border-radius: 20px;
@@ -483,8 +483,8 @@ export default function CaseFilePage() {
           min-width: 60px;
         }
         .stat.active {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
+          border-color: #1F2937;
+          background: #EAF5F3;
         }
         .stat.flagged {
           background: #fef2f2;
@@ -495,7 +495,7 @@ export default function CaseFilePage() {
         .stat-num {
           font-size: 20px;
           font-weight: 700;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .stat.flagged .stat-num {
           color: #ef4444;
@@ -524,9 +524,9 @@ export default function CaseFilePage() {
           color: #6b7280;
         }
         .view-toggle button.active {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
-          border-color: #1a3a2f;
+          border-color: #1F2937;
         }
 
         .content {
@@ -566,7 +566,7 @@ export default function CaseFilePage() {
         }
         .cluster-label {
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           font-size: 15px;
         }
         .cluster-meta {
@@ -646,7 +646,7 @@ export default function CaseFilePage() {
         }
         .file-card.flagged .quote {
           border-left-color: #f87171;
-          color: #1a3a2f;
+          color: #1F2937;
         }
 
         .file-name {
@@ -668,7 +668,7 @@ export default function CaseFilePage() {
           margin: 0 0 16px;
         }
         .empty button {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 12px 24px;
@@ -700,7 +700,7 @@ export default function CaseFilePage() {
         }
         .calendar-header span {
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
         }
 
         .calendar-grid {
@@ -727,7 +727,7 @@ export default function CaseFilePage() {
           position: relative;
         }
         .calendar-day.has-files {
-          background: #f0fdf4;
+          background: #EAF5F3;
         }
         .calendar-day.has-flagged {
           background: #fef2f2;
@@ -741,7 +741,7 @@ export default function CaseFilePage() {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #1a3a2f;
+          background: #1F2937;
         }
         .day-dot.flagged {
           background: #ef4444;
@@ -760,7 +760,7 @@ export default function CaseFilePage() {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background: #1a3a2f;
+          background: #1F2937;
           margin-right: 4px;
         }
         .calendar-legend .dot.flagged {
@@ -775,7 +775,7 @@ export default function CaseFilePage() {
           right: 16px;
           max-width: 700px;
           margin: 0 auto;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           padding: 14px 20px;
           border-radius: 12px;
@@ -789,7 +789,7 @@ export default function CaseFilePage() {
         }
         .exhibit-bar button {
           background: white;
-          color: #1a3a2f;
+          color: #1F2937;
           border: none;
           padding: 10px 20px;
           border-radius: 8px;

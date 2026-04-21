@@ -54,14 +54,14 @@ export default function ExhibitBuilderPage() {
         }
         .coming-soon h1 {
           margin: 0 0 12px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .coming-soon p {
           color: #666;
           margin: 0 0 8px;
         }
         .coming-soon .selected {
-          background: #e8f5e9;
+          background: #EAF5F3;
           color: #2e7d32;
           padding: 8px 16px;
           border-radius: 20px;
@@ -89,7 +89,7 @@ export default function ExhibitBuilderPage() {
         }
         .coming-soon .primary {
           background: #2dd4a8;
-          color: #1a3a2f;
+          color: #1F2937;
           border: none;
           font-weight: 600;
         }
@@ -105,7 +105,7 @@ export default function ExhibitBuilderPage() {
           text-align: left;
         }
         .coming-soon .notice strong {
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .coming-soon .notice p {
           margin: 8px 0 0;

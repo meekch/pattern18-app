@@ -30,7 +30,7 @@ interface AnalysisResult {
   flaggedPhrases: string[];
 }
 
-const SYSTEM_PROMPT = `You are an expert forensic analyst specializing in coercive control patterns in high-conflict custody and divorce situations. Pattern 18 refers to children turning 18 and gaining freedom from court-ordered situations - you help parents document abuse patterns until that freedom comes.
+const SYSTEM_PROMPT = `You are an expert forensic analyst specializing in coercive control patterns in high-conflict custody and divorce situations. Pattern18 refers to children turning 18 and gaining freedom from court-ordered situations - you help parents document abuse patterns until that freedom comes.
 
 Your expertise draws from:
 - Dr. Evan Stark's coercive control framework

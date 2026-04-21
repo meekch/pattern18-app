@@ -237,7 +237,7 @@ export default function BulkMessageUpload() {
     critical: { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
     high: { bg: '#fff7ed', border: '#fed7aa', text: '#ea580c' },
     medium: { bg: '#fefce8', border: '#fef08a', text: '#ca8a04' },
-    low: { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' }
+    low: { bg: '#EAF5F3', border: '#C7E4E0', text: '#2F9D94' }
   };
 
   return (
@@ -275,17 +275,17 @@ export default function BulkMessageUpload() {
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
             style={{
-              border: '2px dashed #10b981',
+              border: '2px dashed #2F9D94',
               borderRadius: 12,
               padding: 48,
               textAlign: 'center',
               cursor: 'pointer',
-              background: '#f0fdf4'
+              background: '#EAF5F3'
             }}
           >
             <input id="file-input" type="file" accept=".csv" onChange={handleFileInput} style={{ display: 'none' }} />
             <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-            <p style={{ fontWeight: 600, color: '#059669', marginBottom: 8, fontSize: 18 }}>
+            <p style={{ fontWeight: 600, color: '#2F9D94', marginBottom: 8, fontSize: 18 }}>
               Drop CSV file here or click to upload
             </p>
             <p style={{ fontSize: 14, color: '#6b7280' }}>
@@ -295,7 +295,7 @@ export default function BulkMessageUpload() {
 
           <div style={{ marginTop: 24 }}>
             <button onClick={() => setShowGuide(!showGuide)}
-                    style={{ background: 'none', border: 'none', color: '#059669', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>
+                    style={{ background: 'none', border: 'none', color: '#2F9D94', cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>
               {showGuide ? '▼' : '▶'} How to export from your app
             </button>
             {showGuide && (
@@ -325,7 +325,7 @@ export default function BulkMessageUpload() {
       {state.step === 'analyzing' && (
         <div style={{ textAlign: 'center', padding: 64, background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%', background: '#d1fae5',
+            width: 64, height: 64, borderRadius: '50%', background: '#EAF5F3',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 24px', animation: 'pulse 2s infinite'
           }}>
@@ -360,14 +360,14 @@ export default function BulkMessageUpload() {
             </div>
           )}
           {saved && (
-            <div style={{ marginBottom: 24, padding: 20, background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: 12, color: '#065f46' }}>
+            <div style={{ marginBottom: 24, padding: 20, background: '#EAF5F3', border: '1px solid #6ee7b7', borderRadius: 12, color: '#065f46' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>✓ {state.analysis.incidents.length} incidents saved!</div>
                   <div style={{ fontSize: 14, opacity: 0.9 }}>View, filter, and build your case.</div>
                 </div>
                 <button onClick={() => router.push('/evidence')}
-                        style={{ background: '#059669', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 600, cursor: 'pointer' }}>
+                        style={{ background: '#2F9D94', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 600, cursor: 'pointer' }}>
                   View Evidence →
                 </button>
               </div>
@@ -376,16 +376,16 @@ export default function BulkMessageUpload() {
 
           {/* Save CTA */}
           {state.analysis.incidents.length > 0 && !saved && (
-            <div style={{ marginBottom: 32, padding: 24, background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', borderRadius: 16, border: '2px solid #34d399' }}>
+            <div style={{ marginBottom: 32, padding: 24, background: 'linear-gradient(135deg, #EAF5F3 0%, #a7f3d0 100%)', borderRadius: 16, border: '2px solid #34d399' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ fontSize: 20, fontWeight: 600, color: '#065f46', marginBottom: 4 }}>
                     {state.analysis.incidents.length} incidents ready to save
                   </h3>
-                  <p style={{ color: '#047857', fontSize: 14 }}>Review the patterns and incidents below, then save to your evidence.</p>
+                  <p style={{ color: '#1A5F5A', fontSize: 14 }}>Review the patterns and incidents below, then save to your evidence.</p>
                 </div>
                 <button onClick={handleSaveToEvidence} disabled={saving}
-                        style={{ background: saving ? '#9ca3af' : '#059669', color: 'white', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: 16, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                        style={{ background: saving ? '#9ca3af' : '#2F9D94', color: 'white', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: 16, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}>
                   {saving ? 'Saving...' : '✓ Save to Evidence'}
                 </button>
               </div>
@@ -448,7 +448,7 @@ export default function BulkMessageUpload() {
                       </div>
                       {isExpanded && (
                         <div style={{ borderTop: `1px solid ${colors.border}`, padding: 16, background: 'white' }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#059669', marginBottom: 12 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#2F9D94', marginBottom: 12 }}>
                             ⚖️ Why this matters: {pattern.courtRelevance}
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8 }}>EXAMPLES:</div>
@@ -506,16 +506,16 @@ export default function BulkMessageUpload() {
                       {isExpanded && (
                         <div style={{ borderTop: `1px solid ${colors.border}`, background: 'white' }}>
                           {incident.courtNotes && (
-                            <div style={{ padding: 16, background: '#f0fdf4', borderBottom: '1px solid #e5e7eb' }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: '#059669', marginBottom: 4 }}>⚖️ COURT NOTES</div>
+                            <div style={{ padding: 16, background: '#EAF5F3', borderBottom: '1px solid #e5e7eb' }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: '#2F9D94', marginBottom: 4 }}>⚖️ COURT NOTES</div>
                               <div style={{ fontSize: 13, color: '#065f46' }}>{incident.courtNotes}</div>
                             </div>
                           )}
                           <div style={{ padding: '8px 0' }}>
                             {incident.messages.map((msg, i) => (
-                              <div key={i} style={{ padding: '12px 16px', background: msg.sender === 'coparent' ? '#fff' : '#f0fdf4', borderBottom: i < incident.messages.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                              <div key={i} style={{ padding: '12px 16px', background: msg.sender === 'coparent' ? '#fff' : '#EAF5F3', borderBottom: i < incident.messages.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
                                 <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
-                                  <span style={{ fontWeight: 600, color: msg.sender === 'coparent' ? '#dc2626' : '#059669' }}>
+                                  <span style={{ fontWeight: 600, color: msg.sender === 'coparent' ? '#dc2626' : '#2F9D94' }}>
                                     {msg.sender === 'coparent' ? '🔴 Co-parent' : '🟢 You'}
                                   </span>
                                   <span style={{ marginLeft: 8 }}>{msg.timestamp}</span>
@@ -535,10 +535,10 @@ export default function BulkMessageUpload() {
 
           {/* No patterns found */}
           {state.analysis.patterns.length === 0 && state.analysis.incidents.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 48, background: '#f0fdf4', borderRadius: 16, border: '1px solid #bbf7d0' }}>
+            <div style={{ textAlign: 'center', padding: 48, background: '#EAF5F3', borderRadius: 16, border: '1px solid #C7E4E0' }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
               <h3 style={{ fontSize: 18, color: '#065f46', marginBottom: 8 }}>No concerning patterns detected</h3>
-              <p style={{ color: '#047857' }}>The messages appear to be normal co-parenting communication.</p>
+              <p style={{ color: '#1A5F5A' }}>The messages appear to be normal co-parenting communication.</p>
             </div>
           )}
         </div>

@@ -141,23 +141,36 @@ export default function AuthCallback() {
 
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)",
-      color: "white",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      background: "#FAFAF7",
+      color: "#1F2937",
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "48px", marginBottom: "20px" }}>💚</div>
+        <div style={{
+          background: "#2F9D94",
+          color: "#FAFAF7",
+          width: "56px",
+          height: "56px",
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontWeight: 800,
+          fontSize: "26px",
+          margin: "0 auto 20px"
+        }}>18</div>
         <div style={{ fontSize: "18px" }}>{status}</div>
         <div style={{
           marginTop: "20px",
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255,255,255,0.3)",
-          borderTopColor: "white",
+          width: "32px",
+          height: "32px",
+          border: "3px solid rgba(47,157,148,0.2)",
+          borderTopColor: "#2F9D94",
           borderRadius: "50%",
           animation: "spin 1s linear infinite",
           margin: "20px auto"

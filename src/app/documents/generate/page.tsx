@@ -99,7 +99,7 @@ export default function GenerateDocumentPage() {
         .page-header h1 {
           margin: 0 0 8px;
           font-size: 32px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .page-header p {
           margin: 0;
@@ -144,7 +144,7 @@ export default function GenerateDocumentPage() {
         .doc-content h3 {
           margin: 0 0 4px;
           font-size: 18px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .doc-desc {
           margin: 0 0 8px;
@@ -170,7 +170,7 @@ export default function GenerateDocumentPage() {
         }
         .help-box h4 {
           margin: 0 0 12px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .help-box p {
           margin: 0 0 16px;
@@ -183,7 +183,7 @@ export default function GenerateDocumentPage() {
           margin-right: auto;
         }
         .help-box button {
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           padding: 12px 24px;

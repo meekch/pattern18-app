@@ -62,7 +62,7 @@ export default function ResearchPage() {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-2">Research Sources</h2>
         <p className="text-gray-600">
-          Pattern 18 is built on peer-reviewed research and established frameworks from leading 
+          Pattern18 is built on peer-reviewed research and established frameworks from leading 
           experts in coercive control, domestic violence, and family court dynamics. These citations 
           add credibility to your documentation.
         </p>

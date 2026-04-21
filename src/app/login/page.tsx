@@ -18,7 +18,7 @@ function LoginContent() {
   const getPricingMessage = () => {
     const code = promoCode.toUpperCase().trim();
     if (code === 'HEALING') {
-      return 'Free access for beta testers 💚';
+      return 'Free access for beta testers.';
     } else if (code === 'BETA50' || code === 'COUNTER') {
       return '7 days free, then 50% off. Cancel anytime.';
     } else if (promoCode.trim()) {
@@ -179,29 +179,44 @@ function LoginContent() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%)',
-      padding: '20px'
+      background: '#FAFAF7',
+      padding: '20px',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '24px',
-        padding: '48px',
+        background: '#FAFAF7',
+        border: '1px solid #C7E4E0',
+        borderRadius: '20px',
+        padding: '40px 32px',
         maxWidth: '420px',
         width: '100%',
         textAlign: 'center',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.3)'
+        boxShadow: '0 12px 40px rgba(31,41,55,0.06)'
       }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>💚</div>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: '#1a3a2f' }}>
-          {mode === 'login' ? 'Welcome Back' : getHeadline()}
+        <div style={{
+          background: '#2F9D94',
+          color: '#FAFAF7',
+          width: '56px',
+          height: '56px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontWeight: 800,
+          fontSize: '26px',
+          margin: '0 auto 20px'
+        }}>18</div>
+        <h1 style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 800, fontSize: '28px', marginBottom: '8px', color: '#1F2937', letterSpacing: '-0.01em' }}>
+          {mode === 'login' ? 'Welcome back' : getHeadline()}
         </h1>
-        <p style={{ color: '#666', marginBottom: '32px' }}>
+        <p style={{ color: '#1F2937', opacity: 0.7, marginBottom: '28px' }}>
           {mode === 'login'
-            ? 'Sign in to access your coach'
+            ? 'Sign in to access your coach.'
             : getPricingMessage()}
         </p>
 
@@ -223,7 +238,7 @@ function LoginContent() {
               borderRadius: '10px',
               background: mode === 'login' ? 'white' : 'transparent',
               fontWeight: mode === 'login' ? '600' : '400',
-              color: mode === 'login' ? '#1a3a2f' : '#666',
+              color: mode === 'login' ? '#1F2937' : '#666',
               cursor: 'pointer',
               boxShadow: mode === 'login' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
             }}
@@ -240,7 +255,7 @@ function LoginContent() {
               borderRadius: '10px',
               background: mode === 'signup' ? 'white' : 'transparent',
               fontWeight: mode === 'signup' ? '600' : '400',
-              color: mode === 'signup' ? '#1a3a2f' : '#666',
+              color: mode === 'signup' ? '#1F2937' : '#666',
               cursor: 'pointer',
               boxShadow: mode === 'signup' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
             }}
@@ -314,7 +329,7 @@ function LoginContent() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#2dd4a8',
+                    color: '#2F9D94',
                     cursor: 'pointer',
                     fontSize: '14px',
                     padding: '8px 0'
@@ -333,11 +348,11 @@ function LoginContent() {
                     width: '100%',
                     padding: '14px 20px',
                     fontSize: '16px',
-                    border: '2px solid #2dd4a8',
+                    border: '2px solid #2F9D94',
                     borderRadius: '12px',
                     boxSizing: 'border-box',
                     outline: 'none',
-                    background: '#f0fdf4',
+                    background: '#EAF5F3',
                     textTransform: 'uppercase',
                     letterSpacing: '1px',
                     opacity: loading ? 0.7 : 1
@@ -353,13 +368,15 @@ function LoginContent() {
             style={{
               width: '100%',
               padding: '16px',
-              background: loading ? '#ccc' : 'linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%)',
-              color: 'white',
+              background: loading ? '#9ca3af' : '#2F9D94',
+              color: '#FAFAF7',
               border: 'none',
               borderRadius: '12px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer'
+              fontSize: '17px',
+              fontWeight: 700,
+              minHeight: '52px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s ease'
             }}
           >
             {loading
@@ -379,7 +396,7 @@ function LoginContent() {
             style={{
               background: 'none',
               border: 'none',
-              color: '#2dd4a8',
+              color: '#2F9D94',
               cursor: 'pointer',
               marginTop: '16px',
               fontSize: '14px'
@@ -393,7 +410,7 @@ function LoginContent() {
           <p style={{
             marginTop: '20px',
             padding: '16px',
-            background: '#e8f5e9',
+            background: '#EAF5F3',
             borderRadius: '12px',
             color: '#2e7d32'
           }}>
@@ -429,13 +446,25 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0d1f18 0%, #1a3a2f 100%)',
+        background: '#FAFAF7',
       }}>
-        <div style={{ fontSize: '48px' }}>💚</div>
+        <div style={{
+          background: '#2F9D94',
+          color: '#FAFAF7',
+          width: '56px',
+          height: '56px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontWeight: 800,
+          fontSize: '26px'
+        }}>18</div>
       </div>
     }>
       <LoginContent />

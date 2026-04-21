@@ -182,7 +182,7 @@ const categories: PromptCategory[] = [
   },
   {
     id: 'healing',
-    icon: '💚',
+    icon: '',
     title: 'Healing & Support',
     description: 'Process emotions and build resilience',
     prompts: [
@@ -351,7 +351,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
 
         .gallery-header h2 {
           font-size: 24px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0;
         }
 
@@ -418,7 +418,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         }
 
         .category-card:hover {
-          background: #e8f5e9;
+          background: #EAF5F3;
           border-color: #2dd4a8;
           transform: translateY(-2px);
         }
@@ -431,7 +431,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         .cat-title {
           font-size: 17px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 6px;
         }
 
@@ -470,7 +470,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         }
 
         .back-btn:hover {
-          color: #1a3a2f;
+          color: #1F2937;
         }
 
         .category-header {
@@ -488,7 +488,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
 
         .category-header h3 {
           font-size: 22px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 4px 0;
         }
 
@@ -526,7 +526,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         .prompt-title {
           font-size: 16px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 8px;
         }
 
@@ -546,7 +546,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         .tag {
           font-size: 11px;
           padding: 4px 10px;
-          background: #e8f5e9;
+          background: #EAF5F3;
           color: #2e7d32;
           border-radius: 20px;
           font-weight: 500;
@@ -566,7 +566,7 @@ export default function PromptGallery({ onSelectPrompt, onClose }: PromptGallery
         }
 
         .tip strong {
-          color: #1a3a2f;
+          color: #1F2937;
         }
 
         @media (max-width: 600px) {

@@ -212,7 +212,7 @@ export default function DocBuilderPage() {
     }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
         padding: '16px 20px',
         color: 'white',
         display: 'flex',
@@ -267,8 +267,8 @@ export default function DocBuilderPage() {
                 style={{
                   width: '100%',
                   padding: '16px',
-                  background: '#f0fdf4',
-                  border: '2px dashed #059669',
+                  background: '#EAF5F3',
+                  border: '2px dashed #2F9D94',
                   borderRadius: 12,
                   cursor: 'pointer',
                   display: 'flex',
@@ -278,7 +278,7 @@ export default function DocBuilderPage() {
                 }}
               >
                 <span style={{ fontSize: 24 }}>📤</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#059669' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#2F9D94' }}>
                   Upload Files
                 </span>
                 <span style={{ fontSize: 12, color: '#6b7280' }}>
@@ -477,14 +477,14 @@ export default function DocBuilderPage() {
                   <div style={{
                     marginTop: 24,
                     padding: 16,
-                    background: '#f0fdf4',
+                    background: '#EAF5F3',
                     borderRadius: 12,
                     textAlign: 'left'
                   }}>
                     <div style={{ 
                       fontSize: 12, 
                       fontWeight: 600, 
-                      color: '#059669',
+                      color: '#2F9D94',
                       marginBottom: 8
                     }}>
                       YOUR CASE INFO (auto-filled)
@@ -517,7 +517,7 @@ export default function DocBuilderPage() {
                       borderRadius: msg.role === 'user' 
                         ? '18px 18px 4px 18px' 
                         : '18px 18px 18px 4px',
-                      background: msg.role === 'user' ? '#1a3a2f' : 'white',
+                      background: msg.role === 'user' ? '#1F2937' : 'white',
                       color: msg.role === 'user' ? 'white' : '#1f2937',
                       boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                       whiteSpace: 'pre-wrap',
@@ -548,7 +548,7 @@ export default function DocBuilderPage() {
           {generatedDoc && (
             <div style={{
               padding: '12px 20px',
-              background: '#d1fae5',
+              background: '#EAF5F3',
               borderTop: '1px solid #a7f3d0',
               display: 'flex',
               alignItems: 'center',
@@ -558,14 +558,14 @@ export default function DocBuilderPage() {
                 <span style={{ fontSize: 24 }}>📄</span>
                 <div>
                   <div style={{ fontWeight: 600, color: '#065f46' }}>{docName}</div>
-                  <div style={{ fontSize: 12, color: '#047857' }}>Ready to download</div>
+                  <div style={{ fontSize: 12, color: '#1A5F5A' }}>Ready to download</div>
                 </div>
               </div>
               <button
                 onClick={downloadDocument}
                 style={{
                   padding: '10px 20px',
-                  background: '#059669',
+                  background: '#2F9D94',
                   color: 'white',
                   border: 'none',
                   borderRadius: 8,
@@ -607,7 +607,7 @@ export default function DocBuilderPage() {
               disabled={sending || (!input.trim() && uploadedFiles.length === 0)}
               style={{
                 padding: '12px 24px',
-                background: sending ? '#9ca3af' : '#1a3a2f',
+                background: sending ? '#9ca3af' : '#1F2937',
                 color: 'white',
                 border: 'none',
                 borderRadius: 12,

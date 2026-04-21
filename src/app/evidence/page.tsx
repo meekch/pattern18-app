@@ -429,7 +429,7 @@ function EvidenceContent() {
     <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 180 }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
+        background: "linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)",
         padding: "16px 24px",
         color: "white",
         display: "flex",
@@ -451,7 +451,7 @@ function EvidenceContent() {
         <button
           onClick={() => router.push("/docs")}
           style={{
-            background: "#059669",
+            background: "#2F9D94",
             color: "white",
             border: "none",
             borderRadius: 8,
@@ -475,13 +475,13 @@ function EvidenceContent() {
           <div 
             onClick={() => setSeverityFilter("all")}
             style={{ 
-              background: severityFilter === "all" ? "#f0fdf4" : "white", 
+              background: severityFilter === "all" ? "#EAF5F3" : "white", 
               borderRadius: 12, 
               padding: 16, 
               textAlign: "center", 
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               cursor: "pointer",
-              border: severityFilter === "all" ? "2px solid #059669" : "2px solid transparent",
+              border: severityFilter === "all" ? "2px solid #2F9D94" : "2px solid transparent",
               transition: "all 0.2s"
             }}
           >
@@ -523,17 +523,17 @@ function EvidenceContent() {
           <div 
             onClick={() => setSeverityFilter("exhibit")}
             style={{ 
-              background: severityFilter === "exhibit" ? "#f0fdf4" : "white", 
+              background: severityFilter === "exhibit" ? "#EAF5F3" : "white", 
               borderRadius: 12, 
               padding: 16, 
               textAlign: "center", 
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               cursor: "pointer",
-              border: severityFilter === "exhibit" ? "2px solid #059669" : "2px solid transparent",
+              border: severityFilter === "exhibit" ? "2px solid #2F9D94" : "2px solid transparent",
               transition: "all 0.2s"
             }}
           >
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#059669" }}>{exhibitCount}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#2F9D94" }}>{exhibitCount}</div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>In Exhibit</div>
           </div>
         </div>
@@ -560,8 +560,8 @@ function EvidenceContent() {
                     padding: "8px 14px",
                     borderRadius: 20,
                     border: "1px solid",
-                    borderColor: severityFilter === f.key ? "#059669" : "#e5e7eb",
-                    background: severityFilter === f.key ? "#d1fae5" : "white",
+                    borderColor: severityFilter === f.key ? "#2F9D94" : "#e5e7eb",
+                    background: severityFilter === f.key ? "#EAF5F3" : "white",
                     color: severityFilter === f.key ? "#065f46" : "#6b7280",
                     cursor: "pointer",
                     fontSize: 13,
@@ -805,8 +805,8 @@ function EvidenceContent() {
                             width: 20,
                             height: 20,
                             borderRadius: 4,
-                            border: `2px solid ${incident.include_in_exhibit ? "#059669" : "#d1d5db"}`,
-                            background: incident.include_in_exhibit ? "#059669" : "white",
+                            border: `2px solid ${incident.include_in_exhibit ? "#2F9D94" : "#d1d5db"}`,
+                            background: incident.include_in_exhibit ? "#2F9D94" : "white",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1052,8 +1052,8 @@ function EvidenceContent() {
                                         }}>
                                           <div style={{
                                             maxWidth: "85%",
-                                            background: isCoparent ? "#fef2f2" : "#f0fdf4",
-                                            borderLeft: `4px solid ${isCoparent ? "#dc2626" : "#059669"}`,
+                                            background: isCoparent ? "#fef2f2" : "#EAF5F3",
+                                            borderLeft: `4px solid ${isCoparent ? "#dc2626" : "#2F9D94"}`,
                                             borderRadius: 8,
                                             padding: 12
                                           }}>
@@ -1066,7 +1066,7 @@ function EvidenceContent() {
                                             }}>
                                               <span style={{
                                                 fontWeight: 600,
-                                                color: isCoparent ? "#dc2626" : "#059669"
+                                                color: isCoparent ? "#dc2626" : "#2F9D94"
                                               }}>
                                                 {isCoparent ? 'Co-parent' : 'You'}
                                               </span>
@@ -1206,7 +1206,7 @@ function EvidenceContent() {
           bottom: 100,
           left: 20,
           right: 20,
-          background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+          background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
           borderRadius: 16,
           padding: '14px 20px',
           display: 'flex',
@@ -1221,7 +1221,7 @@ function EvidenceContent() {
           <button
             onClick={() => router.push('/generate-exhibit')}
             style={{
-              background: '#059669',
+              background: '#2F9D94',
               color: 'white',
               border: 'none',
               borderRadius: 10,
@@ -1289,8 +1289,8 @@ function EvidenceContent() {
                       style={{
                         padding: "10px 12px",
                         borderRadius: 8,
-                        border: editSourceType === st.value ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
-                        background: editSourceType === st.value ? "#f0fdf4" : "white",
+                        border: editSourceType === st.value ? "2px solid #1F2937" : "1px solid #e5e7eb",
+                        background: editSourceType === st.value ? "#EAF5F3" : "white",
                         cursor: "pointer",
                         textAlign: "left"
                       }}
@@ -1340,7 +1340,7 @@ function EvidenceContent() {
                         flex: 1,
                         padding: "10px",
                         borderRadius: 8,
-                        border: editSeverity === sev ? "2px solid #1a3a2f" : "1px solid #e5e7eb",
+                        border: editSeverity === sev ? "2px solid #1F2937" : "1px solid #e5e7eb",
                         background: severityColors[sev].bg,
                         color: severityColors[sev].text,
                         fontWeight: 600,
@@ -1426,7 +1426,7 @@ function EvidenceContent() {
                 style={{
                   flex: 1,
                   padding: 12,
-                  background: saving ? "#9ca3af" : "#1a3a2f",
+                  background: saving ? "#9ca3af" : "#1F2937",
                   color: "white",
                   border: "none",
                   borderRadius: 8,

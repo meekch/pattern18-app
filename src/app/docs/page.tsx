@@ -65,7 +65,7 @@ export default function DocsPage() {
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
         padding: '20px 24px',
         color: 'white'
       }}>
@@ -85,9 +85,9 @@ export default function DocsPage() {
             flex: 1,
             padding: '14px',
             border: 'none',
-            background: activeTab === 'generate' ? '#f0fdf4' : 'white',
-            borderBottom: activeTab === 'generate' ? '3px solid #059669' : '3px solid transparent',
-            color: activeTab === 'generate' ? '#059669' : '#6b7280',
+            background: activeTab === 'generate' ? '#EAF5F3' : 'white',
+            borderBottom: activeTab === 'generate' ? '3px solid #2F9D94' : '3px solid transparent',
+            color: activeTab === 'generate' ? '#2F9D94' : '#6b7280',
             fontWeight: 600,
             cursor: 'pointer',
             fontSize: 14
@@ -101,9 +101,9 @@ export default function DocsPage() {
             flex: 1,
             padding: '14px',
             border: 'none',
-            background: activeTab === 'uploads' ? '#f0fdf4' : 'white',
-            borderBottom: activeTab === 'uploads' ? '3px solid #059669' : '3px solid transparent',
-            color: activeTab === 'uploads' ? '#059669' : '#6b7280',
+            background: activeTab === 'uploads' ? '#EAF5F3' : 'white',
+            borderBottom: activeTab === 'uploads' ? '3px solid #2F9D94' : '3px solid transparent',
+            color: activeTab === 'uploads' ? '#2F9D94' : '#6b7280',
             fontWeight: 600,
             cursor: 'pointer',
             fontSize: 14
@@ -165,7 +165,7 @@ export default function DocsPage() {
               style={{
                 width: '100%',
                 padding: '14px 20px',
-                background: '#1a3a2f',
+                background: '#1F2937',
                 color: 'white',
                 border: 'none',
                 borderRadius: 10,
@@ -195,7 +195,7 @@ export default function DocsPage() {
                 onClick={() => router.push('/upload-order')}
                 style={{
                   padding: '12px 24px',
-                  background: '#1a3a2f',
+                  background: '#1F2937',
                   color: 'white',
                   border: 'none',
                   borderRadius: 10,
@@ -369,8 +369,8 @@ function DocumentCard({ doc, router }: { doc: CourtDoc; router: any }) {
               onClick={() => handleAction('explain')}
               style={{
                 padding: '10px 12px',
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
+                background: '#EAF5F3',
+                border: '1px solid #C7E4E0',
                 borderRadius: 8,
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -408,7 +408,7 @@ function DocTypeCard({
       onClick={onClick}
       style={{
         background: 'white',
-        border: recommended ? '2px solid #059669' : '1px solid #e5e7eb',
+        border: recommended ? '2px solid #2F9D94' : '1px solid #e5e7eb',
         borderRadius: 12,
         padding: 16,
         cursor: 'pointer',
@@ -422,7 +422,7 @@ function DocTypeCard({
           position: 'absolute',
           top: -8,
           right: 8,
-          background: '#059669',
+          background: '#2F9D94',
           color: 'white',
           fontSize: 9,
           padding: '2px 6px',

@@ -177,7 +177,7 @@ export default function AdminMetricsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return '#059669';
+      case 'active': return '#2F9D94';
       case 'trialing': return '#3b82f6';
       case 'past_due': return '#f59e0b';
       case 'canceled': return '#dc2626';
@@ -217,7 +217,7 @@ export default function AdminMetricsPage() {
           >
             ← Back to Coach
           </button>
-          <h1 style={{ margin: 0, fontSize: 28, color: '#1a3a2f' }}>📊 Business Metrics</h1>
+          <h1 style={{ margin: 0, fontSize: 28, color: '#1F2937' }}>📊 Business Metrics</h1>
           <p style={{ margin: '8px 0 0', color: '#6b7280' }}>Track your path to exit</p>
         </div>
 
@@ -229,7 +229,7 @@ export default function AdminMetricsPage() {
           marginBottom: 32 
         }}>
           <div style={{ 
-            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', 
+            background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)', 
             borderRadius: 16, 
             padding: 24, 
             color: 'white' 
@@ -246,7 +246,7 @@ export default function AdminMetricsPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
           }}>
             <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>ARR</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: '#1a3a2f' }}>{formatCurrency(metrics.arr)}</div>
+            <div style={{ fontSize: 36, fontWeight: 800, color: '#1F2937' }}>{formatCurrency(metrics.arr)}</div>
             <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>Annual Run Rate</div>
           </div>
 
@@ -257,7 +257,7 @@ export default function AdminMetricsPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
           }}>
             <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Active Subscribers</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: '#1a3a2f' }}>{metrics.totalSubscribers}</div>
+            <div style={{ fontSize: 36, fontWeight: 800, color: '#1F2937' }}>{metrics.totalSubscribers}</div>
             <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>{metrics.trialCount} on trial</div>
           </div>
 
@@ -268,7 +268,7 @@ export default function AdminMetricsPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
           }}>
             <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Churn Rate</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: metrics.churnRate > 5 ? '#dc2626' : '#1a3a2f' }}>
+            <div style={{ fontSize: 36, fontWeight: 800, color: metrics.churnRate > 5 ? '#dc2626' : '#1F2937' }}>
               {metrics.churnRate.toFixed(1)}%
             </div>
             <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>{metrics.churnedThisMonth} lost this month</div>
@@ -318,14 +318,14 @@ export default function AdminMetricsPage() {
             borderLeft: '4px solid #f59e0b'
           }}>
             <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 8 }}>Law Firms</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#1a3a2f' }}>{metrics.firmCount}</div>
-            <div style={{ fontSize: 13, color: '#059669', marginTop: 4 }}>B2B (higher multiple)</div>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#1F2937' }}>{metrics.firmCount}</div>
+            <div style={{ fontSize: 13, color: '#2F9D94', marginTop: 4 }}>B2B (higher multiple)</div>
           </div>
         </div>
 
         {/* Exit Milestones */}
         <div style={{ 
-          background: '#1a3a2f', 
+          background: '#1F2937', 
           borderRadius: 16, 
           padding: 24, 
           marginBottom: 32,
@@ -346,7 +346,7 @@ export default function AdminMetricsPage() {
                     marginBottom: 8
                   }}>
                     <span style={{ fontWeight: 600 }}>{m.label}</span>
-                    {isComplete && <span style={{ color: '#22c55e' }}>✓</span>}
+                    {isComplete && <span style={{ color: '#2F9D94' }}>✓</span>}
                   </div>
                   <div style={{ 
                     background: 'rgba(255,255,255,0.2)', 
@@ -357,7 +357,7 @@ export default function AdminMetricsPage() {
                     <div style={{ 
                       width: `${progress}%`, 
                       height: '100%', 
-                      background: isComplete ? '#22c55e' : '#059669',
+                      background: isComplete ? '#2F9D94' : '#2F9D94',
                       borderRadius: 8,
                       transition: 'width 0.3s'
                     }} />
@@ -377,13 +377,13 @@ export default function AdminMetricsPage() {
           marginBottom: 32 
         }}>
           <div style={{ 
-            background: '#f0fdf4', 
+            background: '#EAF5F3', 
             borderRadius: 16, 
             padding: 24, 
-            border: '1px solid #bbf7d0'
+            border: '1px solid #C7E4E0'
           }}>
-            <div style={{ fontSize: 14, color: '#059669', marginBottom: 8 }}>New This Month</div>
-            <div style={{ fontSize: 48, fontWeight: 800, color: '#059669' }}>+{metrics.newThisMonth}</div>
+            <div style={{ fontSize: 14, color: '#2F9D94', marginBottom: 8 }}>New This Month</div>
+            <div style={{ fontSize: 48, fontWeight: 800, color: '#2F9D94' }}>+{metrics.newThisMonth}</div>
           </div>
 
           <div style={{ 
@@ -408,7 +408,7 @@ export default function AdminMetricsPage() {
           padding: 24, 
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
         }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: 18, color: '#1a3a2f' }}>Recent Subscribers</h3>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, color: '#1F2937' }}>Recent Subscribers</h3>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
@@ -480,7 +480,7 @@ export default function AdminMetricsPage() {
             </div>
           </div>
           <p style={{ margin: '16px 0 0', fontSize: 13, color: '#92400e', opacity: 0.8 }}>
-            B2B revenue and "Pattern 18 Certified" brand moat can push toward higher multiples.
+            B2B revenue and "Pattern18 Certified" brand moat can push toward higher multiples.
           </p>
         </div>
 

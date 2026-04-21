@@ -36,7 +36,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
   const typeOptions = [
     { id: 'general', icon: '💬', label: 'General Feedback', placeholder: 'What\'s working well? What could be better?' },
-    { id: 'feature_request', icon: '✨', label: 'Feature Request', placeholder: 'What would make Pattern 18 even more helpful for you?' },
+    { id: 'feature_request', icon: '✨', label: 'Feature Request', placeholder: 'What would make Pattern18 even more helpful for you?' },
     { id: 'prompt_suggestion', icon: '💡', label: 'Prompt Idea', placeholder: 'Share a prompt that helped you — we might add it to the gallery!' },
   ]
 
@@ -47,9 +47,9 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
       <div className="feedback-modal">
         {submitted ? (
           <div className="success-view">
-            <div className="success-icon">💚</div>
+            <div className="success-icon"></div>
             <h2>Thank you!</h2>
-            <p>Your feedback helps us make Pattern 18 better for everyone walking this path.</p>
+            <p>Your feedback helps us make Pattern18 better for everyone walking this path.</p>
             <button onClick={onClose} className="close-btn">Done</button>
           </div>
         ) : (
@@ -90,7 +90,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
             </button>
 
             <p className="privacy-note">
-              🔒 Your feedback is private and only used to improve Pattern 18.
+              🔒 Your feedback is private and only used to improve Pattern18.
             </p>
           </>
         )}
@@ -127,7 +127,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .modal-header h2 {
           font-size: 24px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0;
         }
 
@@ -176,11 +176,11 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
         }
 
         .type-btn:hover {
-          background: #e8f5e9;
+          background: #EAF5F3;
         }
 
         .type-btn.active {
-          background: #e8f5e9;
+          background: #EAF5F3;
           border-color: #2dd4a8;
         }
 
@@ -191,7 +191,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
         .type-label {
           font-size: 12px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           text-align: center;
         }
 
@@ -217,7 +217,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
         .submit-btn {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
           color: white;
           border: none;
           border-radius: 14px;
@@ -256,7 +256,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .success-view h2 {
           font-size: 26px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 12px 0;
         }
 
@@ -269,7 +269,7 @@ export default function FeedbackModal({ userId, conversationId, onClose }: Feedb
 
         .close-btn {
           padding: 16px 48px;
-          background: linear-gradient(135deg, #1a3a2f 0%, #2d5a4a 100%);
+          background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
           color: white;
           border: none;
           border-radius: 14px;

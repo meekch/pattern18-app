@@ -37,7 +37,7 @@ export default function MotionBuilderPage() {
         }
         h1 {
           margin: 0 0 12px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         p {
           color: #666;
@@ -69,7 +69,7 @@ export default function MotionBuilderPage() {
           text-align: left;
         }
         .notice strong {
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .notice p {
           margin: 8px 0 0;

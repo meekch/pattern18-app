@@ -137,7 +137,7 @@ export default function PatternsByPage() {
         .page-header h1 {
           margin: 0 0 4px;
           font-size: 28px;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .page-header p {
           margin: 0;
@@ -174,7 +174,7 @@ export default function PatternsByPage() {
         .pattern-name {
           font-size: 16px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           display: block;
           margin-bottom: 4px;
         }

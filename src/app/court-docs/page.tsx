@@ -208,7 +208,7 @@ export default function CourtDocsPage() {
     <div style={{ minHeight: "100vh", background: "#f8faf9" }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)",
+        background: "linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)",
         padding: "16px 24px",
         color: "white",
         display: "flex",
@@ -242,7 +242,7 @@ export default function CourtDocsPage() {
                 flex: 1,
                 height: 4,
                 borderRadius: 2,
-                background: ["select", "configure", "generate", "review"].indexOf(step) >= i ? "#059669" : "#e5e7eb"
+                background: ["select", "configure", "generate", "review"].indexOf(step) >= i ? "#2F9D94" : "#e5e7eb"
               }}
             />
           ))}
@@ -294,15 +294,15 @@ export default function CourtDocsPage() {
                     gap: 16,
                     cursor: "pointer",
                     borderBottom: idx < incidents.length - 1 ? "1px solid #f3f4f6" : "none",
-                    background: selectedIds.has(inc.id) ? "#f0fdf4" : "white"
+                    background: selectedIds.has(inc.id) ? "#EAF5F3" : "white"
                   }}
                 >
                   <div style={{
                     width: 22,
                     height: 22,
                     borderRadius: 4,
-                    border: `2px solid ${selectedIds.has(inc.id) ? "#059669" : "#d1d5db"}`,
-                    background: selectedIds.has(inc.id) ? "#059669" : "white",
+                    border: `2px solid ${selectedIds.has(inc.id) ? "#2F9D94" : "#d1d5db"}`,
+                    background: selectedIds.has(inc.id) ? "#2F9D94" : "white",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -344,7 +344,7 @@ export default function CourtDocsPage() {
                 onClick={() => setStep("configure")}
                 disabled={selectedCount === 0}
                 style={{
-                  background: selectedCount === 0 ? "#9ca3af" : "#059669",
+                  background: selectedCount === 0 ? "#9ca3af" : "#2F9D94",
                   color: "white",
                   border: "none",
                   borderRadius: 8,
@@ -377,8 +377,8 @@ export default function CourtDocsPage() {
                     style={{
                       padding: 20,
                       borderRadius: 12,
-                      border: `2px solid ${docType === dt.id ? "#059669" : "#e5e7eb"}`,
-                      background: docType === dt.id ? "#f0fdf4" : "white",
+                      border: `2px solid ${docType === dt.id ? "#2F9D94" : "#e5e7eb"}`,
+                      background: docType === dt.id ? "#EAF5F3" : "white",
                       cursor: "pointer"
                     }}
                   >
@@ -474,7 +474,7 @@ export default function CourtDocsPage() {
               <button
                 onClick={generateDocument}
                 style={{
-                  background: "#059669",
+                  background: "#2F9D94",
                   color: "white",
                   border: "none",
                   borderRadius: 8,
@@ -497,7 +497,7 @@ export default function CourtDocsPage() {
               width: 80,
               height: 80,
               borderRadius: "50%",
-              background: "#d1fae5",
+              background: "#EAF5F3",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -523,7 +523,7 @@ export default function CourtDocsPage() {
                 <button onClick={copyToClipboard} style={pillStyle}>
                   📋 Copy
                 </button>
-                <button onClick={downloadAsText} style={{ ...pillStyle, background: "#059669", color: "white", borderColor: "#059669" }}>
+                <button onClick={downloadAsText} style={{ ...pillStyle, background: "#2F9D94", color: "white", borderColor: "#2F9D94" }}>
                   ⬇ Download
                 </button>
               </div>
@@ -559,7 +559,7 @@ export default function CourtDocsPage() {
               <button
                 onClick={() => router.push("/evidence")}
                 style={{
-                  background: "#059669",
+                  background: "#2F9D94",
                   color: "white",
                   border: "none",
                   borderRadius: 8,

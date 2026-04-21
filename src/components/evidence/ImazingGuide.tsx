@@ -345,11 +345,11 @@ function Step8() {
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-4">
-        Step 8: Upload to Pattern 18
+        Step 8: Upload to Pattern18
       </h3>
       
       <ol className="list-decimal list-inside space-y-4 text-gray-600 mb-6">
-        <li>Go to <strong>Evidence</strong> in Pattern 18</li>
+        <li>Go to <strong>Evidence</strong> in Pattern18</li>
         <li><strong>Drag and drop</strong> your exported file, or click to browse</li>
         <li>Wait for analysis to complete</li>
         <li>Review detected patterns and incidents</li>
@@ -390,7 +390,7 @@ export function ImazingQuickGuide() {
         </li>
         <li className="flex gap-2">
           <span className="bg-green-100 text-green-700 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium">5</span>
-          <span>Upload to Pattern 18</span>
+          <span>Upload to Pattern18</span>
         </li>
       </ol>
     </div>

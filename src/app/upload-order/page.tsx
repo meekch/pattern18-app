@@ -123,7 +123,7 @@ export default function UploadOrderPage() {
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
         padding: '16px 24px',
         color: 'white',
         display: 'flex',
@@ -162,14 +162,14 @@ export default function UploadOrderPage() {
                   height: 60, 
                   margin: '0 auto 20px',
                   border: '4px solid #e5e7eb',
-                  borderTopColor: '#059669',
+                  borderTopColor: '#2F9D94',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite'
                 }} />
                 <p style={{ 
                   fontSize: 16, 
                   fontWeight: 600, 
-                  color: '#1a3a2f',
+                  color: '#1F2937',
                   margin: '0 0 8px' 
                 }}>
                   {uploadStep === 'uploading' && 'Uploading...'}
@@ -192,7 +192,7 @@ export default function UploadOrderPage() {
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     width: '100%',
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
                     color: 'white',
                     border: 'none',
                     borderRadius: 16,
@@ -262,7 +262,7 @@ export default function UploadOrderPage() {
           <>
             {/* Success State */}
             <div style={{
-              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
               borderRadius: 16,
               padding: 32,
               textAlign: 'center',
@@ -283,7 +283,7 @@ export default function UploadOrderPage() {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 marginBottom: 20
               }}>
-                <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#1a3a2f' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#1F2937' }}>
                   Extracted Info
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -409,8 +409,8 @@ export default function UploadOrderPage() {
                   }}
                   style={{
                     padding: '14px 16px',
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
+                    background: '#EAF5F3',
+                    border: '1px solid #C7E4E0',
                     borderRadius: 10,
                     cursor: 'pointer',
                     textAlign: 'left',
@@ -422,7 +422,7 @@ export default function UploadOrderPage() {
                   <span style={{ fontSize: 20 }}>📖</span>
                   <div>
                     <div style={{ fontWeight: 600, color: '#166534', fontSize: 14 }}>Explain this to me</div>
-                    <div style={{ fontSize: 12, color: '#22c55e' }}>Plain English translation</div>
+                    <div style={{ fontSize: 12, color: '#2F9D94' }}>Plain English translation</div>
                   </div>
                 </button>
               </div>
@@ -485,7 +485,7 @@ function Step({ num, text }: { num: number; text: string }) {
         height: 24,
         borderRadius: '50%',
         background: '#e0f2e9',
-        color: '#059669',
+        color: '#2F9D94',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -508,7 +508,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       borderBottom: '1px solid #f3f4f6'
     }}>
       <span style={{ fontSize: 13, color: '#6b7280' }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 500, color: '#1a3a2f', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: '#1F2937', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
     </div>
   );
 }

@@ -88,7 +88,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
         <div className="modal-body">
           {/* Calming message */}
           <div className="calm-banner">
-            <span>💚</span>
+            <span></span>
             <p>Take a breath. You're documenting, not reacting. This is strategic.</p>
           </div>
 
@@ -195,7 +195,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
 
           .modal-header {
             padding: 20px 24px;
-            background: linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%);
+            background: linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%);
             color: white;
             display: flex;
             justify-content: space-between;
@@ -252,7 +252,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
           .calm-banner p {
             margin: 0;
             font-size: 13px;
-            color: #1a3a2f;
+            color: #1F2937;
           }
 
           .input-group {
@@ -285,7 +285,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
             background: #f0f9f6;
             border: 2px solid #2dd4a8;
             border-radius: 10px;
-            color: #1a3a2f;
+            color: #1F2937;
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
@@ -317,7 +317,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
             margin-bottom: 12px;
           }
           .pattern-tag {
-            background: #1a3a2f;
+            background: #1F2937;
             color: white;
             padding: 4px 12px;
             border-radius: 15px;
@@ -351,7 +351,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
           }
           .severity-low {
             background: #f0f9f6;
-            color: #1a3a2f;
+            color: #1F2937;
           }
 
           .coaching {
@@ -363,7 +363,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
           .coaching h4 {
             margin: 0 0 6px;
             font-size: 13px;
-            color: #1a3a2f;
+            color: #1F2937;
           }
           .coaching p {
             margin: 0;
@@ -392,7 +392,7 @@ export default function QuickLogModal({ isOpen, onClose, onSave, userId }: Quick
             background: #2dd4a8;
             border: none;
             border-radius: 8px;
-            color: #1a3a2f;
+            color: #1F2937;
             font-weight: 600;
             cursor: pointer;
           }

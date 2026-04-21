@@ -125,7 +125,7 @@ export default function CaseSetupPage() {
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #f5f7f6;
+            background: #FAFAF7;
           }
           .spinner {
             font-size: 48px;
@@ -305,7 +305,7 @@ export default function CaseSetupPage() {
       <style jsx>{`
         .container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #e8f5e9 0%, #f5f7f6 100%);
+          background: linear-gradient(180deg, #EAF5F3 0%, #FAFAF7 100%);
         }
         .header {
           padding: 20px 24px;
@@ -317,12 +317,12 @@ export default function CaseSetupPage() {
           background: none;
           border: none;
           font-size: 16px;
-          color: #1a3a2f;
+          color: #1F2937;
           cursor: pointer;
         }
         .header h1 {
           font-size: 24px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0;
         }
         .content {
@@ -339,7 +339,7 @@ export default function CaseSetupPage() {
         }
         .card h2 {
           font-size: 20px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 8px 0;
         }
         .card-desc {
@@ -353,7 +353,7 @@ export default function CaseSetupPage() {
         .field label {
           display: block;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 6px;
         }
         .field-help {
@@ -371,7 +371,7 @@ export default function CaseSetupPage() {
         }
         .field input:focus {
           outline: none;
-          border-color: #14b8a6;
+          border-color: #2F9D94;
         }
         .role-buttons {
           display: grid;
@@ -387,12 +387,12 @@ export default function CaseSetupPage() {
           text-align: left;
         }
         .role-btn.selected {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
+          border-color: #1F2937;
+          background: #EAF5F3;
         }
         .role-btn strong {
           display: block;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 4px;
         }
         .role-btn span {
@@ -420,7 +420,7 @@ export default function CaseSetupPage() {
         .save-btn {
           width: 100%;
           padding: 16px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           border-radius: 12px;
@@ -445,7 +445,7 @@ export default function CaseSetupPage() {
         }
         .upload-btn {
           padding: 14px 24px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           border-radius: 10px;
@@ -455,14 +455,14 @@ export default function CaseSetupPage() {
         .manual-btn {
           padding: 14px 24px;
           background: white;
-          color: #1a3a2f;
-          border: 2px solid #1a3a2f;
+          color: #1F2937;
+          border: 2px solid #1F2937;
           border-radius: 10px;
           font-weight: 600;
           cursor: pointer;
         }
         .manual-btn:hover {
-          background: #f0fdf4;
+          background: #EAF5F3;
         }
         .manual-entry {
           text-align: left;

@@ -1,5 +1,5 @@
 /**
- * Pattern 18 Healing Space System
+ * Pattern18 Healing Space System
  * 
  * Support for parents in high-conflict coparenting:
  * - Parenting a child who mirrors the other parent's behavior
@@ -301,7 +301,7 @@ export const PARENTING_SUPPORT = {
   /**
    * SYSTEM PROMPT FOR HEALING SPACE
    */
-  export const HEALING_SPACE_SYSTEM_PROMPT = `You are Pattern 18's Healing Space — a trauma-informed support system for parents in high-conflict custody situations.
+  export const HEALING_SPACE_SYSTEM_PROMPT = `You are Pattern18's Healing Space — a trauma-informed support system for parents in high-conflict custody situations.
   
   ## YOUR ROLE
   

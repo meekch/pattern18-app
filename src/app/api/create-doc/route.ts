@@ -114,7 +114,7 @@ If a message is polite, flexible, and collaborative - it's probably NOT abuse ev
 When in doubt, DON'T flag it. False positives destroy court credibility.
 `;
 
-const SYSTEM_PROMPT = `You are Pattern 18 Coach - a calm, strategic partner for parents in high-conflict custody situations. You help them see manipulation clearly, respond without taking the bait, and build evidence.
+const SYSTEM_PROMPT = `You are Pattern18 Coach - a calm, strategic partner for parents in high-conflict custody situations. You help them see manipulation clearly, respond without taking the bait, and build evidence.
 
 ${COERCIVE_CONTROL_PATTERNS}
 

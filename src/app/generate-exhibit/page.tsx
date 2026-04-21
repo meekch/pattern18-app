@@ -147,7 +147,7 @@ export default function GenerateExhibitPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
         <header style={{
-          background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+          background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
           padding: '16px 24px',
           color: 'white',
           display: 'flex',
@@ -179,7 +179,7 @@ export default function GenerateExhibitPage() {
             <button
               onClick={() => router.push('/evidence')}
               style={{
-                background: '#059669',
+                background: '#2F9D94',
                 color: 'white',
                 border: 'none',
                 borderRadius: 10,
@@ -222,7 +222,7 @@ export default function GenerateExhibitPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       <header style={{
-        background: 'linear-gradient(135deg, #1a3a2f 0%, #0d1f18 100%)',
+        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
         padding: '16px 24px',
         color: 'white',
         display: 'flex',
@@ -246,11 +246,11 @@ export default function GenerateExhibitPage() {
           padding: 24,
           marginBottom: 20,
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '2px solid #059669'
+          border: '2px solid #2F9D94'
         }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
-            <h2 style={{ margin: '0 0 4px', color: '#059669', fontSize: 22 }}>
+            <h2 style={{ margin: '0 0 4px', color: '#2F9D94', fontSize: 22 }}>
               Ready to Generate
             </h2>
             <p style={{ color: '#6b7280', margin: 0 }}>
@@ -265,8 +265,8 @@ export default function GenerateExhibitPage() {
             gap: 12,
             marginBottom: 20
           }}>
-            <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 14, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#059669' }}>{incidentsToUse.length}</div>
+            <div style={{ background: '#EAF5F3', borderRadius: 10, padding: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#2F9D94' }}>{incidentsToUse.length}</div>
               <div style={{ fontSize: 12, color: '#6b7280' }}>Incidents</div>
             </div>
             <div style={{ background: '#fef2f2', borderRadius: 10, padding: 14, textAlign: 'center' }}>
@@ -291,7 +291,7 @@ export default function GenerateExhibitPage() {
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: !useAll ? '#059669' : '#f3f4f6',
+                  background: !useAll ? '#2F9D94' : '#f3f4f6',
                   color: !useAll ? 'white' : '#6b7280',
                   border: 'none',
                   borderRadius: 8,
@@ -307,7 +307,7 @@ export default function GenerateExhibitPage() {
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: useAll ? '#059669' : '#f3f4f6',
+                  background: useAll ? '#2F9D94' : '#f3f4f6',
                   color: useAll ? 'white' : '#6b7280',
                   border: 'none',
                   borderRadius: 8,
@@ -332,7 +332,7 @@ export default function GenerateExhibitPage() {
               <h3 style={{ margin: 0, fontSize: 14, color: '#374151' }}>Case Information</h3>
               <button
                 onClick={() => router.push('/case-setup')}
-                style={{ background: 'none', border: 'none', color: '#059669', fontSize: 13, cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#2F9D94', fontSize: 13, cursor: 'pointer' }}
               >
                 Edit →
               </button>
@@ -404,7 +404,7 @@ export default function GenerateExhibitPage() {
             style={{
               width: '100%',
               padding: 16,
-              background: generating ? '#9ca3af' : '#1a3a2f',
+              background: generating ? '#9ca3af' : '#1F2937',
               color: 'white',
               border: 'none',
               borderRadius: 12,

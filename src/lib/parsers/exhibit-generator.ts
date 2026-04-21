@@ -211,7 +211,7 @@ function generatePatternSummary(analysis: BulkAnalysisResult): string {
       <h2>Identified Patterns</h2>
       <p class="section-intro">
         The following behavioral patterns were identified in the communications, 
-        based on the Pattern 18 framework for recognizing coercive control.
+        based on the Pattern18 framework for recognizing coercive control.
       </p>
       <table class="patterns-table">
         <thead>
@@ -361,7 +361,7 @@ function generateMessages(
 function generateFooter(opts: ExhibitOptions): string {
   return `
     <footer class="exhibit-footer">
-      <p>This exhibit was generated using Pattern 18 Coach communication analysis.</p>
+      <p>This exhibit was generated using Pattern18 Coach communication analysis.</p>
       <p>Pattern detection is based on research-identified indicators of coercive control.</p>
       <p class="disclaimer">
         This document is intended to assist in organizing evidence for legal proceedings. 
@@ -469,7 +469,7 @@ function getExhibitStyles(): string {
     }
     
     .court-ready-badge {
-      background: #e8f5e9;
+      background: #EAF5F3;
       border: 1px solid #4caf50;
       color: #2e7d32;
       padding: 0.75rem;
@@ -635,7 +635,7 @@ function getExhibitStyles(): string {
     .pattern-tag.low { background: #dcedc8; color: #558b2f; }
     
     .evidence-notes {
-      background: #e8f5e9;
+      background: #EAF5F3;
       padding: 0.5rem 0.75rem;
       border-top: 1px solid #c8e6c9;
       font-size: 10pt;

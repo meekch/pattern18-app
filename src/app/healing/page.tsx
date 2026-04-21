@@ -148,7 +148,7 @@ export default function HealingPage() {
             </button>
 
             <button className="tool-btn affirm-btn" onClick={() => setActiveMode('affirm')}>
-              <span className="tool-emoji">💚</span>
+              <span className="tool-emoji"></span>
               <span className="tool-name">Remind Me</span>
               <span className="tool-desc">Words you need to hear</span>
             </button>
@@ -247,7 +247,7 @@ export default function HealingPage() {
           <button className="back-btn light" onClick={(e) => { e.stopPropagation(); setActiveMode('home'); }}>←</button>
           
           <div className="affirm-content">
-            <span className="affirm-heart">💚</span>
+            <span className="affirm-heart"></span>
             <p className="affirm-text">{AFFIRMATIONS[affirmationIndex]}</p>
             <span className="affirm-hint">tap for another</span>
           </div>
@@ -321,7 +321,7 @@ export default function HealingPage() {
       <style jsx>{`
         .container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 40%, #1a3a2f 100%);
+          background: linear-gradient(180deg, #1F2937 0%, #1A5F5A 40%, #1F2937 100%);
           padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
 
@@ -434,7 +434,7 @@ export default function HealingPage() {
 
         /* BREATHE */
         .breathe-screen {
-          background: linear-gradient(180deg, #1e4a3f 0%, #0d1f18 100%);
+          background: linear-gradient(180deg, #1e4a3f 0%, #1A5F5A 100%);
           align-items: center;
           justify-content: center;
         }
@@ -455,7 +455,7 @@ export default function HealingPage() {
           width: 180px;
           height: 180px;
           border-radius: 50%;
-          background: radial-gradient(circle at 30% 30%, #6ee7b7, #059669);
+          background: radial-gradient(circle at 30% 30%, #6ee7b7, #2F9D94);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -507,7 +507,7 @@ export default function HealingPage() {
 
         /* GROUND */
         .ground-screen {
-          background: linear-gradient(180deg, #1a3a2f 0%, #0d1f18 100%);
+          background: linear-gradient(180deg, #1F2937 0%, #1A5F5A 100%);
           align-items: center;
           justify-content: center;
         }
@@ -626,7 +626,7 @@ export default function HealingPage() {
 
         /* LEARN */
         .learn-screen {
-          background: #f5f7f6;
+          background: #FAFAF7;
           overflow-y: auto;
           padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
@@ -638,7 +638,7 @@ export default function HealingPage() {
         .learn-content h2 {
           font-size: 24px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 24px;
         }
         .learn-section {
@@ -647,7 +647,7 @@ export default function HealingPage() {
         .learn-section h3 {
           font-size: 16px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 16px;
         }
         .learn-section p {
@@ -669,7 +669,7 @@ export default function HealingPage() {
           margin: 4px 0 0;
           color: #6b7280;
         }
-        .state.safe { background: #d1fae5; }
+        .state.safe { background: #EAF5F3; }
         .state.fight { background: #fef3c7; }
         .state.freeze { background: #fee2e2; }
         .learn-footer {

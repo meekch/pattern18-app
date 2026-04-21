@@ -233,7 +233,7 @@ export default function CaseFileUploadPage() {
           margin: 0;
           font-size: 18px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
         }
 
         .content {
@@ -252,7 +252,7 @@ export default function CaseFileUploadPage() {
           transition: border-color 0.2s;
         }
         .dropzone:hover {
-          border-color: #1a3a2f;
+          border-color: #1F2937;
         }
         .dropzone-icon {
           font-size: 48px;
@@ -261,7 +261,7 @@ export default function CaseFileUploadPage() {
         .dropzone p {
           margin: 0;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .dropzone span {
           font-size: 14px;
@@ -276,7 +276,7 @@ export default function CaseFileUploadPage() {
           justify-content: space-between;
           align-items: center;
           padding: 10px 14px;
-          background: #f0fdf4;
+          background: #EAF5F3;
           border-radius: 8px;
           margin-bottom: 8px;
           font-size: 14px;
@@ -306,7 +306,7 @@ export default function CaseFileUploadPage() {
         .section label {
           display: block;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
           margin-bottom: 10px;
           font-size: 14px;
         }
@@ -333,9 +333,9 @@ export default function CaseFileUploadPage() {
           font-size: 24px;
         }
         .type-btn.active {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
-          color: #1a3a2f;
+          border-color: #1F2937;
+          background: #EAF5F3;
+          color: #1F2937;
         }
 
         .date-input {
@@ -347,7 +347,7 @@ export default function CaseFileUploadPage() {
         }
         .date-input:focus {
           outline: none;
-          border-color: #1a3a2f;
+          border-color: #1F2937;
         }
 
         .hint {
@@ -363,7 +363,7 @@ export default function CaseFileUploadPage() {
         .upload-btn {
           width: 100%;
           padding: 16px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           border-radius: 12px;
@@ -405,7 +405,7 @@ export default function CaseFileUploadPage() {
           color: #374151;
         }
         .coach-btn:hover {
-          border-color: #1a3a2f;
+          border-color: #1F2937;
         }
       `}</style>
     </div>

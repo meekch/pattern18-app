@@ -28,7 +28,7 @@ const COERCIVE_PATTERNS = [
   'Gatekeeping',
 ];
 
-const SYSTEM_PROMPT = `You are Pattern 18, an AI that helps parents document coercive control and prepare for family court.
+const SYSTEM_PROMPT = `You are Pattern18, an AI that helps parents document coercive control and prepare for family court.
 
 YOUR PERSONALITY:
 - Warm but direct

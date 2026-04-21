@@ -233,7 +233,7 @@ export default function MyCasePage() {
                         className="pattern-bar" 
                         style={{ 
                           width: `${(p.count / topPattern.count) * 100}%`,
-                          background: p.count >= 5 ? '#059669' : '#d1d5db'
+                          background: p.count >= 5 ? '#2F9D94' : '#d1d5db'
                         }} 
                       />
                     </div>
@@ -245,7 +245,7 @@ export default function MyCasePage() {
                     <span>✓ {topPattern.count}+ instances = provable pattern for court</span>
                     <button
                       onClick={() => router.push('/docs')}
-                      style={{ background: '#059669', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}
+                      style={{ background: '#2F9D94', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}
                     >
                       Generate Report →
                     </button>
@@ -294,7 +294,7 @@ export default function MyCasePage() {
           justify-content: space-between;
           align-items: center;
           padding: 16px 20px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
         }
         .header h1 {
@@ -318,7 +318,7 @@ export default function MyCasePage() {
         }
         .days-pill {
           background: #fbbf24;
-          color: #1a3a2f;
+          color: #1F2937;
           padding: 2px 8px;
           border-radius: 10px;
           font-weight: 700;
@@ -359,7 +359,7 @@ export default function MyCasePage() {
         .action-title {
           font-size: 18px;
           font-weight: 700;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .action-subtitle {
           font-size: 14px;
@@ -369,7 +369,7 @@ export default function MyCasePage() {
         .primary-btn {
           width: 100%;
           padding: 14px 20px;
-          background: #1a3a2f;
+          background: #1F2937;
           color: white;
           border: none;
           border-radius: 12px;
@@ -378,7 +378,7 @@ export default function MyCasePage() {
           cursor: pointer;
         }
         .primary-btn:hover {
-          background: #2d5a4a;
+          background: #1A5F5A;
         }
 
         /* Evidence Card */
@@ -399,12 +399,12 @@ export default function MyCasePage() {
           margin: 0;
           font-size: 16px;
           font-weight: 600;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .view-link {
           background: none;
           border: none;
-          color: #059669;
+          color: #2F9D94;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
@@ -425,18 +425,18 @@ export default function MyCasePage() {
           background: #fef2f2;
         }
         .stat.highlight-green {
-          background: #f0fdf4;
+          background: #EAF5F3;
         }
         .stat-value {
           font-size: 24px;
           font-weight: 700;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .stat.highlight-red .stat-value {
           color: #dc2626;
         }
         .stat.highlight-green .stat-value {
-          color: #059669;
+          color: #2F9D94;
         }
         .stat-label {
           font-size: 11px;
@@ -500,7 +500,7 @@ export default function MyCasePage() {
           text-align: right;
           font-size: 14px;
           font-weight: 700;
-          color: #1a3a2f;
+          color: #1F2937;
         }
         .pattern-note {
           margin-top: 12px;
@@ -509,9 +509,9 @@ export default function MyCasePage() {
           font-size: 13px;
         }
         .pattern-note.success {
-          background: #f0fdf4;
-          color: #059669;
-          border: 1px solid #bbf7d0;
+          background: #EAF5F3;
+          color: #2F9D94;
+          border: 1px solid #C7E4E0;
         }
 
         /* Quick Input */
@@ -558,8 +558,8 @@ export default function MyCasePage() {
           cursor: pointer;
         }
         .secondary-btn:hover {
-          border-color: #1a3a2f;
-          background: #f0fdf4;
+          border-color: #1F2937;
+          background: #EAF5F3;
         }
       `}</style>
     </div>

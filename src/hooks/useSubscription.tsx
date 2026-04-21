@@ -172,7 +172,7 @@ export function UpgradePrompt({
         }
         h3 {
           font-size: 24px;
-          color: #1a3a2f;
+          color: #1F2937;
           margin: 0 0 12px;
         }
         p {
@@ -189,7 +189,7 @@ export function UpgradePrompt({
         .upgrade-btn {
           display: block;
           padding: 14px;
-          background: #059669;
+          background: #2F9D94;
           color: white;
           text-decoration: none;
           border-radius: 12px;

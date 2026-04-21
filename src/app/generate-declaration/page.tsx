@@ -245,7 +245,7 @@ export default function GenerateDeclarationPage() {
           top: 20,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#059669',
+          background: '#2F9D94',
           color: 'white',
           padding: '12px 24px',
           borderRadius: 12,
@@ -264,7 +264,7 @@ export default function GenerateDeclarationPage() {
       
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+        background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
         padding: '16px 24px',
         color: 'white',
         display: 'flex',
@@ -302,8 +302,8 @@ export default function GenerateDeclarationPage() {
                     onClick={() => setSelectedType(type.id)}
                     style={{
                       padding: 16,
-                      background: selectedType === type.id ? '#d1fae5' : '#f9fafb',
-                      border: selectedType === type.id ? '2px solid #059669' : '2px solid transparent',
+                      background: selectedType === type.id ? '#EAF5F3' : '#f9fafb',
+                      border: selectedType === type.id ? '2px solid #2F9D94' : '2px solid transparent',
                       borderRadius: 12,
                       cursor: 'pointer',
                       textAlign: 'left'
@@ -332,7 +332,7 @@ export default function GenerateDeclarationPage() {
                 alignItems: 'center',
                 gap: 12,
                 padding: 16,
-                background: useExhibitOnly ? '#d1fae5' : '#f9fafb',
+                background: useExhibitOnly ? '#EAF5F3' : '#f9fafb',
                 borderRadius: 10,
                 cursor: 'pointer',
                 marginBottom: 12
@@ -358,7 +358,7 @@ export default function GenerateDeclarationPage() {
                 fontSize: 13,
                 color: '#92400e'
               }}>
-                💡 Go to <button onClick={() => router.push('/evidence')} style={{ color: '#059669', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Evidence</button> to select which incidents to include
+                💡 Go to <button onClick={() => router.push('/evidence')} style={{ color: '#2F9D94', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>Evidence</button> to select which incidents to include
               </div>
             </div>
 
@@ -512,7 +512,7 @@ export default function GenerateDeclarationPage() {
               style={{
                 width: '100%',
                 padding: 16,
-                background: generating || selectedIncidents.length === 0 ? '#9ca3af' : '#059669',
+                background: generating || selectedIncidents.length === 0 ? '#9ca3af' : '#2F9D94',
                 color: 'white',
                 border: 'none',
                 borderRadius: 12,
@@ -570,8 +570,8 @@ export default function GenerateDeclarationPage() {
                   onClick={handleCopy}
                   style={{
                     padding: '8px 16px',
-                    background: copied ? '#059669' : '#f3f4f6',
-                    border: copied ? '2px solid #059669' : 'none',
+                    background: copied ? '#2F9D94' : '#f3f4f6',
+                    border: copied ? '2px solid #2F9D94' : 'none',
                     borderRadius: 8,
                     cursor: 'pointer',
                     fontWeight: 600,
@@ -625,7 +625,7 @@ export default function GenerateDeclarationPage() {
                 style={{
                   flex: 1,
                   padding: 14,
-                  background: copied ? '#047857' : '#059669',
+                  background: copied ? '#1A5F5A' : '#2F9D94',
                   border: 'none',
                   borderRadius: 10,
                   cursor: 'pointer',
