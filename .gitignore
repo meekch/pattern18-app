@@ -45,3 +45,7 @@ next-env.d.ts
 ~/.claude/
 .claude/settings.local.json
 .env*.local
+
+# Social post batches (images + specs live locally, not in git)
+/social_batch/
+/social_batch_spec.md
