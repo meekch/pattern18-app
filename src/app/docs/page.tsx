@@ -62,15 +62,17 @@ export default function DocsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--warm-white)', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
+      <div style={{ height: 4, background: 'var(--teal)' }} />
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+        background: 'var(--warm-white)',
+        borderBottom: '1px solid var(--teal-border)',
         padding: '20px 24px',
-        color: 'white'
+        color: 'var(--charcoal)'
       }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Documents</h1>
-        <p style={{ margin: '8px 0 0', opacity: 0.8, fontSize: 14 }}>Generate court documents & manage uploads</p>
+        <h1 style={{ margin: 0, fontSize: 26, fontFamily: 'var(--serif)', fontWeight: 700 }}>Documents</h1>
+        <p style={{ margin: '6px 0 0', color: 'var(--charcoal-70)', fontSize: 14 }}>Generate court documents & manage uploads</p>
       </header>
 
       {/* Tabs */}

@@ -229,7 +229,7 @@ export default function AdminMetricsPage() {
           marginBottom: 32 
         }}>
           <div style={{ 
-            background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)', 
+            background: '#2F9D94', 
             borderRadius: 16, 
             padding: 24, 
             color: 'white' 

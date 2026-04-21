@@ -264,7 +264,7 @@ export default function GenerateDeclarationPage() {
       
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
+        background: '#2F9D94',
         padding: '16px 24px',
         color: 'white',
         display: 'flex',

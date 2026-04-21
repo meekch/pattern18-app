@@ -208,9 +208,11 @@ export default function CourtDocsPage() {
     <div style={{ minHeight: "100vh", background: "#f8faf9" }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)",
+        background: "var(--warm-white)",
+        borderTop: "4px solid var(--teal)",
+        borderBottom: "1px solid var(--teal-border)",
         padding: "16px 24px",
-        color: "white",
+        color: "var(--charcoal)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -219,13 +221,13 @@ export default function CourtDocsPage() {
         zIndex: 100
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button 
+          <button
             onClick={() => router.push("/evidence")}
-            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18 }}
+            style={{ background: "none", border: "none", color: "var(--teal)", cursor: "pointer", fontSize: 18, fontWeight: 600 }}
           >
             ←
           </button>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Create Court Document</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontFamily: "var(--serif)", fontWeight: 700 }}>Create Court Document</h1>
         </div>
         <div style={{ fontSize: 14, opacity: 0.8 }}>
           {selectedCount} incidents selected

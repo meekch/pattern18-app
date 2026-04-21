@@ -244,7 +244,7 @@ export default function ResetPasswordPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: updating ? '#ccc' : 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+                background: updating ? '#ccc' : '#2F9D94',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -262,7 +262,7 @@ export default function ResetPasswordPage() {
             style={{
               width: '100%',
               padding: '16px',
-              background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+              background: '#2F9D94',
               color: 'white',
               border: 'none',
               borderRadius: '12px',

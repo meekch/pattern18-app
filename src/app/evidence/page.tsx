@@ -429,9 +429,11 @@ function EvidenceContent() {
     <div style={{ minHeight: "100vh", background: "#f8faf9", paddingBottom: 180 }}>
       {/* Header */}
       <header style={{
-        background: "linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)",
+        background: "var(--warm-white)",
+        borderTop: "4px solid var(--teal)",
+        borderBottom: "1px solid var(--teal-border)",
         padding: "16px 24px",
-        color: "white",
+        color: "var(--charcoal)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -440,7 +442,7 @@ function EvidenceContent() {
         zIndex: 100
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button 
+          <button
             onClick={() => router.push("/my-case")}
             style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 18, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
@@ -1206,16 +1208,16 @@ function EvidenceContent() {
           bottom: 100,
           left: 20,
           right: 20,
-          background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+          background: 'var(--teal)',
           borderRadius: 16,
           padding: '14px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 24px rgba(31, 41, 55, 0.2)',
           zIndex: 1000
         }}>
-          <div style={{ color: 'white', fontSize: 15 }}>
+          <div style={{ color: 'var(--warm-white)', fontSize: 15 }}>
             ✓ <span style={{ fontWeight: 700 }}>{exhibitCount}</span> incidents selected
           </div>
           <button

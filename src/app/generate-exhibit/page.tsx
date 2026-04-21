@@ -145,22 +145,24 @@ export default function GenerateExhibitPage() {
   // No incidents selected - prompt to go select
   if (exhibitIncidents.length === 0 && !useAll) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--warm-white)', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
         <header style={{
-          background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+          background: 'var(--warm-white)',
+          borderTop: '4px solid var(--teal)',
+          borderBottom: '1px solid var(--teal-border)',
           padding: '16px 24px',
-          color: 'white',
+          color: 'var(--charcoal)',
           display: 'flex',
           alignItems: 'center',
           gap: 16
         }}>
-          <button 
+          <button
             onClick={() => router.back()}
-            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 18 }}
+            style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontSize: 18, fontWeight: 600 }}
           >
             ←
           </button>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Generate Court Exhibit</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 700 }}>Generate Court Exhibit</h1>
         </header>
 
         <main style={{ maxWidth: 500, margin: '0 auto', padding: 24 }}>
@@ -222,16 +224,18 @@ export default function GenerateExhibitPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       <header style={{
-        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+        background: 'var(--warm-white)',
+        borderTop: '4px solid var(--teal)',
+        borderBottom: '1px solid var(--teal-border)',
         padding: '16px 24px',
-        color: 'white',
+        color: 'var(--charcoal)',
         display: 'flex',
         alignItems: 'center',
         gap: 16
       }}>
-        <button 
+        <button
           onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 18 }}
+          style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontSize: 18, fontWeight: 600 }}
         >
           ←
         </button>

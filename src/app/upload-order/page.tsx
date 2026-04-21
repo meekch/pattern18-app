@@ -123,21 +123,24 @@ export default function UploadOrderPage() {
     <div style={{ minHeight: '100vh', background: '#f8faf9', paddingBottom: 'max(100px, calc(80px + env(safe-area-inset-bottom)))' }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+        background: 'var(--warm-white)',
+        borderTop: '4px solid var(--teal)',
+        borderBottom: '1px solid var(--teal-border)',
         padding: '16px 24px',
-        color: 'white',
+        color: 'var(--charcoal)',
         display: 'flex',
         alignItems: 'center',
         gap: 16
       }}>
-        <button 
+        <button
           onClick={() => router.push('/docs')}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: 'white', 
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--teal)',
             cursor: 'pointer',
-            fontSize: 18
+            fontSize: 18,
+            fontWeight: 600
           }}
         >
           ←
@@ -192,7 +195,7 @@ export default function UploadOrderPage() {
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     width: '100%',
-                    background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
+                    background: '#2F9D94',
                     color: 'white',
                     border: 'none',
                     borderRadius: 16,
@@ -262,7 +265,7 @@ export default function UploadOrderPage() {
           <>
             {/* Success State */}
             <div style={{
-              background: 'linear-gradient(135deg, #2F9D94 0%, #1A5F5A 100%)',
+              background: '#2F9D94',
               borderRadius: 16,
               padding: 32,
               textAlign: 'center',

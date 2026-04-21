@@ -212,27 +212,29 @@ export default function DocBuilderPage() {
     }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #1F2937 0%, #1A5F5A 100%)',
+        background: 'var(--warm-white)',
+        borderTop: '4px solid var(--teal)',
+        borderBottom: '1px solid var(--teal-border)',
         padding: '16px 20px',
-        color: 'white',
+        color: 'var(--charcoal)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Doc Builder</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 12, opacity: 0.8 }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 700 }}>Doc Builder</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--charcoal-70)' }}>
             Upload docs • Build filings • Export ready-to-file
           </p>
         </div>
         <button
           onClick={() => setShowFilePanel(!showFilePanel)}
           style={{
-            background: 'rgba(255,255,255,0.15)',
-            border: 'none',
+            background: 'var(--teal-tint)',
+            color: 'var(--deep-teal)',
+            border: '1px solid var(--teal-border)',
             padding: '8px 14px',
             borderRadius: 8,
-            color: 'white',
             fontSize: 13,
             cursor: 'pointer',
             display: 'flex',
