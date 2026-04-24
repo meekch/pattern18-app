@@ -444,23 +444,32 @@ export default function CaseFilePage() {
           justify-content: space-between;
           align-items: center;
           padding: 16px 20px;
-          background: #1F2937;
-          color: white;
+          background: #FAFAF7;
+          color: #1F2937;
+          border-top: 4px solid #2F9D94;
+          border-bottom: 1px solid #C7E4E0;
         }
         .header h1 {
           margin: 0;
-          font-size: 20px;
-          font-weight: 600;
+          font-size: 22px;
+          font-family: 'Fraunces', Georgia, serif;
+          font-weight: 700;
+          color: #1F2937;
         }
         .upload-btn {
-          background: white;
-          color: #1F2937;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          padding: 8px 16px;
+          padding: 8px 18px;
           border-radius: 20px;
-          font-weight: 600;
+          font-weight: 700;
           font-size: 14px;
+          min-height: 40px;
           cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .upload-btn:hover {
+          background: #1A5F5A;
         }
 
         .stats {
@@ -515,18 +524,22 @@ export default function CaseFilePage() {
         .view-toggle button {
           flex: 1;
           padding: 10px;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #C7E4E0;
           background: white;
           border-radius: 8px;
           font-size: 14px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
-          color: #6b7280;
+          color: #2F9D94;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .view-toggle button:hover {
+          background: #EAF5F3;
         }
         .view-toggle button.active {
-          background: #1F2937;
-          color: white;
-          border-color: #1F2937;
+          background: #2F9D94;
+          color: #FAFAF7;
+          border-color: #2F9D94;
         }
 
         .content {
@@ -668,13 +681,19 @@ export default function CaseFilePage() {
           margin: 0 0 16px;
         }
         .empty button {
-          background: #1F2937;
-          color: white;
+          background: #2F9D94;
+          color: #FAFAF7;
           border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-weight: 600;
+          padding: 14px 28px;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 15px;
+          min-height: 48px;
           cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .empty button:hover {
+          background: #1A5F5A;
         }
 
         /* Calendar */

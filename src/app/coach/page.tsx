@@ -512,9 +512,11 @@ export default function CoachPage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 20px;
-          background: #1F2937;
-          color: white;
+          padding: 14px 20px;
+          background: #FAFAF7;
+          color: #1F2937;
+          border-top: 4px solid #2F9D94;
+          border-bottom: 1px solid #C7E4E0;
         }
         .header-left {
           display: flex;
@@ -522,33 +524,44 @@ export default function CoachPage() {
           gap: 12px;
         }
         .logo {
-          background: white;
-          color: #1F2937;
+          background: #2F9D94;
+          color: #FAFAF7;
+          font-family: 'Fraunces', Georgia, serif;
           font-weight: 800;
-          padding: 6px 10px;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           border-radius: 8px;
-          font-size: 14px;
+          font-size: 16px;
         }
         .header-text {
           display: flex;
           flex-direction: column;
         }
         .app-name {
+          font-family: 'Fraunces', Georgia, serif;
           font-weight: 700;
-          font-size: 16px;
+          font-size: 17px;
+          color: #1F2937;
         }
         .tagline {
           font-size: 11px;
-          opacity: 0.8;
+          color: rgba(31, 41, 55, 0.7);
         }
         .evidence-badge {
-          background: rgba(255,255,255,0.15);
-          border: none;
+          background: #EAF5F3;
+          border: 1px solid #C7E4E0;
           padding: 8px 14px;
           border-radius: 20px;
-          color: white;
+          color: #1A5F5A;
+          font-weight: 600;
           font-size: 14px;
           cursor: pointer;
+        }
+        .evidence-badge:hover {
+          background: #C7E4E0;
         }
         .content {
           flex: 1;
@@ -733,8 +746,9 @@ export default function CoachPage() {
         .input-area {
           display: flex;
           flex-direction: column;
-          padding: 8px 16px;
-          padding-bottom: calc(70px + env(safe-area-inset-bottom) + 8px);
+          padding: 10px 16px;
+          /* Clearance for fixed BottomNav (~64px content + safe-area) + breathing room */
+          padding-bottom: calc(88px + env(safe-area-inset-bottom));
           background: white;
           border-top: 1px solid #e5e7eb;
           flex-shrink: 0;

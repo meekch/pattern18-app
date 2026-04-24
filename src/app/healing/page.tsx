@@ -321,6 +321,7 @@ export default function HealingPage() {
       <style jsx>{`
         .container {
           min-height: 100vh;
+          /* INTENTIONAL dark gradient — nervous system regulation. Do not "fix" in rebrand sweeps. */
           background: linear-gradient(180deg, #1F2937 0%, #1A5F5A 40%, #1F2937 100%);
           padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
         }
@@ -434,6 +435,7 @@ export default function HealingPage() {
 
         /* BREATHE */
         .breathe-screen {
+          /* INTENTIONAL dark gradient — nervous system regulation. Do not "fix" in rebrand sweeps. */
           background: linear-gradient(180deg, #1e4a3f 0%, #1A5F5A 100%);
           align-items: center;
           justify-content: center;
@@ -507,6 +509,7 @@ export default function HealingPage() {
 
         /* GROUND */
         .ground-screen {
+          /* INTENTIONAL dark gradient — nervous system regulation. Do not "fix" in rebrand sweeps. */
           background: linear-gradient(180deg, #1F2937 0%, #1A5F5A 100%);
           align-items: center;
           justify-content: center;
