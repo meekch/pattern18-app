@@ -180,7 +180,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         <ol className="ask-list">
           <li>Use Pattern18 for your real situation, not just as a test.</li>
           <li>A 15-minute weekly check-in (quick form, 5 questions).</li>
-          <li>Two 30-minute founder calls at day 30 and day 60.</li>
+          <li>Optional: a quick chat with me anytime if you want to talk something through (my calendar is in your welcome email).</li>
           <li>At day 90, share a testimonial if Pattern18 has helped, named, first-name-only, or fully anonymous, your choice. Not required.</li>
         </ol>
       </section>

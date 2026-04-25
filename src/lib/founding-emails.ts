@@ -202,8 +202,9 @@ export function welcomeApproved(args: {
   approvedAt: Date;
   refToken?: string | null;
 }): RenderedEmail {
-  const day30 = new Date(args.approvedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const day30Pretty = day30.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  // approvedAt no longer needed for body copy after the call requirement was
+  // dropped, but kept on the args interface for future scheduled-content use.
+  void args.approvedAt;
   const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
 
   const text = `Hi ${args.firstName},
@@ -217,10 +218,13 @@ YOUR PRIVATE FOUNDING MEMBER SPACE
 You now have access to a private category inside our Pattern18 community. Join here: ${SKOOL_URL}. Once you join, I'll add you to the Founding Members category within 24 hours.
 
 WHAT HAPPENS NEXT
-- Week 1-4: Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.
-- Day 30 (around ${day30Pretty}): We'll hop on a 30-minute call. I'll send a scheduling link closer to the date.
-- Every Sunday: You'll get a 5-question check-in email. Takes 2 minutes.
-- Day 60 and 90 will follow the same rhythm.
+- Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.
+- Every Sunday: a 5-question check-in email. Takes 2 minutes.
+- Day 30 and Day 60: short async check-ins from me — no call required.
+- Day 90: I'll ask if you'd be willing to share a testimonial or refer someone. Optional.
+
+OFFICE HOURS
+If you ever want to talk live, my office hours calendar is here: ${founderCalendlyUrl()}. Optional, never required.
 
 ${refUrl ? `YOUR REFERRAL LINK
 You can invite up to 2 people who'd be a fit. If they apply and get accepted, I'll add 3 extra months to your access automatically.
@@ -253,11 +257,14 @@ Thank you for trusting Pattern18. Let's build something real.
 
 <h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">What happens next</h2>
 <ul style="margin:0 0 14px;padding-left:20px;">
-  <li style="margin-bottom:6px;"><strong>Week 1-4:</strong> Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.</li>
-  <li style="margin-bottom:6px;"><strong>Day 30 (around ${day30Pretty}):</strong> We'll hop on a 30-minute call. I'll send a scheduling link closer to the date.</li>
-  <li style="margin-bottom:6px;"><strong>Every Sunday:</strong> You'll get a 5-question check-in email. Takes 2 minutes.</li>
-  <li style="margin-bottom:6px;"><strong>Day 60 and 90:</strong> Same rhythm.</li>
+  <li style="margin-bottom:6px;">Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.</li>
+  <li style="margin-bottom:6px;"><strong>Every Sunday:</strong> a 5-question check-in email. Takes 2 minutes.</li>
+  <li style="margin-bottom:6px;"><strong>Day 30 and Day 60:</strong> short async check-ins from me, no call required.</li>
+  <li style="margin-bottom:6px;"><strong>Day 90:</strong> I'll ask if you'd be willing to share a testimonial or refer someone. Optional.</li>
 </ul>
+
+<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Office hours</h2>
+<p style="margin:0 0 14px;">If you ever want to talk live, <a href="${founderCalendlyUrl()}" style="color:${DEEP_TEAL};font-weight:600;">my office hours calendar is here</a>. Optional, never required.</p>
 ${refSection}
 <h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">If you get stuck</h2>
 <p style="margin:0 0 14px;">Reply to this email or tag me in the Founding Members space in Skool. I read everything.</p>
@@ -380,82 +387,82 @@ Rae`;
 }
 
 // =============================================================
-// F) Day 30
+// F) Day 30 — async check-in (calls are now optional)
 // =============================================================
-export function day30CallPrompt(args: { firstName: string; refToken?: string | null }): RenderedEmail {
+export function day30CheckIn(args: { firstName: string; checkinUrl: string }): RenderedEmail {
   const calendly = founderCalendlyUrl();
-  const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
 
   const text = `Hi ${args.firstName},
 
-You're 30 days into your Founding Member journey. Time for our first call.
+You're 30 days in. Thank you for being part of this first cohort, your feedback is shaping every release.
 
-It's 30 minutes. We'll talk about: what's working, what's frustrating, what you wish Pattern18 did, and where you are in your actual situation.
+A few quick things, all optional:
 
-${calendly}
+- If you haven't filled out a weekly check-in lately, here's the current one: ${args.checkinUrl}
+- If you ever want to talk live, my office hours calendar is here: ${calendly}
+- Is there anything specific you wish Pattern18 did better? Just hit reply.
 
-${refUrl ? `Quick reminder: your referral link is below. If you know someone navigating high-conflict custody who'd benefit, send them my way. Each accepted referral adds 3 months to your access.
-
-${refUrl}
-
-` : ''}— Rae`;
-
-  const refSection = refUrl
-    ? `
-<p style="margin:24px 0 8px;font-size:13px;color:${CHARCOAL};opacity:0.7;">Quick reminder: your referral link is below. If you know someone navigating high-conflict custody who'd benefit, send them my way. Each accepted referral adds 3 months to your access.</p>
-<p style="margin:0 0 14px;background:${TEAL_TINT};border:1px solid ${TEAL_BORDER};border-radius:8px;padding:10px 12px;font-family:'SF Mono', Menlo, Consolas, monospace;font-size:13px;word-break:break-all;"><a href="${refUrl}" style="color:${DEEP_TEAL};">${refUrl}</a></p>`
-    : '';
+— Rae`;
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">Hi ${esc(args.firstName)},</p>
-<p style="margin:0 0 14px;">You're 30 days into your Founding Member journey. Time for our first call.</p>
-<p style="margin:0 0 14px;">It's 30 minutes. We'll talk about: what's working, what's frustrating, what you wish Pattern18 did, and where you are in your actual situation.</p>${refSection}`;
+<p style="margin:0 0 14px;">You're 30 days in. Thank you for being part of this first cohort, your feedback is shaping every release.</p>
+<p style="margin:0 0 8px;font-weight:600;">A few quick things, all optional:</p>
+<ul style="margin:0 0 14px;padding-left:20px;">
+  <li style="margin-bottom:8px;">If you haven't filled out a weekly check-in lately, <a href="${args.checkinUrl}" style="color:${DEEP_TEAL};font-weight:600;">here's the current one</a>.</li>
+  <li style="margin-bottom:8px;">If you ever want to talk live, <a href="${calendly}" style="color:${DEEP_TEAL};font-weight:600;">my office hours calendar is here</a>.</li>
+  <li style="margin-bottom:8px;">Is there anything specific you wish Pattern18 did better? Just hit reply.</li>
+</ul>`;
 
   return {
-    subject: "Pattern18 Day 30 — let's hop on a call",
+    subject: 'Pattern18 Day 30 — quick check-in',
     text,
     html: wrapEmailHtml({
-      preheader: '30 minutes. Calendly link inside.',
+      preheader: 'Async check-in, all optional.',
       eyebrow: 'Day 30 · Founding Member',
-      headline: "Let's hop on a call.",
+      headline: 'Quick check-in.',
       bodyHtml,
-      ctaLabel: 'Pick a time',
-      ctaUrl: calendly,
       signed: true,
     }),
   };
 }
 
 // =============================================================
-// G) Day 60
+// G) Day 60 — async check-in (calls are now optional)
 // =============================================================
-export function day60CallPrompt(firstName: string): RenderedEmail {
+export function day60CheckIn(args: { firstName: string; checkinUrl: string }): RenderedEmail {
   const calendly = founderCalendlyUrl();
-  const text = `Hi ${firstName},
 
-You're at the midpoint of your Founding Member journey. Time for our second call.
+  const text = `Hi ${args.firstName},
 
-This one is 30 minutes. We'll cover what's changed since Day 30, what's still missing, and what the rest of your 6 months should focus on.
+You're at the midpoint. The product is better than it was 60 days ago because of you.
 
-${calendly}
+A few quick things, all optional:
+
+- This week's check-in (if you haven't done it yet): ${args.checkinUrl}
+- Office hours calendar if you'd like to talk: ${calendly}
+- What's the one thing Pattern18 still doesn't do well? Reply with whatever comes to mind.
 
 — Rae`;
 
   const bodyHtml = `
-<p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
-<p style="margin:0 0 14px;">You're at the midpoint of your Founding Member journey. Time for our second call.</p>
-<p style="margin:0 0 14px;">This one is 30 minutes. We'll cover what's changed since Day 30, what's still missing, and what the rest of your 6 months should focus on.</p>`;
+<p style="margin:0 0 14px;">Hi ${esc(args.firstName)},</p>
+<p style="margin:0 0 14px;">You're at the midpoint. The product is better than it was 60 days ago because of you.</p>
+<p style="margin:0 0 8px;font-weight:600;">A few quick things, all optional:</p>
+<ul style="margin:0 0 14px;padding-left:20px;">
+  <li style="margin-bottom:8px;"><a href="${args.checkinUrl}" style="color:${DEEP_TEAL};font-weight:600;">This week's check-in</a> if you haven't done it yet.</li>
+  <li style="margin-bottom:8px;"><a href="${calendly}" style="color:${DEEP_TEAL};font-weight:600;">Office hours calendar</a> if you'd like to talk.</li>
+  <li style="margin-bottom:8px;">What's the one thing Pattern18 still doesn't do well? Reply with whatever comes to mind.</li>
+</ul>`;
 
   return {
-    subject: 'Pattern18 Day 60 — second call check-in',
+    subject: 'Pattern18 Day 60 — halfway check-in',
     text,
     html: wrapEmailHtml({
-      preheader: 'Midpoint check-in. 30 minutes.',
+      preheader: 'Halfway. All optional, no call required.',
       eyebrow: 'Day 60 · Founding Member',
-      headline: 'Halfway. Second call.',
+      headline: 'Halfway check-in.',
       bodyHtml,
-      ctaLabel: 'Pick a time',
-      ctaUrl: calendly,
       signed: true,
     }),
   };

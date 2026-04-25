@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email-send';
+import { signWeeklyCheckin } from '@/lib/founding-tokens';
+import { appUrl } from '@/lib/feature-flags';
 import {
-  day30CallPrompt,
-  day60CallPrompt,
+  day30CheckIn,
+  day60CheckIn,
   day90TestimonialAsk,
 } from '@/lib/founding-emails';
 
@@ -15,10 +17,15 @@ export const runtime = 'nodejs';
 // or GET) also works.
 //
 // Sends:
-//   - Day 28 since approved_at: day-30 call prompt + sets day_30_call_at
-//   - Day 58 since approved_at: day-60 call prompt + sets day_60_call_at
+//   - Day 28 since approved_at: async day-30 check-in + sets day_30_call_at
+//   - Day 58 since approved_at: async day-60 check-in + sets day_60_call_at
 //   - Day 88 since approved_at: day-90 testimonial ask + sets
 //     day_90_testimonial_status = 'pending'
+//
+// Founder calls are now optional, surfaced via FOUNDER_CALENDLY_URL in
+// each check-in body. The day_30_call_at / day_60_call_at columns are
+// kept as "we sent the day-N async check-in" idempotency flags; the
+// "_call_at" naming is historical.
 //
 // Each milestone is gated by its corresponding column being NULL so we
 // only send once per applicant per milestone, even if cron runs twice
@@ -54,9 +61,12 @@ async function runCron(req: NextRequest) {
   for (const app of apps ?? []) {
     if (!app.approved_at) continue;
     const days = Math.floor((now - new Date(app.approved_at).getTime()) / dayMs);
+    const week = Math.max(1, Math.floor(days / 7) + 1);
 
     if (days >= 28 && !app.day_30_call_at) {
-      const tpl = day30CallPrompt({ firstName: app.first_name, refToken: app.ref_token });
+      const token = signWeeklyCheckin(app.id, week);
+      const checkinUrl = `${appUrl()}/founding/checkin/${token}`;
+      const tpl = day30CheckIn({ firstName: app.first_name, checkinUrl });
       const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
@@ -68,7 +78,9 @@ async function runCron(req: NextRequest) {
     }
 
     if (days >= 58 && !app.day_60_call_at) {
-      const tpl = day60CallPrompt(app.first_name);
+      const token = signWeeklyCheckin(app.id, week);
+      const checkinUrl = `${appUrl()}/founding/checkin/${token}`;
+      const tpl = day60CheckIn({ firstName: app.first_name, checkinUrl });
       const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
