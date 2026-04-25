@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (days >= 28 && !app.day_30_call_at) {
       const tpl = day30CallPrompt(app.first_name);
-      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text });
+      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
           .from('founding_member_applications')
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     if (days >= 58 && !app.day_60_call_at) {
       const tpl = day60CallPrompt(app.first_name);
-      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text });
+      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
           .from('founding_member_applications')
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     if (days >= 88 && !app.day_90_testimonial_status) {
       const tpl = day90TestimonialAsk(app.first_name);
-      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text });
+      const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
           .from('founding_member_applications')

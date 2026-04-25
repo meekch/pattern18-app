@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const token = signWeeklyCheckin(app.id, week);
     const checkinUrl = `${appUrl()}/founding/checkin/${token}`;
     const tpl = weeklyCheckin({ firstName: app.first_name, weekNumber: week, checkinUrl });
-    const result = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text });
+    const result = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
     if (result.ok) sent.push(app.id);
     else skipped.push({ id: app.id, reason: result.error ?? 'send failed' });
   }

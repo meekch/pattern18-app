@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
       to: email,
       subject: confirmation.subject,
       text: confirmation.text,
+      html: confirmation.html,
     });
 
     // Notification to admin
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
       to: 'hello@pattern18.com',
       subject: notification.subject,
       text: notification.text,
+      html: notification.html,
     });
 
     return NextResponse.json({ success: true, id: inserted?.id });

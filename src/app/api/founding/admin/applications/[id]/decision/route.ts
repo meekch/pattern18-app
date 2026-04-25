@@ -83,7 +83,7 @@ export async function POST(
   // Decision email + referral bonus side-effects
   if (status === 'approved') {
     const welcome = welcomeApproved({ firstName: app.first_name, approvedAt: now });
-    await sendEmail({ to: app.email, subject: welcome.subject, text: welcome.text });
+    await sendEmail({ to: app.email, subject: welcome.subject, text: welcome.text, html: welcome.html });
 
     // Referral bonus: extend referrer's access_expires_at by 90 days, +1 to referrals_sent
     if (app.referrer_application_id) {
@@ -102,15 +102,15 @@ export async function POST(
           })
           .eq('id', ref.id);
         const bonus = referralApprovedBonus(ref.first_name);
-        await sendEmail({ to: ref.email, subject: bonus.subject, text: bonus.text });
+        await sendEmail({ to: ref.email, subject: bonus.subject, text: bonus.text, html: bonus.html });
       }
     }
   } else if (status === 'deferred') {
     const e = deferredEmail(app.first_name);
-    await sendEmail({ to: app.email, subject: e.subject, text: e.text });
+    await sendEmail({ to: app.email, subject: e.subject, text: e.text, html: e.html });
   } else if (status === 'declined') {
     const e = declinedEmail(app.first_name);
-    await sendEmail({ to: app.email, subject: e.subject, text: e.text });
+    await sendEmail({ to: app.email, subject: e.subject, text: e.text, html: e.html });
   }
 
   return NextResponse.json({ success: true });
