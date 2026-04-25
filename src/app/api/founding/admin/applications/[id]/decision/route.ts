@@ -54,7 +54,7 @@ export async function POST(
 
   const { data: app, error: fetchErr } = await supabase
     .from('founding_member_applications')
-    .select('id, first_name, email, status, referrer_application_id')
+    .select('id, first_name, email, status, referrer_application_id, ref_token')
     .eq('id', id)
     .single();
   if (fetchErr || !app) return NextResponse.json({ error: 'Application not found' }, { status: 404 });
@@ -82,7 +82,7 @@ export async function POST(
 
   // Decision email + referral bonus side-effects
   if (status === 'approved') {
-    const welcome = welcomeApproved({ firstName: app.first_name, approvedAt: now });
+    const welcome = welcomeApproved({ firstName: app.first_name, approvedAt: now, refToken: app.ref_token });
     await sendEmail({ to: app.email, subject: welcome.subject, text: welcome.text, html: welcome.html });
 
     // Referral bonus: extend referrer's access_expires_at by 90 days, +1 to referrals_sent

@@ -197,9 +197,14 @@ Review at ${appUrl()}/admin/founding`;
 // =============================================================
 // B) Welcome (approved)
 // =============================================================
-export function welcomeApproved(args: { firstName: string; approvedAt: Date }): RenderedEmail {
+export function welcomeApproved(args: {
+  firstName: string;
+  approvedAt: Date;
+  refToken?: string | null;
+}): RenderedEmail {
   const day30 = new Date(args.approvedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
   const day30Pretty = day30.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
 
   const text = `Hi ${args.firstName},
 
@@ -217,12 +222,24 @@ WHAT HAPPENS NEXT
 - Every Sunday: You'll get a 5-question check-in email. Takes 2 minutes.
 - Day 60 and 90 will follow the same rhythm.
 
-IF YOU GET STUCK
+${refUrl ? `YOUR REFERRAL LINK
+You can invite up to 2 people who'd be a fit. If they apply and get accepted, I'll add 3 extra months to your access automatically.
+
+Your unique link: ${refUrl}
+
+` : ''}IF YOU GET STUCK
 Reply to this email or tag me in the Founding Members space in Skool. I read everything.
 
 Thank you for trusting Pattern18. Let's build something real.
 
 — Rae`;
+
+  const refSection = refUrl
+    ? `
+<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your referral link</h2>
+<p style="margin:0 0 8px;">You can invite up to 2 people who'd be a fit. If they apply and get accepted, I'll add 3 extra months to your access automatically.</p>
+<p style="margin:0 0 14px;background:${TEAL_TINT};border:1px solid ${TEAL_BORDER};border-radius:8px;padding:10px 12px;font-family:'SF Mono', Menlo, Consolas, monospace;font-size:13px;word-break:break-all;"><a href="${refUrl}" style="color:${DEEP_TEAL};">${refUrl}</a></p>`
+    : '';
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">Hi ${esc(args.firstName)},</p>
@@ -241,7 +258,7 @@ Thank you for trusting Pattern18. Let's build something real.
   <li style="margin-bottom:6px;"><strong>Every Sunday:</strong> You'll get a 5-question check-in email. Takes 2 minutes.</li>
   <li style="margin-bottom:6px;"><strong>Day 60 and 90:</strong> Same rhythm.</li>
 </ul>
-
+${refSection}
 <h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">If you get stuck</h2>
 <p style="margin:0 0 14px;">Reply to this email or tag me in the Founding Members space in Skool. I read everything.</p>
 
@@ -365,9 +382,11 @@ Rae`;
 // =============================================================
 // F) Day 30
 // =============================================================
-export function day30CallPrompt(firstName: string): RenderedEmail {
+export function day30CallPrompt(args: { firstName: string; refToken?: string | null }): RenderedEmail {
   const calendly = founderCalendlyUrl();
-  const text = `Hi ${firstName},
+  const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
+
+  const text = `Hi ${args.firstName},
 
 You're 30 days into your Founding Member journey. Time for our first call.
 
@@ -375,12 +394,22 @@ It's 30 minutes. We'll talk about: what's working, what's frustrating, what you 
 
 ${calendly}
 
-— Rae`;
+${refUrl ? `Quick reminder: your referral link is below. If you know someone navigating high-conflict custody who'd benefit, send them my way. Each accepted referral adds 3 months to your access.
+
+${refUrl}
+
+` : ''}— Rae`;
+
+  const refSection = refUrl
+    ? `
+<p style="margin:24px 0 8px;font-size:13px;color:${CHARCOAL};opacity:0.7;">Quick reminder: your referral link is below. If you know someone navigating high-conflict custody who'd benefit, send them my way. Each accepted referral adds 3 months to your access.</p>
+<p style="margin:0 0 14px;background:${TEAL_TINT};border:1px solid ${TEAL_BORDER};border-radius:8px;padding:10px 12px;font-family:'SF Mono', Menlo, Consolas, monospace;font-size:13px;word-break:break-all;"><a href="${refUrl}" style="color:${DEEP_TEAL};">${refUrl}</a></p>`
+    : '';
 
   const bodyHtml = `
-<p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
+<p style="margin:0 0 14px;">Hi ${esc(args.firstName)},</p>
 <p style="margin:0 0 14px;">You're 30 days into your Founding Member journey. Time for our first call.</p>
-<p style="margin:0 0 14px;">It's 30 minutes. We'll talk about: what's working, what's frustrating, what you wish Pattern18 did, and where you are in your actual situation.</p>`;
+<p style="margin:0 0 14px;">It's 30 minutes. We'll talk about: what's working, what's frustrating, what you wish Pattern18 did, and where you are in your actual situation.</p>${refSection}`;
 
   return {
     subject: "Pattern18 Day 30 — let's hop on a call",
@@ -435,7 +464,9 @@ ${calendly}
 // =============================================================
 // H) Day 90 testimonial ask
 // =============================================================
-export function day90TestimonialAsk(firstName: string): RenderedEmail {
+export function day90TestimonialAsk(args: { firstName: string; refToken?: string | null }): RenderedEmail {
+  const firstName = args.firstName;
+  const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
   const text = `Hi ${firstName},
 
 You've been a Founding Member for 90 days. Your access continues for another 3 months, and nothing about that changes no matter how you answer this email.
@@ -452,9 +483,15 @@ Three asks, all optional:
 
 3. A referral. If you know one or two people who might benefit, would you send them my way? They'd get Founding Member pricing. You'd get another 3 months of access added to yours.
 
-Zero pressure on any of these. Your access continues regardless.
+${refUrl ? `Your unique referral link: ${refUrl}
+
+` : ''}Zero pressure on any of these. Your access continues regardless.
 
 — Rae`;
+
+  const refLine = refUrl
+    ? `\n  <p style="margin:8px 0 0;">Your unique link: <a href="${refUrl}" style="color:${DEEP_TEAL};word-break:break-all;">${refUrl}</a></p>`
+    : '';
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
@@ -476,7 +513,7 @@ Zero pressure on any of these. Your access continues regardless.
 </div>
 <div style="background:${TEAL_TINT};border-radius:10px;padding:16px;margin-bottom:14px;">
   <p style="margin:0 0 6px;font-weight:700;color:${DEEP_TEAL};">3. A referral.</p>
-  <p style="margin:0;">If you know one or two people who might benefit, would you send them my way? They'd get Founding Member pricing. You'd get another 3 months of access added to yours.</p>
+  <p style="margin:0;">If you know one or two people who might benefit, would you send them my way? They'd get Founding Member pricing. You'd get another 3 months of access added to yours.</p>${refLine}
 </div>
 <p style="margin:0 0 14px;">Zero pressure on any of these. Your access continues regardless.</p>`;
 

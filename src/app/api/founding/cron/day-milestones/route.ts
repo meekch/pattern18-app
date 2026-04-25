@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const { data: apps, error } = await supabase
     .from('founding_member_applications')
-    .select('id, first_name, email, approved_at, day_30_call_at, day_60_call_at, day_90_testimonial_status')
+    .select('id, first_name, email, approved_at, ref_token, day_30_call_at, day_60_call_at, day_90_testimonial_status')
     .in('status', ['onboarded', 'active'])
     .not('approved_at', 'is', null);
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const days = Math.floor((now - new Date(app.approved_at).getTime()) / dayMs);
 
     if (days >= 28 && !app.day_30_call_at) {
-      const tpl = day30CallPrompt(app.first_name);
+      const tpl = day30CallPrompt({ firstName: app.first_name, refToken: app.ref_token });
       const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (days >= 88 && !app.day_90_testimonial_status) {
-      const tpl = day90TestimonialAsk(app.first_name);
+      const tpl = day90TestimonialAsk({ firstName: app.first_name, refToken: app.ref_token });
       const r = await sendEmail({ to: app.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
       if (r.ok) {
         await supabase
