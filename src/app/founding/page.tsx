@@ -23,8 +23,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
   const [email, setEmail] = useState('');
   const [journey, setJourney] = useState('');
   const [challenge, setChallenge] = useState('');
-  const [triedBefore, setTriedBefore] = useState('');
-  const [techComfort, setTechComfort] = useState<number | null>(null);
+  const [workingWithAttorney, setWorkingWithAttorney] = useState('');
   const [canCommit, setCanCommit] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +46,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
     e.preventDefault();
     setError(null);
 
-    if (!firstName.trim() || !email.trim() || !journey || !challenge.trim() || techComfort === null || !canCommit) {
+    if (!firstName.trim() || !email.trim() || !journey || !challenge.trim() || !canCommit) {
       setError('Please fill out the required fields.');
       return;
     }
@@ -62,8 +61,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           email: email.trim(),
           journey_stage: journey,
           biggest_challenge: challenge.trim(),
-          what_tried_before: triedBefore.trim() || null,
-          tech_comfort: techComfort,
+          working_with_attorney: workingWithAttorney || null,
           can_commit: canCommit,
           additional_notes: notes.trim() || null,
           ref_token: refToken,
@@ -153,7 +151,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           <p className="emphasis">
             This is how great software gets built. Not in boardrooms. Not from market research. From the
             people living the problem, telling the truth about what helps and what doesn&apos;t. Every survey
-            response, every bug you flag, every &quot;I wish it did this&quot;, it shapes what reaches the next
+            response, every bug you flag, every &quot;I wish it did this&quot;: it shapes what reaches the next
             survivor faster.
           </p>
           <p className="emphasis">
@@ -277,37 +275,33 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           </label>
 
           <label className="field">
-            <span className="field-label">What have you tried before? <em>(optional)</em></span>
-            <textarea
-              value={triedBefore}
-              onChange={(e) => setTriedBefore(e.target.value)}
-              rows={3}
-              maxLength={1500}
-              placeholder="Apps, journals, spreadsheets, lawyer guidance, etc. and what worked / didn't."
-            />
+            <span className="field-label">Are you currently working with an attorney? <em>(optional)</em></span>
+            <select
+              value={workingWithAttorney}
+              onChange={(e) => setWorkingWithAttorney(e.target.value)}
+            >
+              <option value="">Prefer not to answer</option>
+              <option value="yes_currently">Yes, currently</option>
+              <option value="past_not_current">I have in the past, but not currently</option>
+              <option value="no">No, not working with one</option>
+              <option value="prefer_not_to_say">I don&apos;t want to share</option>
+            </select>
           </label>
 
-          <fieldset className="field">
-            <legend className="field-label">How comfortable are you with using software? <em>*</em></legend>
-            <div className="scale">
-              {[1,2,3,4,5].map(n => (
-                <label key={n} className={`scale-pill ${techComfort === n ? 'on' : ''}`}>
-                  <input
-                    type="radio"
-                    name="tech_comfort"
-                    value={n}
-                    checked={techComfort === n}
-                    onChange={() => setTechComfort(n)}
-                  />
-                  {n}
-                </label>
-              ))}
+          {workingWithAttorney === 'yes_currently' && (
+            <div className="attorney-followup">
+              <p>
+                After 30 days, if Pattern18 is helping you, I&apos;ll send you a referral code your
+                attorney can use to get early access to Pattern18 for Firms, our portal designed
+                specifically for family law attorneys handling high-conflict cases. They get early
+                access. You get an additional 3 months of Pattern18 added to your account. No
+                pressure, no obligation, opt-in only.
+              </p>
             </div>
-            <p className="scale-hint"><strong>1</strong> = I struggle with most apps · <strong>5</strong> = I figure things out quickly</p>
-          </fieldset>
+          )}
 
           <fieldset className="field">
-            <legend className="field-label">Can you commit to weekly 15-min check-ins and two 30-minute calls over 6 months? <em>*</em></legend>
+            <legend className="field-label">Can you commit to weekly 15-min check-ins over 6 months? <em>*</em></legend>
             <div className="commit-row">
               {[
                 { v: 'yes',     l: 'Yes' },
@@ -632,6 +626,20 @@ function PageStyles() {
         font-size: 12px;
         color: var(--charcoal-70);
         margin-top: 8px;
+      }
+
+      .attorney-followup {
+        background: var(--teal-tint);
+        border: 1px solid var(--teal-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin: -8px 0 18px;
+      }
+      .attorney-followup p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--charcoal);
       }
 
       .btn-block { width: 100%; margin-top: 6px; }

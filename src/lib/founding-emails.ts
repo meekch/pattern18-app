@@ -148,20 +148,31 @@ Founder, Pattern18`;
 // =============================================================
 // Internal admin notification
 // =============================================================
+const ATTORNEY_LABELS: Record<string, string> = {
+  yes_currently: 'Yes, currently',
+  past_not_current: 'In the past, not currently',
+  no: 'No',
+  prefer_not_to_say: 'Prefers not to share',
+};
+
 export function applicationNotification(args: {
   firstName: string;
   email: string;
   journeyStage: string;
-  techComfort: number;
+  attorneyStatus: string | null;
   canCommit: string;
   biggestChallenge: string;
 }): RenderedEmail {
+  const attorneyLine = args.attorneyStatus
+    ? ATTORNEY_LABELS[args.attorneyStatus] ?? args.attorneyStatus
+    : 'Not provided';
+
   const text = `New Founding Member application received.
 
 Name: ${args.firstName}
 Email: ${args.email}
 Journey: ${args.journeyStage}
-Tech comfort: ${args.techComfort}/5
+Attorney: ${attorneyLine}
 Commitment: ${args.canCommit}
 
 Biggest challenge:
@@ -175,7 +186,7 @@ Review at ${appUrl()}/admin/founding`;
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Name</td><td style="padding:4px 0;"><strong>${esc(args.firstName)}</strong></td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Email</td><td style="padding:4px 0;">${esc(args.email)}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Journey</td><td style="padding:4px 0;">${esc(args.journeyStage)}</td></tr>
-  <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Tech comfort</td><td style="padding:4px 0;">${args.techComfort}/5</td></tr>
+  <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Attorney</td><td style="padding:4px 0;">${esc(attorneyLine)}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Can commit</td><td style="padding:4px 0;">${esc(args.canCommit)}</td></tr>
 </table>
 <p style="margin:0 0 6px;font-weight:600;">Biggest challenge:</p>

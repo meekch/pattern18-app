@@ -19,6 +19,8 @@ const VALID_JOURNEY_STAGES = [
 
 const VALID_COMMIT = ['yes', 'no', 'unsure'];
 
+const VALID_ATTORNEY = ['yes_currently', 'past_not_current', 'no', 'prefer_not_to_say'];
+
 export async function POST(req: NextRequest) {
   try {
     const rl = checkIpRateLimit(req, 'founding-apply', 5);
@@ -39,8 +41,7 @@ export async function POST(req: NextRequest) {
       email,
       journey_stage,
       biggest_challenge,
-      what_tried_before,
-      tech_comfort,
+      working_with_attorney,
       can_commit,
       additional_notes,
       ref_token,
@@ -63,11 +64,11 @@ export async function POST(req: NextRequest) {
     if (!biggest_challenge || typeof biggest_challenge !== 'string' || biggest_challenge.trim().length === 0) {
       return NextResponse.json({ error: 'Biggest challenge is required' }, { status: 400 });
     }
-    if (typeof tech_comfort !== 'number' || tech_comfort < 1 || tech_comfort > 5) {
-      return NextResponse.json({ error: 'Tech comfort must be 1-5' }, { status: 400 });
-    }
     if (!can_commit || !VALID_COMMIT.includes(can_commit)) {
       return NextResponse.json({ error: 'Invalid commitment value' }, { status: 400 });
+    }
+    if (working_with_attorney != null && !VALID_ATTORNEY.includes(working_with_attorney)) {
+      return NextResponse.json({ error: 'Invalid attorney status' }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -94,8 +95,7 @@ export async function POST(req: NextRequest) {
       email: email.toLowerCase().trim(),
       journey_stage,
       biggest_challenge: biggest_challenge.trim(),
-      what_tried_before: typeof what_tried_before === 'string' ? what_tried_before.trim() : null,
-      tech_comfort,
+      working_with_attorney: working_with_attorney || null,
       can_commit,
       additional_notes: typeof additional_notes === 'string' ? additional_notes.trim() : null,
       ref_token: newRefToken,
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       firstName: first_name.trim(),
       email: email.toLowerCase().trim(),
       journeyStage: journey_stage,
-      techComfort: tech_comfort,
+      attorneyStatus: working_with_attorney || null,
       canCommit: can_commit,
       biggestChallenge: biggest_challenge.trim(),
     });

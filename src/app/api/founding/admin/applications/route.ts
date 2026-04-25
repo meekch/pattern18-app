@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('founding_member_applications')
-    .select('id, first_name, email, journey_stage, biggest_challenge, what_tried_before, tech_comfort, can_commit, additional_notes, status, admin_notes, ref_token, referrer_application_id, referrals_sent, access_expires_at, created_at, reviewed_at, approved_at, onboarded_at, day_30_call_at, day_60_call_at, day_90_testimonial_status')
+    .select('id, first_name, email, journey_stage, biggest_challenge, what_tried_before, tech_comfort, working_with_attorney, can_commit, additional_notes, status, admin_notes, ref_token, referrer_application_id, referrals_sent, access_expires_at, created_at, reviewed_at, approved_at, onboarded_at, day_30_call_at, day_60_call_at, day_90_testimonial_status')
     .order('created_at', { ascending: false });
 
   if (statusFilter) query = query.eq('status', statusFilter);

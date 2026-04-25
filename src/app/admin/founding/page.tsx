@@ -12,7 +12,8 @@ interface Application {
   journey_stage: string;
   biggest_challenge: string;
   what_tried_before: string | null;
-  tech_comfort: number;
+  tech_comfort: number | null;
+  working_with_attorney: string | null;
   can_commit: string;
   additional_notes: string | null;
   status: string;
@@ -72,6 +73,13 @@ const JOURNEY_LABELS: Record<string, string> = {
   post_judgment_active: 'Post-judgment active',
   order_in_place: 'Order in place',
   high_conflict_no_court: 'High conflict, no court',
+};
+
+const ATTORNEY_LABELS: Record<string, string> = {
+  yes_currently: 'Yes, currently',
+  past_not_current: 'In past',
+  no: 'No',
+  prefer_not_to_say: 'Prefers not to share',
 };
 
 export default function AdminFoundingPage() {
@@ -239,7 +247,7 @@ export default function AdminFoundingPage() {
                       <th style={th}>Name</th>
                       <th style={th}>Email</th>
                       <th style={th}>Journey</th>
-                      <th style={th}>Tech</th>
+                      <th style={th}>Attorney</th>
                       <th style={th}>Created</th>
                       <th style={th}>Status</th>
                       <th style={th}>Actions</th>
@@ -251,7 +259,7 @@ export default function AdminFoundingPage() {
                         <td style={td}><strong>{app.first_name}</strong>{app.referrer_application_id ? <span title="Referred" style={{ color: '#2F9D94', marginLeft: 6 }}>↳</span> : null}</td>
                         <td style={td}>{app.email}</td>
                         <td style={td}>{JOURNEY_LABELS[app.journey_stage] ?? app.journey_stage}</td>
-                        <td style={td}>{app.tech_comfort}</td>
+                        <td style={td}>{app.working_with_attorney ? ATTORNEY_LABELS[app.working_with_attorney] ?? app.working_with_attorney : '—'}</td>
                         <td style={td}>{new Date(app.created_at).toLocaleDateString()}</td>
                         <td style={td}>
                           <span style={{ background: STATUS_COLORS[app.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{app.status}</span>
@@ -337,7 +345,7 @@ export default function AdminFoundingPage() {
             </div>
             <div style={fieldRow}><span style={fieldLabel}>Email:</span> {selected.email}</div>
             <div style={fieldRow}><span style={fieldLabel}>Journey:</span> {JOURNEY_LABELS[selected.journey_stage] ?? selected.journey_stage}</div>
-            <div style={fieldRow}><span style={fieldLabel}>Tech comfort:</span> {selected.tech_comfort} / 5</div>
+            <div style={fieldRow}><span style={fieldLabel}>Attorney:</span> {selected.working_with_attorney ? ATTORNEY_LABELS[selected.working_with_attorney] ?? selected.working_with_attorney : 'Not provided'}</div>
             <div style={fieldRow}><span style={fieldLabel}>Can commit:</span> {selected.can_commit}</div>
             <div style={fieldRow}><span style={fieldLabel}>Status:</span> <span style={{ background: STATUS_COLORS[selected.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{selected.status}</span></div>
             <div style={fieldRow}><span style={fieldLabel}>Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
