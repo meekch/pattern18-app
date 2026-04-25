@@ -1,7 +1,9 @@
 // Feature flag helpers. Defaults are SAFE: program is OFF until explicitly enabled.
 
 export function isFoundingMemberProgramLive(): boolean {
-  return process.env.FOUNDING_MEMBER_PROGRAM_LIVE === 'true';
+  // NEXT_PUBLIC_ so the same flag controls both the client landing page and
+  // the server API gate. Single source of truth, set once.
+  return process.env.NEXT_PUBLIC_FOUNDING_MEMBER_PROGRAM_LIVE === 'true';
 }
 
 export function isDevMode(): boolean {
