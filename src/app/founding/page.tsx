@@ -130,6 +130,41 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         <a href="#apply" className="btn-primary">Apply to become a Founding Member</a>
       </section>
 
+      {/* IF NO ONE AROUND YOU GETS IT */}
+      <section className="section listen-section">
+        <h2 className="listen-h2">If no one around you gets it</h2>
+        <p>You&apos;ve heard it all.</p>
+
+        <div className="listen-quotes">
+          <p>&ldquo;Just don&apos;t respond.&rdquo;</p>
+          <p>&ldquo;Just stop letting it bother you.&rdquo;</p>
+          <p>&ldquo;Just co-parent better.&rdquo;</p>
+          <p>&ldquo;Why don&apos;t you just move on?&rdquo;</p>
+        </div>
+
+        <p>The people saying these things love you. They mean well. They&apos;ve never been on the receiving end of someone who knows exactly which buttons to push, who weaponizes every text, every holiday, every drop-off. They don&apos;t know what it&apos;s like to have your hands shake before you open a message from your co-parent. They don&apos;t know that &ldquo;just&rdquo; is the cruelest word in the English language when you&apos;re living this.</p>
+
+        <p>Pattern18 was built by someone who did live this. Through years of court-ordered chaos, until the right tools made a way out.</p>
+
+        <p>Pattern18 is here for you, 24/7. It does not sleep. It does not bill you by the hour. It does not tell you to &ldquo;just take a deep breath.&rdquo;</p>
+
+        <div className="listen-when">
+          <p>When the message comes at 11pm, Pattern18 is awake.</p>
+          <p>When you&apos;re sitting in your car after a drop-off trying to breathe, Pattern18 is there.</p>
+          <p>When the panic hits before a hearing, Pattern18 is there.</p>
+        </div>
+
+        <div className="listen-affirmations">
+          <p>It is okay.</p>
+          <p>You are not crazy.</p>
+          <p>You can heal.</p>
+          <p>This will not define you.</p>
+          <p>It is possible.</p>
+        </div>
+
+        <p className="listen-close">You&apos;re not alone in this anymore.</p>
+      </section>
+
       {/* WHY */}
       <section className="section">
         <h2>Why Founding Members?</h2>
@@ -167,6 +202,29 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
       </section>
 
+      {/* WHAT PATTERN18 DOES */}
+      <section className="section">
+        <h2>What Pattern18 actually does</h2>
+        <p className="lead-in">When their text makes your stomach drop:</p>
+
+        <div className="action-list">
+          <p><strong>Paste it in.</strong> Pattern18 names what&apos;s happening: DARVO, gaslighting, financial coercion, parental alienation tactics. You learn what&apos;s behind the manipulation. You stop wondering if you&apos;re crazy.</p>
+          <p><strong>Get a response.</strong> Pattern18 drafts a calm, court-safe response that won&apos;t escalate or be used against you. Send it as-is or tweak it. Either way, you don&apos;t have to write it from scratch when your nervous system is in fight-or-flight.</p>
+          <p><strong>Save the incident.</strong> One click. Pattern18 auto-tags it with the manipulation patterns it found and adds it to your evidence timeline. No more screenshots in random folders. No more spreadsheets you&apos;ll never finish.</p>
+          <p><strong>Upload your court order.</strong> Pattern18 reads it in plain English and tells you what&apos;s required of you, what your ex is required to do, and key dates. Ask any question, &quot;what does this paragraph mean?&quot;, and get a real answer. No more $500/hour calls just to understand your own case.</p>
+          <p><strong>Hearing in three weeks?</strong> Pattern18 builds your declaration, exhibit list, and court-ready summary from your documented patterns. What used to take a paralegal hours costs you minutes.</p>
+          <p><strong>24/7 support.</strong> Pattern18 doesn&apos;t sleep. When something hits at 11pm on a Sunday, you have somewhere to turn that won&apos;t bill you and won&apos;t tell you to &quot;just take a deep breath.&quot;</p>
+        </div>
+
+        <div className="save-card">
+          <h3>What it can save you</h3>
+          <p><strong>Lawyer fees.</strong> Most high-conflict cases bleed clients dry through hours spent organizing evidence, explaining the same situation repeatedly, and asking for clarification on basic court documents. Pattern18 does that work first. Your lawyer focuses on strategy, not chaos.</p>
+          <p><strong>Time.</strong> No more 3-hour evenings sorting through years of texts. Pattern18 surfaces patterns automatically.</p>
+          <p><strong>Your nervous system.</strong> When you respond from a regulated place instead of fight-or-flight, you make better decisions, you de-escalate faster, and your kids see a calmer parent.</p>
+          <p><strong>Your case.</strong> Documented patterns hold weight in court. Pattern18 ensures yours are organized, tagged, and ready when you need them.</p>
+        </div>
+      </section>
+
       {/* WHAT YOU GET */}
       <section className="section tinted">
         <h2 className="center">What Founding Members get</h2>
@@ -185,7 +243,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           </div>
           <div className="card">
             <h3>Your input shapes the product</h3>
-            <p>Weekly check-ins, two 30-minute calls, and direct feedback loops. What you say changes what gets built.</p>
+            <p>Weekly check-ins, async feedback any time, and direct feedback loops. What you say changes what gets built.</p>
           </div>
         </div>
       </section>
@@ -208,7 +266,6 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
             <h3>For you if</h3>
             <ul>
               <li>Currently navigating high-conflict custody.</li>
-              <li>Comfortable with software.</li>
               <li>Ready to use Pattern18 for real, not hypothetically.</li>
               <li>Willing to give honest feedback, both what works and what doesn&apos;t.</li>
             </ul>
@@ -220,6 +277,22 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
               <li>You want only to observe, not actively use.</li>
             </ul>
           </div>
+        </div>
+      </section>
+
+      {/* ARE YOU READY? */}
+      <section className="section ready-section">
+        <h2 className="ready-h2">Are you ready?</h2>
+        <div className="ready-lines">
+          <p>Ready to take your life back?</p>
+          <p>Ready to take your power back?</p>
+          <p>Ready to remember who you were before the chaos, and become the version of yourself you&apos;re meant to be from here?</p>
+          <p>Ready to heal so you can be the parent your kids actually need?</p>
+          <p>Ready to walk into your next court date documented, prepared, and unshakable?</p>
+        </div>
+        <p className="ready-yes">If yes, this is for you.</p>
+        <div className="ready-cta-wrap">
+          <a href="#apply" className="btn-primary">Apply to become a Founding Member</a>
         </div>
       </section>
 
@@ -301,7 +374,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           )}
 
           <fieldset className="field">
-            <legend className="field-label">Can you commit to weekly 15-min check-ins over 6 months? <em>*</em></legend>
+            <legend className="field-label">This program runs on honest feedback. Can you commit to a quick 15-minute weekly check-in and sharing what&apos;s working, what&apos;s broken, and what you wish Pattern18 did better? <em>*</em></legend>
             <div className="commit-row">
               {[
                 { v: 'yes',     l: 'Yes' },
@@ -532,12 +605,169 @@ function PageStyles() {
         .who-grid { grid-template-columns: 1fr; }
       }
 
+      /* If no one around you gets it */
+      .listen-section {
+        padding-top: 96px;
+        padding-bottom: 96px;
+        max-width: 760px;
+      }
+      .listen-h2 {
+        text-align: center;
+        font-size: clamp(30px, 4.6vw, 44px);
+        margin-bottom: 28px;
+      }
+      .listen-section > p {
+        font-size: 17px;
+        line-height: 1.7;
+        margin-bottom: 18px;
+        color: var(--charcoal);
+      }
+      .listen-quotes {
+        margin: 24px 0 32px;
+        padding-left: 18px;
+        border-left: 2px solid var(--teal-border);
+      }
+      .listen-quotes p {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 18px;
+        line-height: 1.55;
+        margin-bottom: 8px;
+        color: var(--charcoal-70);
+      }
+      .listen-when {
+        margin: 28px 0 40px;
+      }
+      .listen-when p {
+        font-size: 17px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        color: var(--charcoal);
+      }
+      .listen-affirmations {
+        text-align: center;
+        margin: 48px 0 40px;
+      }
+      .listen-affirmations p {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(20px, 2.6vw, 26px);
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+        color: var(--charcoal);
+        margin: 0;
+        padding: 22px 0;
+      }
+      .listen-close {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        font-size: clamp(22px, 2.9vw, 30px);
+        text-align: center;
+        color: var(--teal);
+        line-height: 1.4;
+        letter-spacing: -0.01em;
+        margin-top: 40px;
+      }
+
+      /* What Pattern18 actually does */
+      .lead-in {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 18px;
+        color: var(--charcoal);
+        opacity: 0.85;
+        margin-bottom: 22px;
+      }
+      .action-list {
+        max-width: 720px;
+      }
+      .action-list p {
+        font-size: 16px;
+        line-height: 1.65;
+        margin-bottom: 16px;
+        color: var(--charcoal);
+      }
+      .action-list strong {
+        color: var(--deep-teal);
+        font-weight: 700;
+      }
+      .save-card {
+        max-width: 720px;
+        background: var(--teal-tint);
+        border: 1px solid var(--teal-border);
+        border-radius: 16px;
+        padding: 28px 28px 22px;
+        margin-top: 28px;
+      }
+      .save-card h3 {
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 22px;
+        margin-bottom: 14px;
+        color: var(--charcoal);
+      }
+      .save-card p {
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        color: var(--charcoal);
+      }
+      .save-card p:last-child { margin-bottom: 0; }
+      .save-card strong {
+        color: var(--deep-teal);
+        font-weight: 700;
+      }
+
+      /* Are you ready? */
+      .ready-section {
+        text-align: center;
+        padding-top: 96px;
+        padding-bottom: 96px;
+      }
+      .ready-h2 {
+        font-family: var(--serif);
+        font-weight: 800;
+        font-size: clamp(40px, 7vw, 68px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin-bottom: 36px;
+        color: var(--charcoal);
+      }
+      .ready-lines {
+        max-width: 640px;
+        margin: 0 auto 32px;
+      }
+      .ready-lines p {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(19px, 2.4vw, 23px);
+        line-height: 1.45;
+        margin-bottom: 16px;
+        color: var(--charcoal);
+      }
+      .ready-yes {
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: clamp(22px, 3vw, 30px);
+        color: var(--teal);
+        margin: 12px 0 36px;
+        letter-spacing: -0.01em;
+      }
+      .ready-cta-wrap { display: flex; justify-content: center; }
+
       .apply-section {
         background: var(--teal-tint);
         max-width: none;
         scroll-margin-top: 80px;
       }
       .apply-section > * {
+        max-width: 640px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .apply-form {
+        width: 100%;
         max-width: 640px;
         margin-left: auto;
         margin-right: auto;
