@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
+import MilestonePrompt from '@/components/MilestonePrompt';
 
 interface CourtDoc {
   id: string;
@@ -74,6 +75,10 @@ export default function DocsPage() {
         <h1 style={{ margin: 0, fontSize: 26, fontFamily: 'var(--serif)', fontWeight: 700 }}>Documents</h1>
         <p style={{ margin: '6px 0 0', color: 'var(--charcoal-70)', fontSize: 14 }}>Generate court documents & manage uploads</p>
       </header>
+
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 16px' }}>
+        <MilestonePrompt />
+      </div>
 
       {/* Tabs */}
       <div style={{

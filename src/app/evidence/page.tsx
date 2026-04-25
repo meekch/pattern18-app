@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BottomNav from "@/components/BottomNav";
+import MilestonePrompt from "@/components/MilestonePrompt";
 
 interface Incident {
   id: string;
@@ -467,6 +468,7 @@ function EvidenceContent() {
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+        <MilestonePrompt />
        {/* Stats Bar - CLICKABLE */}
        <div style={{
           display: "grid",

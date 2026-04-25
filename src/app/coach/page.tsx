@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import BottomNav from '@/components/BottomNav';
+import MilestonePrompt from '@/components/MilestonePrompt';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -364,6 +365,7 @@ export default function CoachPage() {
       <div className="content">
         {showHome ? (
           <div className="home">
+            <MilestonePrompt />
             <div className="welcome">
               <div className="heart"></div>
               {(() => {
