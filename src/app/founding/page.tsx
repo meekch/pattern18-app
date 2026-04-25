@@ -147,6 +147,24 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
             missing. In exchange, you get free access, a locked Founding Member rate for life if you choose
             to continue after 6 months, and direct input on the roadmap.
           </p>
+          <p className="emphasis">
+            Your feedback is the single most important thing in this program.
+          </p>
+          <p className="emphasis">
+            This is how great software gets built. Not in boardrooms. Not from market research. From the
+            people living the problem, telling the truth about what helps and what doesn&apos;t. Every survey
+            response, every bug you flag, every &quot;I wish it did this&quot;, it shapes what reaches the next
+            survivor faster.
+          </p>
+          <p className="emphasis">
+            The next 10 million parents needing this tool aren&apos;t going to wait. We don&apos;t have years to
+            figure it out. What you tell me in week one might be the change that helps a mother walk into
+            court next month with the documentation that wins her case.
+          </p>
+          <p className="emphasis">
+            That&apos;s the work. Honest feedback, fast iteration, real impact. We owe it to the people coming
+            behind us.
+          </p>
           <p className="signed">— Rae, Founder</p>
         </div>
       </section>
@@ -432,15 +450,25 @@ function PageStyles() {
         padding: 8px 28px;
       }
       .founder-letter p {
-        font-size: 17px;
-        line-height: 1.7;
+        font-family: var(--serif);
+        font-size: 18px;
+        line-height: 1.65;
         margin-bottom: 18px;
+        color: var(--charcoal);
+      }
+      .founder-letter p.emphasis {
+        font-weight: 600;
+      }
+      .founder-letter p.emphasis + p.emphasis {
+        margin-top: -4px;
       }
       .founder-letter .signed {
         font-family: var(--serif);
         font-style: italic;
+        font-weight: 400;
         color: var(--teal);
         font-size: 18px;
+        margin-top: 24px;
       }
 
       .cards-grid {
