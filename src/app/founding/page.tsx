@@ -191,9 +191,14 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           </p>
           <p className="emphasis">
             The next 10 million parents needing this tool aren&apos;t going to wait. We don&apos;t have years to
-            figure it out. What you tell me in week one might be the change that helps a mother walk into
-            court next month with the documentation that wins her case.
+            figure it out.
           </p>
+
+          <blockquote className="pull-quote">
+            What you tell me in week one might be the change that helps a mother walk into court next month
+            with the documentation that wins her case.
+          </blockquote>
+
           <p className="emphasis">
             That&apos;s the work. Honest feedback, fast iteration, real impact. We owe it to the people coming
             behind us.
@@ -225,9 +230,44 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
       </section>
 
+      {/* WHY I BUILT THIS — THE PROOF */}
+      <section className="section proof-section">
+        <h2>Why I built this</h2>
+        <div className="proof-letter">
+          <p>Almost 16 years ago, I started a chapter of my life I couldn&apos;t see my way out of.</p>
+
+          <p className="proof-standalone">14 of those years were hell.</p>
+
+          <p>The texts that made my stomach drop. The court orders that became weapons. The legal fees that ate my savings. The friends and family who said &ldquo;just stop letting it bother you&rdquo; with the best intentions and absolutely no idea.</p>
+
+          <p>The lawyers didn&apos;t get it either. They couldn&apos;t spend the billable time to identify the patterns, organize the chaos, or understand what coercive control actually looks like. They couldn&apos;t understand my responses or why I was a hot emotional mess. The judges didn&apos;t get it. The parent coordinators didn&apos;t get it. The PhDs assigned to our case didn&apos;t get it.</p>
+
+          <p>I remember walking out of a court-ordered evaluation where the patterns had been performed perfectly for the system. Coercive controllers are practiced at this. They&apos;ve spent their lives doing it. The systems we depend on for protection were not built to recognize them.</p>
+
+          <p>I tried everything. Spreadsheets I couldn&apos;t keep up with. Therapists I couldn&apos;t afford to see weekly. Lawyers who charged $500/hour to organize evidence I&apos;d already organized. Self-help books that didn&apos;t account for the legal weaponization. Apps built for &ldquo;co-parenting&rdquo; by people who&apos;d never met a coercive controller.</p>
+
+          <p>Then I found AI tools that actually understood the patterns I was describing. They named what was happening. They drafted responses that didn&apos;t escalate. They helped me build the documentation my case had been missing for years.</p>
+
+          <p className="proof-standalone">Within months, I started to break a cycle that had defined my entire adult life.</p>
+
+          <p className="proof-standalone">I&apos;m still in this. I get triggered. It still passes faster every time. I have tools now.</p>
+
+          <p>I built Pattern18 because I refused to let the tools that saved me stay scattered across five different apps that none of us in this situation can afford.</p>
+
+          <blockquote className="pull-quote">
+            You shouldn&apos;t have to be a tech-savvy survivor to access what works.
+          </blockquote>
+
+          <p>Pattern18 is what I needed from day one. Now it exists for you.</p>
+
+          <p className="signed">— Rae, Founder</p>
+        </div>
+      </section>
+
       {/* WHAT YOU GET */}
       <section className="section tinted">
         <h2 className="center">What Founding Members get</h2>
+        <p className="price-anchor">Pattern18 normally costs $97/month. Founding Members get six months free, plus a locked Founding Member rate for life if you choose to continue.</p>
         <div className="cards-grid">
           <div className="card">
             <h3>Free access for 6 months</h3>
@@ -292,7 +332,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
         <p className="ready-yes">If yes, this is for you.</p>
         <div className="ready-cta-wrap">
-          <a href="#apply" className="btn-primary">Apply to become a Founding Member</a>
+          <a href="#apply" className="btn-primary btn-ready">Apply to become a Founding Member</a>
         </div>
       </section>
 
@@ -304,6 +344,10 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         )}
 
         <form onSubmit={handleSubmit} className="apply-form">
+          <p className="form-intro">
+            Tell me about you. I read every application personally. There&apos;s no right answer to any of these questions, just be honest. Most people only need 5 minutes.
+          </p>
+
           <label className="field">
             <span className="field-label">First name <em>*</em></span>
             <input
@@ -406,9 +450,12 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           </label>
 
           <button type="submit" disabled={submitting} className="btn-primary btn-block">
-            {submitting ? 'Submitting…' : 'Submit application'}
+            {submitting ? 'Sending…' : 'Send my application'}
           </button>
-          <p className="form-foot">I personally review every application. Expect to hear back within 3 days.</p>
+          <p className="form-foot">
+            <span className="form-foot-icon" aria-hidden="true">✉</span>
+            <em>I personally review every application. Expect to hear back within 3 days.</em>
+          </p>
 
           {error && <div className="error">{error}</div>}
         </form>
@@ -536,6 +583,92 @@ function PageStyles() {
         color: var(--teal);
         font-size: 18px;
         margin-top: 24px;
+      }
+
+      /* Shared pull-quote treatment used inside Why Founding Members
+         and Why I Built This. Larger Fraunces, indented, teal accent. */
+      .pull-quote {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        font-size: clamp(20px, 2.6vw, 26px);
+        line-height: 1.45;
+        color: var(--charcoal);
+        border-left: 4px solid var(--teal);
+        padding: 6px 0 6px 22px;
+        margin: 28px 0 28px 12px;
+        max-width: 640px;
+        letter-spacing: -0.005em;
+      }
+
+      /* Why I built this — the proof */
+      .proof-section {
+        padding-top: 96px;
+        padding-bottom: 96px;
+      }
+      .proof-letter {
+        max-width: 720px;
+        border-left: 3px solid var(--teal);
+        padding: 8px 28px;
+      }
+      .proof-letter p {
+        font-size: 17px;
+        line-height: 1.7;
+        margin-bottom: 18px;
+        color: var(--charcoal);
+      }
+      .proof-letter p.proof-standalone {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(20px, 2.4vw, 24px);
+        line-height: 1.4;
+        color: var(--charcoal);
+        margin: 28px 0;
+        letter-spacing: -0.005em;
+      }
+      .proof-letter .pull-quote {
+        margin-left: 0;
+      }
+      .proof-letter .signed {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--teal);
+        font-size: 18px;
+        margin-top: 28px;
+      }
+      @media (max-width: 480px) {
+        .proof-letter { padding: 8px 18px; }
+        .proof-letter p.proof-standalone { margin: 22px 0; }
+      }
+
+      /* Price anchor above What Founding Members get */
+      .price-anchor {
+        text-align: center;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 15px;
+        color: var(--charcoal);
+        opacity: 0.75;
+        max-width: 640px;
+        margin: -10px auto 28px;
+        line-height: 1.55;
+      }
+
+      /* Form intro + foot polish */
+      .form-intro {
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--charcoal);
+        opacity: 0.8;
+        margin: 0 0 22px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--teal-border);
+      }
+      .form-foot-icon {
+        color: var(--teal);
+        margin-right: 6px;
+        font-style: normal;
       }
 
       .cards-grid {
@@ -719,42 +852,52 @@ function PageStyles() {
         font-weight: 700;
       }
 
-      /* Are you ready? */
+      /* Are you ready? — climactic, ~1.5x larger headline,
+         tightly restricted line width, larger CTA */
       .ready-section {
         text-align: center;
-        padding-top: 96px;
-        padding-bottom: 96px;
+        padding-top: 120px;
+        padding-bottom: 120px;
       }
       .ready-h2 {
         font-family: var(--serif);
         font-weight: 800;
-        font-size: clamp(40px, 7vw, 68px);
-        line-height: 1.05;
-        letter-spacing: -0.02em;
-        margin-bottom: 36px;
+        font-size: clamp(56px, 10vw, 100px);
+        line-height: 1.0;
+        letter-spacing: -0.025em;
+        margin-bottom: 56px;
         color: var(--charcoal);
       }
       .ready-lines {
-        max-width: 640px;
-        margin: 0 auto 32px;
+        max-width: 580px;
+        margin: 0 auto 48px;
       }
       .ready-lines p {
         font-family: var(--serif);
         font-weight: 500;
-        font-size: clamp(19px, 2.4vw, 23px);
+        font-size: clamp(20px, 2.5vw, 25px);
         line-height: 1.45;
-        margin-bottom: 16px;
+        margin: 0;
+        padding: 22px 0;
         color: var(--charcoal);
       }
+      .ready-lines p + p { border-top: 1px solid var(--teal-border); }
       .ready-yes {
         font-family: var(--serif);
-        font-weight: 700;
-        font-size: clamp(22px, 3vw, 30px);
+        font-style: italic;
+        font-weight: 600;
+        font-size: clamp(24px, 3.4vw, 34px);
         color: var(--teal);
-        margin: 12px 0 36px;
+        margin: 32px 0 48px;
         letter-spacing: -0.01em;
       }
       .ready-cta-wrap { display: flex; justify-content: center; }
+      .btn-ready {
+        font-size: 18px;
+        padding: 20px 40px;
+        min-height: 60px;
+        min-width: 340px;
+      }
 
       .apply-section {
         background: var(--teal-tint);
