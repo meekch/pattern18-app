@@ -10,8 +10,9 @@ import {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Vercel Cron should hit this daily.
-// Auth via Bearer CRON_SECRET header.
+// Vercel Cron hits this daily as GET with Authorization: Bearer
+// $CRON_SECRET auto-injected. Manual curl with the same header (POST
+// or GET) also works.
 //
 // Sends:
 //   - Day 28 since approved_at: day-30 call prompt + sets day_30_call_at
@@ -23,7 +24,7 @@ export const runtime = 'nodejs';
 // only send once per applicant per milestone, even if cron runs twice
 // the same day or backfills.
 
-export async function POST(req: NextRequest) {
+async function runCron(req: NextRequest) {
   const auth = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET ?? ''}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
@@ -93,3 +94,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, sent: sent.length, details: sent });
 }
+
+export async function GET(req: NextRequest) { return runCron(req); }
+export async function POST(req: NextRequest) { return runCron(req); }

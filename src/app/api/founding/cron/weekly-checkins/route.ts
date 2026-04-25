@@ -9,8 +9,10 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Vercel Cron should hit this weekly (Sun 6pm MST = Mon 01:00 UTC).
-// Auth via Bearer CRON_SECRET header.
-export async function POST(req: NextRequest) {
+// Vercel Cron always sends GET and auto-injects Authorization: Bearer
+// $CRON_SECRET when CRON_SECRET is set. Manual curl with the same Bearer
+// header also works (POST or GET).
+async function runCron(req: NextRequest) {
   const auth = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET ?? ''}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
@@ -60,3 +62,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, sent: sent.length, skipped: skipped.length, details: { sent, skipped } });
 }
+
+export async function GET(req: NextRequest) { return runCron(req); }
+export async function POST(req: NextRequest) { return runCron(req); }
