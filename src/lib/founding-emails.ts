@@ -156,6 +156,14 @@ const ATTORNEY_LABELS: Record<string, string> = {
   prefer_not_to_say: 'Prefers not to share',
 };
 
+const COMMIT_LABELS: Record<string, string> = {
+  yes: 'Yes',
+  sometimes: 'Sometimes',
+  not_sure: 'Not sure',
+  no: 'No',
+  unsure: 'Unsure',
+};
+
 export function applicationNotification(args: {
   firstName: string;
   email: string;
@@ -168,6 +176,7 @@ export function applicationNotification(args: {
   const attorneyLine = args.attorneyStatus
     ? ATTORNEY_LABELS[args.attorneyStatus] ?? args.attorneyStatus
     : 'Not provided';
+  const commitLine = COMMIT_LABELS[args.canCommit] ?? args.canCommit;
 
   const challengeLabels = challengeKeysToLabels(args.biggestChallenge);
   const challengeTextList = challengeLabels.length > 0
@@ -183,7 +192,7 @@ Name: ${args.firstName}
 Email: ${args.email}
 Journey: ${args.journeyStage}
 Attorney: ${attorneyLine}
-Commitment: ${args.canCommit}
+Will share feedback: ${commitLine}
 
 Biggest challenges:
 ${challengeTextList}${otherText}
@@ -208,7 +217,7 @@ Review at ${appUrl()}/admin/founding`;
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Email</td><td style="padding:4px 0;">${esc(args.email)}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Journey</td><td style="padding:4px 0;">${esc(args.journeyStage)}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Attorney</td><td style="padding:4px 0;">${esc(attorneyLine)}</td></tr>
-  <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Can commit</td><td style="padding:4px 0;">${esc(args.canCommit)}</td></tr>
+  <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Will share feedback</td><td style="padding:4px 0;">${esc(commitLine)}</td></tr>
 </table>
 <p style="margin:0 0 6px;font-weight:600;">Biggest challenges:</p>
 ${challengeListHtml}

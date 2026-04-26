@@ -451,13 +451,13 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           )}
 
           <fieldset className="field">
-            <legend className="field-label">Can you commit to honest weekly feedback? <em>*</em></legend>
-            <p className="field-sublabel">A quick 15-minute weekly check-in. Tell me what&apos;s working, what&apos;s broken, and what you wish Pattern18 did better.</p>
+            <legend className="field-label">Will you share feedback as you use Pattern18? <em>*</em></legend>
+            <p className="field-sublabel">No calls, no homework. Just quick async notes when something works, breaks, or could be better. 5 minutes a week, max, and only when you have something to say.</p>
             <div className="commit-row">
               {[
-                { v: 'yes',     l: 'Yes' },
-                { v: 'no',      l: 'No' },
-                { v: 'unsure',  l: 'Unsure' },
+                { v: 'yes',       l: 'Yes' },
+                { v: 'sometimes', l: 'Sometimes' },
+                { v: 'not_sure',  l: 'Not sure' },
               ].map(c => (
                 <label key={c.v} className={`commit-pill ${canCommit === c.v ? 'on' : ''}`}>
                   <input

@@ -84,6 +84,14 @@ const ATTORNEY_LABELS: Record<string, string> = {
   prefer_not_to_say: 'Prefers not to share',
 };
 
+const COMMIT_LABELS: Record<string, string> = {
+  yes: 'Yes',
+  sometimes: 'Sometimes',
+  not_sure: 'Not sure',
+  no: 'No',         // legacy
+  unsure: 'Unsure', // legacy
+};
+
 export default function AdminFoundingPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
@@ -348,7 +356,7 @@ export default function AdminFoundingPage() {
             <div style={fieldRow}><span style={fieldLabel}>Email:</span> {selected.email}</div>
             <div style={fieldRow}><span style={fieldLabel}>Journey:</span> {JOURNEY_LABELS[selected.journey_stage] ?? selected.journey_stage}</div>
             <div style={fieldRow}><span style={fieldLabel}>Attorney:</span> {selected.working_with_attorney ? ATTORNEY_LABELS[selected.working_with_attorney] ?? selected.working_with_attorney : 'Not provided'}</div>
-            <div style={fieldRow}><span style={fieldLabel}>Can commit:</span> {selected.can_commit}</div>
+            <div style={fieldRow}><span style={fieldLabel}>Will share feedback:</span> {COMMIT_LABELS[selected.can_commit] ?? selected.can_commit}</div>
             <div style={fieldRow}><span style={fieldLabel}>Status:</span> <span style={{ background: STATUS_COLORS[selected.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{selected.status}</span></div>
             <div style={fieldRow}><span style={fieldLabel}>Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
             {selected.approved_at && <div style={fieldRow}><span style={fieldLabel}>Approved:</span> {new Date(selected.approved_at).toLocaleString()}</div>}

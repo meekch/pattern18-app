@@ -18,7 +18,9 @@ const VALID_JOURNEY_STAGES = [
   'high_conflict_no_court',
 ];
 
-const VALID_COMMIT = ['yes', 'no', 'unsure'];
+// Accepts the new copy values plus the legacy values so any in-flight
+// submissions or older clients still validate.
+const VALID_COMMIT = ['yes', 'sometimes', 'not_sure', 'no', 'unsure'];
 
 const VALID_ATTORNEY = ['yes_currently', 'past_not_current', 'no', 'prefer_not_to_say'];
 
