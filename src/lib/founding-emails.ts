@@ -249,8 +249,8 @@ export function welcomeApproved(args: {
   // the day-90 email; office hours moved to the day-30/day-60 emails.
   void args.approvedAt;
   void args.refToken;
-  const loginUrl = `${appUrl()}/login`;
-  const resetUrl = `${appUrl()}/auth/reset-password`;
+  const trialUrl = appUrl();
+  const couponCode = 'FOUNDINGMEMBER';
 
   const text = `Welcome, Founding Member.
 
@@ -270,7 +270,13 @@ Pattern18 is a work in progress. I'm shipping every day, refining every section 
 Your patience and your honest feedback are what shape the next version of this for the next survivor finding it.
 
 YOUR ACCESS
-Your Pattern18 Founding Member access is active right now. Log in at ${loginUrl} using the email you applied with. If you haven't set a password yet, click "Forgot password?" and we'll send you a reset.
+To activate your Founding Member access, head to coach.pattern18.com and click "Start 7-Day Free Trial". When prompted to enter payment info, use this code at checkout to bypass payment entirely:
+
+    ${couponCode}
+
+This code unlocks your full 6 months of Pattern18 access at no cost. After 6 months, your Founding Member rate locks in and continues only if you choose to keep going.
+
+If you have any trouble with the code, just reply to this email and I'll get you sorted.
 
 A NOTE ABOUT YOUR CASE
 Pattern18 is a tool, not legal advice. It helps you organize evidence, recognize patterns, and prepare clearer documentation for your attorney to use. It does not replace the legal counsel of an attorney licensed to practice in your state.
@@ -315,7 +321,20 @@ Founder, Pattern18`;
 <p style="margin:0 0 14px;">Your patience and your honest feedback are what shape the next version of this for the next survivor finding it.</p>
 
 <h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your access</h2>
-<p style="margin:0 0 14px;">Your Pattern18 Founding Member access is active right now. <a href="${loginUrl}" style="color:${DEEP_TEAL};font-weight:600;">Log in at pattern18.com</a> using the email you applied with. If you haven't set a password yet, click <a href="${resetUrl}" style="color:${DEEP_TEAL};font-weight:600;">&ldquo;Forgot password?&rdquo;</a> and we'll send you a reset.</p>
+<p style="margin:0 0 14px;">To activate your Founding Member access, head to <a href="${trialUrl}" style="color:${DEEP_TEAL};font-weight:600;">coach.pattern18.com</a> and click <strong>Start 7-Day Free Trial</strong>. When prompted to enter payment info, use this code at checkout to bypass payment entirely:</p>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:18px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+          <td style="background:${TEAL_TINT};border:2px dashed ${TEAL};border-radius:12px;padding:18px 32px;font-family:'SF Mono','Menlo','Consolas',monospace;font-size:22px;font-weight:700;letter-spacing:0.18em;color:${DEEP_TEAL};text-align:center;">${couponCode}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 14px;">This code unlocks your full 6 months of Pattern18 access at no cost. After 6 months, your Founding Member rate locks in and continues only if you choose to keep going.</p>
+<p style="margin:0 0 14px;">If you have any trouble with the code, just reply to this email and I'll get you sorted.</p>
 
 <h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">A note about your case</h2>
 <p style="margin:0 0 14px;">Pattern18 is a tool, not legal advice. It helps you organize evidence, recognize patterns, and prepare clearer documentation for your attorney to use. It does not replace the legal counsel of an attorney licensed to practice in your state.</p>
@@ -350,8 +369,8 @@ Founder, Pattern18`;
       eyebrow: 'Founding Member · Welcome',
       headline: 'Welcome, Founding Member.',
       bodyHtml,
-      ctaLabel: 'Log in to Pattern18',
-      ctaUrl: loginUrl,
+      ctaLabel: 'Activate your access',
+      ctaUrl: trialUrl,
       signed: true,
     }),
   };
