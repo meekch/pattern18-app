@@ -244,85 +244,114 @@ export function welcomeApproved(args: {
   approvedAt: Date;
   refToken?: string | null;
 }): RenderedEmail {
-  // approvedAt no longer needed for body copy after the call requirement was
-  // dropped, but kept on the args interface for future scheduled-content use.
+  // approvedAt and refToken kept on the args interface for callers but
+  // no longer surfaced in the welcome body. Referral mechanics moved to
+  // the day-90 email; office hours moved to the day-30/day-60 emails.
   void args.approvedAt;
-  const refUrl = args.refToken ? `${appUrl()}/founding?ref=${args.refToken}` : null;
+  void args.refToken;
+  const loginUrl = `${appUrl()}/login`;
+  const resetUrl = `${appUrl()}/auth/reset-password`;
 
-  const text = `Hi ${args.firstName},
+  const text = `Welcome, Founding Member.
 
-Welcome to the first cohort of Pattern18 Founding Members. This is a short email with everything you need to get started.
+You're in. One of the first 10 people who said yes to building this with me.
+
+Take a breath. You've been carrying a lot.
+
+Whatever brought you here, the texts that don't stop, the court orders that became weapons, the years no one believed you, you're not alone in this anymore.
+
+You can get through this. The fact that you applied means part of you already knows that.
+
+And when you're struggling in the moment, or just need a break from the chaos, head to the Healing space inside Pattern18. Somatic exercises, grounding tools, breath work, and resources to help you regulate your nervous system and start the actual work of healing. We've built this part for the moments between the fights, when there's finally space to breathe.
+
+A NOTE ON WHAT YOU'RE STEPPING INTO
+Pattern18 is a work in progress. I'm shipping every day, refining every section based on what works and what doesn't. Some parts will be rough. Some features will surprise you. Some things you'll wish worked differently. That's exactly why you're here.
+
+Your patience and your honest feedback are what shape the next version of this for the next survivor finding it.
 
 YOUR ACCESS
-Your free 6-month Founding Member access is active. Log in at ${appUrl()}/login using the email you applied with. If you haven't set a password yet, use the "Forgot password?" link on the login page and we'll send you a reset.
+Your Pattern18 Founding Member access is active right now. Log in at ${loginUrl} using the email you applied with. If you haven't set a password yet, click "Forgot password?" and we'll send you a reset.
+
+A NOTE ABOUT YOUR CASE
+Pattern18 is a tool, not legal advice. It helps you organize evidence, recognize patterns, and prepare clearer documentation for your attorney to use. It does not replace the legal counsel of an attorney licensed to practice in your state.
+
+If you're working with an attorney, Pattern18 works best when you share what you're documenting with them. Most attorneys will appreciate the organization.
+
+If you don't have an attorney, Pattern18 can help you understand your situation and prepare materials, but for filings, hearings, and strategic case decisions, please consult one.
 
 YOUR PRIVATE FOUNDING MEMBER SPACE
-You now have access to a private category inside our Pattern18 community. Join here: ${SKOOL_URL}. Once you join, I'll add you to the Founding Members category within 24 hours.
+You now have access to a private category in our Pattern18 community. Join here: ${SKOOL_URL}. Once you're in, I'll add you to the Founding Members category within 24 hours.
 
-WHAT HAPPENS NEXT
-- Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.
-- Every Sunday: a 5-question check-in email. Takes 2 minutes.
-- Day 30 and Day 60: short async check-ins from me — no call required.
-- Day 90: I'll ask if you'd be willing to share a testimonial or refer someone. Optional.
+I'm active in the community most days. I read every comment, respond to questions, and post resources as they come up. The other Founding Members are there too, you're building this together, with each other and with me.
 
-OFFICE HOURS
-If you ever want to talk live, my office hours calendar is here: ${founderCalendlyUrl()}. Optional, never required.
+HOW TO SHARE FEEDBACK
+The whole point of the Founding Member program is your honest feedback. Two easy ways to give it:
 
-${refUrl ? `YOUR REFERRAL LINK
-You can invite up to 2 people who'd be a fit. If they apply and get accepted, I'll add 3 extra months to your access automatically.
+1. In the Founding Member space on Skool. Drop a thought, a screenshot, a frustration, an "I love this." I'm in there regularly and so are the other Founding Members.
 
-Your unique link: ${refUrl}
+2. Weekly check-in email. Every Sunday evening you'll get a short 5-question form. Takes 2 minutes. Only when you have something to say.
 
-` : ''}IF YOU GET STUCK
-Reply to this email or tag me in the Founding Members space in Skool. I read everything.
+No required calls. No homework. Just be honest when you have something to say.
 
-Thank you for trusting Pattern18. Let's build something real.
+WHAT'S NEXT
+Use Pattern18 for your real situation. Not as a test, as the tool you actually need this week. The more honestly you use it, the better the feedback gets, and the better the next version becomes for the next survivor finding it.
 
-— Rae`;
+If you get stuck, reply to this email. I read every reply.
 
-  const refSection = refUrl
-    ? `
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your referral link</h2>
-<p style="margin:0 0 8px;">You can invite up to 2 people who'd be a fit. If they apply and get accepted, I'll add 3 extra months to your access automatically.</p>
-<p style="margin:0 0 14px;background:${TEAL_TINT};border:1px solid ${TEAL_BORDER};border-radius:8px;padding:10px 12px;font-family:'SF Mono', Menlo, Consolas, monospace;font-size:13px;word-break:break-all;"><a href="${refUrl}" style="color:${DEEP_TEAL};">${refUrl}</a></p>`
-    : '';
+Welcome in. Let's build something real.
+
+Rae
+Founder, Pattern18`;
 
   const bodyHtml = `
-<p style="margin:0 0 14px;">Hi ${esc(args.firstName)},</p>
-<p style="margin:0 0 14px;">Welcome to the first cohort of Pattern18 Founding Members. This is a short email with everything you need to get started.</p>
+<p style="margin:0 0 14px;">You're in. One of the first 10 people who said yes to building this with me.</p>
+<p style="margin:0 0 14px;">Take a breath. You've been carrying a lot.</p>
+<p style="margin:0 0 14px;">Whatever brought you here, the texts that don't stop, the court orders that became weapons, the years no one believed you, you're not alone in this anymore.</p>
+<p style="margin:0 0 14px;">You can get through this. The fact that you applied means part of you already knows that.</p>
+<p style="margin:0 0 14px;">And when you're struggling in the moment, or just need a break from the chaos, head to the <strong>Healing space</strong> inside Pattern18. Somatic exercises, grounding tools, breath work, and resources to help you regulate your nervous system and start the actual work of healing. We've built this part for the moments between the fights, when there's finally space to breathe.</p>
 
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your access</h2>
-<p style="margin:0 0 14px;">Your free 6-month Founding Member access is active. <a href="${appUrl()}/login" style="color:${DEEP_TEAL};font-weight:600;">Log in here</a> using the email you applied with. If you haven't set a password yet, use the "Forgot password?" link on the login page and we'll send you a reset.</p>
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">A note on what you're stepping into</h2>
+<p style="margin:0 0 14px;">Pattern18 is a work in progress. I'm shipping every day, refining every section based on what works and what doesn't. Some parts will be rough. Some features will surprise you. Some things you'll wish worked differently. That's exactly why you're here.</p>
+<p style="margin:0 0 14px;">Your patience and your honest feedback are what shape the next version of this for the next survivor finding it.</p>
 
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your private Founding Member space</h2>
-<p style="margin:0 0 14px;">You now have access to a private category inside our Pattern18 community. <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">Join the community</a>. Once you join, I'll add you to the Founding Members category within 24 hours.</p>
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your access</h2>
+<p style="margin:0 0 14px;">Your Pattern18 Founding Member access is active right now. <a href="${loginUrl}" style="color:${DEEP_TEAL};font-weight:600;">Log in at pattern18.com</a> using the email you applied with. If you haven't set a password yet, click <a href="${resetUrl}" style="color:${DEEP_TEAL};font-weight:600;">&ldquo;Forgot password?&rdquo;</a> and we'll send you a reset.</p>
 
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">What happens next</h2>
-<ul style="margin:0 0 14px;padding-left:20px;">
-  <li style="margin-bottom:6px;">Use Pattern18 for your real situation. Document what works, what doesn't, and what you wish it did.</li>
-  <li style="margin-bottom:6px;"><strong>Every Sunday:</strong> a 5-question check-in email. Takes 2 minutes.</li>
-  <li style="margin-bottom:6px;"><strong>Day 30 and Day 60:</strong> short async check-ins from me, no call required.</li>
-  <li style="margin-bottom:6px;"><strong>Day 90:</strong> I'll ask if you'd be willing to share a testimonial or refer someone. Optional.</li>
-</ul>
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">A note about your case</h2>
+<p style="margin:0 0 14px;">Pattern18 is a tool, not legal advice. It helps you organize evidence, recognize patterns, and prepare clearer documentation for your attorney to use. It does not replace the legal counsel of an attorney licensed to practice in your state.</p>
+<p style="margin:0 0 14px;">If you're working with an attorney, Pattern18 works best when you share what you're documenting with them. Most attorneys will appreciate the organization.</p>
+<p style="margin:0 0 14px;">If you don't have an attorney, Pattern18 can help you understand your situation and prepare materials, but for filings, hearings, and strategic case decisions, please consult one.</p>
 
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Office hours</h2>
-<p style="margin:0 0 14px;">If you ever want to talk live, <a href="${founderCalendlyUrl()}" style="color:${DEEP_TEAL};font-weight:600;">my office hours calendar is here</a>. Optional, never required.</p>
-${refSection}
-<h2 style="margin:24px 0 8px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">If you get stuck</h2>
-<p style="margin:0 0 14px;">Reply to this email or tag me in the Founding Members space in Skool. I read everything.</p>
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">Your private Founding Member space</h2>
+<p style="margin:0 0 14px;">You now have access to a private category in our Pattern18 community.</p>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 14px;"><tr><td style="background:${TEAL};border-radius:10px;"><a href="${SKOOL_URL}" style="display:inline-block;padding:12px 22px;color:${WARM_WHITE};font-family:${SANS};font-weight:700;font-size:14px;text-decoration:none;">Join the community</a></td></tr></table>
+<p style="margin:0 0 14px;">Once you're in, I'll add you to the Founding Members category within 24 hours.</p>
+<p style="margin:0 0 14px;">I'm active in the community most days. I read every comment, respond to questions, and post resources as they come up. The other Founding Members are there too, you're building this together, with each other and with me.</p>
 
-<p style="margin:0 0 14px;">Thank you for trusting Pattern18. Let's build something real.</p>`;
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">How to share feedback</h2>
+<p style="margin:0 0 10px;">The whole point of the Founding Member program is your honest feedback. Two easy ways to give it:</p>
+<ol style="margin:0 0 14px;padding-left:22px;">
+  <li style="margin-bottom:8px;"><strong>In the Founding Member space on Skool.</strong> Drop a thought, a screenshot, a frustration, an &ldquo;I love this.&rdquo; I'm in there regularly and so are the other Founding Members.</li>
+  <li style="margin-bottom:8px;"><strong>Weekly check-in email.</strong> Every Sunday evening you'll get a short 5-question form. Takes 2 minutes. Only when you have something to say.</li>
+</ol>
+<p style="margin:0 0 14px;">No required calls. No homework. Just be honest when you have something to say.</p>
+
+<h2 style="margin:28px 0 10px;font-family:${SERIF};font-weight:700;font-size:18px;color:${CHARCOAL};">What's next</h2>
+<p style="margin:0 0 14px;">Use Pattern18 for your real situation. Not as a test, as the tool you actually need this week. The more honestly you use it, the better the feedback gets, and the better the next version becomes for the next survivor finding it.</p>
+<p style="margin:0 0 14px;">If you get stuck, reply to this email. I read every reply.</p>
+
+<p style="margin:18px 0 0;">Welcome in. Let's build something real.</p>`;
 
   return {
-    subject: "You're in — welcome to Pattern18 Founding Members",
+    subject: "You're in, welcome to Pattern18 Founding Members",
     text,
     html: wrapEmailHtml({
-      preheader: 'Your free 6-month access is active.',
+      preheader: 'You\u2019re in. One of the first 10 people who said yes to building this with me.',
       eyebrow: 'Founding Member · Welcome',
-      headline: "You're in.",
+      headline: 'Welcome, Founding Member.',
       bodyHtml,
       ctaLabel: 'Log in to Pattern18',
-      ctaUrl: `${appUrl()}/login`,
+      ctaUrl: loginUrl,
       signed: true,
     }),
   };

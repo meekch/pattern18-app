@@ -485,6 +485,10 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </form>
       </section>
 
+      <p className="legal-disclaimer">
+        Pattern18 is a tool, not legal advice. Consult an attorney for case-specific guidance.
+      </p>
+
       <PageStyles />
     </div>
   );
@@ -924,6 +928,18 @@ function PageStyles() {
         padding: 20px 40px;
         min-height: 60px;
         min-width: 340px;
+      }
+
+      .legal-disclaimer {
+        text-align: center;
+        font-size: 12px;
+        font-style: italic;
+        color: var(--charcoal-70);
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 28px 20px 36px;
+        line-height: 1.55;
+        opacity: 0.85;
       }
 
       .apply-section {
