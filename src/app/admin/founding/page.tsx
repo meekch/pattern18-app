@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ADMIN_EMAILS } from '@/lib/feature-flags';
+import { challengeKeysToLabels } from '@/lib/founding-challenge-pills';
 
 interface Application {
   id: string;
   first_name: string;
   email: string;
   journey_stage: string;
-  biggest_challenge: string;
+  biggest_challenge: string[] | string | null;
+  biggest_challenge_other: string | null;
   what_tried_before: string | null;
   tech_comfort: number | null;
   working_with_attorney: string | null;
@@ -352,8 +354,26 @@ export default function AdminFoundingPage() {
             {selected.approved_at && <div style={fieldRow}><span style={fieldLabel}>Approved:</span> {new Date(selected.approved_at).toLocaleString()}</div>}
             {selected.access_expires_at && <div style={fieldRow}><span style={fieldLabel}>Access until:</span> {new Date(selected.access_expires_at).toLocaleDateString()}</div>}
             {selected.referrals_sent > 0 && <div style={fieldRow}><span style={fieldLabel}>Referrals sent:</span> {selected.referrals_sent}</div>}
-            <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>Biggest challenge</h3>
-            <p style={{ background: '#EAF5F3', padding: 12, borderRadius: 8, lineHeight: 1.5 }}>{selected.biggest_challenge}</p>
+            <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>Biggest challenges</h3>
+            {Array.isArray(selected.biggest_challenge) ? (
+              selected.biggest_challenge.length > 0 ? (
+                <ul style={{ background: '#EAF5F3', padding: '12px 12px 12px 32px', borderRadius: 8, lineHeight: 1.5, margin: 0 }}>
+                  {challengeKeysToLabels(selected.biggest_challenge).map((label, i) => (
+                    <li key={i}>{label}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ color: '#6b7280', fontStyle: 'italic' }}>(none selected)</p>
+              )
+            ) : (
+              <p style={{ background: '#EAF5F3', padding: 12, borderRadius: 8, lineHeight: 1.5 }}>{selected.biggest_challenge ?? '—'}</p>
+            )}
+            {selected.biggest_challenge_other && (
+              <>
+                <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>Elaborate</h3>
+                <p style={{ background: '#EAF5F3', padding: 12, borderRadius: 8, lineHeight: 1.5 }}>{selected.biggest_challenge_other}</p>
+              </>
+            )}
             {selected.what_tried_before && (
               <>
                 <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>What they tried before</h3>
@@ -362,7 +382,7 @@ export default function AdminFoundingPage() {
             )}
             {selected.additional_notes && (
               <>
-                <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>Other notes</h3>
+                <h3 style={{ marginTop: 16, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, fontSize: 16 }}>Other notes (legacy)</h3>
                 <p style={{ background: '#EAF5F3', padding: 12, borderRadius: 8, lineHeight: 1.5 }}>{selected.additional_notes}</p>
               </>
             )}

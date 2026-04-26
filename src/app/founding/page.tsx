@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
+import { CHALLENGE_PILLS } from '@/lib/founding-challenge-pills';
 
 const REF_COOKIE = 'p18_fm_ref';
 
@@ -22,13 +23,22 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [journey, setJourney] = useState('');
-  const [challenge, setChallenge] = useState('');
+  const [challengePills, setChallengePills] = useState<Set<string>>(new Set());
+  const [challengeOther, setChallengeOther] = useState('');
   const [workingWithAttorney, setWorkingWithAttorney] = useState('');
   const [canCommit, setCanCommit] = useState('');
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const togglePill = (value: string) => {
+    setChallengePills(prev => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  };
 
   // Capture ?ref= into cookie + state
   useEffect(() => {
@@ -46,8 +56,8 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
     e.preventDefault();
     setError(null);
 
-    if (!firstName.trim() || !email.trim() || !journey || !challenge.trim() || !canCommit) {
-      setError('Please fill out the required fields.');
+    if (!firstName.trim() || !email.trim() || !journey || challengePills.size === 0 || !canCommit) {
+      setError('Please fill out the required fields, including at least one challenge.');
       return;
     }
 
@@ -60,10 +70,10 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           first_name: firstName.trim(),
           email: email.trim(),
           journey_stage: journey,
-          biggest_challenge: challenge.trim(),
+          biggest_challenge: Array.from(challengePills),
+          biggest_challenge_other: challengeOther.trim() || null,
           working_with_attorney: workingWithAttorney || null,
           can_commit: canCommit,
-          additional_notes: notes.trim() || null,
           ref_token: refToken,
         }),
       });
@@ -125,10 +135,69 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         <p className="eyebrow">Pattern18 Founding Members</p>
         <h1>Help shape the tool you wish you&apos;d had from day one.</h1>
         <p className="lede">
-          10 Founding Member spots. 6 months free in exchange for feedback. No cost, no ownership, no strings.
+          10 Founding Member spots. <strong className="deadline-emphasis">Applications close Wednesday, May 6.</strong> 6 months free in exchange for feedback. No cost, no ownership, no strings.
         </p>
-        <a href="#apply" className="btn-primary">Apply to become a Founding Member</a>
+        <a href="#apply" className="btn-primary">Claim my spot</a>
       </section>
+
+      {/* WHAT YOU GET — moved up: skimmers see the offer first */}
+      <section className="section">
+        <h2 className="center">What Founding Members get</h2>
+        <p className="price-anchor">Pattern18 is $97/month. Founding Members pay $0 for 6 months. That&apos;s $582 saved, plus a locked Founding Member rate forever.</p>
+        <div className="cards-grid">
+          <div className="card">
+            <h3>Free access for 6 months</h3>
+            <p>Every feature, no cost, no credit card.</p>
+          </div>
+          <div className="card">
+            <h3>Private Founding Member community</h3>
+            <p>A dedicated space inside the Pattern18 community for Founding Members only. Weekly office hours, peer support, direct line to me.</p>
+          </div>
+          <div className="card">
+            <h3>Founding Member rate for life</h3>
+            <p>After 6 months, if Pattern18 is useful to you, keep your Founding Member pricing locked in. No obligation.</p>
+          </div>
+          <div className="card">
+            <h3>Your input shapes the product</h3>
+            <p>Weekly check-ins, async feedback any time, and direct feedback loops. What you say changes what gets built.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT WE ASK */}
+      <section className="section">
+        <h2 className="center">What we ask in return</h2>
+        <ol className="ask-list">
+          <li>Use Pattern18 for your real situation, not just as a test.</li>
+          <li>A 15-minute weekly check-in (quick form, 5 questions).</li>
+          <li>Optional: a quick chat with me anytime if you want to talk something through (my calendar is in your welcome email).</li>
+          <li>At day 90, share a testimonial if Pattern18 has helped, named, first-name-only, or fully anonymous, your choice. Not required.</li>
+        </ol>
+      </section>
+
+      {/* WHO FOR / NOT FOR */}
+      <section className="section">
+        <div className="who-grid">
+          <div className="who-card">
+            <h3>For you if</h3>
+            <ul>
+              <li>Currently navigating high-conflict custody.</li>
+              <li>Ready to use Pattern18 for real, not hypothetically.</li>
+              <li>Willing to give honest feedback, both what works and what doesn&apos;t.</li>
+            </ul>
+          </div>
+          <div className="who-card">
+            <h3>Not for you right now if</h3>
+            <ul>
+              <li>You&apos;re in acute crisis or mid-emergency. You deserve a finished product, not a work-in-progress. The general launch comes later this year.</li>
+              <li>You want only to observe, not actively use.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* EMOTIONAL MIDDLE — alternating tinted background band */}
+      <div className="emotional-middle">
 
       {/* IF NO ONE AROUND YOU GETS IT */}
       <section className="section listen-section">
@@ -146,8 +215,6 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
 
         <p>Pattern18 was built by someone who did live this. Through years of court-ordered chaos, until the right tools made a way out.</p>
 
-        <p>Pattern18 is here for you, 24/7. It does not sleep. It does not bill you by the hour. It does not tell you to &ldquo;just take a deep breath.&rdquo;</p>
-
         <div className="listen-when">
           <p>When the message comes at 11pm, Pattern18 is awake.</p>
           <p>When you&apos;re sitting in your car after a drop-off trying to breathe, Pattern18 is there.</p>
@@ -163,48 +230,6 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
 
         <p className="listen-close">You&apos;re not alone in this anymore.</p>
-      </section>
-
-      {/* WHY */}
-      <section className="section">
-        <h2>Why Founding Members?</h2>
-        <div className="founder-letter">
-          <p>
-            Pattern18 works. But the version I built alone is not the version that will help 10 million
-            parents navigating high-conflict custody. The people who know how to make it better are the
-            ones using it in the middle of real chaos.
-          </p>
-          <p>
-            I&apos;m opening 10 Founding Member spots to a cohort of real survivors. You&apos;ll use Pattern18
-            for your actual day-to-day situation. You&apos;ll tell me what works, what&apos;s broken, and what&apos;s
-            missing. In exchange, you get free access, a locked Founding Member rate for life if you choose
-            to continue after 6 months, and direct input on the roadmap.
-          </p>
-          <p className="emphasis">
-            Your feedback is the single most important thing in this program.
-          </p>
-          <p className="emphasis">
-            This is how great software gets built. Not in boardrooms. Not from market research. From the
-            people living the problem, telling the truth about what helps and what doesn&apos;t. Every survey
-            response, every bug you flag, every &quot;I wish it did this&quot;: it shapes what reaches the next
-            survivor faster.
-          </p>
-          <p className="emphasis">
-            The next 10 million parents needing this tool aren&apos;t going to wait. We don&apos;t have years to
-            figure it out.
-          </p>
-
-          <blockquote className="pull-quote">
-            What you tell me in week one might be the change that helps a mother walk into court next month
-            with the documentation that wins her case.
-          </blockquote>
-
-          <p className="emphasis">
-            That&apos;s the work. Honest feedback, fast iteration, real impact. We owe it to the people coming
-            behind us.
-          </p>
-          <p className="signed">— Rae, Founder</p>
-        </div>
       </section>
 
       {/* WHAT PATTERN18 DOES */}
@@ -264,61 +289,49 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
       </section>
 
-      {/* WHAT YOU GET */}
-      <section className="section tinted">
-        <h2 className="center">What Founding Members get</h2>
-        <p className="price-anchor">Pattern18 normally costs $97/month. Founding Members get six months free, plus a locked Founding Member rate for life if you choose to continue.</p>
-        <div className="cards-grid">
-          <div className="card">
-            <h3>Free access for 6 months</h3>
-            <p>Every feature, no cost, no credit card.</p>
-          </div>
-          <div className="card">
-            <h3>Private Founding Member community</h3>
-            <p>A dedicated space inside the Pattern18 community for Founding Members only. Weekly office hours, peer support, direct line to me.</p>
-          </div>
-          <div className="card">
-            <h3>Founding Member rate for life</h3>
-            <p>After 6 months, if Pattern18 is useful to you, keep your Founding Member pricing locked in. No obligation.</p>
-          </div>
-          <div className="card">
-            <h3>Your input shapes the product</h3>
-            <p>Weekly check-ins, async feedback any time, and direct feedback loops. What you say changes what gets built.</p>
-          </div>
+      {/* WHY FOUNDING MEMBERS — moved last in emotional middle for cohort-of-survivors mission close */}
+      <section className="section">
+        <h2>Why Founding Members?</h2>
+        <div className="founder-letter">
+          <p>
+            Pattern18 works. But the version I built alone is not the version that will help 10 million
+            parents navigating high-conflict custody. The people who know how to make it better are the
+            ones using it in the middle of real chaos.
+          </p>
+          <p>
+            I&apos;m opening 10 Founding Member spots to a cohort of real survivors. You&apos;ll use Pattern18
+            for your actual day-to-day situation. You&apos;ll tell me what works, what&apos;s broken, and what&apos;s
+            missing. In exchange, you get free access, a locked Founding Member rate for life if you choose
+            to continue after 6 months, and direct input on the roadmap.
+          </p>
+          <p className="emphasis">
+            Your feedback is the single most important thing in this program.
+          </p>
+          <p className="emphasis">
+            This is how great software gets built. Not in boardrooms. Not from market research. From the
+            people living the problem, telling the truth about what helps and what doesn&apos;t. Every survey
+            response, every bug you flag, every &quot;I wish it did this&quot;: it shapes what reaches the next
+            survivor faster.
+          </p>
+          <p className="emphasis">
+            The next 10 million parents needing this tool aren&apos;t going to wait. We don&apos;t have years to
+            figure it out.
+          </p>
+
+          <blockquote className="pull-quote">
+            What you tell me in week one might be the change that helps a mother walk into court next month
+            with the documentation that wins her case.
+          </blockquote>
+
+          <p className="emphasis">
+            That&apos;s the work. Honest feedback, fast iteration, real impact. We owe it to the people coming
+            behind us.
+          </p>
+          <p className="signed">— Rae, Founder</p>
         </div>
       </section>
 
-      {/* WHAT WE ASK */}
-      <section className="section">
-        <h2 className="center">What we ask in return</h2>
-        <ol className="ask-list">
-          <li>Use Pattern18 for your real situation, not just as a test.</li>
-          <li>A 15-minute weekly check-in (quick form, 5 questions).</li>
-          <li>Optional: a quick chat with me anytime if you want to talk something through (my calendar is in your welcome email).</li>
-          <li>At day 90, share a testimonial if Pattern18 has helped, named, first-name-only, or fully anonymous, your choice. Not required.</li>
-        </ol>
-      </section>
-
-      {/* WHO FOR / NOT FOR */}
-      <section className="section">
-        <div className="who-grid">
-          <div className="who-card">
-            <h3>For you if</h3>
-            <ul>
-              <li>Currently navigating high-conflict custody.</li>
-              <li>Ready to use Pattern18 for real, not hypothetically.</li>
-              <li>Willing to give honest feedback, both what works and what doesn&apos;t.</li>
-            </ul>
-          </div>
-          <div className="who-card">
-            <h3>Not for you right now if</h3>
-            <ul>
-              <li>You&apos;re in acute crisis or mid-emergency. You deserve a finished product, not a work-in-progress. The general launch comes later this year.</li>
-              <li>You want only to observe, not actively use.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+      </div>{/* /emotional-middle */}
 
       {/* ARE YOU READY? */}
       <section className="section ready-section">
@@ -332,13 +345,14 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
         </div>
         <p className="ready-yes">If yes, this is for you.</p>
         <div className="ready-cta-wrap">
-          <a href="#apply" className="btn-primary btn-ready">Apply to become a Founding Member</a>
+          <a href="#apply" className="btn-primary btn-ready">Claim my spot</a>
         </div>
       </section>
 
       {/* APPLICATION */}
       <section id="apply" className="section apply-section">
         <h2 className="center">Apply to become a Founding Member</h2>
+        <p className="apply-deadline">Applications close Wednesday, May 6 at 11:59 PM MST.</p>
         {refToken && (
           <p className="ref-banner">Referred by another Founding Member ✓</p>
         )}
@@ -379,15 +393,34 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
             </select>
           </label>
 
+          <fieldset className="field">
+            <legend className="field-label">What are you dealing with right now? <em>*</em></legend>
+            <p className="field-sublabel">Pick as many as apply. No wrong answers.</p>
+            <div className="challenge-pills">
+              {CHALLENGE_PILLS.map(p => (
+                <label
+                  key={p.value}
+                  className={`challenge-pill ${challengePills.has(p.value) ? 'on' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={challengePills.has(p.value)}
+                    onChange={() => togglePill(p.value)}
+                  />
+                  {p.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           <label className="field">
-            <span className="field-label">What&apos;s the single biggest communication or documentation challenge you&apos;re dealing with right now? <em>*</em></span>
+            <span className="field-label">Anything else you want me to know? <em>(optional, 1-2 sentences)</em></span>
             <textarea
-              value={challenge}
-              onChange={(e) => setChallenge(e.target.value)}
-              required
-              rows={4}
-              maxLength={1500}
-              placeholder="2-3 sentences is plenty."
+              value={challengeOther}
+              onChange={(e) => setChallengeOther(e.target.value)}
+              rows={3}
+              maxLength={600}
+              placeholder="Skip if the pills above cover it."
             />
           </label>
 
@@ -397,7 +430,7 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
               value={workingWithAttorney}
               onChange={(e) => setWorkingWithAttorney(e.target.value)}
             >
-              <option value="">Prefer not to answer</option>
+              <option value="">Select&hellip;</option>
               <option value="yes_currently">Yes, currently</option>
               <option value="past_not_current">I have in the past, but not currently</option>
               <option value="no">No, not working with one</option>
@@ -418,7 +451,8 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
           )}
 
           <fieldset className="field">
-            <legend className="field-label">This program runs on honest feedback. Can you commit to a quick 15-minute weekly check-in and sharing what&apos;s working, what&apos;s broken, and what you wish Pattern18 did better? <em>*</em></legend>
+            <legend className="field-label">Can you commit to honest weekly feedback? <em>*</em></legend>
+            <p className="field-sublabel">A quick 15-minute weekly check-in. Tell me what&apos;s working, what&apos;s broken, and what you wish Pattern18 did better.</p>
             <div className="commit-row">
               {[
                 { v: 'yes',     l: 'Yes' },
@@ -439,18 +473,8 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
             </div>
           </fieldset>
 
-          <label className="field">
-            <span className="field-label">Anything else you want me to know? <em>(optional)</em></span>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={1500}
-            />
-          </label>
-
           <button type="submit" disabled={submitting} className="btn-primary btn-block">
-            {submitting ? 'Sending…' : 'Send my application'}
+            {submitting ? 'Sending…' : 'Claim my spot'}
           </button>
           <p className="form-foot">
             <span className="form-foot-icon" aria-hidden="true">✉</span>
@@ -531,6 +555,10 @@ function PageStyles() {
         margin-left: auto;
         margin-right: auto;
       }
+      .deadline-emphasis {
+        color: var(--teal);
+        font-weight: 700;
+      }
       .hero .btn-primary { min-width: 320px; }
 
       .section {
@@ -538,14 +566,13 @@ function PageStyles() {
         margin: 0 auto;
         padding: 64px 24px;
       }
-      .section.tinted {
-        background: var(--teal-tint);
-        max-width: none;
-      }
-      .section.tinted > * {
-        max-width: 920px;
-        margin-left: auto;
-        margin-right: auto;
+      /* Alternating background band for the emotional middle (sections
+         If no one around you gets it / What Pattern18 actually does /
+         Why I built this / Why Founding Members?). Full-bleed band on
+         a paler-than-teal-tint shade that reads as a clean section
+         break against warm-white. */
+      .emotional-middle {
+        background: #F0F7F6;
       }
       .section h2 {
         font-family: var(--serif);
@@ -999,6 +1026,59 @@ function PageStyles() {
         font-size: 12px;
         color: var(--charcoal-70);
         margin-top: 8px;
+      }
+
+      .field-sublabel {
+        display: block;
+        font-size: 13px;
+        font-style: italic;
+        font-weight: 400;
+        color: var(--charcoal-70);
+        margin: -2px 0 8px;
+        line-height: 1.5;
+      }
+
+      .challenge-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 4px 0 10px;
+      }
+      .challenge-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 10px 14px;
+        border: 1px solid var(--teal-border);
+        background: var(--warm-white);
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--charcoal);
+        line-height: 1.3;
+        transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+      }
+      .challenge-pill:hover {
+        border-color: var(--teal);
+      }
+      .challenge-pill input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .challenge-pill.on {
+        background: var(--teal);
+        color: var(--warm-white);
+        border-color: var(--teal);
+      }
+
+      .apply-deadline {
+        text-align: center;
+        font-size: 13px;
+        font-style: italic;
+        color: var(--charcoal-70);
+        margin: 0 0 18px;
       }
 
       .attorney-followup {

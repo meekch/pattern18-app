@@ -5,6 +5,7 @@ import { isFoundingMemberProgramLive } from '@/lib/feature-flags';
 import { generateRefToken } from '@/lib/founding-tokens';
 import { sendEmail } from '@/lib/email-send';
 import { applicationConfirmation, applicationNotification } from '@/lib/founding-emails';
+import { CHALLENGE_PILL_KEYS } from '@/lib/founding-challenge-pills';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -41,9 +42,9 @@ export async function POST(req: NextRequest) {
       email,
       journey_stage,
       biggest_challenge,
+      biggest_challenge_other,
       working_with_attorney,
       can_commit,
-      additional_notes,
       ref_token,
     } = body ?? {};
 
@@ -61,8 +62,18 @@ export async function POST(req: NextRequest) {
     if (!journey_stage || !VALID_JOURNEY_STAGES.includes(journey_stage)) {
       return NextResponse.json({ error: 'Invalid journey stage' }, { status: 400 });
     }
-    if (!biggest_challenge || typeof biggest_challenge !== 'string' || biggest_challenge.trim().length === 0) {
-      return NextResponse.json({ error: 'Biggest challenge is required' }, { status: 400 });
+    if (
+      !Array.isArray(biggest_challenge) ||
+      biggest_challenge.length === 0 ||
+      !biggest_challenge.every((k: unknown) => typeof k === 'string' && CHALLENGE_PILL_KEYS.has(k))
+    ) {
+      return NextResponse.json({ error: 'Pick at least one challenge' }, { status: 400 });
+    }
+    if (
+      biggest_challenge_other != null &&
+      (typeof biggest_challenge_other !== 'string' || biggest_challenge_other.length > 600)
+    ) {
+      return NextResponse.json({ error: 'Invalid elaborate field' }, { status: 400 });
     }
     if (!can_commit || !VALID_COMMIT.includes(can_commit)) {
       return NextResponse.json({ error: 'Invalid commitment value' }, { status: 400 });
@@ -90,14 +101,20 @@ export async function POST(req: NextRequest) {
     // Generate the new applicant's own ref_token (for them to share later if approved)
     const newRefToken = generateRefToken();
 
+    const challengeKeys: string[] = biggest_challenge as string[];
+    const challengeOther =
+      typeof biggest_challenge_other === 'string' && biggest_challenge_other.trim().length > 0
+        ? biggest_challenge_other.trim()
+        : null;
+
     const insertPayload = {
       first_name: first_name.trim(),
       email: email.toLowerCase().trim(),
       journey_stage,
-      biggest_challenge: biggest_challenge.trim(),
+      biggest_challenge: challengeKeys,
+      biggest_challenge_other: challengeOther,
       working_with_attorney: working_with_attorney || null,
       can_commit,
-      additional_notes: typeof additional_notes === 'string' ? additional_notes.trim() : null,
       ref_token: newRefToken,
       referrer_application_id,
       status: 'pending',
@@ -137,7 +154,8 @@ export async function POST(req: NextRequest) {
       journeyStage: journey_stage,
       attorneyStatus: working_with_attorney || null,
       canCommit: can_commit,
-      biggestChallenge: biggest_challenge.trim(),
+      biggestChallenge: challengeKeys,
+      biggestChallengeOther: challengeOther,
     });
     await sendEmail({
       to: 'hello@pattern18.com',

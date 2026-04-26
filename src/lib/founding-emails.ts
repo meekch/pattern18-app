@@ -3,6 +3,7 @@
 // system-ui), no web fonts (most clients block them).
 
 import { appUrl, founderCalendlyUrl } from './feature-flags';
+import { challengeKeysToLabels } from './founding-challenge-pills';
 
 const SKOOL_URL = 'https://www.skool.com/comp-4007/about';
 
@@ -161,11 +162,20 @@ export function applicationNotification(args: {
   journeyStage: string;
   attorneyStatus: string | null;
   canCommit: string;
-  biggestChallenge: string;
+  biggestChallenge: string[];
+  biggestChallengeOther?: string | null;
 }): RenderedEmail {
   const attorneyLine = args.attorneyStatus
     ? ATTORNEY_LABELS[args.attorneyStatus] ?? args.attorneyStatus
     : 'Not provided';
+
+  const challengeLabels = challengeKeysToLabels(args.biggestChallenge);
+  const challengeTextList = challengeLabels.length > 0
+    ? challengeLabels.map((l) => `- ${l}`).join('\n')
+    : '(none selected)';
+  const otherText = args.biggestChallengeOther
+    ? `\n\nOther:\n${args.biggestChallengeOther}`
+    : '';
 
   const text = `New Founding Member application received.
 
@@ -175,10 +185,21 @@ Journey: ${args.journeyStage}
 Attorney: ${attorneyLine}
 Commitment: ${args.canCommit}
 
-Biggest challenge:
-${args.biggestChallenge}
+Biggest challenges:
+${challengeTextList}${otherText}
 
 Review at ${appUrl()}/admin/founding`;
+
+  const challengeListHtml = challengeLabels.length > 0
+    ? `<ul style="margin:0 0 14px;padding-left:20px;background:${TEAL_TINT};border-radius:8px;padding:12px 12px 12px 32px;">${challengeLabels
+        .map((l) => `<li style="margin:0 0 4px;">${esc(l)}</li>`)
+        .join('')}</ul>`
+    : `<p style="margin:0 0 14px;color:${CHARCOAL};opacity:0.6;">(none selected)</p>`;
+
+  const otherHtml = args.biggestChallengeOther
+    ? `<p style="margin:0 0 6px;font-weight:600;">Other:</p>
+<p style="margin:0 0 14px;background:${TEAL_TINT};border-radius:8px;padding:12px;">${esc(args.biggestChallengeOther).replace(/\n/g, '<br>')}</p>`
+    : '';
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">New Founding Member application received.</p>
@@ -189,8 +210,9 @@ Review at ${appUrl()}/admin/founding`;
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Attorney</td><td style="padding:4px 0;">${esc(attorneyLine)}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:${CHARCOAL};opacity:0.6;">Can commit</td><td style="padding:4px 0;">${esc(args.canCommit)}</td></tr>
 </table>
-<p style="margin:0 0 6px;font-weight:600;">Biggest challenge:</p>
-<p style="margin:0 0 14px;background:${TEAL_TINT};border-radius:8px;padding:12px;">${esc(args.biggestChallenge).replace(/\n/g, '<br>')}</p>`;
+<p style="margin:0 0 6px;font-weight:600;">Biggest challenges:</p>
+${challengeListHtml}
+${otherHtml}`;
 
   return {
     subject: `New Founding Member application — ${args.firstName} (${args.email})`,
