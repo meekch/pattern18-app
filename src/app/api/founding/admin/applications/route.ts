@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     approved: 0,
     deferred: 0,
     declined: 0,
+    spots_full: 0,
     onboarded: 0,
     active: 0,
     completed: 0,

@@ -411,67 +411,141 @@ The link is unique to you and good for 7 days.
 }
 
 // =============================================================
-// D) Defer
+// D) Defer (functions as a soft waitlist)
 // =============================================================
 export function deferredEmail(firstName: string): RenderedEmail {
   const text = `Hi ${firstName},
 
-Thanks so much for applying to be a Founding Member.
+Thank you for applying to be a Founding Member of Pattern18.
 
-Based on what you shared, I think Pattern18 will serve you better once the general launch is polished and ready. Founding Member is an intensive cohort where we're still fixing bugs and shaping the UX, I'd rather give you a finished product than ask you to help build it.
+I'm holding your application active right now. Founding Member spots are filling up, and I want to make sure I match each one carefully so the cohort works for everyone in it. If a spot opens up that's right for you, you'll be the first I reach out to.
 
-I'll send you early access when general signups open later this year. No need to do anything on your end.
+In the meantime, two things you're welcome to do:
 
-In the meantime, our free community is here if you'd like to join: ${SKOOL_URL}.
+1. Join our Skool community (no cost, no commitment). It's a space where you'll find others navigating high-conflict custody, glossary content on tactics like DARVO, gaslighting, and coercive control, and ongoing support. I'm in there most days. Link: ${SKOOL_URL}
 
-Take care,
-Rae`;
+2. If anything changes in your situation or your capacity to engage, reply to this email and I'll update your application accordingly.
+
+Whatever you're navigating right now, I see you. You're not alone in this.
+
+— Rae
+Founder, Pattern18`;
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
-<p style="margin:0 0 14px;">Thanks so much for applying to be a Founding Member.</p>
-<p style="margin:0 0 14px;">Based on what you shared, I think Pattern18 will serve you better once the general launch is polished and ready. Founding Member is an intensive cohort where we're still fixing bugs and shaping the UX, I'd rather give you a finished product than ask you to help build it.</p>
-<p style="margin:0 0 14px;">I'll send you early access when general signups open later this year. No need to do anything on your end.</p>
-<p style="margin:0 0 14px;">In the meantime, <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">our free community is here</a> if you'd like to join.</p>
-<p style="margin:0 0 14px;">Take care,<br>Rae</p>`;
+<p style="margin:0 0 14px;">Thank you for applying to be a Founding Member of Pattern18.</p>
+<p style="margin:0 0 14px;">I'm holding your application active right now. Founding Member spots are filling up, and I want to make sure I match each one carefully so the cohort works for everyone in it. If a spot opens up that's right for you, you'll be the first I reach out to.</p>
+<p style="margin:18px 0 10px;font-weight:600;">In the meantime, two things you're welcome to do:</p>
+<ol style="margin:0 0 14px;padding-left:22px;">
+  <li style="margin-bottom:10px;"><strong>Join our Skool community</strong> (no cost, no commitment). It's a space where you'll find others navigating high-conflict custody, glossary content on tactics like DARVO, gaslighting, and coercive control, and ongoing support. I'm in there most days. <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">Join here</a>.</li>
+  <li style="margin-bottom:10px;"><strong>If anything changes</strong> in your situation or your capacity to engage, reply to this email and I'll update your application accordingly.</li>
+</ol>
+<p style="margin:18px 0 0;">Whatever you're navigating right now, I see you. You're not alone in this.</p>`;
 
   return {
-    subject: 'About your Pattern18 Founding Member application',
+    subject: "I'm holding your Pattern18 application",
     text,
     html: wrapEmailHtml({
-      eyebrow: 'Founding Member',
-      headline: 'A note on your application.',
+      preheader: 'You\u2019re on the list. I\u2019ll reach out if a spot opens up that\u2019s right for you.',
+      eyebrow: 'Founding Member · Waitlist',
+      headline: "You're on the list.",
       bodyHtml,
+      signed: true,
     }),
   };
 }
 
 // =============================================================
-// E) Decline
+// E) Decline (warm, non-judgmental)
 // =============================================================
 export function declinedEmail(firstName: string): RenderedEmail {
   const text = `Hi ${firstName},
 
-Thank you for applying to be a Founding Member.
+First, I want to acknowledge the courage it takes to even apply for something like this. The fact that you reached out tells me you're paying attention to what's happening in your life and looking for tools to help. That matters.
 
-This particular cohort isn't the right fit, but that doesn't mean Pattern18 isn't for you. General access opens later this year, and you're welcome to join our free community at ${SKOOL_URL} anytime.
+The Founding Member program is a small cohort with very specific needs, active engagement, willingness to give honest feedback as we shape the product, and capacity to use Pattern18 as your real day-to-day tool right now. After reading your application carefully, I don't think this particular cohort is the right fit for where you are at this moment, and I want to honor that rather than place you somewhere that won't serve you.
 
-Wishing you well,
-Rae`;
+This doesn't mean Pattern18 isn't for you. It means the timing or context isn't right for THIS cohort.
+
+A few things you can do from here:
+
+1. Join our Skool community (no cost, no commitment). It's a space where you'll find others navigating high-conflict custody, glossary content on tactics like DARVO, gaslighting, and coercive control, and ongoing support. Link: ${SKOOL_URL}
+
+2. General access to Pattern18 opens later this year. When it does, you'll be among the first to know.
+
+3. If something has changed (your situation, your capacity, your timing) and you'd like to be considered for a future cohort, just reply to this email. I read every reply.
+
+Whatever you're navigating right now, I see you. You're not alone in this.
+
+— Rae
+Founder, Pattern18`;
 
   const bodyHtml = `
 <p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
-<p style="margin:0 0 14px;">Thank you for applying to be a Founding Member.</p>
-<p style="margin:0 0 14px;">This particular cohort isn't the right fit, but that doesn't mean Pattern18 isn't for you. General access opens later this year, and <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">you're welcome to join our free community</a> anytime.</p>
-<p style="margin:0 0 14px;">Wishing you well,<br>Rae</p>`;
+<p style="margin:0 0 14px;">First, I want to acknowledge the courage it takes to even apply for something like this. The fact that you reached out tells me you're paying attention to what's happening in your life and looking for tools to help. That matters.</p>
+<p style="margin:0 0 14px;">The Founding Member program is a small cohort with very specific needs, active engagement, willingness to give honest feedback as we shape the product, and capacity to use Pattern18 as your real day-to-day tool right now. After reading your application carefully, I don't think this particular cohort is the right fit for where you are at this moment, and I want to honor that rather than place you somewhere that won't serve you.</p>
+<p style="margin:0 0 14px;">This doesn't mean Pattern18 isn't for you. It means the timing or context isn't right for <strong>this</strong> cohort.</p>
+<p style="margin:18px 0 10px;font-weight:600;">A few things you can do from here:</p>
+<ol style="margin:0 0 14px;padding-left:22px;">
+  <li style="margin-bottom:10px;"><strong>Join our Skool community</strong> (no cost, no commitment). It's a space where you'll find others navigating high-conflict custody, glossary content on tactics like DARVO, gaslighting, and coercive control, and ongoing support. <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">Join here</a>.</li>
+  <li style="margin-bottom:10px;"><strong>General access to Pattern18 opens later this year.</strong> When it does, you'll be among the first to know.</li>
+  <li style="margin-bottom:10px;"><strong>If something has changed</strong> (your situation, your capacity, your timing) and you'd like to be considered for a future cohort, just reply to this email. I read every reply.</li>
+</ol>
+<p style="margin:18px 0 0;">Whatever you're navigating right now, I see you. You're not alone in this.</p>`;
 
   return {
-    subject: 'About your Pattern18 Founding Member application',
+    subject: 'A note on your Pattern18 application',
     text,
     html: wrapEmailHtml({
+      preheader: 'A warm note about where you are right now.',
       eyebrow: 'Founding Member',
-      headline: 'A note on your application.',
+      headline: 'Thank you for applying.',
       bodyHtml,
+      signed: true,
+    }),
+  };
+}
+
+// =============================================================
+// E2) Spots Full (cohort-closed waitlist)
+// =============================================================
+export function spotsFullEmail(firstName: string): RenderedEmail {
+  const text = `Hi ${firstName},
+
+Thank you for applying to be a Pattern18 Founding Member. I'm sorry to share that all 10 spots in this cohort are now filled.
+
+I've added you to the waitlist, which means:
+
+1. If a current Founding Member needs to step back, you'll be considered first for that spot.
+2. When general access opens later this year, you'll be among the first to know, with a Founding-Member-adjacent rate held for waitlist members.
+
+In the meantime, you're welcome in our Skool community at no cost: ${SKOOL_URL}. I'm there most days, and you'll find others navigating high-conflict custody, glossary content, and ongoing support.
+
+Whatever you're navigating right now, I see you. You're not alone in this.
+
+— Rae
+Founder, Pattern18`;
+
+  const bodyHtml = `
+<p style="margin:0 0 14px;">Hi ${esc(firstName)},</p>
+<p style="margin:0 0 14px;">Thank you for applying to be a Pattern18 Founding Member. I'm sorry to share that all 10 spots in this cohort are now filled.</p>
+<p style="margin:18px 0 10px;font-weight:600;">I've added you to the waitlist, which means:</p>
+<ol style="margin:0 0 14px;padding-left:22px;">
+  <li style="margin-bottom:10px;">If a current Founding Member needs to step back, you'll be considered first for that spot.</li>
+  <li style="margin-bottom:10px;">When general access opens later this year, you'll be among the first to know, with a Founding-Member-adjacent rate held for waitlist members.</li>
+</ol>
+<p style="margin:0 0 14px;">In the meantime, you're welcome in our <a href="${SKOOL_URL}" style="color:${DEEP_TEAL};font-weight:600;">Skool community</a> at no cost. I'm there most days, and you'll find others navigating high-conflict custody, glossary content, and ongoing support.</p>
+<p style="margin:18px 0 0;">Whatever you're navigating right now, I see you. You're not alone in this.</p>`;
+
+  return {
+    subject: "Pattern18 Founding Member spots filled (you're on the list for next time)",
+    text,
+    html: wrapEmailHtml({
+      preheader: 'All 10 cohort spots are full. You\u2019re on the waitlist.',
+      eyebrow: 'Founding Member · Waitlist',
+      headline: "We're full for now.",
+      bodyHtml,
+      signed: true,
     }),
   };
 }

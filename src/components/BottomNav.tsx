@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface BottomNavProps {
-  active: 'coach' | 'case' | 'docs' | 'menu';
+  active: 'coach' | 'case' | 'healing' | 'docs' | 'menu';
 }
 
 export default function BottomNav({ active }: BottomNavProps) {
@@ -12,10 +12,11 @@ export default function BottomNav({ active }: BottomNavProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   const navItems = [
-    { id: 'coach', label: 'Coach', icon: '💬', path: '/coach' },
-    { id: 'case', label: 'My Case', icon: '📁', path: '/case-file' },
-    { id: 'docs', label: 'Docs', icon: '📄', path: '/docs' },
-    { id: 'menu', label: 'Menu', icon: '☰', path: null },
+    { id: 'coach',   label: 'Coach',   icon: '💬', path: '/coach' },
+    { id: 'case',    label: 'My Case', icon: '📁', path: '/case-file' },
+    { id: 'healing', label: 'Healing', icon: '🌿', path: '/healing' },
+    { id: 'docs',    label: 'Docs',    icon: '📄', path: '/docs' },
+    { id: 'menu',    label: 'Menu',    icon: '☰', path: null },
   ];
 
   const handleNav = (item: typeof navItems[0]) => {
@@ -80,14 +81,6 @@ export default function BottomNav({ active }: BottomNavProps) {
 
             {/* Support & Wellness */}
             <div className="menu-section">
-              <button onClick={() => { setShowMenu(false); router.push('/healing'); }} className="menu-item">
-                <span className="menu-icon"></span>
-                <div className="menu-text">
-                  <span className="menu-title">Healing Space</span>
-                  <span className="menu-desc">Breathing, grounding, support</span>
-                </div>
-              </button>
-
               <button onClick={() => { setShowMenu(false); router.push('/getting-started'); }} className="menu-item">
                 <span className="menu-icon">❓</span>
                 <div className="menu-text">
@@ -134,15 +127,17 @@ export default function BottomNav({ active }: BottomNavProps) {
           justify-content: space-around;
           background: white;
           border-top: 1px solid #e5e7eb;
-          padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+          padding: 6px 0 max(6px, env(safe-area-inset-bottom));
           z-index: 100;
         }
         .nav-item {
+          flex: 1 1 0;
+          min-width: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 4px;
-          padding: 8px 16px;
+          gap: 3px;
+          padding: 6px 4px;
           background: none;
           border: none;
           cursor: pointer;
@@ -150,14 +145,21 @@ export default function BottomNav({ active }: BottomNavProps) {
           transition: color 0.2s;
         }
         .nav-item.active {
-          color: #1F2937;
+          color: #2F9D94;
         }
         .nav-icon {
-          font-size: 24px;
+          font-size: 22px;
+          line-height: 1;
         }
         .nav-label {
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 600;
+          letter-spacing: 0.01em;
+        }
+        @media (min-width: 480px) {
+          .nav-icon { font-size: 24px; }
+          .nav-label { font-size: 11.5px; }
+          .nav-item { padding: 8px 8px; gap: 4px; }
         }
         
         .menu-overlay {

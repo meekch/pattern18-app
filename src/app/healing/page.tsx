@@ -316,7 +316,7 @@ export default function HealingPage() {
         </div>
       )}
 
-      <BottomNav active="menu" />
+      <BottomNav active="healing" />
 
       <style jsx>{`
         .container {

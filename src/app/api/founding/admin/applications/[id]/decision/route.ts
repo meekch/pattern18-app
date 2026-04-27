@@ -7,13 +7,14 @@ import {
   welcomeApproved,
   deferredEmail,
   declinedEmail,
+  spotsFullEmail,
   referralApprovedBonus,
 } from '@/lib/founding-emails';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const VALID_DECISIONS = ['approved', 'deferred', 'declined'] as const;
+const VALID_DECISIONS = ['approved', 'deferred', 'declined', 'spots_full'] as const;
 type Decision = typeof VALID_DECISIONS[number];
 
 async function requireAdmin(req: NextRequest) {
@@ -110,6 +111,9 @@ export async function POST(
     await sendEmail({ to: app.email, subject: e.subject, text: e.text, html: e.html });
   } else if (status === 'declined') {
     const e = declinedEmail(app.first_name);
+    await sendEmail({ to: app.email, subject: e.subject, text: e.text, html: e.html });
+  } else if (status === 'spots_full') {
+    const e = spotsFullEmail(app.first_name);
     await sendEmail({ to: app.email, subject: e.subject, text: e.text, html: e.html });
   }
 

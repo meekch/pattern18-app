@@ -39,6 +39,7 @@ interface Stats {
   approved: number;
   deferred: number;
   declined: number;
+  spots_full: number;
   onboarded: number;
   active: number;
   completed: number;
@@ -61,12 +62,25 @@ interface Checkin {
 const STATUS_COLORS: Record<string, string> = {
   pending:    '#F4846B',
   approved:   '#2F9D94',
-  deferred:   '#9ca3af',
+  deferred:   '#8C9E84',
   declined:   '#dc2626',
+  spots_full: '#E57963',
   onboarded:  '#1A5F5A',
   active:     '#2F9D94',
   completed:  '#1A5F5A',
   withdrew:   '#9ca3af',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'pending',
+  approved: 'approved',
+  deferred: 'waitlist',
+  declined: 'declined',
+  spots_full: 'spots full',
+  onboarded: 'onboarded',
+  active: 'active',
+  completed: 'completed',
+  withdrew: 'withdrew',
 };
 
 const JOURNEY_LABELS: Record<string, string> = {
@@ -148,8 +162,16 @@ export default function AdminFoundingPage() {
 
   useEffect(() => { if (authorized) loadApplications(); }, [statusFilter, authorized, loadApplications]);
 
-  const decide = async (id: string, status: 'approved' | 'deferred' | 'declined', admin_notes?: string) => {
-    if (!confirm(`Mark this application ${status}?`)) return;
+  const decide = async (
+    id: string,
+    status: 'approved' | 'deferred' | 'declined' | 'spots_full',
+    admin_notes?: string
+  ) => {
+    const verb =
+      status === 'spots_full'
+        ? 'Mark this applicant as Spots Full (waitlist email)?'
+        : `Mark this application ${status}?`;
+    if (!confirm(verb)) return;
     const res = await fetch(`/api/founding/admin/applications/${id}/decision`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -238,8 +260,8 @@ export default function AdminFoundingPage() {
             <div style={{ marginBottom: 12 }}>
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #C7E4E0', background: 'white' }}>
                 <option value="">All statuses</option>
-                {['pending','approved','deferred','declined','onboarded','active','completed','withdrew'].map(s => (
-                  <option key={s} value={s}>{s}</option>
+                {['pending','approved','deferred','declined','spots_full','onboarded','active','completed','withdrew'].map(s => (
+                  <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
                 ))}
               </select>
             </div>
@@ -272,16 +294,17 @@ export default function AdminFoundingPage() {
                         <td style={td}>{app.working_with_attorney ? ATTORNEY_LABELS[app.working_with_attorney] ?? app.working_with_attorney : '—'}</td>
                         <td style={td}>{new Date(app.created_at).toLocaleDateString()}</td>
                         <td style={td}>
-                          <span style={{ background: STATUS_COLORS[app.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{app.status}</span>
+                          <span style={{ background: STATUS_COLORS[app.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{STATUS_LABELS[app.status] ?? app.status}</span>
                         </td>
                         <td style={td}>
-                          <div style={{ display: 'flex', gap: 6 }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button onClick={() => setSelected(app)} style={btnGhost}>View</button>
                             {app.status === 'pending' && (
                               <>
                                 <button onClick={() => decide(app.id, 'approved')} style={btnPrimary}>Approve</button>
                                 <button onClick={() => decide(app.id, 'deferred')} style={btnGhost}>Defer</button>
                                 <button onClick={() => decide(app.id, 'declined')} style={btnDanger}>Decline</button>
+                                <button onClick={() => decide(app.id, 'spots_full')} style={btnSpotsFull} title="Use only when all 10 cohort spots are filled">Spots Full</button>
                               </>
                             )}
                             {app.status === 'approved' && (
@@ -357,7 +380,7 @@ export default function AdminFoundingPage() {
             <div style={fieldRow}><span style={fieldLabel}>Journey:</span> {JOURNEY_LABELS[selected.journey_stage] ?? selected.journey_stage}</div>
             <div style={fieldRow}><span style={fieldLabel}>Attorney:</span> {selected.working_with_attorney ? ATTORNEY_LABELS[selected.working_with_attorney] ?? selected.working_with_attorney : 'Not provided'}</div>
             <div style={fieldRow}><span style={fieldLabel}>Will share feedback:</span> {COMMIT_LABELS[selected.can_commit] ?? selected.can_commit}</div>
-            <div style={fieldRow}><span style={fieldLabel}>Status:</span> <span style={{ background: STATUS_COLORS[selected.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{selected.status}</span></div>
+            <div style={fieldRow}><span style={fieldLabel}>Status:</span> <span style={{ background: STATUS_COLORS[selected.status] || '#6b7280', color: 'white', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>{STATUS_LABELS[selected.status] ?? selected.status}</span></div>
             <div style={fieldRow}><span style={fieldLabel}>Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
             {selected.approved_at && <div style={fieldRow}><span style={fieldLabel}>Approved:</span> {new Date(selected.approved_at).toLocaleString()}</div>}
             {selected.access_expires_at && <div style={fieldRow}><span style={fieldLabel}>Access until:</span> {new Date(selected.access_expires_at).toLocaleDateString()}</div>}
@@ -401,11 +424,20 @@ export default function AdminFoundingPage() {
               </>
             )}
             {selected.status === 'pending' && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-                <button onClick={() => decide(selected.id, 'approved')} style={{ ...btnPrimary, flex: 1 }}>Approve</button>
-                <button onClick={() => decide(selected.id, 'deferred')} style={{ ...btnGhost, flex: 1 }}>Defer</button>
-                <button onClick={() => decide(selected.id, 'declined')} style={{ ...btnDanger, flex: 1 }}>Decline</button>
-              </div>
+              <>
+                <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
+                  <button onClick={() => decide(selected.id, 'approved')} style={{ ...btnPrimary, flex: '1 1 100px' }}>Approve</button>
+                  <button onClick={() => decide(selected.id, 'deferred')} style={{ ...btnGhost, flex: '1 1 100px' }}>Defer</button>
+                  <button onClick={() => decide(selected.id, 'declined')} style={{ ...btnDanger, flex: '1 1 100px' }}>Decline</button>
+                </div>
+                <button
+                  onClick={() => decide(selected.id, 'spots_full')}
+                  style={{ ...btnSpotsFull, marginTop: 10, width: '100%' }}
+                  title="Use only when all 10 cohort spots are filled"
+                >
+                  Spots Full (waitlist email)
+                </button>
+              </>
             )}
             {selected.status === 'approved' && (
               <button onClick={() => onboard(selected.id)} style={{ ...btnPrimary, marginTop: 20, width: '100%' }}>Mark onboarded</button>
@@ -424,3 +456,4 @@ const fieldLabel: React.CSSProperties = { fontWeight: 600, color: '#6b7280', mar
 const btnPrimary: React.CSSProperties = { background: '#2F9D94', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' };
 const btnGhost: React.CSSProperties = { background: 'white', color: '#1F2937', border: '1px solid #C7E4E0', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' };
 const btnDanger: React.CSSProperties = { background: '#dc2626', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' };
+const btnSpotsFull: React.CSSProperties = { background: '#E57963', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 700, fontSize: 13, cursor: 'pointer', letterSpacing: 0.2 };

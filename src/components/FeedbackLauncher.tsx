@@ -56,7 +56,7 @@ export default function FeedbackLauncher() {
         .fb-launcher {
           position: fixed;
           right: 16px;
-          bottom: calc(16px + env(safe-area-inset-bottom));
+          bottom: calc(78px + env(safe-area-inset-bottom));
           z-index: 9000;
           display: inline-flex;
           align-items: center;
