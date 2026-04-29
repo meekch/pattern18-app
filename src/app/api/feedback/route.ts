@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkIpRateLimit, checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -36,12 +36,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!checkRateLimit(user.id)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    // Anonymous submissions are accepted — the floating launcher lives
+    // on marketing routes, where most visitors are logged out. Use a
+    // tighter per-IP bucket so the anon path can't be hammered.
+    if (user) {
+      if (!checkRateLimit(user.id)) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+      }
+    } else {
+      const rl = checkIpRateLimit(req, 'feedback', 5);
+      if (!rl.ok) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+      }
     }
 
     const body = await req.json().catch(() => ({}));
@@ -63,8 +69,8 @@ export async function POST(req: NextRequest) {
     );
 
     const { error } = await supabase.from('feedback').insert({
-      user_id: user.id,
-      email: user.email ?? null,
+      user_id: user?.id ?? null,
+      email: user?.email ?? null,
       type,
       message: message.trim(),
       pathname: typeof pathname === 'string' && pathname.length <= 500 ? pathname : null,

@@ -1,10 +1,38 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
 import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL, SKOOL_URL } from '@/lib/stripe-links';
 
+// May 6 2026 11:59 PM AZ (MST, UTC-7) === May 7 2026 06:59 UTC.
+// Hardcoded UTC milliseconds so the value is identical on the server (initial
+// SSR render at deploy time) and on the client. The check runs at module load
+// (initial render) AND on a 60s interval after mount, so a long-open tab also
+// auto-hides the banner the moment the deadline passes. Server-side build
+// ensures the static HTML reflects the real date when redeployed; the
+// /founding page has its own server-side gate so a clock-manipulated client
+// can't bypass the actual application cutoff anyway.
+const FOUNDING_DEADLINE_UTC = Date.UTC(2026, 4, 7, 6, 59, 0);
+
+function isBeforeFoundingDeadline(): boolean {
+  return Date.now() < FOUNDING_DEADLINE_UTC;
+}
+
 export default function HomePage() {
+  const [showFoundingBanner, setShowFoundingBanner] = useState(isBeforeFoundingDeadline);
+
+  useEffect(() => {
+    if (!showFoundingBanner) return;
+    const id = setInterval(() => {
+      if (!isBeforeFoundingDeadline()) {
+        setShowFoundingBanner(false);
+        clearInterval(id);
+      }
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [showFoundingBanner]);
+
   return (
     <div className="page">
       <div className="teal-accent" />
@@ -32,6 +60,25 @@ export default function HomePage() {
         </div>
         <div className="strip-divider" />
       </section>
+
+      {/* ============ FOUNDING MEMBER BANNER (auto-hides after May 6 2026 11:59 PM AZ) ============ */}
+      {showFoundingBanner && (
+        <section className="section founding-banner-section" aria-labelledby="founding-banner-h">
+          <div className="founding-banner">
+            <p className="founding-eyebrow">Pattern18 Founding Members</p>
+            <h2 id="founding-banner-h" className="founding-h">
+              Help shape the tool you wish you&rsquo;d had from day one.
+            </h2>
+            <p className="founding-sub">
+              10 spots. 6 months free. Applications close Wednesday, May 6.
+            </p>
+            <p className="founding-body">
+              Pattern18 Founding Members are not customers. They are the survivors helping shape what this product becomes for everyone who finds it after them. Honest feedback is the highest-value contribution. No required calls, no homework, async-first, on your schedule.
+            </p>
+            <Link href="/founding" className="btn-primary founding-cta">Claim my spot</Link>
+          </div>
+        </section>
+      )}
 
       {/* ============ WHO THIS IS FOR ============ */}
       <section className="section">
@@ -401,6 +448,89 @@ export default function HomePage() {
           margin-left: auto;
           margin-right: auto;
         }
+
+        /* Founding Member homepage banner — warm-white panel inside the
+           regular section so it sits on the cream background without the
+           coral urgency tone. Coral is reserved for May 5/6 final-day. */
+        .founding-banner-section {
+          padding-top: 32px;
+          padding-bottom: 32px;
+        }
+        .founding-banner {
+          max-width: 720px;
+          margin: 0 auto;
+          background: var(--teal-tint);
+          border: 1px solid var(--teal-border);
+          border-radius: 18px;
+          padding: 36px 28px;
+          text-align: center;
+        }
+        .founding-eyebrow {
+          color: var(--teal);
+          font-family: var(--sans);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          margin: 0 0 14px;
+        }
+        .founding-h {
+          font-family: var(--serif);
+          font-weight: 700;
+          font-size: clamp(24px, 3.6vw, 36px);
+          color: var(--charcoal);
+          line-height: 1.18;
+          letter-spacing: -0.01em;
+          margin: 0 0 12px;
+          text-wrap: balance;
+        }
+        .founding-sub {
+          font-family: var(--sans);
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--deep-teal, #1A5F5A);
+          margin: 0 0 16px;
+          line-height: 1.45;
+        }
+        .founding-body {
+          font-family: var(--sans);
+          font-size: 16px;
+          color: var(--charcoal);
+          opacity: 0.85;
+          line-height: 1.6;
+          max-width: 580px;
+          margin: 0 auto 22px;
+        }
+        .founding-cta {
+          display: inline-block;
+          min-height: 48px;
+          padding: 14px 28px;
+          font-size: 16px;
+        }
+        @media (max-width: 480px) {
+          .founding-banner-section {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+          .founding-banner {
+            padding: 28px 20px;
+            border-radius: 14px;
+          }
+          .founding-h {
+            font-size: 24px;
+          }
+          .founding-sub {
+            font-size: 16px;
+          }
+          .founding-body {
+            font-size: 16px;
+          }
+          .founding-cta {
+            display: block;
+            width: 100%;
+          }
+        }
+
         .section-h2 {
           font-family: var(--serif);
           font-weight: 700;
