@@ -30,6 +30,9 @@ export default function CoachPage() {
   const [currentRiskLevel, setCurrentRiskLevel] = useState<string>('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  // "Send to Christy" per-message override — keyed by message index, value
+  // is 'idle' | 'confirm' | 'sending' | 'sent' | 'error'.
+  const [stcStatus, setStcStatus] = useState<Record<number, 'idle' | 'confirm' | 'sending' | 'sent' | 'error'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -254,6 +257,28 @@ export default function CoachPage() {
     }
   };
 
+  const sendToChristy = async (messageIndex: number, content: string) => {
+    setStcStatus(prev => ({ ...prev, [messageIndex]: 'sending' }));
+    try {
+      const res = await fetch('/api/coach-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: content,
+          intent: 'manual_override',
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '/coach',
+        }),
+      });
+      if (!res.ok) {
+        setStcStatus(prev => ({ ...prev, [messageIndex]: 'error' }));
+        return;
+      }
+      setStcStatus(prev => ({ ...prev, [messageIndex]: 'sent' }));
+    } catch {
+      setStcStatus(prev => ({ ...prev, [messageIndex]: 'error' }));
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -400,36 +425,91 @@ export default function CoachPage() {
           </div>
         ) : (
           <div className="chat">
-            {messages.map((msg, i) => (
-              <div key={i} className={`message ${msg.role}`}>
-                {msg.images && msg.images.length > 0 && (
-                  <div className="message-images">
-                    {msg.images.map((url, j) => (
-                      <img key={j} src={url} alt="Uploaded" className="message-image" />
-                    ))}
-                  </div>
-                )}
-                {msg.content && (
-                  <div className="message-content">
-                    {msg.content}
-                  </div>
-                )}
-                {msg.role === 'assistant' && msg.patterns && msg.patterns.length > 0 && (
-                  <div className="pattern-section">
-                    <div className="pattern-tags">
-                      {msg.patterns.map((p, j) => (
-                        <span key={j} className={`pattern-tag ${msg.riskLevel || 'medium'}`}>{p}</span>
+            {messages.map((msg, i) => {
+              const stc = stcStatus[i] ?? 'idle';
+              return (
+                <div key={i} className={`message ${msg.role}`}>
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="message-images">
+                      {msg.images.map((url, j) => (
+                        <img key={j} src={url} alt="Uploaded" className="message-image" />
                       ))}
                     </div>
-                  </div>
-                )}
-                {msg.role === 'assistant' && msg.content && isCourtDocument(msg.content) && (
-                  <button className="download-doc-btn" onClick={() => handleDocumentDownload(msg.content)}>
-                    ⬇ Download as Word Document
-                  </button>
-                )}
-              </div>
-            ))}
+                  )}
+                  {msg.content && (
+                    <div className="message-content">
+                      {msg.content}
+                    </div>
+                  )}
+                  {msg.role === 'assistant' && msg.patterns && msg.patterns.length > 0 && (
+                    <div className="pattern-section">
+                      <div className="pattern-tags">
+                        {msg.patterns.map((p, j) => (
+                          <span key={j} className={`pattern-tag ${msg.riskLevel || 'medium'}`}>{p}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {msg.role === 'assistant' && msg.content && isCourtDocument(msg.content) && (
+                    <button className="download-doc-btn" onClick={() => handleDocumentDownload(msg.content)}>
+                      ⬇ Download as Word Document
+                    </button>
+                  )}
+                  {msg.role === 'user' && msg.content && (
+                    <div className="message-actions">
+                      {stc === 'idle' && (
+                        <button
+                          type="button"
+                          className="send-to-christy"
+                          onClick={() => setStcStatus(prev => ({ ...prev, [i]: 'confirm' }))}
+                          aria-label="Send this message to Christy as feedback"
+                        >
+                          Send to Christy →
+                        </button>
+                      )}
+                      {stc === 'confirm' && (
+                        <span className="stc-confirm">
+                          <span className="stc-confirm-q">Send to Christy as feedback?</span>
+                          <button
+                            type="button"
+                            className="stc-yes"
+                            onClick={() => sendToChristy(i, msg.content)}
+                          >
+                            Send
+                          </button>
+                          <button
+                            type="button"
+                            className="stc-no"
+                            onClick={() => setStcStatus(prev => ({ ...prev, [i]: 'idle' }))}
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      )}
+                      {stc === 'sending' && (
+                        <button type="button" className="send-to-christy" disabled>
+                          Sending…
+                        </button>
+                      )}
+                      {stc === 'sent' && (
+                        <button type="button" className="send-to-christy sent" disabled>
+                          Sent ✓
+                        </button>
+                      )}
+                      {stc === 'error' && (
+                        <button
+                          type="button"
+                          className="send-to-christy"
+                          onClick={() => sendToChristy(i, msg.content)}
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {sending && (
               <div className="message assistant">
                 <div className="typing">Analyzing...</div>
@@ -483,6 +563,7 @@ export default function CoachPage() {
             placeholder={pendingFile ? "Add a message or hit send..." : "What's going on?"}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             disabled={sending}
+            aria-describedby="coach-input-helper"
           />
           <button
             className="send-btn"
@@ -499,6 +580,9 @@ export default function CoachPage() {
             hidden
           />
         </div>
+        <p id="coach-input-helper" className="input-helper">
+          Paste a message, ask a question, tell me what&rsquo;s broken, anything you need.
+        </p>
       </div>
 
       <BottomNav active="coach" />
@@ -822,6 +906,93 @@ export default function CoachPage() {
         .send-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+        .input-helper {
+          font-size: 12px;
+          color: #9ca3af;
+          margin: 8px 0 0;
+          text-align: center;
+          line-height: 1.4;
+          padding: 0 4px;
+        }
+
+        /* Per-message "Send to Christy →" override (Step 5).
+           Small, muted text-link bottom-right of each user bubble.
+           Visible-on-hover on desktop, always visible on mobile so it
+           remains tappable on touch devices without a hover state. */
+        .message-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 4px;
+          font-size: 12px;
+          line-height: 1.3;
+          color: #9ca3af;
+        }
+        .send-to-christy {
+          background: none;
+          border: none;
+          color: #6b7280;
+          font: inherit;
+          font-size: 12px;
+          cursor: pointer;
+          padding: 6px 8px;
+          border-radius: 6px;
+          opacity: 0.55;
+          transition: opacity 0.15s, color 0.15s, background 0.15s;
+          min-height: 32px;
+        }
+        .send-to-christy:hover {
+          opacity: 1;
+          color: #2F9D94;
+          background: #EAF5F3;
+        }
+        .send-to-christy.sent {
+          color: #1A5F5A;
+          opacity: 1;
+          cursor: default;
+        }
+        .send-to-christy:disabled {
+          cursor: not-allowed;
+        }
+        .stc-confirm {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #EAF5F3;
+          border: 1px solid #C7E4E0;
+          border-radius: 8px;
+          padding: 6px 8px;
+          font-size: 12px;
+          color: #1F2937;
+        }
+        .stc-confirm-q {
+          color: #1F2937;
+          font-weight: 500;
+        }
+        .stc-yes,
+        .stc-no {
+          background: none;
+          border: none;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+          min-height: 32px;
+        }
+        .stc-yes {
+          color: #FAFAF7;
+          background: #2F9D94;
+        }
+        .stc-yes:hover { background: #1A5F5A; }
+        .stc-no {
+          color: #6b7280;
+        }
+        .stc-no:hover { color: #1F2937; }
+        @media (hover: none) {
+          .send-to-christy { opacity: 1; }
         }
       `}</style>
     </div>

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { createServerClient } from '@supabase/ssr';
 import { requireAuth } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { classifyFeedback, FEEDBACK_ACK_TEXT, routeFeedback } from '@/lib/feedback-routing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -301,6 +303,19 @@ After drafting the response, prepare:
 
 Frame the entire analysis as: "Here is what he's arguing. Here is exactly how your evidence responds. Here is what we file. Here is what we save for the hearing."
 
+KNOWLEDGE QUESTIONS (when the user is asking instead of pasting a message):
+
+If the user is clearly asking an educational or how-to question rather than sharing a co-parent message to analyze, give them a direct trauma-informed answer in plain language. Signals: the input starts with "what is", "how do I", "why does", "can I", "is it", "does", "should I", "what does X mean", or asks about a defined term.
+
+Do this:
+- Answer in 3-6 sentences. No headers, no bullet salad, no clinical detachment.
+- If the question is about a tactic with a name (DARVO, gaslighting, coercive control, parental alienation, etc.), name it in the first sentence and define it briefly using the user's own situation as scaffolding.
+- If the question is a how-to about Pattern18 itself, walk through the actual steps, then close with "Want me to walk through how to do this in the app?" if there's a corresponding feature.
+- If the question references research the user might have heard about (Meier, Saunders, ACEs, Bessel van der Kolk), cite the researcher and the takeaway in one line.
+- Tone is a trusted friend who has been through this, not a clinician, not a lawyer. Never give legal advice. If a question is genuinely a legal question, say so and recommend they consult an attorney licensed in their state.
+
+When you're answering a knowledge question, output PATTERNS_FOUND: none at the end. Knowledge answers should never trigger pattern saving.
+
 PATTERN DETECTION:
 At the very end of your response, on its own line, output detected patterns in this exact format:
 PATTERNS_FOUND: pattern1, pattern2, pattern3
@@ -352,6 +367,67 @@ export async function POST(req: NextRequest) {
     const history = JSON.parse(historyJson);
     const caseContext = JSON.parse(caseContextJson);
     const patternCounts = JSON.parse(patternCountsJson);
+
+    // ─── Intent routing: feedback short-circuit ───────────────────────────
+    // Approach C (server-side regex). When the user's message is clearly
+    // product feedback (broken / wish / bug / etc., short message), bypass
+    // Claude entirely. Persist to pattern18_feedback + email Christy. Stream
+    // a canned warm acknowledgment back as if it were a normal assistant
+    // message. PATTERNS_FOUND is intentionally not emitted, so the chat UI
+    // does NOT prompt the user to save this as evidence.
+    if (!file && classifyFeedback(message)) {
+      // Best-effort lookup of email for the admin notification.
+      let userEmail: string | null = null;
+      try {
+        const supa = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() { return req.cookies.getAll(); },
+              setAll() {},
+            },
+          }
+        );
+        const { data } = await supa.auth.getUser();
+        userEmail = data.user?.email ?? null;
+      } catch {
+        // Fall through with null — DB row still gets the user id.
+      }
+
+      // Fire-and-await routing. Failure shouldn't block the user-facing ack
+      // (DB row is the durable record), but we want the email to go out
+      // before we close the stream so we know it landed.
+      void (async () => {
+        await routeFeedback({
+          userId,
+          userEmail,
+          message: message.trim(),
+          intent: 'feedback',
+          pathname: req.headers.get('referer')
+            ? new URL(req.headers.get('referer') as string).pathname
+            : null,
+          userAgent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
+        });
+      })();
+
+      const encoder = new TextEncoder();
+      const ackStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: FEEDBACK_ACK_TEXT })}\n\n`));
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+      return new Response(ackStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     // Build context string
     let contextString = '';

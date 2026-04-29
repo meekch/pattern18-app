@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import FeedbackLauncher from '@/components/FeedbackLauncher';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://pattern18.com'),
@@ -47,7 +46,6 @@ export default function RootLayout({
       </head>
       <body>
         {children}
-        <FeedbackLauncher />
         <Script strategy="afterInteractive" src="https://connect.facebook.net/en_US/fbevents.js" />
         <Script id="facebook-pixel" strategy="afterInteractive">
           {`
