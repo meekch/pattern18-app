@@ -4,25 +4,34 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import FeedbackModal from './FeedbackModal';
 
-// Marketing-only floating "Send feedback" launcher.
-// Renders ONLY on public/marketing routes. Suppressed on every authenticated
-// app surface so it can't overlap the chat input on /coach or any other
-// in-app interaction. Logged-in members give feedback via Skool, the weekly
-// check-in form, or by replying to onboarding email.
-const MARKETING_ROUTES = [
-  '/',
+// Globally mounted floating "Send feedback" launcher.
+// Shows on every authenticated app surface so Founding Members can give
+// feedback in the moment the friction happens. Hidden on marketing/public
+// routes so it does not create noise during prospect evaluation.
+//
+// Mobile placement is critical: the launcher must NOT overlap /coach's chat
+// input row, the BottomNav, or the iOS keyboard. We pin it to top-right on
+// mobile (well below the header, far from the keyboard area) and bottom-right
+// on desktop (no bottom nav to clear).
+const HIDDEN_ROUTE_PREFIXES = [
   '/founding',
   '/pricing',
   '/faq',
   '/sign-in',
+  '/sign-up',
   '/login',
+  '/auth',
+  '/callback',
+  '/subscribe',
+  '/thank-you',
+  '/demo',
 ];
 
-function isMarketingRoute(pathname: string | null): boolean {
-  if (!pathname) return false;
+function isHiddenRoute(pathname: string | null): boolean {
+  if (!pathname) return true;
   if (pathname === '/') return true;
-  return MARKETING_ROUTES.some(
-    (r) => r !== '/' && (pathname === r || pathname.startsWith(r + '/'))
+  return HIDDEN_ROUTE_PREFIXES.some(
+    (r) => pathname === r || pathname.startsWith(r + '/')
   );
 }
 
@@ -30,7 +39,7 @@ export default function FeedbackLauncher() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  if (!isMarketingRoute(pathname)) return null;
+  if (isHiddenRoute(pathname)) return null;
 
   return (
     <>
@@ -52,6 +61,7 @@ export default function FeedbackLauncher() {
       )}
 
       <style jsx>{`
+        /* DESKTOP (≥768px): bottom-right pill — no BottomNav to clear. */
         .fb-launcher {
           position: fixed;
           right: 16px;
@@ -84,9 +94,27 @@ export default function FeedbackLauncher() {
           font-size: 16px;
           line-height: 1;
         }
-        @media (max-width: 480px) {
+
+        /* MOBILE (<768px): pin top-right BELOW the in-page header. This
+           avoids overlap with the BottomNav (~64px tall, fixed bottom),
+           the /coach chat input row (sits just above the nav), and the
+           iOS soft keyboard area. Kept small (40px round icon, no label)
+           so it's unobtrusive while reading or typing. */
+        @media (max-width: 767px) {
           .fb-launcher {
-            padding: 12px 14px;
+            top: calc(76px + env(safe-area-inset-top));
+            right: 12px;
+            bottom: auto;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 50%;
+            min-height: 44px;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(26, 95, 90, 0.28);
+            background: rgba(47, 157, 148, 0.92);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
           }
           .fb-text {
             display: none;
