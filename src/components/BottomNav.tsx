@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import FeedbackForm from './FeedbackForm';
 
 interface BottomNavProps {
   active: 'coach' | 'case' | 'healing' | 'docs' | 'menu';
@@ -10,6 +11,7 @@ interface BottomNavProps {
 export default function BottomNav({ active }: BottomNavProps) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
   const navItems = [
     { id: 'coach',   label: 'Coach',   icon: '💬', path: '/coach' },
@@ -89,11 +91,11 @@ export default function BottomNav({ active }: BottomNavProps) {
                 </div>
               </button>
 
-              <button onClick={() => { setShowMenu(false); window.location.href = 'mailto:hello@pattern18.com?subject=Feedback'; }} className="menu-item">
+              <button onClick={() => { setShowMenu(false); setShowFeedbackForm(true); }} className="menu-item">
                 <span className="menu-icon">💡</span>
                 <div className="menu-text">
                   <span className="menu-title">Send Feedback</span>
-                  <span className="menu-desc">Help us improve</span>
+                  <span className="menu-desc">Tell Christy what&apos;s working or what isn&apos;t</span>
                 </div>
               </button>
             </div>
@@ -116,6 +118,11 @@ export default function BottomNav({ active }: BottomNavProps) {
           </div>
         </div>
       )}
+
+      <FeedbackForm
+        open={showFeedbackForm}
+        onClose={() => setShowFeedbackForm(false)}
+      />
 
       <style jsx>{`
         .bottom-nav {
