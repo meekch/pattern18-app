@@ -95,7 +95,7 @@ export default function BottomNav({ active }: BottomNavProps) {
                 <span className="menu-icon">💡</span>
                 <div className="menu-text">
                   <span className="menu-title">Send Feedback</span>
-                  <span className="menu-desc">Tell Christy what&apos;s working or what isn&apos;t</span>
+                  <span className="menu-desc">Tell Rae what&apos;s working or what isn&apos;t</span>
                 </div>
               </button>
             </div>

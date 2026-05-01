@@ -8,7 +8,7 @@ type Category = 'bug' | 'feature' | 'general';
 const CATEGORIES: Array<{ value: Category; label: string; placeholder: string }> = [
   { value: 'bug',     label: 'Bug',              placeholder: 'What did you try, what happened, and what did you expect?' },
   { value: 'feature', label: 'Feature request',  placeholder: 'What would you like to be able to do that you can\u2019t right now?' },
-  { value: 'general', label: 'General feedback', placeholder: 'Tell Christy anything, what\u2019s working, what isn\u2019t, what hits home\u2026' },
+  { value: 'general', label: 'General feedback', placeholder: 'Tell Rae anything, what\u2019s working, what isn\u2019t, what hits home\u2026' },
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,11 +111,11 @@ export default function FeedbackForm({ open, onClose }: FeedbackFormProps) {
       return;
     }
     if (message.trim().length < 5) {
-      setError('Add a few more words so Christy can understand.');
+      setError('Add a few more words so Rae can understand.');
       return;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      setError('Enter a valid email so Christy can reply if needed.');
+      setError('Enter a valid email so Rae can reply if needed.');
       return;
     }
 
@@ -166,13 +166,13 @@ export default function FeedbackForm({ open, onClose }: FeedbackFormProps) {
           <div className="fb-success">
             <div className="fb-heart" aria-hidden="true">♥</div>
             <p className="fb-success-text">
-              Thanks, Christy reads every one of these. She&rsquo;ll follow up if there&rsquo;s a question.
+              Thanks, Rae reads every one of these. She&rsquo;ll follow up if there&rsquo;s a question.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
             <h2 id="feedback-form-title" ref={headingRef} tabIndex={-1} className="fb-h">
-              Send Christy your feedback
+              Send Rae your feedback
             </h2>
             <p className="fb-sub">She reads every one of these personally.</p>
 
@@ -224,7 +224,7 @@ export default function FeedbackForm({ open, onClose }: FeedbackFormProps) {
                 autoComplete="email"
               />
               <span className="fb-helper">
-                Christy will reply here if there&rsquo;s a follow-up question.
+                Rae will reply here if there&rsquo;s a follow-up question.
               </span>
             </label>
 

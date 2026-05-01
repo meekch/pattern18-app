@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
+import BetaBanner from '@/components/BetaBanner';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://pattern18.com'),
@@ -38,6 +39,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Read at server-render time. Default: true (show banner) unless the
+  // env var is explicitly 'false'. Flip BETA_BANNER_ENABLED=false in
+  // Vercel to globally kill the banner without a code deploy.
+  const betaBannerEnabled = process.env.BETA_BANNER_ENABLED !== 'false';
+
   return (
     <html lang="en">
       <head>
@@ -45,6 +51,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
+        <BetaBanner enabled={betaBannerEnabled} />
         {children}
         <Script strategy="afterInteractive" src="https://connect.facebook.net/en_US/fbevents.js" />
         <Script id="facebook-pixel" strategy="afterInteractive">

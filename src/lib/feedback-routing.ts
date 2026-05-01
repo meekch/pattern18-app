@@ -154,4 +154,4 @@ export function classifyFeedback(message: string): boolean {
 
 // Canned acknowledgment streamed back when feedback intent detected.
 // Trauma-informed, warm without being saccharine, no em dashes.
-export const FEEDBACK_ACK_TEXT = `Thanks for flagging this, I've sent it to Christy directly. She reads every one of these. If you want to add more detail or context, just keep typing.`;
+export const FEEDBACK_ACK_TEXT = `Thanks for flagging this, I've sent it to Rae directly. She reads every one of these. If you want to add more detail or context, just keep typing.`;

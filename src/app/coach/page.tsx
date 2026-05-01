@@ -30,7 +30,7 @@ export default function CoachPage() {
   const [currentRiskLevel, setCurrentRiskLevel] = useState<string>('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  // "Send to Christy" per-message override — keyed by message index, value
+  // "Send to Rae" per-message override — keyed by message index, value
   // is 'idle' | 'confirm' | 'sending' | 'sent' | 'error'.
   const [stcStatus, setStcStatus] = useState<Record<number, 'idle' | 'confirm' | 'sending' | 'sent' | 'error'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -257,7 +257,7 @@ export default function CoachPage() {
     }
   };
 
-  const sendToChristy = async (messageIndex: number, content: string) => {
+  const sendToRae = async (messageIndex: number, content: string) => {
     setStcStatus(prev => ({ ...prev, [messageIndex]: 'sending' }));
     try {
       const res = await fetch('/api/coach-feedback', {
@@ -460,20 +460,20 @@ export default function CoachPage() {
                       {stc === 'idle' && (
                         <button
                           type="button"
-                          className="send-to-christy"
+                          className="send-to-rae"
                           onClick={() => setStcStatus(prev => ({ ...prev, [i]: 'confirm' }))}
-                          aria-label="Send this message to Christy as feedback"
+                          aria-label="Send this message to Rae as feedback"
                         >
-                          Send to Christy →
+                          Send to Rae →
                         </button>
                       )}
                       {stc === 'confirm' && (
                         <span className="stc-confirm">
-                          <span className="stc-confirm-q">Send to Christy as feedback?</span>
+                          <span className="stc-confirm-q">Send to Rae as feedback?</span>
                           <button
                             type="button"
                             className="stc-yes"
-                            onClick={() => sendToChristy(i, msg.content)}
+                            onClick={() => sendToRae(i, msg.content)}
                           >
                             Send
                           </button>
@@ -487,20 +487,20 @@ export default function CoachPage() {
                         </span>
                       )}
                       {stc === 'sending' && (
-                        <button type="button" className="send-to-christy" disabled>
+                        <button type="button" className="send-to-rae" disabled>
                           Sending…
                         </button>
                       )}
                       {stc === 'sent' && (
-                        <button type="button" className="send-to-christy sent" disabled>
+                        <button type="button" className="send-to-rae sent" disabled>
                           Sent ✓
                         </button>
                       )}
                       {stc === 'error' && (
                         <button
                           type="button"
-                          className="send-to-christy"
-                          onClick={() => sendToChristy(i, msg.content)}
+                          className="send-to-rae"
+                          onClick={() => sendToRae(i, msg.content)}
                         >
                           Retry
                         </button>
@@ -916,7 +916,7 @@ export default function CoachPage() {
           padding: 0 4px;
         }
 
-        /* Per-message "Send to Christy →" override (Step 5).
+        /* Per-message "Send to Rae →" override (Step 5).
            Small, muted text-link bottom-right of each user bubble.
            Visible-on-hover on desktop, always visible on mobile so it
            remains tappable on touch devices without a hover state. */
@@ -929,7 +929,7 @@ export default function CoachPage() {
           line-height: 1.3;
           color: #9ca3af;
         }
-        .send-to-christy {
+        .send-to-rae {
           background: none;
           border: none;
           color: #6b7280;
@@ -942,17 +942,17 @@ export default function CoachPage() {
           transition: opacity 0.15s, color 0.15s, background 0.15s;
           min-height: 32px;
         }
-        .send-to-christy:hover {
+        .send-to-rae:hover {
           opacity: 1;
           color: #2F9D94;
           background: #EAF5F3;
         }
-        .send-to-christy.sent {
+        .send-to-rae.sent {
           color: #1A5F5A;
           opacity: 1;
           cursor: default;
         }
-        .send-to-christy:disabled {
+        .send-to-rae:disabled {
           cursor: not-allowed;
         }
         .stc-confirm {
@@ -992,7 +992,7 @@ export default function CoachPage() {
         }
         .stc-no:hover { color: #1F2937; }
         @media (hover: none) {
-          .send-to-christy { opacity: 1; }
+          .send-to-rae { opacity: 1; }
         }
       `}</style>
     </div>
