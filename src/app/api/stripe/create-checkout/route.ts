@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { email, promoCode } = await req.json();
     
@@ -73,11 +78,30 @@ export async function POST(req: NextRequest) {
     // Determine the base URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://coach.pattern18.com';
 
+    // Reuse an existing Stripe customer for this email, or create one, so the
+    // customer is not duplicated and webhooks can map the payment back to this user.
+    let customerId: string;
+    if (existingCustomers.data.length > 0) {
+      customerId = existingCustomers.data[0].id;
+    } else {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { userId },
+      });
+      customerId = customer.id;
+    }
+
+    // Persist the Stripe customer id to the user's profile (service role,
+    // bypasses RLS) so subscription webhooks can resolve the user by it.
+    await supabaseAdmin
+      .from('profiles')
+      .upsert({ id: userId, stripe_customer_id: customerId }, { onConflict: 'id' });
+
     // Build checkout session options
     const sessionOptions: any = {
       mode: 'subscription',
       payment_method_collection: 'always',
-      customer_email: email,
+      customer: customerId,
       line_items: [
         {
           price: priceId,
@@ -86,7 +110,9 @@ export async function POST(req: NextRequest) {
       ],
       subscription_data: {
         trial_period_days: 7,
+        metadata: { userId },
       },
+      metadata: { userId },
       success_url: `${baseUrl}/thank-you`,
       cancel_url: `${baseUrl}/login?canceled=true`,
     };

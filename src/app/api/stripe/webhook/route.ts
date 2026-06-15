@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+// Derive the tier from the price the customer actually bought. Reads the launch
+// price (STRIPE_PRICE_ID) plus the named PRO/LITIGATION prices so a paying
+// customer is never mislabeled 'free'.
+function priceToTier(priceId: string | undefined): string {
+  if (
+    priceId === process.env.STRIPE_PRICE_ID ||
+    priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY ||
+    priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL
+  ) {
+    return 'pro';
+  }
+  if (
+    priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY ||
+    priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_ANNUAL
+  ) {
+    return 'litigation';
+  }
+  return 'free';
+}
+
+async function findUserIdByCustomer(
+  supabase: any,
+  customerId: string | null
+): Promise<string | null> {
+  if (!customerId) return null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-11-17.clover',
@@ -28,36 +61,28 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.userId;
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
+        const userId =
+          session.metadata?.userId ||
+          (await findUserIdByCustomer(supabase, customerId));
 
         if (userId && subscriptionId) {
           // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0]?.price.id;
-          
-          // Determine tier from price ID
-          let tier = 'free';
-          if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY || 
-              priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL) {
-            tier = 'pro';
-          } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY ||
-                     priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_ANNUAL) {
-            tier = 'litigation';
-          }
+          const tier = priceToTier(priceId);
 
           await supabase
             .from('profiles')
             .upsert({
               id: userId,
               stripe_customer_id: customerId,
-
               stripe_subscription_id: subscriptionId,
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: (subscription as any).trial_end 
-                ? new Date((subscription as any).trial_end * 1000).toISOString() 
+              trial_ends_at: (subscription as any).trial_end
+                ? new Date((subscription as any).trial_end * 1000).toISOString()
                 : null,
               current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
             }, { onConflict: 'id' });
@@ -65,40 +90,31 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const userId =
+          subscription.metadata?.userId ||
+          (await findUserIdByCustomer(supabase, customerId));
 
-        // Find user by customer ID
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (profile) {
+        if (userId) {
           const priceId = subscription.items.data[0]?.price.id;
-          
-          let tier = 'free';
-          if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY || 
-              priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL) {
-            tier = 'pro';
-          } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_MONTHLY ||
-                     priceId === process.env.NEXT_PUBLIC_STRIPE_LITIGATION_ANNUAL) {
-            tier = 'litigation';
-          }
+          const tier = priceToTier(priceId);
 
           await supabase
             .from('profiles')
             .update({
+              stripe_customer_id: customerId,
+              stripe_subscription_id: subscription.id,
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: (subscription as any).trial_end 
-                ? new Date((subscription as any).trial_end * 1000).toISOString() 
+              trial_ends_at: (subscription as any).trial_end
+                ? new Date((subscription as any).trial_end * 1000).toISOString()
                 : null,
               current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
             })
-            .eq('id', profile.id);
+            .eq('id', userId);
         }
         break;
       }
@@ -106,22 +122,19 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const userId =
+          subscription.metadata?.userId ||
+          (await findUserIdByCustomer(supabase, customerId));
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (profile) {
+        if (userId) {
           await supabase
             .from('profiles')
             .update({
               subscription_tier: 'free',
-              subscription_status: 'canceled',
+              subscription_status: subscription.status,
               stripe_subscription_id: null,
             })
-            .eq('id', profile.id);
+            .eq('id', userId);
         }
         break;
       }
