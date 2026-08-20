@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
-import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL } from '@/lib/stripe-links';
 
 export default function PricingPage() {
   return (
@@ -39,7 +38,7 @@ export default function PricingPage() {
             <li><span className="check">✓</span> <strong>Healing module</strong>, grounding tools, community</li>
           </ul>
 
-          <a href={STRIPE_MONTHLY_URL} className="btn-primary btn-block">
+          <a href="/login?mode=signup" className="btn-primary btn-block">
             Start 7-Day Free Trial
           </a>
           <p className="trial-note">No credit card charged during trial.</p>
@@ -47,7 +46,7 @@ export default function PricingPage() {
 
         <div className="yearly-wrap">
           <p className="yearly">
-            Prefer to pay yearly? <a href={STRIPE_ANNUAL_URL} className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
+            Prefer to pay yearly? <a href="/login?mode=signup&plan=annual" className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
           </p>
         </div>
 

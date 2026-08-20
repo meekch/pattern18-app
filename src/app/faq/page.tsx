@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
-import { STRIPE_MONTHLY_URL } from '@/lib/stripe-links';
 
 export default function FAQPage() {
   return (
@@ -49,7 +48,7 @@ export default function FAQPage() {
         </div>
 
         <div className="cta-wrap">
-          <a href={STRIPE_MONTHLY_URL} className="btn-primary">Start 7-Day Free Trial</a>
+          <a href="/login?mode=signup" className="btn-primary">Start 7-Day Free Trial</a>
           <p className="anchor">$97/month. Cancel anytime. No credit card charged during trial.</p>
         </div>
 

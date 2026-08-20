@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { STRIPE_MONTHLY_URL } from '@/lib/stripe-links';
 
 export default function SiteNav() {
   const [open, setOpen] = useState(false);
@@ -21,7 +20,7 @@ export default function SiteNav() {
           <Link href="/faq" className="site-nav-link">FAQ</Link>
           <Link href="/pricing" className="site-nav-link">Pricing</Link>
           <Link href="/login" className="site-nav-link">Sign in</Link>
-          <a href={STRIPE_MONTHLY_URL} className="site-nav-cta">Start Free Trial</a>
+          <a href="/login?mode=signup" className="site-nav-cta">Start Free Trial</a>
         </div>
 
         {/* Hamburger. Hidden above 768px. */}
@@ -75,7 +74,7 @@ export default function SiteNav() {
           <Link href="/login" className="site-nav-mobile-link" onClick={close}>Sign in</Link>
           <div className="site-nav-mobile-divider" />
           <a
-            href={STRIPE_MONTHLY_URL}
+            href="/login?mode=signup"
             className="site-nav-mobile-cta"
             onClick={close}
           >

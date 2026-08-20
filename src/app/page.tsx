@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
-import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL, SKOOL_URL } from '@/lib/stripe-links';
+import { SKOOL_URL } from '@/lib/stripe-links';
 
 // May 6 2026 11:59 PM AZ (MST, UTC-7) === May 7 2026 06:59 UTC.
 // Hardcoded UTC milliseconds so the value is identical on the server (initial
@@ -46,7 +46,7 @@ export default function HomePage() {
           When their text<br />makes your stomach drop.
         </h1>
         <p className="hero-sub">Spot the bait. Build the record. Win in court.</p>
-        <a href={STRIPE_MONTHLY_URL} className="btn-primary hero-cta">Start 7-Day Free Trial</a>
+        <a href="/login?mode=signup" className="btn-primary hero-cta">Start 7-Day Free Trial</a>
         <p className="hero-anchor">$97/month after trial. Cancel anytime, no charge.</p>
         <Link href="/login" className="hero-secondary">Already a member? Sign in →</Link>
       </section>
@@ -213,9 +213,9 @@ export default function HomePage() {
         </div>
 
         <div className="pricing-cta-wrap">
-          <a href={STRIPE_MONTHLY_URL} className="btn-primary btn-large">Start 7-Day Free Trial</a>
+          <a href="/login?mode=signup" className="btn-primary btn-large">Start 7-Day Free Trial</a>
           <p className="yearly">
-            Prefer to pay yearly? <a href={STRIPE_ANNUAL_URL} className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
+            Prefer to pay yearly? <a href="/login?mode=signup&plan=annual" className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
           </p>
         </div>
       </section>
@@ -293,7 +293,7 @@ export default function HomePage() {
           <div className="footer-cols">
             <div className="footer-col">
               <h4>Product</h4>
-              <a className="footer-link" href={STRIPE_MONTHLY_URL}>Try Pattern18</a>
+              <a className="footer-link" href="/login?mode=signup">Try Pattern18</a>
               <Link className="footer-link" href="/pricing">Pricing</Link>
               <Link className="footer-link" href="/login">Sign in</Link>
             </div>

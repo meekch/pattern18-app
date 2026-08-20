@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { STRIPE_MONTHLY_URL, STRIPE_ANNUAL_URL } from '@/lib/stripe-links';
 
 export default function SubscribePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -37,10 +38,35 @@ export default function SubscribePage() {
     init();
   }, [router]);
 
-  const checkoutHref = (base: string) => {
-    if (!user?.email) return base;
-    const sep = base.includes('?') ? '&' : '?';
-    return `${base}${sep}prefilled_email=${encodeURIComponent(user.email)}`;
+  const startCheckout = async (plan: 'monthly' | 'annual') => {
+    if (!user?.email) return;
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          priceId: plan === 'annual' ? process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        setCheckoutError(data.error || 'Failed to start checkout. Please try again.');
+        setCheckoutLoading(false);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Stripe checkout fetch failed:', err);
+      setCheckoutError('Failed to start checkout. Please try again.');
+      setCheckoutLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -158,13 +184,27 @@ export default function SubscribePage() {
           <p className="cancel-note">Cancel anytime. No questions asked.</p>
         </div>
 
-        <a href={checkoutHref(STRIPE_MONTHLY_URL)} className="cta-button">
-          Start My Free Trial →
-        </a>
+        <button
+          onClick={() => startCheckout('monthly')}
+          disabled={checkoutLoading}
+          className="cta-button"
+        >
+          {checkoutLoading ? 'Preparing checkout...' : 'Start My Free Trial →'}
+        </button>
 
         <p className="yearly-line">
-          Prefer to pay yearly? <a href={checkoutHref(STRIPE_ANNUAL_URL)} className="yearly-link">$697/year</a> <span className="save">(save $467)</span>.
+          Prefer to pay yearly?{' '}
+          <button
+            onClick={() => startCheckout('annual')}
+            disabled={checkoutLoading}
+            className="yearly-link"
+          >
+            $697/year
+          </button>{' '}
+          <span className="save">(save $467)</span>.
         </p>
+
+        {checkoutError && <p className="checkout-error">{checkoutError}</p>}
 
         <p className="secure-note">Secure checkout powered by Stripe.</p>
 
@@ -326,11 +366,14 @@ export default function SubscribePage() {
           border-radius: 14px;
           font-size: 17px;
           font-weight: 700;
+          font-family: inherit;
           text-decoration: none;
           min-height: 52px;
+          cursor: pointer;
           transition: background 0.15s ease;
         }
         .cta-button:hover { background: var(--deep-teal); }
+        .cta-button:disabled { opacity: 0.7; cursor: not-allowed; }
         .yearly-line {
           text-align: center;
           margin-top: 14px;
@@ -338,9 +381,25 @@ export default function SubscribePage() {
           font-size: 14px;
         }
         .yearly-link {
+          background: none;
+          border: none;
+          padding: 0;
           color: var(--deep-teal);
           font-weight: 600;
+          font-family: inherit;
+          font-size: inherit;
           text-decoration: underline;
+          cursor: pointer;
+        }
+        .yearly-link:disabled { opacity: 0.7; cursor: not-allowed; }
+        .checkout-error {
+          text-align: center;
+          margin-top: 12px;
+          padding: 12px;
+          background: #ffebee;
+          border-radius: 10px;
+          color: #c62828;
+          font-size: 13px;
         }
         .save { color: var(--coral); font-weight: 700; }
         .secure-note {

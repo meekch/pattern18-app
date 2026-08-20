@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { email, promoCode } = await req.json();
+    const { email, promoCode, priceId: requestedPriceId } = await req.json();
     
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
@@ -67,9 +67,22 @@ export async function POST(req: NextRequest) {
 
     console.log('Stripe checkout: PROCEED — no active/trialing subscription, creating checkout session');
 
-    // Get the price ID from environment
-    const priceId = process.env.STRIPE_PRICE_ID;
-    console.log('Stripe checkout: using price ID:', priceId || 'NOT SET');
+    // Get the price ID: honor an explicit priceId from the client (e.g. the
+    // annual plan) if it matches a known configured price, otherwise fall
+    // back to the default monthly price. Never trust an arbitrary client
+    // value directly, only one of our own configured prices.
+    const knownPriceIds = [
+      process.env.STRIPE_PRICE_ID,
+      process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY,
+      process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL,
+    ].filter(Boolean);
+
+    const priceId =
+      requestedPriceId && knownPriceIds.includes(requestedPriceId)
+        ? requestedPriceId
+        : process.env.STRIPE_PRICE_ID;
+
+    console.log('Stripe checkout: using price ID:', priceId || 'NOT SET', requestedPriceId ? `(requested: ${requestedPriceId})` : '');
     if (!priceId) {
       console.error('STRIPE_PRICE_ID not configured');
       return NextResponse.json({ error: 'Payment not configured' }, { status: 500 });

@@ -13,6 +13,7 @@ function LoginContent() {
   const [password, setPassword] = useState('')
   const [promoCode, setPromoCode] = useState('')
   const [showPromoField, setShowPromoField] = useState(false)
+  const isAnnual = searchParams.get('plan') === 'annual'
   
   // Dynamic pricing message based on promo code
   const getPricingMessage = () => {
@@ -24,7 +25,9 @@ function LoginContent() {
     } else if (promoCode.trim()) {
       return 'Discount will be applied at checkout.';
     }
-    return '7 days free, then billed monthly. Cancel anytime.';
+    return isAnnual
+      ? '7 days free, then billed annually. Cancel anytime.'
+      : '7 days free, then billed monthly. Cancel anytime.';
   }
   
   // Dynamic headline
@@ -54,7 +57,12 @@ function LoginContent() {
   useEffect(() => {
     const canceled = searchParams.get('canceled')
     const code = searchParams.get('code')
-    
+    const modeParam = searchParams.get('mode')
+
+    if (modeParam === 'signup') {
+      setMode('signup')
+    }
+
     if (canceled === 'true') {
       setError('Checkout was canceled. Ready to try again when you are.')
       setMode('signup')
@@ -124,7 +132,8 @@ function LoginContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          promoCode: promoCode.trim() || undefined
+          promoCode: promoCode.trim() || undefined,
+          priceId: isAnnual ? process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL : undefined
         }),
       })
 
