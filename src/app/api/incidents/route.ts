@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       .from("incidents")
       .select("id, patterns, severity, category, coparent_message, incident_date, incident_type, source, created_at, include_in_exhibit, title, messages_json, screenshot_path, image_hash")
       .eq("user_id", userId)
-      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {

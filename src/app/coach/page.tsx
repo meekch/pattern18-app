@@ -61,7 +61,6 @@ export default function CoachPage() {
         .from('incidents')
         .select('category')
         .eq('user_id', session.user.id)
-        .is('deleted_at', null);
 
       if (evidence) {
         setEvidenceCount(evidence.length);

@@ -88,7 +88,6 @@ export async function POST(req: NextRequest) {
       .select('id, messages_json, coparent_message, incident_date')
       .eq('id', incidentId)
       .eq('user_id', userId)
-      .is('deleted_at', null)
       .single();
 
     if (fetchError || !incident) {

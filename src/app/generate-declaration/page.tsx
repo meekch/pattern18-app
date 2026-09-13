@@ -87,7 +87,6 @@ export default function GenerateDeclarationPage() {
         .from('incidents')
         .select('*')
         .eq('user_id', session.user.id)
-        .is('deleted_at', null)
         .order('incident_date', { ascending: true });
 
       setIncidents(data || []);

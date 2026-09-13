@@ -83,7 +83,6 @@ export async function filterExistingIncidents(
     .from('incidents')
     .select('coparent_message, messages_json, incident_date')
     .eq('user_id', userId)
-    .is('deleted_at', null)
     .gte('incident_date', minDate)
     .lte('incident_date', maxDate + 'T23:59:59');
   
