@@ -22,6 +22,32 @@ function priceToTier(priceId: string | undefined): string {
   return 'free';
 }
 
+// Never let a bad epoch reach toISOString(). new Date(NaN).toISOString() throws
+// RangeError, and because these conversions happen inside the object literal
+// passed to .upsert()/.update(), a throw aborts the handler before anything is
+// persisted -- the customer's row stays NULL and Stripe gets a 500.
+function epochToISO(epoch: number | null | undefined): string | null {
+  return typeof epoch === 'number' && Number.isFinite(epoch)
+    ? new Date(epoch * 1000).toISOString()
+    : null;
+}
+
+// Stripe moved current_period_end off the Subscription object and onto each
+// subscription item in API version 2025-03-31.basil. This handler pins
+// 2025-11-17.clover, so the old top-level field is always undefined -- read it
+// from the item instead.
+function periodEndISO(subscription: Stripe.Subscription): string | null {
+  const iso = epochToISO(subscription.items?.data?.[0]?.current_period_end);
+  if (iso === null) {
+    console.warn(
+      `[stripe-webhook] no current_period_end on subscription ${subscription.id} ` +
+        `(items: ${subscription.items?.data?.length ?? 0}); writing null. ` +
+        `Access gating that reads current_period_end will treat this as unset.`
+    );
+  }
+  return iso;
+}
+
 async function findUserIdByCustomer(
   supabase: any,
   customerId: string | null
@@ -81,10 +107,8 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: subscriptionId,
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: (subscription as any).trial_end
-                ? new Date((subscription as any).trial_end * 1000).toISOString()
-                : null,
-              current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+              trial_ends_at: epochToISO(subscription.trial_end),
+              current_period_end: periodEndISO(subscription),
             }, { onConflict: 'id' });
         }
         break;
@@ -109,10 +133,8 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: subscription.id,
               subscription_tier: tier,
               subscription_status: subscription.status,
-              trial_ends_at: (subscription as any).trial_end
-                ? new Date((subscription as any).trial_end * 1000).toISOString()
-                : null,
-              current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+              trial_ends_at: epochToISO(subscription.trial_end),
+              current_period_end: periodEndISO(subscription),
             })
             .eq('id', userId);
         }
@@ -162,7 +184,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Webhook handler error:', error);
+    // Stripe still sees the generic message, but the log names the event so the
+    // next failure is one grep rather than a dashboard hunt.
+    console.error(
+      `[stripe-webhook] handler error on ${event.type} (${event.id}):`,
+      error?.stack ?? error
+    );
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
