@@ -45,12 +45,14 @@ export default function GettingStarted({ userId, onDismiss }: ChecklistProps) {
         .from("incidents")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
+        .is("deleted_at", null);
 
       // Check for pattern detection
       const { data: patterns } = await supabase
         .from("incidents")
         .select("patterns")
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .not("patterns", "is", null)
         .limit(1);
 

@@ -155,6 +155,7 @@ function EvidenceContent() {
         .from("incidents")
         .select("*")
         .eq("user_id", session.user.id)
+        .is("deleted_at", null)
         .order("incident_date", { ascending: false });
 
       if (error) throw error;

@@ -109,6 +109,7 @@ export async function loadCaseContext(caseId?: string): Promise<CaseContext | nu
       .from("incidents")
       .select("*")
       .eq("case_id", caseData.id)
+      .is("deleted_at", null)
       .gte("incident_date", ninetyDaysAgo.toISOString())
       .order("incident_date", { ascending: false })
       .limit(20);

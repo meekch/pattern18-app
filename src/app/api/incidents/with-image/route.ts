@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         screenshot_path: screenshotPath,
         image_hash: imageHash,
       })
-      .select('id, screenshot_path, image_hash')
+      .select('id, screenshot_path, image_hash, text_hash')
       .single();
 
     if (error) {

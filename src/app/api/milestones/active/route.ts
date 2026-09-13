@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       .from('incidents')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
+      .is('deleted_at', null);
     if ((count ?? 0) >= 10) eligible.push('10_incidents');
   }
 

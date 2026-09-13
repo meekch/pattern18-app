@@ -67,6 +67,7 @@ export default function MyCasePage() {
         .from('incidents')
         .select('id, category, severity, include_in_exhibit')
         .eq('user_id', session.user.id)
+        .is('deleted_at', null);
 
       if (evidence && evidence.length > 0) {
         setTotalIncidents(evidence.length);

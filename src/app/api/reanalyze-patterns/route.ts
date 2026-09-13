@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
       .from('incidents')
       .select('id, coparent_message, messages_json, category, patterns')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .order('incident_date', { ascending: false })
       .range(offset, offset + batchSize - 1);
 
@@ -171,6 +172,7 @@ export async function POST(req: NextRequest) {
       .from('incidents')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
+      .is('deleted_at', null);
 
     return NextResponse.json({
       done: incidents.length < batchSize,
