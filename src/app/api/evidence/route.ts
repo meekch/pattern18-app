@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/auth";
+import { stripImageMetadata } from "@/lib/strip-image-metadata";
+
 
 function getSupabaseAdmin() {
   return createClient(
@@ -34,16 +36,26 @@ export async function POST(request: NextRequest) {
 
     // Upload images to Supabase Storage
     const imageUrls: string[] = [];
-    
+
     for (let i = 0; i < images.length; i++) {
       const base64Data = images[i].replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-      const fileName = `${user_id}/${Date.now()}-${i}.png`;
-      
+      const rawBuffer = Buffer.from(base64Data, 'base64');
+
+      // Re-encode through sharp so EXIF/GPS never reaches storage.
+      let sanitized;
+      try {
+        sanitized = await stripImageMetadata(rawBuffer);
+      } catch (err) {
+        console.error('Image sanitize failed, skipping upload:', err);
+        continue;
+      }
+
+      const fileName = `${user_id}/${Date.now()}-${i}.${sanitized.extension}`;
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('evidence-screenshots')
-        .upload(fileName, buffer, {
-          contentType: 'image/png',
+        .upload(fileName, sanitized.buffer, {
+          contentType: sanitized.contentType,
           upsert: false
         });
 

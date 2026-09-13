@@ -35,8 +35,34 @@ export default function CaseFileUploadPage() {
       }
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const original = files[i];
         setProgress(`Processing ${i + 1} of ${files.length}...`);
+
+        // 0. Strip EXIF/GPS from images before they touch storage. sharp is a
+        // native module, so the re-encode happens server-side and we upload
+        // the sanitized bytes. Non-images pass through untouched.
+        let file = original;
+        if (original.type.startsWith('image/')) {
+          setProgress(`Removing location data from ${i + 1} of ${files.length}...`);
+          const sanitizeBody = new FormData();
+          sanitizeBody.append('file', original);
+
+          const sanitizeRes = await fetch('/api/sanitize-image', {
+            method: 'POST',
+            body: sanitizeBody,
+          });
+
+          if (!sanitizeRes.ok) {
+            console.error('Sanitize failed for', original.name, sanitizeRes.status);
+            setProgress(`Could not process ${original.name}. Skipped.`);
+            continue;
+          }
+
+          const blob = await sanitizeRes.blob();
+          const ext = sanitizeRes.headers.get('X-Sanitized-Extension') || 'png';
+          const baseName = original.name.replace(/\.[^./\\]+$/, '');
+          file = new File([blob], `${baseName}.${ext}`, { type: blob.type });
+        }
 
         // 1. Upload file to storage
         const filePath = `${session.user.id}/${fileType}/${Date.now()}_${file.name}`;
