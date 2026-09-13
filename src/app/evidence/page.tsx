@@ -155,6 +155,7 @@ function EvidenceContent() {
         .from("incidents")
         .select("*")
         .eq("user_id", session.user.id)
+        .is("deleted_at", null)
         .order("incident_date", { ascending: false });
 
       if (error) throw error;
@@ -273,9 +274,10 @@ function EvidenceContent() {
 
       const { error } = await supabase
         .from("incidents")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .is("deleted_at", null);
 
       if (error) throw error;
 

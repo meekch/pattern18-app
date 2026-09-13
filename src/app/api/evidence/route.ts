@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/auth";
 import { stripImageMetadata } from "@/lib/strip-image-metadata";
+import { createHash } from "crypto";
 
+function sha256(buf: Buffer): string {
+  return createHash('sha256').update(buf).digest('hex');
+}
 
 function getSupabaseAdmin() {
   return createClient(
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Upload images to Supabase Storage
     const imageUrls: string[] = [];
+    const storedHashes: string[] = [];
 
     for (let i = 0; i < images.length; i++) {
       const base64Data = images[i].replace(/^data:image\/\w+;base64,/, '');
@@ -71,6 +76,9 @@ export async function POST(request: NextRequest) {
       
       if (urlData?.publicUrl) {
         imageUrls.push(urlData.publicUrl);
+        // Hash the bytes we actually stored, so the hash stays verifiable
+        // against the object in storage.
+        storedHashes.push(sha256(sanitized.buffer));
       }
     }
 
@@ -80,6 +88,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id,
         screenshot_urls: imageUrls,
+        image_hash: storedHashes.length ? storedHashes.join(',') : null,
         patterns_detected: patterns,
         coaching_summary,
         user_response_chosen: user_response,

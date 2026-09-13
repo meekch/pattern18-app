@@ -42,6 +42,7 @@ export default function GenerateExhibitPage() {
         .from('incidents')
         .select('*')
         .eq('user_id', session.user.id)
+        .is('deleted_at', null)
         .order('incident_date', { ascending: true });
 
       if (incidents) {

@@ -44,7 +44,8 @@ export function useSubscription() {
       const { count: evidenceCount } = await supabase
         .from('incidents')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id);
+        .eq('user_id', session.user.id)
+        .is('deleted_at', null);
 
       // Get messages sent today
       const today = new Date().toISOString().split('T')[0];

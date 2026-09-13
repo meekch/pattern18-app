@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
       .select("id, title, category, patterns, severity, incident_date, message_count, evidence_strength, source, import_id, is_court_ready, created_at")
       .eq("user_id", userId)
       .eq("source", "bulk_import")
+      .is("deleted_at", null)
       .order("incident_date", { ascending: false });
 
     if (importId) {
@@ -158,9 +159,10 @@ export async function DELETE(request: NextRequest) {
 
     const { error } = await supabase
       .from("incidents")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .eq("import_id", importId);
+      .eq("import_id", importId)
+      .is("deleted_at", null);
 
     if (error) {
       console.error("Error deleting bulk incidents:", error);
