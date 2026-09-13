@@ -30,6 +30,10 @@ export default function CoachPage() {
   const [currentRiskLevel, setCurrentRiskLevel] = useState<string>('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  // Held separately from pendingFile: the composer clears pendingFile as soon
+  // as the message is sent, but the save prompt appears afterwards and needs
+  // the original image to store.
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   // "Send to Rae" per-message override — keyed by message index, value
   // is 'idle' | 'confirm' | 'sending' | 'sent' | 'error'.
   const [stcStatus, setStcStatus] = useState<Record<number, 'idle' | 'confirm' | 'sending' | 'sent' | 'error'>>({});
@@ -56,7 +60,8 @@ export default function CoachPage() {
       const { data: evidence } = await supabase
         .from('incidents')
         .select('category')
-        .eq('user_id', session.user.id);
+        .eq('user_id', session.user.id)
+        .is('deleted_at', null);
 
       if (evidence) {
         setEvidenceCount(evidence.length);
@@ -119,6 +124,10 @@ export default function CoachPage() {
         imageUrls.push(URL.createObjectURL(file));
       }
     }
+
+    // Retain the image itself for the save step, which happens after this
+    // send completes. One image per incident.
+    setEvidenceFile(fileArray.find(f => f.type.startsWith('image/')) || null);
 
     const userMessage: Message = { 
       role: 'user', 
@@ -233,24 +242,42 @@ export default function CoachPage() {
     try {
       const primaryPattern = currentPatterns[0];
       const categoryKey = primaryPattern.toLowerCase().replace(/[\s\/]+/g, '_').replace(/-/g, '_');
-      
-      await supabase.from('incidents').insert({
-        user_id: user.id,
-        title: primaryPattern,
-        coparent_message: currentQuote || 'Screenshot analysis',
-        category: categoryKey,
-        patterns: currentPatterns,
-        severity: currentRiskLevel || 'medium',
-        incident_date: new Date().toISOString(),
+
+      // Goes through the API rather than inserting directly: the screenshot
+      // has to be EXIF-stripped and hashed server-side, and the incident row
+      // must carry screenshot_path and image_hash from the moment it exists.
+      const formData = new FormData();
+      formData.append('title', primaryPattern);
+      formData.append('coparentMessage', currentQuote || 'Screenshot analysis');
+      formData.append('category', categoryKey);
+      formData.append('patterns', JSON.stringify(currentPatterns));
+      formData.append('severity', currentRiskLevel || 'medium');
+      formData.append('incidentDate', new Date().toISOString());
+      if (evidenceFile) formData.append('file', evidenceFile);
+
+      const res = await fetch('/api/incidents/with-image', {
+        method: 'POST',
+        body: formData,
       });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        console.error('Save failed:', result);
+        alert('Failed to save. Please try again.');
+        return;
+      }
 
       setEvidenceCount(prev => prev + 1);
       setShowSavePrompt(false);
       setCurrentPatterns([]);
       setCurrentQuote('');
-      
-      // Brief confirmation
-      alert('✓ Saved to evidence');
+      setEvidenceFile(null);
+
+      // The incident is saved either way; only the image may have failed.
+      alert(result.imageError
+        ? `✓ Saved to evidence — but the screenshot could not be attached. ${result.imageError}`
+        : '✓ Saved to evidence');
     } catch (error) {
       console.error('Failed to save:', error);
       alert('Failed to save. Please try again.');
@@ -330,7 +357,10 @@ export default function CoachPage() {
           caseContext: caseContext || {},
         }),
       });
-      if (!res.ok) throw new Error('Download failed');
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error(detail?.error || 'Download failed');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -342,7 +372,9 @@ export default function CoachPage() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
-      alert('Failed to download document. Please try again.');
+      alert(error instanceof Error && error.message
+        ? error.message
+        : 'Failed to download document. Please try again.');
     }
   };
 

@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { requireAuth } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { classifyFeedback, FEEDBACK_ACK_TEXT, routeFeedback } from '@/lib/feedback-routing';
+import { stripImageMetadata, isSanitizableImage } from '@/lib/strip-image-metadata';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -478,9 +479,29 @@ export async function POST(req: NextRequest) {
       }
 
       const bytes = await file.arrayBuffer();
-      const base64 = Buffer.from(bytes).toString('base64');
-
       const isPdf = file.type === 'application/pdf';
+
+      // Strip EXIF/GPS before the image leaves our infrastructure. Analysis
+      // sends the bytes to the Anthropic API, so stripping only on the
+      // storage path would still leak location data to a third party.
+      let outgoing: Buffer = Buffer.from(bytes);
+      let outgoingType: string = file.type;
+
+      if (!isPdf && isSanitizableImage(file.type)) {
+        try {
+          const sanitized = await stripImageMetadata(outgoing);
+          outgoing = sanitized.buffer;
+          outgoingType = sanitized.contentType;
+        } catch (err) {
+          console.error('Coach image sanitize failed, not sending image:', err);
+          return NextResponse.json(
+            { error: 'Could not process that image. Please try a different file.' },
+            { status: 400 }
+          );
+        }
+      }
+
+      const base64 = outgoing.toString('base64');
 
       if (isPdf) {
         userContent.push({
@@ -492,7 +513,7 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
-        let mediaType = file.type;
+        let mediaType = outgoingType;
         if (!mediaType.startsWith('image/')) {
           mediaType = 'image/jpeg';
         }

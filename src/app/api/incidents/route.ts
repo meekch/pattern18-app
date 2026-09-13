@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     const { data: incidents, error } = await supabase
       .from("incidents")
-      .select("id, patterns, severity, category, coparent_message, incident_date, incident_type, source, created_at, include_in_exhibit, title, messages_json")
+      .select("id, patterns, severity, category, coparent_message, incident_date, incident_type, source, created_at, include_in_exhibit, title, messages_json, screenshot_path, image_hash")
       .eq("user_id", userId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -81,17 +81,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch incidents" }, { status: 500 });
     }
 
+    // Screenshots are stored as bucket paths, never as URLs: the bucket is
+    // private, so a stored URL would be dead on arrival, and a stored signed
+    // URL would expire. Sign at read time instead, per request.
+    const paths = (incidents || [])
+      .map((i) => i.screenshot_path)
+      .filter((p): p is string => !!p);
+
+    const signedByPath = new Map<string, string>();
+    if (paths.length > 0) {
+      const { data: signed, error: signError } = await supabase.storage
+        .from("evidence-screenshots")
+        .createSignedUrls(paths, 3600);
+
+      if (signError) {
+        console.error("Failed to sign screenshot urls:", signError);
+      } else {
+        for (const entry of signed || []) {
+          if (entry.path && entry.signedUrl) signedByPath.set(entry.path, entry.signedUrl);
+        }
+      }
+    }
+
+    const withScreenshots = (incidents || []).map((i) => ({
+      ...i,
+      screenshot_signed_url: i.screenshot_path
+        ? signedByPath.get(i.screenshot_path) ?? null
+        : null,
+    }));
+
     const patternCounts: Record<string, number> = {};
-    for (const incident of incidents || []) {
+    for (const incident of withScreenshots) {
       for (const pattern of incident.patterns || []) {
         patternCounts[pattern] = (patternCounts[pattern] || 0) + 1;
       }
     }
 
     return NextResponse.json({
-      incidents,
+      incidents: withScreenshots,
       patternSummary: patternCounts,
-      total: incidents?.length || 0,
+      total: withScreenshots.length,
     });
   } catch (error) {
     console.error("Get incidents error:", error);

@@ -1,3 +1,6 @@
+// ORPHANED: no caller anywhere in src/ as of 2026-09-13. The soft-delete
+// and deleted_at filtering below are therefore maintaining dead code.
+// Flagged for the pending orphaned-route cleanup pass, not deleted yet.
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
