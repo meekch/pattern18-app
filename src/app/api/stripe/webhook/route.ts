@@ -48,6 +48,47 @@ function periodEndISO(subscription: Stripe.Subscription): string | null {
   return iso;
 }
 
+function periodStartISO(subscription: Stripe.Subscription): string | null {
+  return epochToISO(subscription.items?.data?.[0]?.current_period_start);
+}
+
+// Mirror the subscription into public.subscriptions as a billing audit trail.
+// Keyed on stripe_subscription_id (migration 011) so the two events that fire
+// for a single checkout upsert the same row instead of racing to insert two.
+//
+// Deliberately non-fatal: account linking lives in profiles, and losing the
+// audit row must never 500 the event and cost a paying customer their access.
+// Errors are logged and swallowed.
+async function syncSubscriptionRow(
+  supabase: any,
+  userId: string,
+  customerId: string,
+  subscription: Stripe.Subscription,
+  currentPeriodEnd: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('subscriptions')
+    .upsert({
+      user_id: userId,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id,
+      status: subscription.status,
+      price_id: subscription.items?.data?.[0]?.price?.id ?? null,
+      current_period_start: periodStartISO(subscription),
+      current_period_end: currentPeriodEnd,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'stripe_subscription_id' });
+
+  if (error) {
+    console.error(
+      `[stripe-webhook] subscriptions upsert failed for ${subscription.id} ` +
+        `(profiles was still written):`,
+      error
+    );
+  }
+}
+
 async function findUserIdByCustomer(
   supabase: any,
   customerId: string | null
@@ -98,6 +139,7 @@ export async function POST(req: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0]?.price.id;
           const tier = priceToTier(priceId);
+          const periodEnd = periodEndISO(subscription);
 
           await supabase
             .from('profiles')
@@ -108,8 +150,16 @@ export async function POST(req: NextRequest) {
               subscription_tier: tier,
               subscription_status: subscription.status,
               trial_ends_at: epochToISO(subscription.trial_end),
-              current_period_end: periodEndISO(subscription),
+              current_period_end: periodEnd,
             }, { onConflict: 'id' });
+
+          await syncSubscriptionRow(
+            supabase,
+            userId,
+            customerId,
+            subscription,
+            periodEnd
+          );
         }
         break;
       }
@@ -125,6 +175,7 @@ export async function POST(req: NextRequest) {
         if (userId) {
           const priceId = subscription.items.data[0]?.price.id;
           const tier = priceToTier(priceId);
+          const periodEnd = periodEndISO(subscription);
 
           await supabase
             .from('profiles')
@@ -134,9 +185,17 @@ export async function POST(req: NextRequest) {
               subscription_tier: tier,
               subscription_status: subscription.status,
               trial_ends_at: epochToISO(subscription.trial_end),
-              current_period_end: periodEndISO(subscription),
+              current_period_end: periodEnd,
             })
             .eq('id', userId);
+
+          await syncSubscriptionRow(
+            supabase,
+            userId,
+            customerId,
+            subscription,
+            periodEnd
+          );
         }
         break;
       }
