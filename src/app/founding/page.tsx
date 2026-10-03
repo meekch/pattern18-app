@@ -259,9 +259,9 @@ function FoundingContent({ programLive }: { programLive: boolean }) {
       <section className="section proof-section">
         <h2>Why I built this</h2>
         <div className="proof-letter">
-          <p>Almost 16 years ago, I started a chapter of my life I couldn&apos;t see my way out of.</p>
+          <p>Years ago, I started a chapter of my life I couldn&apos;t see my way out of.</p>
 
-          <p className="proof-standalone">14 of those years were hell.</p>
+          <p className="proof-standalone">Most of those years were hell.</p>
 
           <p>The texts that made my stomach drop. The court orders that became weapons. The legal fees that ate my savings. The friends and family who said &ldquo;just stop letting it bother you&rdquo; with the best intentions and absolutely no idea.</p>
 

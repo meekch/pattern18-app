@@ -127,9 +127,9 @@ export default function HomePage() {
         <h2 className="section-h2 center">Why Pattern18 exists.</h2>
         <div className="founder">
           <p>Years ago I had a baby with someone I didn't fully see yet.</p>
-          <p>By the time I saw it, I was already tied to him by court-ordered custody until our son turns 18.</p>
+          <p>By the time I saw it, I was already tied to him by court-ordered custody until our child turns 18.</p>
           <p>I spent years confused. Years documenting in the wrong ways. Years losing time and money because I didn't have language for what was happening.</p>
-          <p>My son turns 18 in 2 years. I'll finally be free of court.</p>
+          <p>I'll be free of court soon.</p>
           <p>Before I go, I'm building the tool I needed from day one.</p>
           <p>Pattern18 is for every parent who came after me. Every mom, dad, grandparent staring at a message asking, "is this as bad as I think it is?"</p>
           <p>I built it so you don't have to wait years to know.</p>
