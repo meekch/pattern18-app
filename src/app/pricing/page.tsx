@@ -11,67 +11,10 @@ export default function PricingPage() {
       <SiteNav />
 
       <main className="main">
-        {/* HERO */}
-        <div className="hero">
-          <h1>One price. Everything included.</h1>
-          <p>$97/month. Cancel anytime. 7-day free trial.</p>
-        </div>
-
-        {/* CONSUMER PLAN */}
-        <div className="plan">
-          <div className="plan-head">
-            <span className="plan-brand">PATTERN18</span>
-            <div className="plan-price">
-              <span className="amount">$97</span>
-              <span className="period">/month</span>
-            </div>
-          </div>
-
-          <p className="plan-label">What you get:</p>
-          <ul className="features">
-            <li><span className="check">✓</span> <strong>24/7 AI coach</strong>, unlimited message analysis</li>
-            <li><span className="check">✓</span> <strong>Real-time pattern detection</strong> (DARVO, gaslighting, coercive control)</li>
-            <li><span className="check">✓</span> <strong>Automatic case file and incident timeline</strong></li>
-            <li><span className="check">✓</span> <strong>BIFF response generator</strong></li>
-            <li><span className="check">✓</span> <strong>Court-ready documentation export</strong></li>
-            <li><span className="check">✓</span> <strong>Pattern timeline</strong> across months or years</li>
-            <li><span className="check">✓</span> <strong>Healing module</strong>, grounding tools, community</li>
-          </ul>
-
-          <a href="/login?mode=signup" className="btn-primary btn-block">
-            Start 7-Day Free Trial
-          </a>
-          <p className="trial-note">No credit card charged during trial.</p>
-        </div>
-
-        <div className="yearly-wrap">
-          <p className="yearly">
-            Prefer to pay yearly? <a href="/login?mode=signup&plan=annual" className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
-          </p>
-        </div>
-
-        {/* COMPARISON */}
-        <div className="comparison">
-          <h2>Compare the cost.</h2>
-          <div className="comparison-grid">
-            <div className="compare-item attorney">
-              <div className="compare-label">Family Attorney</div>
-              <div className="compare-price">$300-400/hr</div>
-              <div className="compare-note">Initial consultation alone</div>
-            </div>
-            <div className="compare-vs">vs</div>
-            <div className="compare-item p18">
-              <div className="compare-label">Pattern18</div>
-              <div className="compare-price">$97/mo</div>
-              <div className="compare-note">Unlimited analysis, documentation, court exports</div>
-            </div>
-          </div>
-        </div>
-
         {/* FIRMS SECTION */}
         <div id="firms" className="firms">
           <div className="firms-head">
-            <h2>For Law Firms.</h2>
+            <h1>For Law Firms.</h1>
             <p>Become a Pattern18 Certified Firm. Your clients arrive prepared.</p>
           </div>
 
@@ -123,6 +66,64 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* INDIVIDUAL CLIENTS */}
+        <div id="individual" className="hero">
+          <p className="section-label">For individual clients</p>
+          <h2>One price. Everything included.</h2>
+          <p>$97/month. Cancel anytime. 7-day free trial.</p>
+        </div>
+
+        {/* COMPARISON */}
+        <div className="comparison">
+          <h2>Compare the cost.</h2>
+          <div className="comparison-grid">
+            <div className="compare-item attorney">
+              <div className="compare-label">Family Attorney</div>
+              <div className="compare-price">$300-400/hr</div>
+              <div className="compare-note">Initial consultation alone</div>
+            </div>
+            <div className="compare-vs">vs</div>
+            <div className="compare-item p18">
+              <div className="compare-label">Pattern18</div>
+              <div className="compare-price">$97/mo</div>
+              <div className="compare-note">Unlimited analysis, documentation, court exports</div>
+            </div>
+          </div>
+        </div>
+
+        {/* CONSUMER PLAN */}
+        <div className="plan">
+          <div className="plan-head">
+            <span className="plan-brand">PATTERN18</span>
+            <div className="plan-price">
+              <span className="amount">$97</span>
+              <span className="period">/month</span>
+            </div>
+          </div>
+
+          <p className="plan-label">What you get:</p>
+          <ul className="features">
+            <li><span className="check">✓</span> <strong>24/7 AI coach</strong>, unlimited message analysis</li>
+            <li><span className="check">✓</span> <strong>Real-time pattern detection</strong> (DARVO, gaslighting, coercive control)</li>
+            <li><span className="check">✓</span> <strong>Automatic case file and incident timeline</strong></li>
+            <li><span className="check">✓</span> <strong>BIFF response generator</strong></li>
+            <li><span className="check">✓</span> <strong>Court-ready documentation export</strong></li>
+            <li><span className="check">✓</span> <strong>Pattern timeline</strong> across months or years</li>
+            <li><span className="check">✓</span> <strong>Healing module</strong>, grounding tools, community</li>
+          </ul>
+
+          <a href="/login?mode=signup" className="btn-primary btn-block">
+            Start 7-Day Free Trial
+          </a>
+          <p className="trial-note">No credit card charged during trial.</p>
+        </div>
+
+        <div className="yearly-wrap">
+          <p className="yearly">
+            Prefer to pay yearly? <a href="/login?mode=signup&plan=annual" className="yearly-link">Get Pattern18 for $697/year</a> <span className="save">(save $467)</span>.
+          </p>
+        </div>
+
         {/* FAQ LINK */}
         <div className="faq-cta">
           <Link href="/faq" className="faq-link">See frequently asked questions →</Link>
@@ -144,8 +145,16 @@ export default function PricingPage() {
           padding: 64px 24px 80px;
         }
 
-        .hero { text-align: center; margin-bottom: 48px; }
-        .hero h1 {
+        .hero { text-align: center; margin-bottom: 48px; scroll-margin-top: 80px; }
+        .section-label {
+          color: var(--teal);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          margin-bottom: 14px;
+        }
+        .hero h2 {
           font-family: var(--serif);
           font-weight: 800;
           font-size: clamp(32px, 5vw, 48px);
@@ -154,7 +163,7 @@ export default function PricingPage() {
           margin-bottom: 14px;
           letter-spacing: -0.02em;
         }
-        .hero p {
+        .hero p:not(.section-label) {
           font-size: 18px;
           color: var(--charcoal-70);
           max-width: 600px;
@@ -229,7 +238,7 @@ export default function PricingPage() {
           margin-top: 14px;
         }
 
-        .yearly-wrap { text-align: center; margin: 24px auto 72px; }
+        .yearly-wrap { text-align: center; margin: 24px auto 0; }
         .yearly { color: var(--charcoal); font-size: 15px; }
         .yearly-link { color: var(--deep-teal); font-weight: 600; text-decoration: underline; }
         .save { color: var(--coral); font-weight: 700; }
@@ -240,7 +249,7 @@ export default function PricingPage() {
           border-radius: 20px;
           padding: 48px 32px;
           text-align: center;
-          margin-bottom: 80px;
+          margin-bottom: 40px;
         }
         .comparison h2 {
           font-family: var(--serif);
@@ -282,9 +291,9 @@ export default function PricingPage() {
         .compare-vs { font-size: 18px; font-weight: 600; color: var(--charcoal-50); }
 
         /* FIRMS */
-        .firms { scroll-margin-top: 80px; }
+        .firms { scroll-margin-top: 80px; margin-bottom: 80px; }
         .firms-head { text-align: center; margin-bottom: 40px; }
-        .firms-head h2 {
+        .firms-head h1 {
           font-family: var(--serif);
           font-weight: 700;
           font-size: clamp(28px, 4vw, 40px);

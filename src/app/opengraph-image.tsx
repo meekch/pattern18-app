@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Pattern18. Your 24/7 AI coach for high-conflict custody.';
+export const alt = 'Pattern18. AI case pattern analysis for family law attorneys.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -76,7 +76,7 @@ export default function Image() {
                 marginBottom: 18,
               }}
             >
-              When their text makes your stomach drop.
+              AI case pattern analysis for family law attorneys.
             </div>
             <div
               style={{
@@ -86,7 +86,7 @@ export default function Image() {
                 opacity: 0.85,
               }}
             >
-              Your 24/7 AI coach is here.
+              Built for Arizona&rsquo;s new coercive control law.
             </div>
           </div>
         </div>
@@ -106,10 +106,6 @@ export default function Image() {
           }}
         >
           <span>pattern18.com</span>
-          <span style={{ color: '#2F9D94' }}>·</span>
-          <span>$97/mo</span>
-          <span style={{ color: '#2F9D94' }}>·</span>
-          <span>7 days free</span>
         </div>
 
         {/* Bottom accent */}

@@ -17,7 +17,22 @@ export default function FAQPage() {
         </header>
 
         <div className="faq">
-          <details className="faq-item" open>
+          <details className="faq-item">
+            <summary>What is Pattern18 Certified?</summary>
+            <p>A firm subscription that gives your practice a dashboard across clients, white-label reports, staff training, and a referral listing. Your clients get free individual access as part of your plan.</p>
+          </details>
+
+          <details className="faq-item">
+            <summary>How does this align with the Alec and Lydia Act?</summary>
+            <p>HB2995 made coercive control a recognized form of domestic violence in Arizona family court, effective June 22, 2026. Pattern18&rsquo;s detection engine is built around the pattern types the law now recognizes — DARVO, gaslighting, and coercive control — so the documentation your clients bring you is already structured around what the court now considers.</p>
+          </details>
+
+          <details className="faq-item">
+            <summary>Is this a replacement for legal strategy?</summary>
+            <p>No. Pattern18 organizes and documents evidence. It doesn&rsquo;t give legal advice, and it isn&rsquo;t a substitute for your judgment on the case.</p>
+          </details>
+
+          <details className="faq-item">
             <summary>How much does it cost?</summary>
             <p>Pattern18 is $97/month with a 7-day free trial. That's less than 20 minutes with most family law attorneys, for unlimited 24/7 access. Prefer to pay yearly? Pattern18 is $697/year, which saves you $467. You can cancel anytime. No contracts, no hidden fees.</p>
           </details>

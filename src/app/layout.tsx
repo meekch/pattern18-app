@@ -6,9 +6,9 @@ import QuickExit from '@/components/QuickExit';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://pattern18.com'),
-  title: 'Pattern18. Your 24/7 AI Coach for High-Conflict Custody',
+  title: 'Pattern18 — AI Case Pattern Analysis for Family Law Attorneys',
   description:
-    'AI coach for parents surviving high-conflict custody and coercive control. Analyze messages, document patterns, prepare for court. $97/month. 7-day free trial. Less than 20 minutes with a family lawyer.',
+    'AI-powered case pattern analysis for family law attorneys handling high-conflict custody. Built for Arizona\'s new coercive control law. Pattern18 Certified firms give clients free access.',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -20,18 +20,18 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
-    title: 'Pattern18. When their text makes your stomach drop. Your 24/7 AI coach is here.',
+    title: 'Pattern18 — AI Case Pattern Analysis for Family Law Attorneys',
     description:
-      'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
+      'Case pattern analysis built for attorneys and the new coercive control law. Document DARVO, gaslighting, and coercive control patterns — court-ready, firm-branded.',
     url: 'https://pattern18.com',
     siteName: 'Pattern18',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pattern18. Your 24/7 AI Coach for High-Conflict Custody',
+    title: 'Pattern18 — AI Case Pattern Analysis for Family Law Attorneys',
     description:
-      'AI coach for parents surviving high-conflict custody. Analyze any message, document patterns, prepare for court. $97/month. 7 days free.',
+      'Case pattern analysis built for attorneys and the new coercive control law. Document DARVO, gaslighting, and coercive control patterns — court-ready, firm-branded.',
   },
 };
 

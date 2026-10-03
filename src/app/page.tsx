@@ -41,22 +41,21 @@ export default function HomePage() {
 
       {/* ============ HERO ============ */}
       <section className="hero">
-        <p className="eyebrow">For parents surviving high-conflict custody</p>
+        <p className="eyebrow">For family law attorneys</p>
         <h1 className="hero-h1">
-          When their text<br />makes your stomach drop.
+          Built for Arizona&rsquo;s new coercive control law.
         </h1>
-        <p className="hero-sub">Spot the bait. Build the record. Win in court.</p>
-        <a href="/login?mode=signup" className="btn-primary hero-cta">Start 7-Day Free Trial</a>
-        <p className="hero-anchor">$97/month after trial. Cancel anytime, no charge.</p>
-        <Link href="/login" className="hero-secondary">Already a member? Sign in →</Link>
+        <p className="hero-sub">Pattern18 turns months of messages into court-ready pattern analysis — aligned with HB2995, the Alec and Lydia Act, effective June 22, 2026.</p>
+        <Link href="/pricing#firms" className="btn-primary hero-cta">Talk to us about Pattern18 Certified</Link>
+        <Link href="/pricing#firms" className="hero-secondary">See firm pricing →</Link>
       </section>
 
       {/* ============ SOCIAL PROOF STRIP ============ */}
       <section className="strip">
         <div className="strip-inner">
+          <span className="stat">16 years in family court. The tool built from that experience.</span>
           <span className="stat">Over 75% of mothers who report abuse lose custody when their abuser fights for it.</span>
-          <span className="stat">Patterns win cases. Documentation wins patterns.</span>
-          <span className="stat">16 years in family court. The tool I wish I'd had from day one.</span>
+          <span className="stat">Every firm subscription sponsors free access for a client who can&rsquo;t afford it.</span>
         </div>
         <div className="strip-divider" />
       </section>
@@ -80,25 +79,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ============ WHO THIS IS FOR ============ */}
-      <section className="section">
-        <h2 className="section-h2 center">Is this you?</h2>
-        <div className="cards-3">
-          <div className="who-card">
-            <h3 className="who-head">The parent who screenshots everything.</h3>
-            <p className="who-body">You have 800 screenshots. You can't find the one you need when you need it. Your lawyer asked for a timeline. You have no idea where to start.</p>
-          </div>
-          <div className="who-card">
-            <h3 className="who-head">The parent whose stomach drops at every notification.</h3>
-            <p className="who-body">You know which messages are going to be bad before you even open them. You want to know if you're overreacting. You're not.</p>
-          </div>
-          <div className="who-card">
-            <h3 className="who-head">The parent walking into court.</h3>
-            <p className="who-body">You know the patterns are there. You just can't prove them. One Compass-style analysis becomes 40 Compass-style analyses becomes a case.</p>
-          </div>
-        </div>
-      </section>
-
       {/* ============ HOW IT WORKS ============ */}
       <section className="section tint">
         <h2 className="section-h2 center">How Pattern18 works.</h2>
@@ -119,6 +99,28 @@ export default function HomePage() {
             <p className="step-body">When you need to prove the pattern, Pattern18 gives you court-ready documentation your attorney can actually use.</p>
           </div>
         </div>
+      </section>
+
+      {/* ============ WHO THIS IS FOR ============ */}
+      <section className="section">
+        <h2 className="section-h2 center">The clients walking into your office.</h2>
+        <div className="cards-3">
+          <div className="who-card">
+            <h3 className="who-head">The client with 800 screenshots.</h3>
+            <p className="who-body">They can't find the one you need. You asked for a timeline. They don't know where to start.</p>
+          </div>
+          <div className="who-card">
+            <h3 className="who-head">The client who flinches at every notification.</h3>
+            <p className="who-body">They know which messages are bad before they open them. They want to know if they're overreacting. They're not.</p>
+          </div>
+          <div className="who-card">
+            <h3 className="who-head">The client walking into court underprepared.</h3>
+            <p className="who-body">The pattern is there. It's just not proven yet. One analysis becomes a case file.</p>
+          </div>
+        </div>
+        <p className="who-cta">
+          <Link href="/pricing#firms" className="who-cta-link">This is what Pattern18 Certified firms hand their clients on day one. →</Link>
+        </p>
       </section>
 
       {/* ============ FOUNDER STORY ============ */}
@@ -378,11 +380,6 @@ export default function HomePage() {
         .hero-cta {
           min-width: 280px;
         }
-        .hero-anchor {
-          margin-top: 18px;
-          color: var(--charcoal-70);
-          font-size: 14px;
-        }
         .hero-secondary {
           display: block;
           margin-top: 14px;
@@ -577,6 +574,21 @@ export default function HomePage() {
           line-height: 1.6;
           opacity: 0.85;
         }
+        .who-cta {
+          text-align: center;
+          margin-top: 40px;
+        }
+        .who-cta-link {
+          color: var(--deep-teal);
+          font-weight: 600;
+          font-size: 16px;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          line-height: 1.5;
+          display: inline-block;
+          padding: 10px 0;
+        }
+        .who-cta-link:hover { color: var(--teal); }
 
         /* STEPS */
         .steps {
