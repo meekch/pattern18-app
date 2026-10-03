@@ -49,3 +49,9 @@ next-env.d.ts
 # Social post batches (images + specs live locally, not in git)
 /social_batch/
 /social_batch_spec.md
+
+# Social post day cards at repo root (local working files, not app assets)
+/day*.jpg
+
+# Supabase CLI local cache
+/supabase/.temp/
