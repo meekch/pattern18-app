@@ -43,18 +43,17 @@ export default function HomePage() {
       <section className="hero">
         <p className="eyebrow">For family law attorneys</p>
         <h1 className="hero-h1">
-          Built for Arizona&rsquo;s new coercive control law.
+          Coercive control, documented for court.
         </h1>
-        <p className="hero-sub">Pattern18 turns months of messages into court-ready pattern analysis — aligned with HB2995, the Alec and Lydia Act, effective June 22, 2026.</p>
-        <Link href="/pricing#firms" className="btn-primary hero-cta">Talk to us about Pattern18 Certified</Link>
+        <p className="hero-sub">Pattern18 turns months of messages into a sourced timeline, pattern analysis, and exhibit packet your team can verify in minutes. Now mapped to Arizona&rsquo;s coercive control categories under HB2995, the Alec and Lydia Act.</p>
+        <a href="mailto:hello@pattern18.com?subject=Pattern18 Sample Case Analysis Request" className="btn-primary hero-cta">Request a sample case analysis</a>
         <Link href="/pricing#firms" className="hero-secondary">See firm pricing →</Link>
       </section>
 
       {/* ============ SOCIAL PROOF STRIP ============ */}
       <section className="strip">
         <div className="strip-inner">
-          <span className="stat">16 years in family court. The tool built from that experience.</span>
-          <span className="stat">Over 75% of mothers who report abuse lose custody when their abuser fights for it.</span>
+          <span className="stat">Built by a survivor of coercive control.</span>
           <span className="stat">Every firm subscription sponsors free access for a client who can&rsquo;t afford it.</span>
         </div>
         <div className="strip-divider" />
@@ -81,7 +80,7 @@ export default function HomePage() {
 
       {/* ============ HOW IT WORKS ============ */}
       <section className="section tint">
-        <h2 className="section-h2 center">How Pattern18 works.</h2>
+        <h2 className="section-h2 center">How it works for your clients.</h2>
         <div className="steps">
           <div className="step">
             <div className="step-num">1</div>
@@ -127,14 +126,14 @@ export default function HomePage() {
       <section className="section">
         <h2 className="section-h2 center">Why Pattern18 exists.</h2>
         <div className="founder">
-          <p>16 years ago I had a baby with someone I didn't fully see yet.</p>
+          <p>Years ago I had a baby with someone I didn't fully see yet.</p>
           <p>By the time I saw it, I was already tied to him by court-ordered custody until our son turns 18.</p>
           <p>I spent years confused. Years documenting in the wrong ways. Years losing time and money because I didn't have language for what was happening.</p>
           <p>My son turns 18 in 2 years. I'll finally be free of court.</p>
           <p>Before I go, I'm building the tool I needed from day one.</p>
           <p>Pattern18 is for every parent who came after me. Every mom, dad, grandparent staring at a message asking, "is this as bad as I think it is?"</p>
-          <p>I built it so you don't have to wait 16 years to know.</p>
-          <p className="founder-sign">A mother who spent 16 years in family court.</p>
+          <p>I built it so you don't have to wait years to know.</p>
+          <p className="founder-sign">A mother who spent years in family court.</p>
         </div>
       </section>
 
@@ -211,7 +210,7 @@ export default function HomePage() {
             <div className="total-row your-price"><span>Your price:</span><span>$97/month</span></div>
           </div>
 
-          <p className="pricing-why">Why so low? Because I waited 16 years for a tool like this.<br />I built it so no one else has to.</p>
+          <p className="pricing-why">Why so low? Because I waited years for a tool like this.<br />I built it so no one else has to.</p>
         </div>
 
         <div className="pricing-cta-wrap">

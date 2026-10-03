@@ -18,6 +18,12 @@ export default function PricingPage() {
             <p>Become a Pattern18 Certified Firm. Your clients arrive prepared.</p>
           </div>
 
+          <div className="firm-card analysis-card">
+            <h3>Case Pattern Analysis</h3>
+            <p>Done for you. Send your client&rsquo;s message export and receive a sourced timeline, pattern analysis, exhibit packet, and counsel memo in about seven days. Founding firm slots are limited.</p>
+            <a href="mailto:hello@pattern18.com?subject=Pattern18 Sample Case Analysis Request" className="btn-primary">Request a sample</a>
+          </div>
+
           <div className="firms-grid">
             <div className="firm-card">
               <h3>Solo</h3>
@@ -326,6 +332,14 @@ export default function PricingPage() {
           flex-direction: column;
         }
         .firm-card.featured { border: 2px solid var(--teal); }
+        .analysis-card { align-items: center; text-align: center; margin-bottom: 20px; }
+        .analysis-card p {
+          font-size: 15px;
+          color: var(--charcoal);
+          line-height: 1.6;
+          max-width: 600px;
+          margin-bottom: 20px;
+        }
         .firm-badge {
           position: absolute;
           top: -12px;
