@@ -78,7 +78,7 @@ export default function PricingPage() {
           <h2>One price. Everything included.</h2>
           <p>$97/month. Cancel anytime. 7-day free trial.</p>
           <p className="social-line">
-            <a href="https://www.tiktok.com/@thecounterparent" target="_blank" rel="noopener noreferrer">Follow Rae Hart on TikTok for daily strategy.</a>
+            <a href="https://www.tiktok.com/@pattern18app" target="_blank" rel="noopener noreferrer">Follow Rae Hart on TikTok for daily strategy.</a>
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 # Pattern 18
 
 ## What This Is
-Pattern 18 is a $89/month SaaS platform helping protective parents document coercive control in high-conflict custody situations. The name refers to children turning 18 and gaining freedom from court-ordered situations.
+Pattern 18 is a $97/month SaaS platform helping protective parents document coercive control in high-conflict custody situations. The name refers to children turning 18 and gaining freedom from court-ordered situations.
 
 ## Tech Stack
 - Next.js 14 (App Router)
@@ -72,7 +72,7 @@ Workflow: Receive Lead Data → Generate AI Report (Claude API) → Send via Res
 To update the report prompt: edit the n8n node directly.
 
 ### Social Media
-- TikTok: @thecounterparent
+- TikTok: @pattern18app (formerly @thecounterparent)
 - Facebook: Pattern18 Coach page
 - Never cross-post with Opalite Systems accounts
 - Content managed via Blotato
