@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import {
+  normalizeCaseFields, findMissingCaseFields, buildMissingCaseFieldsResponse,
+} from '@/lib/document-field-validation';
+import {
   Document, Packer, Paragraph, TextRun, Footer,
   AlignmentType, PageNumber,
 } from 'docx';
@@ -19,19 +22,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { documentContent, documentTitle, caseContext } = await req.json();
+    const { documentContent, documentTitle, caseContext, acknowledgeMissingFields } = await req.json();
 
     if (!documentContent) {
       return NextResponse.json({ error: 'No document content provided' }, { status: 400 });
     }
 
-    const userRole = caseContext?.user_role || caseContext?.userRole || 'respondent';
-    const petitionerName = caseContext?.petitioner_name || caseContext?.petitionerName || '';
-    const respondentName = caseContext?.respondent_name || caseContext?.respondentName || '';
-    const caseNumber = caseContext?.case_number || caseContext?.caseNumber || '';
-    const courtName = caseContext?.court || 'Superior Court';
-    const county = caseContext?.county || '';
-    const state = caseContext?.state || '';
+    // Required caption fields must be present; otherwise the document renders
+    // placeholders like [PETITIONER] / [CASE NUMBER] or silently drops caption lines.
+    const caseFields = normalizeCaseFields(caseContext);
+    const missingFields = findMissingCaseFields(caseFields);
+    if (missingFields.length > 0 && acknowledgeMissingFields !== true) {
+      return NextResponse.json(buildMissingCaseFieldsResponse(missingFields), { status: 422 });
+    }
+
+    const userRole = caseFields.user_role || 'respondent';
+    const petitionerName = caseFields.petitioner_name;
+    const respondentName = caseFields.respondent_name;
+    const caseNumber = caseFields.case_number;
+    const courtName = caseFields.court || 'Superior Court';
+    const county = caseFields.county;
+    const state = caseFields.state;
     const userName = userRole === 'petitioner' ? petitionerName : respondentName;
     const roleLabel = userRole === 'petitioner' ? 'Petitioner, Pro Se' : 'Respondent, Pro Se';
 

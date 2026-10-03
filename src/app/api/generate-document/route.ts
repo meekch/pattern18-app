@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { recordDocumentGeneration } from "@/lib/document-manifest";
+import {
+  normalizeCaseFields, findMissingCaseFields, buildMissingCaseFieldsResponse,
+  REQUIRED_CASE_FIELDS_WITHOUT_VENUE,
+} from "@/lib/document-field-validation";
 
 export const dynamic = 'force-dynamic';
 
@@ -162,20 +168,59 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { docType, incidents, caseContext } = body as {
+    const { docType, incidents, caseContext, acknowledgeMissingFields } = body as {
       docType: keyof typeof PROMPTS;
       incidents: Incident[];
       caseContext: CaseContext;
+      acknowledgeMissingFields?: boolean;
     };
 
     if (!docType || !incidents || incidents.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Required party/case fields must be present; otherwise the document renders
+    // placeholders like [YOUR NAME] / [CASE NUMBER]. This route builds prose, not a
+    // court caption, so county/state are not required here.
+    const caseFields = normalizeCaseFields(caseContext);
+    const missingFields = findMissingCaseFields(caseFields, REQUIRED_CASE_FIELDS_WITHOUT_VENUE);
+    if (missingFields.length > 0 && acknowledgeMissingFields !== true) {
+      return NextResponse.json(buildMissingCaseFieldsResponse(missingFields), { status: 422 });
+    }
+
     const systemPrompt = PROMPTS[docType] || PROMPTS.declaration;
 
+    // Re-read the incidents server-side. The client posts incident objects,
+    // but both the document and its manifest must attest to what the database
+    // holds, not to whatever the client passed in.
+    const incidentIds = incidents.map((inc) => inc.id).filter(Boolean);
+    if (incidentIds.length === 0) {
+      return NextResponse.json({ error: "Incident ids required" }, { status: 400 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: dbIncidents, error: incidentsError } = await supabase
+      .from("incidents")
+      .select("id, title, category, patterns, severity, incident_date, message_count, evidence_strength, coparent_message, messages_json")
+      .eq("user_id", userId)
+      .in("id", incidentIds)
+      .is("deleted_at", null);
+
+    if (incidentsError) {
+      console.error("Incident re-read failed:", incidentsError);
+      return NextResponse.json({ error: "Failed to load incidents" }, { status: 500 });
+    }
+
+    if (!dbIncidents || dbIncidents.length === 0) {
+      return NextResponse.json({ error: "No matching incidents found" }, { status: 404 });
+    }
+
     // Sort incidents by date (oldest first for chronological documents)
-    const sortedIncidents = [...incidents].sort((a, b) => 
+    const sortedIncidents = [...(dbIncidents as Incident[])].sort((a, b) =>
       new Date(a.incident_date).getTime() - new Date(b.incident_date).getTime()
     );
 
@@ -217,16 +262,15 @@ ${exactMessage || "[No message text available]"}
     }).join("\n\n===================================\n\n");
 
     // Determine actual names based on user role
-    const userRole = caseContext.userRole || "petitioner";
+    const userRole = caseFields.user_role || "petitioner";
     const isUserPetitioner = userRole === "petitioner";
-    
-    // Get actual names - use provided names or fallback
-    const yourName = caseContext.userName || 
-      (isUserPetitioner ? caseContext.petitionerName : caseContext.respondentName) || 
+
+    const yourName = caseContext?.userName?.trim() ||
+      (isUserPetitioner ? caseFields.petitioner_name : caseFields.respondent_name) ||
       "[YOUR NAME]";
-    
-    const otherPartyName = caseContext.coparentName ||
-      (isUserPetitioner ? caseContext.respondentName : caseContext.petitionerName) || 
+
+    const otherPartyName = caseContext?.coparentName?.trim() ||
+      (isUserPetitioner ? caseFields.respondent_name : caseFields.petitioner_name) ||
       "[OTHER PARTY NAME]";
 
     // For court documents, determine legal titles
@@ -235,15 +279,15 @@ ${exactMessage || "[No message text available]"}
     
     const contextInfo = `
 CASE INFORMATION:
-Court: ${caseContext.courtName || "[COURT NAME]"}
-Case Number: ${caseContext.caseNumber || "[CASE NUMBER]"}
+Court: ${caseFields.court || "[COURT NAME]"}
+Case Number: ${caseFields.case_number || "[CASE NUMBER]"}
 
 PARTIES (USE THESE EXACT NAMES IN THE DOCUMENT):
 You (${yourTitle}): ${yourName}
 Other Party (${otherTitle}): ${otherPartyName}
 
 Your Role in Case: ${yourTitle}
-Purpose of Document: ${caseContext.filingPurpose || "Documentation of communication patterns"}
+Purpose of Document: ${caseContext?.filingPurpose?.trim() || "Documentation of communication patterns"}
 
 EVIDENCE SUMMARY:
 Total Incidents: ${incidents.length}
@@ -301,11 +345,17 @@ Generate the complete ${docType.replace("_", " ")} document now. Use exact quote
       .replace(/^## /gm, '')             // Remove ## headers
       .replace(/^# /gm, '');             // Remove # headers
 
-    return NextResponse.json({ 
+    await recordDocumentGeneration({
+      userId,
+      docType,
+      incidentIds: sortedIncidents.map((inc) => inc.id),
+    });
+
+    return NextResponse.json({
       success: true,
       document,
       docType,
-      incidentCount: incidents.length
+      incidentCount: sortedIncidents.length
     });
 
   } catch (error) {

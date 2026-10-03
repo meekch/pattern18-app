@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/auth';
+import { recordDocumentGeneration } from '@/lib/document-manifest';
+import {
+  normalizeCaseFields, findMissingCaseFields, buildMissingCaseFieldsResponse,
+} from '@/lib/document-field-validation';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   Header, Footer, AlignmentType, BorderStyle, WidthType,
@@ -166,13 +170,14 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { includeExhibitOnly, caseContext } = await request.json();
+    const { includeExhibitOnly, caseContext, acknowledgeMissingFields } = await request.json();
 
     // Fetch incidents
     let query = supabase
       .from('incidents')
-      .select('id, incident_date, severity, patterns, category, coparent_message, source_name, source_type, include_in_exhibit')
+      .select('id, incident_date, severity, patterns, category, coparent_message, source_name, source_type, include_in_exhibit, text_hash')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .order('incident_date', { ascending: true });
 
     if (includeExhibitOnly) {
@@ -206,6 +211,15 @@ export async function POST(request: NextRequest) {
       caseData = dbCaseData;
     }
 
+    // Required caption fields must be present; otherwise the exhibit renders
+    // placeholders like [PETITIONER NAME] or silently drops the county/state line.
+    const caseFields = normalizeCaseFields(caseData);
+    const missingFields = findMissingCaseFields(caseFields);
+    if (missingFields.length > 0 && acknowledgeMissingFields !== true) {
+      return NextResponse.json(buildMissingCaseFieldsResponse(missingFields), { status: 422 });
+    }
+    const caseInfo = { ...(caseData || {}), ...caseFields };
+
     // Filter out incidents without a co-parent message
     const validIncidents = incidents.filter(i => i.coparent_message && i.coparent_message.trim());
     
@@ -233,10 +247,16 @@ export async function POST(request: NextRequest) {
     const monthlyData = getMonthlyBreakdown(processedIncidents);
 
     // Generate document
-    const doc = createExhibitDocument(processedIncidents, stats, patternCounts, monthlyData, caseData);
+    const doc = createExhibitDocument(processedIncidents, stats, patternCounts, monthlyData, caseInfo);
 
     // Convert to buffer
     const buffer = await Packer.toBuffer(doc);
+
+    await recordDocumentGeneration({
+      userId,
+      docType: includeExhibitOnly ? 'exhibit_selected' : 'exhibit_all',
+      incidentIds: processedIncidents.map((inc: any) => inc.id),
+    });
 
     return new NextResponse(Buffer.from(buffer), {
       headers: {

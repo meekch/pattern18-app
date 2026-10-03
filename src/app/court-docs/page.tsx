@@ -97,6 +97,7 @@ export default function CourtDocsPage() {
         .from("incidents")
         .select("*")
         .eq("user_id", session.user.id)
+        .is("deleted_at", null)
         .order("incident_date", { ascending: false });
 
       if (error) throw error;
@@ -156,14 +157,19 @@ export default function CourtDocsPage() {
         })
       });
 
-      if (!response.ok) throw new Error("Failed to generate document");
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(detail?.error || "Failed to generate document");
+      }
       
       const data = await response.json();
       setGeneratedDoc(data.document);
       setStep("review");
     } catch (err) {
       console.error("Generation failed:", err);
-      alert("Failed to generate document. Please try again.");
+      alert(err instanceof Error && err.message
+        ? err.message
+        : "Failed to generate document. Please try again.");
       setStep("configure");
     } finally {
       setGenerating(false);
