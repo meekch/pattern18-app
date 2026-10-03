@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SiteNav from '@/components/SiteNav';
-import { SKOOL_URL } from '@/lib/stripe-links';
 
 // May 6 2026 11:59 PM AZ (MST, UTC-7) === May 7 2026 06:59 UTC.
 // Hardcoded UTC milliseconds so the value is identical on the server (initial
@@ -231,16 +230,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ FREE COMMUNITY ============ */}
-      <section className="community">
-        <h3 className="community-head">Not ready to subscribe? Join the community. Free, forever.</h3>
-        <p>5,000+ parents navigating high-conflict custody together. No cost. Ever.</p>
-        <p>Glossary of the terms. Pattern recognition guides. Safe space to ask questions.</p>
-        <a href={SKOOL_URL} target="_blank" rel="noopener noreferrer" className="btn-outline">
-          Join Pattern18 Community
-        </a>
-      </section>
-
       {/* ============ LAW FIRM BANNER ============ */}
       <section className="firms-banner">
         <div className="firms-inner">
@@ -312,7 +301,6 @@ export default function HomePage() {
             </div>
             <div className="footer-col">
               <h4>Community</h4>
-              <a className="footer-link" href={SKOOL_URL} target="_blank" rel="noopener noreferrer">Pattern18 Community (Skool)</a>
               <a className="footer-link nowrap" href="https://www.tiktok.com/@pattern18app" target="_blank" rel="noopener noreferrer">TikTok: @pattern18app</a>
             </div>
           </div>
@@ -815,30 +803,6 @@ export default function HomePage() {
           line-height: 1.6;
           margin-bottom: 12px;
         }
-
-        /* COMMUNITY */
-        .community {
-          background: var(--teal-tint);
-          padding: 64px 24px;
-          text-align: center;
-        }
-        .community-head {
-          font-family: var(--serif);
-          font-weight: 700;
-          color: var(--charcoal);
-          font-size: clamp(22px, 3.2vw, 30px);
-          line-height: 1.25;
-          max-width: 720px;
-          margin: 0 auto 16px;
-        }
-        .community p {
-          color: var(--charcoal);
-          font-size: 15px;
-          line-height: 1.6;
-          max-width: 620px;
-          margin: 0 auto 6px;
-        }
-        .community .btn-outline { margin-top: 24px; }
 
         /* LAW FIRM BANNER */
         .firms-banner {
