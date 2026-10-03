@@ -77,6 +77,9 @@ export default function PricingPage() {
           <p className="section-label">For individual clients</p>
           <h2>One price. Everything included.</h2>
           <p>$97/month. Cancel anytime. 7-day free trial.</p>
+          <p className="social-line">
+            <a href="https://www.tiktok.com/@thecounterparent" target="_blank" rel="noopener noreferrer">Follow Rae Hart on TikTok for daily strategy.</a>
+          </p>
         </div>
 
         {/* COMPARISON */}
@@ -176,6 +179,16 @@ export default function PricingPage() {
           margin: 0 auto;
           line-height: 1.6;
         }
+        .hero p.social-line { font-size: 15px; margin-top: 12px; }
+        .social-line a {
+          color: var(--deep-teal);
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          display: inline-block;
+          padding: 10px 0;
+        }
+        .social-line a:hover { color: var(--teal); }
 
         /* CONSUMER PLAN */
         .plan {
