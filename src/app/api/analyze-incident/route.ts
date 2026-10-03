@@ -19,6 +19,8 @@ const PATTERNS = [
   'Silent Treatment',
 ];
 
+const VALID_SEVERITIES = ['critical', 'high', 'medium', 'low'];
+
 export async function POST(req: NextRequest) {
   const userId = await requireAuth(req);
   if (!userId) {
@@ -67,29 +69,60 @@ Respond in JSON format only:
 
     const content = response.content[0];
     if (content.type !== 'text') {
-      return NextResponse.json({ patterns: [], severity: 'low' });
+      console.error('Analysis failed: model returned non-text content block');
+      return NextResponse.json({
+        error: 'Analysis failed: the model did not return a text response.',
+        code: 'ANALYSIS_PARSE_FAILED',
+        analysisFailed: true,
+      }, { status: 502 });
     }
 
+    // Extract JSON from response. A parse failure is an error, not a low-severity
+    // incident - silently defaulting would record fabricated analysis as real.
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('Analysis failed: no JSON object found in model response');
+      return NextResponse.json({
+        error: 'Analysis failed: the response could not be parsed. This incident was not analyzed.',
+        code: 'ANALYSIS_PARSE_FAILED',
+        analysisFailed: true,
+      }, { status: 502 });
+    }
+
+    let parsed: any;
     try {
-      // Extract JSON from response
-      const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return NextResponse.json({
-          patterns: parsed.patterns || [],
-          severity: parsed.severity || 'low',
-          analysis: parsed.brief_analysis || '',
-        });
-      }
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
+      return NextResponse.json({
+        error: 'Analysis failed: the response could not be parsed. This incident was not analyzed.',
+        code: 'ANALYSIS_PARSE_FAILED',
+        analysisFailed: true,
+      }, { status: 502 });
     }
 
-    return NextResponse.json({ patterns: [], severity: 'low' });
+    if (!Array.isArray(parsed.patterns) || !VALID_SEVERITIES.includes(parsed.severity)) {
+      console.error('Analysis failed: model response missing patterns array or valid severity');
+      return NextResponse.json({
+        error: 'Analysis failed: the response was incomplete. This incident was not analyzed.',
+        code: 'ANALYSIS_PARSE_FAILED',
+        analysisFailed: true,
+      }, { status: 502 });
+    }
+
+    return NextResponse.json({
+      patterns: parsed.patterns,
+      severity: parsed.severity,
+      analysis: typeof parsed.brief_analysis === 'string' ? parsed.brief_analysis : '',
+    });
     
   } catch (error) {
     console.error('Analysis error:', error);
-    return NextResponse.json({ patterns: [], severity: 'low' });
+    return NextResponse.json({
+      error: 'Analysis failed. This incident was not analyzed.',
+      code: 'ANALYSIS_FAILED',
+      analysisFailed: true,
+    }, { status: 502 });
   }
 }
 
