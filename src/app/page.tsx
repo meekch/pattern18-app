@@ -297,6 +297,7 @@ export default function HomePage() {
               <h4>For Attorneys</h4>
               <Link className="footer-link" href="/pricing#firms">Pattern18 for Firms</Link>
               <Link className="footer-link" href="/compass-certification">Compass Certification</Link>
+              <Link className="footer-link" href="/security">Security</Link>
               <a className="footer-link" href="mailto:hello@pattern18.com">hello@pattern18.com</a>
             </div>
             <div className="footer-col">

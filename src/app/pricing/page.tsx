@@ -22,6 +22,7 @@ export default function PricingPage() {
             <h3>Case Pattern Analysis</h3>
             <p>Done for you. Send your client&rsquo;s message export and receive a sourced timeline, pattern analysis, exhibit packet, and counsel memo in about seven days. Founding firm slots are limited.</p>
             <a href="mailto:hello@pattern18.com?subject=Pattern18 Sample Case Analysis Request" className="btn-primary">Request a sample</a>
+            <Link href="/security" className="security-link">How we protect client data</Link>
           </div>
 
           <div className="firms-grid">
@@ -353,6 +354,16 @@ export default function PricingPage() {
           max-width: 600px;
           margin-bottom: 20px;
         }
+        .analysis-card :global(.security-link) {
+          color: var(--deep-teal);
+          font-size: 14px;
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          margin-top: 8px;
+          padding: 10px 0;
+        }
+        .analysis-card :global(.security-link:hover) { color: var(--teal); }
         .firm-badge {
           position: absolute;
           top: -12px;
